@@ -6,15 +6,9 @@ use std::ops::{Add, Sub};
 use std::time::Duration;
 use std::fmt;
 
-/// The number of nanoseconds in seconds.
-const NANOS_PER_SECOND: u32 = 1_000_000_000;
-
-const NTP_EPOCH: Instant = Instant {
-    seconds: 0,
-    nanos: 0,
-    era: Era::Present,
-};
-
+/// An `Era` represents whether the associated `Instant` is before the TAI Epoch
+/// (01 Jan 1900, midnight) or afterwards. If it is before, than it's refered to as "Past",
+/// otherwise is in the "Present" era.
 #[derive(Clone, Debug)]
 pub enum Era {
     Present,
@@ -29,22 +23,23 @@ impl fmt::Display for Era {
         }
     }
 }
-
-// Stores the duration since 01 Jan 1900
+/// An `Instant` type represents an instant with respect to 01 Jan 1900 at midnight, as per
+/// the International Atomic Time (TAI) system.
 #[derive(Clone, Debug)]
 pub struct Instant {
-    // TODO: Use std::Duration here and make it clean with the new call
-    seconds: u64,
-    nanos: u32,
+    duration: Duration,
     era: Era,
 }
 
 impl Instant {
+    /// Creates a new `Instant` with respect to TAI Epoch. All time systems are represented
+    /// with respect to this epoch.
+    /// Note: this constructor relies on the constructor for std::time::Duration; as such,
+    /// refer to https://doc.rust-lang.org/std/time/struct.Duration.html#method.new for
+    /// pertinent warnings and limitations.
     pub fn new(seconds: u64, nanos: u32, era: Era) -> Instant {
-        let (extra_seconds, nanos) = div_mod_floor_64(nanos, NANOS_PER_SECOND);
         Instant {
-            seconds: seconds + extra_seconds,
-            nanos: nanos,
+            duration: Duration::new(seconds, nanos),
             era: era,
         }
     }
@@ -54,36 +49,30 @@ impl Add<Duration> for Instant {
     type Output = Instant;
 
     fn add(self, delta: Duration) -> Instant {
-        let direction = match delta.num_seconds() > 0 {
-            true => 1,
-            false => -1,
-        };
-        if self.era == Era::Present {
-            if delta.num_seconds() > 0 {
+        // Switch the era, an exact time of zero is in the Present era
+        match self.era {
+            Era::Past => {
+                if (delta.as_secs() >= self.duration.as_secs()) ||
+                    (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0 &&
+                         delta.subsec_nanos() >= self.duration.subsec_nanos())
+                {
+                    return Instant::new(
+                        delta.as_secs() - self.duration.as_secs(),
+                        delta.subsec_nanos() - self.duration.subsec_nanos(),
+                        Era::Present,
+                    );
+                } else {
+                    let mut cln = self.clone();
+                    cln.duration -= delta;
+                    return cln;
+                }
+            }
+            Era::Present => {
+                // Adding a duration in the present is trivial
                 let mut cln = self.clone();
-                cln.seconds += delta.num_seconds();
-                cln.nanos += delta.num_nanoseconds();
+                cln.duration += delta;
                 return cln;
             }
         }
-    }
-}
-
-// Mostly copied from Duration / libnum
-fn div_mod_floor_64(this: u64, other: u64) -> (u64, u64) {
-    (div_floor_64(this, other), mod_floor_64(this, other))
-}
-
-fn div_floor_64(this: u64, other: u64) -> u64 {
-    match (this / other, this % other) {
-        (d, r) if (r > 0 && other < 0) || (r < 0 && other > 0) => d - 1,
-        (d, _) => d,
-    }
-}
-
-fn mod_floor_64(this: u64, other: u64) -> u64 {
-    match this % other {
-        r if (r > 0 && other < 0) || (r < 0 && other > 0) => r + other,
-        r => r,
     }
 }
