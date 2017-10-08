@@ -9,7 +9,7 @@ use std::fmt;
 /// An `Era` represents whether the associated `Instant` is before the TAI Epoch
 /// (01 Jan 1900, midnight) or afterwards. If it is before, than it's refered to as "Past",
 /// otherwise is in the "Present" era.
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub enum Era {
     Present,
     Past,
@@ -25,7 +25,7 @@ impl fmt::Display for Era {
 }
 /// An `Instant` type represents an instant with respect to 01 Jan 1900 at midnight, as per
 /// the International Atomic Time (TAI) system.
-#[derive(Clone, Debug)]
+#[derive(Copy, Clone, Debug)]
 pub struct Instant {
     duration: Duration,
     era: Era,
@@ -42,6 +42,18 @@ impl Instant {
             duration: Duration::new(seconds, nanos),
             era: era,
         }
+    }
+
+    pub fn secs(self) -> u64 {
+        self.duration.as_secs()
+    }
+
+    pub fn nanos(self) -> u32 {
+        self.duration.subsec_nanos()
+    }
+
+    pub fn era(self) -> Era {
+        self.era
     }
 }
 
