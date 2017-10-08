@@ -1,0 +1,6 @@
+[package]
+name = "hifitime"
+version = "0.1.0"
+authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
+
+[dependencies]
