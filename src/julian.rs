@@ -2,17 +2,17 @@ use super::traits;
 use super::instant::{Era, Instant};
 
 /// J1900_OFFSET determines the offset in julian days between 01 Jan 1900 at midnight and the
-/// Modified Julian Day at Epoch. NOTE: The J1900.0 offset in Vallado is different from the one
-/// given by NIST. This library uses the NIST provided value (one day shorter).
-pub const J1900_OFFSET: f64 = 15020.0;
+/// Modified Julian Day at 17 November 1858. NOTE: The J1900.0 offset in Vallado is different
+/// from the one given by NIST. This library uses the NIST provided value (one day shorter).
+pub const J1900_OFFSET: f64 = 15_020.0;
 /// J2000_OFFSET determines the offset in julian days between 01 Jan 2000 at midnight and the
 /// Modified Julian Day at Epoch. NOTE: The J1900.0 offset in Vallado is different from the one
 /// given by NIST. This library uses the NIST provided value (one day shorter).
-pub const J2000_OFFSET: f64 = 51545.0;
+pub const J2000_OFFSET: f64 = 51_545.0;
 /// DAYS_PER_YEAR corresponds to the number of days per year in the Julian calendar. This is fixed.
 pub const DAYS_PER_YEAR: f64 = 365.25;
 /// SECONDS_PER_DAY defines the number of seconds per day.
-pub const SECONDS_PER_DAY: f64 = 86400.0;
+pub const SECONDS_PER_DAY: f64 = 86_400.0;
 
 #[derive(Copy, Clone, Debug)]
 pub struct ModifiedJulian {
