@@ -1,7 +1,7 @@
 use std::fmt;
 use std::time::Duration;
 use super::instant::Instant;
-use super::utils::Errors;
+use super::utils::{Errors, Offset};
 use std::marker::Sized;
 
 pub trait TimeSystem {
@@ -11,7 +11,7 @@ pub trait TimeSystem {
 }
 
 pub trait TimeZone {
-    fn utc_offset() -> Duration; // Returns the difference between a given TZ and UTC (Offset??)
+    fn utc_offset() -> Offset; // Returns the difference between a given TZ and UTC
     fn new(
         year: i32,
         month: u8,

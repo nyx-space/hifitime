@@ -1,4 +1,4 @@
-use super::utils::Errors;
+use super::utils::{Errors, Offset};
 use super::traits;
 use super::instant::{Era, Instant};
 use std::time::Duration;
@@ -65,8 +65,8 @@ impl traits::TimeZone for Utc
 where
     Self: Sized,
 {
-    fn utc_offset() -> Duration {
-        Duration::new(0, 0)
+    fn utc_offset() -> Offset {
+        Offset::new(0, 0, Era::Present)
     }
     /// Creates a new Utc date. WARNING: Does not support automatic carry and will return an error
     /// if so.
@@ -80,16 +80,19 @@ where
         nanos: u32,
     ) -> Result<Utc, Errors> {
         let mut max_seconds: u8 = 59;
-        if (month == 12 || month == 6) && day == 1 && hour == 23 && minute == 59 {
+        if (month == 12 || month == 6) && day == USUAL_DAYS_PER_MONTH[month as usize - 1] &&
+            hour == 23 && minute == 59
+        {
             if (month == 6 && JULY_YEARS.contains(&year)) ||
-                month == 12 && JANUARY_YEARS.contains(&(year + 1))
+                (month == 12 && JANUARY_YEARS.contains(&(year + 1)))
             {
                 max_seconds = 60;
             }
         }
         // General incorrect date times
         if month == 0 || month > 12 || day == 0 || day > 31 || hour > 24 || minute > 59 ||
-            second > max_seconds || nanos as f64 > 1e9
+            second > max_seconds || nanos as f64 > 1e9 ||
+            (nanos > 0 && second == max_seconds)
         {
             return Err(Errors::Carry);
         }
@@ -111,3 +114,54 @@ where
     }
     //fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result;
 }
+// TODO: Convert an instant to a UTC
+/*
+impl traits::TimeSystem for Utc {
+    /// `from_instant` converts an Instant to a ModifiedJulian as detailed
+    /// in https://www.ietf.org/timezones/data/leap-seconds.list , specifically the following
+    /// quote:
+    /// The NTP timestamps are in units of seconds since the NTP epoch,
+    /// which is 1 January 1900, 00:00:00. The Modified Julian Day number
+    /// corresponding to the NTP time stamp, X, can be computed as
+    ///
+    /// X/86400 + 15020
+    ///
+    /// where the first term converts seconds to days and the second
+    /// term adds the MJD corresponding to the time origin defined above.
+    /// The integer portion of the result is the integer MJD for that
+    /// day, and any remainder is the time of day, expressed as the
+    /// fraction of the day since 0 hours UTC. The conversion from day
+    /// fraction to seconds or to hours, minutes, and seconds may involve
+    /// rounding or truncation, depending on the method used in the
+    /// computation.
+    fn from_instant(instant: Instant) -> Utc {
+        let modifier: f64;
+        if instant.era() == Era::Present {
+            modifier = 1.0;
+        } else {
+            modifier = -1.0;
+        }
+        ModifiedJulian {
+            days: J1900_OFFSET + modifier * (instant.secs() as f64) / SECONDS_PER_DAY +
+                instant.nanos() as f64 * 1e-9,
+        }
+    }
+
+    /// `as_instant` returns an Instant from the ModifiedJulian.
+    fn as_instant(self) -> Utc {
+        let era: Era;
+        let modifier: f64;
+        if self.days >= J1900_OFFSET {
+            era = Era::Present;
+            modifier = 1.0;
+        } else {
+            era = Era::Past;
+            modifier = -1.0;
+        }
+        let secs_frac = (self.days - J1900_OFFSET) * SECONDS_PER_DAY * modifier;
+        let seconds = secs_frac.round();
+        let nanos = (secs_frac - seconds) * 1e9 / (SECONDS_PER_DAY * modifier);
+        Instant::new(seconds as u64, nanos.round() as u32, era)
+    }
+}
+*/

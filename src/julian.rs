@@ -59,6 +59,7 @@ impl traits::TimeSystem for ModifiedJulian {
         }
     }
 
+    /// `as_instant` returns an Instant from the ModifiedJulian.
     fn as_instant(self) -> Instant {
         let era: Era;
         let modifier: f64;
