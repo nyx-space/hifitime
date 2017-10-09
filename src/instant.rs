@@ -2,6 +2,7 @@
 // time spans and leap seconds. Moreover, an Instant is defined with respect to
 // 01 Jan 1900, as per NTP specifications.
 
+use std::cmp::PartialEq;
 use std::ops::{Add, Sub};
 use std::time::Duration;
 use std::fmt;
@@ -9,7 +10,7 @@ use std::fmt;
 /// An `Era` represents whether the associated `Instant` is before the TAI Epoch
 /// (01 Jan 1900, midnight) or afterwards. If it is before, than it's refered to as "Past",
 /// otherwise is in the "Present" era.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Era {
     Present,
     Past,
@@ -23,9 +24,11 @@ impl fmt::Display for Era {
         }
     }
 }
+
+
 /// An `Instant` type represents an instant with respect to 01 Jan 1900 at midnight, as per
 /// the International Atomic Time (TAI) system.
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Instant {
     duration: Duration,
     era: Era,
@@ -56,6 +59,13 @@ impl Instant {
         self.era
     }
 }
+
+impl PartialEq for Instant {
+    fn eq(&self, other: &Instant) -> bool {
+        self.secs() == other.secs() && self.nanos() == other.nanos() && self.era() == other.era()
+    }
+}
+
 
 impl Add<Duration> for Instant {
     type Output = Instant;

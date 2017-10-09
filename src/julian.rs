@@ -1,9 +1,31 @@
 use super::traits;
 use super::instant::{Era, Instant};
 
+/// J1900_OFFSET determines the offset in julian days between 01 Jan 1900 at midnight and the
+/// Modified Julian Day at Epoch. NOTE: The J1900.0 offset in Vallado is different from the one
+/// given by NIST. This library uses the NIST provided value (one day shorter).
+pub const J1900_OFFSET: f64 = 15020.0;
+/// J2000_OFFSET determines the offset in julian days between 01 Jan 2000 at midnight and the
+/// Modified Julian Day at Epoch. NOTE: The J1900.0 offset in Vallado is different from the one
+/// given by NIST. This library uses the NIST provided value (one day shorter).
+pub const J2000_OFFSET: f64 = 51545.0;
+/// DAYS_PER_YEAR corresponds to the number of days per year in the Julian calendar. This is fixed.
+pub const DAYS_PER_YEAR: f64 = 365.25;
+/// SECONDS_PER_DAY defines the number of seconds per day.
+pub const SECONDS_PER_DAY: f64 = 86400.0;
+
 #[derive(Copy, Clone, Debug)]
 pub struct ModifiedJulian {
-    days: f64,
+    pub days: f64,
+}
+
+impl ModifiedJulian {
+    /// `julian_days` returns the true Julian days from epoch 01 Jan -4713, 12:00
+    /// as explained in "Fundamentals of astrodynamics and applications", Vallado et al.
+    /// 4th edition, page 182.
+    pub fn julian_days(self) -> f64 {
+        self.days + 2_400_000.0
+    }
 }
 
 impl traits::TimeSystem for ModifiedJulian {
@@ -25,21 +47,32 @@ impl traits::TimeSystem for ModifiedJulian {
     /// rounding or truncation, depending on the method used in the
     /// computation.
     fn from_instant(instant: Instant) -> ModifiedJulian {
+        let modifier: f64;
+        if instant.era() == Era::Present {
+            modifier = 1.0;
+        } else {
+            modifier = -1.0;
+        }
         ModifiedJulian {
-            days: (instant.secs() as f64 + instant.nanos() as f64 * 1e-9) / 86400.0 + 15020.0,
+            days: J1900_OFFSET + modifier * (instant.secs() as f64) / SECONDS_PER_DAY +
+                instant.nanos() as f64 * 1e-9,
         }
     }
 
     fn as_instant(self) -> Instant {
         let era: Era;
-        if self.days >= 15020.0 {
+        let modifier: f64;
+        if self.days >= J1900_OFFSET {
             era = Era::Present;
+            modifier = 1.0;
         } else {
             era = Era::Past;
+            modifier = -1.0;
         }
-        let seconds = (self.days * 86400.0).floor() as u64;
-        let nanos = (self.days * 86400.0 - seconds as f64 * 1e9) as u32;
-        Instant::new(seconds, nanos, era)
+        let secs_frac = (self.days - J1900_OFFSET) * SECONDS_PER_DAY * modifier;
+        let seconds = secs_frac.round();
+        let nanos = (secs_frac - seconds) * 1e9 / (SECONDS_PER_DAY * modifier);
+        Instant::new(seconds as u64, nanos.round() as u32, era)
     }
     //fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result;
 }
