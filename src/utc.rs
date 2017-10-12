@@ -1,6 +1,7 @@
 use super::utils::{Errors, Offset};
 use super::traits;
 use super::instant::{Era, Instant};
+use super::julian::{DAYS_PER_YEAR, SECONDS_PER_DAY};
 use std::time::Duration;
 use std::marker::Sized;
 
@@ -42,6 +43,10 @@ const JULY_YEARS: [i32; 11] = [
 ];
 
 const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+fn is_leap_year(year: i32) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
+}
 
 /// Utc is the interface between a time system and a time zone. All time zones are defined with
 /// respect to UTC. Moreover, Utc inherently supports the past leap seconds, as reported by the
@@ -97,7 +102,7 @@ where
             return Err(Errors::Carry);
         }
         if day > USUAL_DAYS_PER_MONTH[month as usize - 1] {
-            if month != 2 || !((year % 4 == 0 && year % 100 != 0) || year % 400 == 0) {
+            if month != 2 || !is_leap_year(year) {
                 // Not in February or not a leap year
                 return Err(Errors::Carry);
             }
@@ -115,7 +120,7 @@ where
     //fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result;
 }
 // TODO: Convert an instant to a UTC
-/*
+
 impl traits::TimeSystem for Utc {
     /// `from_instant` converts an Instant to a ModifiedJulian as detailed
     /// in https://www.ietf.org/timezones/data/leap-seconds.list , specifically the following
@@ -135,33 +140,39 @@ impl traits::TimeSystem for Utc {
     /// rounding or truncation, depending on the method used in the
     /// computation.
     fn from_instant(instant: Instant) -> Utc {
-        let modifier: f64;
-        if instant.era() == Era::Present {
-            modifier = 1.0;
-        } else {
-            modifier = -1.0;
-        }
-        ModifiedJulian {
-            days: J1900_OFFSET + modifier * (instant.secs() as f64) / SECONDS_PER_DAY +
-                instant.nanos() as f64 * 1e-9,
-        }
+        panic!("not implemented");
     }
 
-    /// `as_instant` returns an Instant from the ModifiedJulian.
-    fn as_instant(self) -> Utc {
+    /// `as_instant` returns an Instant from the Utc.
+    fn as_instant(self) -> Instant {
         let era: Era;
-        let modifier: f64;
-        if self.days >= J1900_OFFSET {
+        let direction: f64;
+        if self.year >= 1900 {
             era = Era::Present;
-            modifier = 1.0;
+            direction = 1.0;
         } else {
             era = Era::Past;
-            modifier = -1.0;
+            direction = -1.0;
         }
-        let secs_frac = (self.days - J1900_OFFSET) * SECONDS_PER_DAY * modifier;
-        let seconds = secs_frac.round();
-        let nanos = (secs_frac - seconds) * 1e9 / (SECONDS_PER_DAY * modifier);
-        Instant::new(seconds as u64, nanos.round() as u32, era)
+        // For now only support AFTER 1900
+        let mut seconds_wrt_1900: f64 = ((self.year - 1900) as f64) * SECONDS_PER_DAY *
+            DAYS_PER_YEAR;
+        // Now add the seconds for all the years prior to the current year
+        for year in 1900..self.year {
+            if JANUARY_YEARS.contains(&year) || JULY_YEARS.contains(&year) {
+                seconds_wrt_1900 += SECONDS_PER_DAY;
+            }
+        }
+        // Add the seconds for the months prior to the current month
+        for month in 0..self.month {
+            seconds_wrt_1900 += SECONDS_PER_DAY * USUAL_DAYS_PER_MONTH[month as usize] as f64;
+        }
+        if is_leap_year(self.year) && ((self.month == 2 && self.day == 29) || self.month > 2) {
+            seconds_wrt_1900 += SECONDS_PER_DAY;
+        }
+        seconds_wrt_1900 += self.hour as f64 * 3600.0 + self.minute as f64 * 60.0 +
+            self.second as f64;
+
+        Instant::new(seconds_wrt_1900 as u64, self.nanos as u32, era)
     }
 }
-*/

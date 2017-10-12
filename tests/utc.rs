@@ -3,11 +3,29 @@ extern crate hifitime;
 #[test]
 fn utc_valid_dates() {
     use hifitime::utc::Utc;
-    use hifitime::traits::TimeZone;
+    use hifitime::instant::{Era, Instant};
+    use hifitime::traits::{TimeSystem, TimeZone};
+
+    let epoch = Utc::new(1900, 01, 01, 0, 0, 0, 0).expect("epoch failed");
+    assert_eq!(
+        epoch.as_instant(),
+        Instant::new(0, 0, Era::Present),
+        "Incorrect Epoch computed"
+    );
 
     Utc::new(2018, 10, 08, 22, 08, 47, 0).expect("standard date failed");
-    Utc::new(2016, 12, 31, 23, 59, 60, 0).expect("January leap second failed");
-    Utc::new(2015, 06, 30, 23, 59, 60, 0).expect("July leap second failed");
+    let jan_leap_sec = Utc::new(2016, 12, 31, 23, 59, 60, 0).expect("January leap second failed");
+    assert_eq!(
+        jan_leap_sec.as_instant(),
+        Instant::new(3692217600, 0, Era::Present),
+        "Incorrect January leap second number computed"
+    );
+    let jul_leap_sec = Utc::new(2015, 06, 30, 23, 59, 60, 0).expect("July leap second failed");
+    assert_eq!(
+        jul_leap_sec.as_instant(),
+        Instant::new(3644697600, 0, Era::Present),
+        "Incorrect July leap second number computed"
+    );
 
     // List of leap years from https://kalender-365.de/leap-years.php .
     let leap_years: [i32; 146] = [
