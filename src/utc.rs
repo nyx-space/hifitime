@@ -161,8 +161,13 @@ impl traits::TimeSystem for Utc {
         println!("1: {}", seconds_wrt_1900);
         // Now add the seconds for all the years prior to the current year
         for year in 1900..self.year {
-            if JANUARY_YEARS.contains(&year) || JULY_YEARS.contains(&year) {
+            if is_leap_year(year) {
                 seconds_wrt_1900 += SECONDS_PER_DAY;
+                println!("1': added leap for {}", year);
+            }
+            if JANUARY_YEARS.contains(&year) || JULY_YEARS.contains(&year) {
+                println!("1'': added leap second for {}", year);
+                seconds_wrt_1900 += 1.0;
             }
         }
         println!(
@@ -177,6 +182,7 @@ impl traits::TimeSystem for Utc {
         println!("3: {}", seconds_wrt_1900);
         if is_leap_year(self.year) && ((self.month == 2 && self.day == 29) || self.month > 2) {
             seconds_wrt_1900 += SECONDS_PER_DAY;
+            println!("3': added leap for {}", self.year);
         }
         seconds_wrt_1900 += (self.day - 1) as f64 * SECONDS_PER_DAY + self.hour as f64 * 3600.0 +
             self.minute as f64 * 60.0 +
