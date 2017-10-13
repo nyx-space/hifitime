@@ -3,6 +3,7 @@ extern crate hifitime;
 #[test]
 fn utc_valid_dates() {
     use hifitime::utc::Utc;
+    use hifitime::julian::SECONDS_PER_DAY;
     use hifitime::instant::{Era, Instant};
     use hifitime::traits::{TimeSystem, TimeZone};
 
@@ -13,8 +14,54 @@ fn utc_valid_dates() {
         "Incorrect Epoch computed"
     );
 
+    for extra_year in 0..4 {
+        for extra_day in 0..5 {
+            assert_eq!(
+                Utc::new(
+                    1900 + extra_year as i32,
+                    01,
+                    01 + extra_day as u8,
+                    0,
+                    0,
+                    0,
+                    1590,
+                ).expect("epoch plus a day failed")
+                    .as_instant(),
+                Instant::new(
+                    3600 * 24 * extra_day + (SECONDS_PER_DAY as u64) * 365 * extra_year,
+                    1590,
+                    Era::Present,
+                ),
+                "Incorrect Epoch+{} year + {} day + some computed",
+                extra_year,
+                extra_day
+            );
+        }
+    }
+
+    assert_eq!(
+        Utc::new(1905, 01, 01, 0, 0, 0, 1590).expect("epoch 1905 failed").as_instant(),
+        Instant::new(3600 * 24 + (SECONDS_PER_DAY as u64) * 365 * 5, 1590, Era::Present),
+        "Incorrect Epoch 1905 + some computed",
+    );
+
     Utc::new(2018, 10, 08, 22, 08, 47, 0).expect("standard date failed");
-    let jan_leap_sec = Utc::new(2016, 12, 31, 23, 59, 60, 0).expect("January leap second failed");
+    let first_jan_leap_sec =
+        Utc::new(1971, 12, 31, 23, 59, 60, 0).expect("January 1972 leap second failed");
+    assert_eq!(
+        first_jan_leap_sec.as_instant(),
+        Instant::new(2272060800, 0, Era::Present),
+        "Incorrect January 1972 leap second number computed"
+    );
+    let first_jul_leap_sec =
+        Utc::new(1972, 06, 30, 23, 59, 60, 0).expect("July leap second failed");
+    assert_eq!(
+        first_jul_leap_sec.as_instant(),
+        Instant::new(2287785600, 0, Era::Present),
+        "Incorrect July 1972 leap second number computed"
+    );
+    let jan_leap_sec =
+        Utc::new(2016, 12, 31, 23, 59, 60, 0).expect("January 2017 leap second failed");
     assert_eq!(
         jan_leap_sec.as_instant(),
         Instant::new(3692217600, 0, Era::Present),

@@ -1,7 +1,7 @@
 use super::utils::{Errors, Offset};
 use super::traits;
 use super::instant::{Era, Instant};
-use super::julian::{DAYS_PER_YEAR, SECONDS_PER_DAY};
+use super::julian::SECONDS_PER_DAY;
 use std::time::Duration;
 use std::marker::Sized;
 
@@ -43,6 +43,7 @@ const JULY_YEARS: [i32; 11] = [
 ];
 
 const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+pub const USUAL_DAYS_PER_YEAR: f64 = 365.0;
 
 fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
@@ -156,7 +157,7 @@ impl traits::TimeSystem for Utc {
         }
         // For now only support AFTER 1900
         let mut seconds_wrt_1900: f64 = ((self.year - 1900) as f64) * SECONDS_PER_DAY *
-            DAYS_PER_YEAR;
+            USUAL_DAYS_PER_YEAR;
         println!("1: {}", seconds_wrt_1900);
         // Now add the seconds for all the years prior to the current year
         for year in 1900..self.year {
@@ -164,19 +165,30 @@ impl traits::TimeSystem for Utc {
                 seconds_wrt_1900 += SECONDS_PER_DAY;
             }
         }
-        println!("2: {}", seconds_wrt_1900);
+        println!(
+            "2: {}\twill now add {} months",
+            seconds_wrt_1900,
+            self.month - 1
+        );
         // Add the seconds for the months prior to the current month
-        for month in 1..self.month {
-            seconds_wrt_1900 += SECONDS_PER_DAY * USUAL_DAYS_PER_MONTH[(month - 1) as usize] as f64;
+        for month in 0..self.month - 1 {
+            seconds_wrt_1900 += SECONDS_PER_DAY * USUAL_DAYS_PER_MONTH[(month) as usize] as f64;
         }
         println!("3: {}", seconds_wrt_1900);
         if is_leap_year(self.year) && ((self.month == 2 && self.day == 29) || self.month > 2) {
             seconds_wrt_1900 += SECONDS_PER_DAY;
         }
-        println!("4: {}", seconds_wrt_1900);
-        seconds_wrt_1900 += self.hour as f64 * 3600.0 + self.minute as f64 * 60.0 +
+        seconds_wrt_1900 += (self.day - 1) as f64 * SECONDS_PER_DAY + self.hour as f64 * 3600.0 +
+            self.minute as f64 * 60.0 +
             self.second as f64;
-
+        println!(
+            "4: {}\tadded {} days\t{} hours\t{} minutes\t{} seconds",
+            seconds_wrt_1900,
+            self.day - 1,
+            self.hour,
+            self.minute,
+            self.second
+        );
         Instant::new(seconds_wrt_1900 as u64, self.nanos as u32, era)
     }
 }

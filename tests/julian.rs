@@ -35,4 +35,8 @@ fn epochs() {
 
     // TODO: Add epoch tests from Vallado, p. 183, after UTC is implemented
     // NOTE: The J1900.0 offset in Vallado is different from the one given by NIST.
+    // NOTE: From Nerem's slides:
+    // 1980 Jan 6.0 2444244.5 GPS Standard Epoch
+    // 2000 Jan 1.5 2451545.0 J2000 Epoch
+    // The Julian Day Number for 7 February 2002 is 2452313
 }
