@@ -147,16 +147,13 @@ impl traits::TimeSystem for Utc {
     /// `as_instant` returns an Instant from the Utc.
     fn as_instant(self) -> Instant {
         let era: Era;
-        let direction: f64;
         if self.year >= 1900 {
             era = Era::Present;
-            direction = 1.0;
         } else {
             era = Era::Past;
-            direction = -1.0;
         }
-        // For now only support AFTER 1900
-        let mut seconds_wrt_1900: f64 = ((self.year - 1900) as f64) * SECONDS_PER_DAY *
+
+        let mut seconds_wrt_1900: f64 = ((self.year - 1900).abs() as f64) * SECONDS_PER_DAY *
             USUAL_DAYS_PER_YEAR;
         // Now add the seconds for all the years prior to the current year
         for year in 1900..self.year {

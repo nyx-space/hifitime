@@ -14,27 +14,26 @@ fn utc_valid_dates() {
         "Incorrect Epoch computed"
     );
 
-    for extra_year in 0..4 {
-        for extra_day in 0..5 {
+    for dyear in -4..4 {
+        let era: Era;
+        if dyear >= 0 {
+            era = Era::Present;
+        } else {
+            era = Era::Past;
+        }
+        for dday in 0..5 {
             assert_eq!(
-                Utc::new(
-                    1900 + extra_year as i32,
-                    01,
-                    01 + extra_day as u8,
-                    0,
-                    0,
-                    0,
-                    1590,
-                ).expect("epoch plus a day failed")
+                Utc::new(1900 + dyear, 01, 01 + dday as u8, 0, 0, 0, 1590)
+                    .expect("epoch plus a day failed")
                     .as_instant(),
                 Instant::new(
-                    3600 * 24 * extra_day + (SECONDS_PER_DAY as u64) * 365 * extra_year,
+                    3600 * 24 * dday + (SECONDS_PER_DAY as u64) * 365 * (dyear.abs() as u64),
                     1590,
-                    Era::Present,
+                    era,
                 ),
                 "Incorrect Epoch+{} year + {} day + some computed",
-                extra_year,
-                extra_day
+                dyear,
+                dday
             );
         }
     }
