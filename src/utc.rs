@@ -158,43 +158,27 @@ impl traits::TimeSystem for Utc {
         // For now only support AFTER 1900
         let mut seconds_wrt_1900: f64 = ((self.year - 1900) as f64) * SECONDS_PER_DAY *
             USUAL_DAYS_PER_YEAR;
-        println!("1: {}", seconds_wrt_1900);
         // Now add the seconds for all the years prior to the current year
         for year in 1900..self.year {
             if is_leap_year(year) {
                 seconds_wrt_1900 += SECONDS_PER_DAY;
-                println!("1': added leap for {}", year);
-            }
-            if JANUARY_YEARS.contains(&year) || JULY_YEARS.contains(&year) {
-                println!("1'': added leap second for {}", year);
-                seconds_wrt_1900 += 1.0;
             }
         }
-        println!(
-            "2: {}\twill now add {} months",
-            seconds_wrt_1900,
-            self.month - 1
-        );
         // Add the seconds for the months prior to the current month
         for month in 0..self.month - 1 {
             seconds_wrt_1900 += SECONDS_PER_DAY * USUAL_DAYS_PER_MONTH[(month) as usize] as f64;
         }
-        println!("3: {}", seconds_wrt_1900);
         if is_leap_year(self.year) && ((self.month == 2 && self.day == 29) || self.month > 2) {
             seconds_wrt_1900 += SECONDS_PER_DAY;
-            println!("3': added leap for {}", self.year);
         }
         seconds_wrt_1900 += (self.day - 1) as f64 * SECONDS_PER_DAY + self.hour as f64 * 3600.0 +
             self.minute as f64 * 60.0 +
             self.second as f64;
-        println!(
-            "4: {}\tadded {} days\t{} hours\t{} minutes\t{} seconds",
-            seconds_wrt_1900,
-            self.day - 1,
-            self.hour,
-            self.minute,
-            self.second
-        );
+        if self.second == 60 {
+            // Hrein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
+            // same number of second after J1900.0.
+            seconds_wrt_1900 -= 1.0;
+        }
         Instant::new(seconds_wrt_1900 as u64, self.nanos as u32, era)
     }
 }

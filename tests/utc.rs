@@ -46,32 +46,156 @@ fn utc_valid_dates() {
     );
 
     Utc::new(2018, 10, 08, 22, 08, 47, 0).expect("standard date failed");
-    let first_jan_leap_sec =
-        Utc::new(1971, 12, 31, 23, 59, 60, 0).expect("January 1972 leap second failed");
+
     assert_eq!(
-        first_jan_leap_sec.as_instant(),
-        Instant::new(2272060800, 0, Era::Present),
+        Utc::new(1971, 12, 31, 23, 59, 59, 0)
+            .expect("January 1972 leap second failed")
+            .as_instant(),
+        Instant::new(2272060799, 0, Era::Present),
+        "Incorrect January 1972 pre-leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(1971, 12, 31, 23, 59, 59, 0)
+            .expect("January 1972 1 second before leap second failed")
+            .as_instant(),
+        Utc::new(1971, 12, 31, 23, 59, 60, 0)
+            .expect("January 1972 1 second before leap second failed")
+            .as_instant(),
         "Incorrect January 1972 leap second number computed"
     );
-    let first_jul_leap_sec =
-        Utc::new(1972, 06, 30, 23, 59, 60, 0).expect("July leap second failed");
     assert_eq!(
-        first_jul_leap_sec.as_instant(),
-        Instant::new(2287785600, 0, Era::Present),
+        Utc::new(1972, 01, 01, 00, 00, 00, 0)
+            .expect("January 1972 leap second failed")
+            .as_instant(),
+        Instant::new(2272060800, 0, Era::Present),
+        "Incorrect January 1972 post-leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(1972, 01, 01, 00, 00, 01, 0)
+            .expect("January 1972 leap second failed")
+            .as_instant(),
+        Instant::new(2272060801, 0, Era::Present),
+        "Incorrect January 1972 post-post-leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(1972, 06, 30, 23, 59, 59, 0)
+            .expect("July leap second failed")
+            .as_instant(),
+        Instant::new(2287785599, 0, Era::Present),
+        "Incorrect July 1972 pre-leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(1972, 06, 30, 23, 59, 59, 0)
+            .expect("July leap second failed")
+            .as_instant(),
+        Utc::new(1972, 06, 30, 23, 59, 60, 0)
+            .expect("July leap second failed")
+            .as_instant(),
         "Incorrect July 1972 leap second number computed"
     );
-    let jan_leap_sec =
-        Utc::new(2016, 12, 31, 23, 59, 60, 0).expect("January 2017 leap second failed");
     assert_eq!(
-        jan_leap_sec.as_instant(),
-        Instant::new(3692217600, 0, Era::Present),
-        "Incorrect January leap second number computed"
+        Utc::new(1972, 07, 01, 00, 00, 00, 0)
+            .expect("July leap second failed")
+            .as_instant(),
+        Instant::new(2287785600, 0, Era::Present),
+        "Incorrect July 1972 post-leap second number computed"
     );
-    let jul_leap_sec = Utc::new(2015, 06, 30, 23, 59, 60, 0).expect("July leap second failed");
     assert_eq!(
-        jul_leap_sec.as_instant(),
+        Utc::new(1972, 07, 01, 00, 00, 01, 0)
+            .expect("July leap second failed")
+            .as_instant(),
+        Instant::new(2287785601, 0, Era::Present),
+        "Incorrect July 1972 post-post-leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(1993, 06, 30, 23, 59, 59, 0)
+            .expect("July leap pre-second failed")
+            .as_instant(),
+        Instant::new(2950473599, 0, Era::Present),
+        "Incorrect July 1993 pre-leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(1993, 06, 30, 23, 59, 59, 0)
+            .expect("July leap second failed")
+            .as_instant(),
+        Utc::new(1993, 06, 30, 23, 59, 60, 0)
+            .expect("July leap second failed")
+            .as_instant(),
+        "Incorrect July 1993 leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(1993, 07, 01, 00, 00, 00, 0)
+            .expect("July leap second failed")
+            .as_instant(),
+        Instant::new(2950473600, 0, Era::Present),
+        "Incorrect July 1993 post-leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(1993, 07, 01, 00, 00, 01, 0)
+            .expect("July leap second failed")
+            .as_instant(),
+        Instant::new(2950473601, 0, Era::Present),
+        "Incorrect July 1993 post-post-leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(2016, 12, 31, 23, 59, 60, 0)
+            .expect("January 2017 leap second failed")
+            .as_instant(),
+        Instant::new(3692217599, 0, Era::Present),
+        "Incorrect January 2017 pre-leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(2016, 12, 31, 23, 59, 59, 0)
+            .expect("January 2017 leap second failed")
+            .as_instant(),
+        Utc::new(2016, 12, 31, 23, 59, 60, 0)
+            .expect("January 2017 leap second failed")
+            .as_instant(),
+        "Incorrect January 2017 leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(2017, 1, 1, 00, 00, 00, 0)
+            .expect("January 2017 leap second plus one failed")
+            .as_instant(),
+        Instant::new(3692217600, 0, Era::Present),
+        "Incorrect January 2017 post-leap second plus one number computed"
+    );
+    assert_eq!(
+        Utc::new(2017, 1, 1, 00, 00, 01, 0)
+            .expect("January 2017 post-leap second plus one failed")
+            .as_instant(),
+        Instant::new(3692217601, 0, Era::Present),
+        "Incorrect January 2017 post-post-leap second plus one number computed"
+    );
+    assert_eq!(
+        Utc::new(2015, 06, 30, 23, 59, 59, 0)
+            .expect("July leap pre-second failed")
+            .as_instant(),
+        Instant::new(3644697599, 0, Era::Present),
+        "Incorrect July 2015 pre-leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(2015, 06, 30, 23, 59, 59, 0)
+            .expect("July leap second failed")
+            .as_instant(),
+        Utc::new(2015, 06, 30, 23, 59, 60, 0)
+            .expect("July leap second failed")
+            .as_instant(),
+        "Incorrect July 2015 leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(2015, 07, 01, 00, 00, 00, 0)
+            .expect("July leap second failed")
+            .as_instant(),
         Instant::new(3644697600, 0, Era::Present),
-        "Incorrect July leap second number computed"
+        "Incorrect July 2015 post-leap second number computed"
+    );
+    assert_eq!(
+        Utc::new(2015, 07, 01, 00, 00, 01, 0)
+            .expect("July leap second failed")
+            .as_instant(),
+        Instant::new(3644697601, 0, Era::Present),
+        "Incorrect July 2015 post-post-leap second number computed"
     );
 
     // List of leap years from https://kalender-365.de/leap-years.php .
