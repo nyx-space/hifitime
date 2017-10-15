@@ -3,6 +3,7 @@ use std::time::Duration;
 use super::instant::Instant;
 use super::utils::{Errors, Offset};
 use std::marker::Sized;
+use std::cmp::PartialEq;
 
 pub trait TimeSystem {
     fn from_instant(Instant) -> Self;

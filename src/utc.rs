@@ -1,7 +1,7 @@
-use super::utils::{Errors, Offset};
-use super::traits;
+use super::utils::{Errors, Offset, quorem};
+use super::traits::{TimeZone, TimeSystem};
 use super::instant::{Era, Instant};
-use super::julian::SECONDS_PER_DAY;
+use super::julian::{DAYS_PER_YEAR, SECONDS_PER_DAY};
 use std::time::Duration;
 use std::marker::Sized;
 
@@ -67,7 +67,7 @@ pub struct Utc {
     pub nanos: u32,
 }
 
-impl traits::TimeZone for Utc
+impl TimeZone for Utc
 where
     Self: Sized,
 {
@@ -120,9 +120,8 @@ where
     }
     //fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result;
 }
-// TODO: Convert an instant to a UTC
 
-impl traits::TimeSystem for Utc {
+impl TimeSystem for Utc {
     /// `from_instant` converts an Instant to a ModifiedJulian as detailed
     /// in https://www.ietf.org/timezones/data/leap-seconds.list , specifically the following
     /// quote:
@@ -141,7 +140,48 @@ impl traits::TimeSystem for Utc {
     /// rounding or truncation, depending on the method used in the
     /// computation.
     fn from_instant(instant: Instant) -> Utc {
-        panic!("not implemented");
+        let (year, year_fraction) = quorem(instant.secs() as f64, DAYS_PER_YEAR * SECONDS_PER_DAY);
+        let (mut month, month_faction) =
+            quorem(year_fraction, DAYS_PER_YEAR * SECONDS_PER_DAY / 12.0);
+        month += 1; // Otherwise the month count starts at 0
+        let mut days_this_month = USUAL_DAYS_PER_MONTH[(month - 1) as usize];
+        if month == 2 && is_leap_year(year) {
+            days_this_month += 1;
+        }
+        println!("{:?}", month_faction);
+        let (mut day, day_faction) =
+            quorem(month_faction, days_this_month as f64 * SECONDS_PER_DAY);
+        day += 1; // Otherwise the day count starts at 0
+        let (hours, hours_faction) = quorem(day_faction, 24.0 * 3600.0);
+        let (mins, mins_faction) = quorem(hours_faction, 60.0 * 60.0);
+        let (secs, secs_faction) = quorem(mins_faction, 60.0);
+        println!("secs fraction = {} (should be zero)", secs_faction);
+        // XXX: How to support leap seconds?
+        println!("{} {} {}\t{} {} {}", year, month, day, hours, mins, secs);
+        match instant.era() {
+            Era::Past => {
+                Utc::new(
+                    1900 - year,
+                    month as u8,
+                    day as u8,
+                    hours as u8,
+                    mins as u8,
+                    secs as u8,
+                    instant.nanos(),
+                ).expect("date computed from instant is invalid (past)")
+            }
+            Era::Present => {
+                Utc::new(
+                    1900 + year,
+                    month as u8,
+                    day as u8,
+                    hours as u8,
+                    mins as u8,
+                    secs as u8,
+                    instant.nanos(),
+                ).expect("date computed from instant is invalid")
+            }
+        }
     }
 
     /// `as_instant` returns an Instant from the Utc.

@@ -22,3 +22,42 @@ impl fmt::Display for Errors {
         }
     }
 }
+
+pub fn quorem(numerator: f64, denominator: f64) -> (i32, f64) {
+    if numerator < 0.0 || denominator < 0.0 {
+        panic!("quorem only supports positive numbers");
+    }
+    if denominator == 0.0 {
+        panic!("cannot divide by zero");
+    }
+    (
+        (numerator / denominator).floor() as i32,
+        ((numerator % denominator) / denominator),
+    )
+}
+
+#[test]
+fn quorem_nominal_test() {
+    assert_eq!(::utils::quorem(24.0, 6.0), (4, 0.0));
+    assert_eq!(::utils::quorem(25.0, 6.0), (4, 1.0 / 6.0));
+}
+
+#[test]
+#[should_panic]
+fn quorem_negative_num_test() {
+    assert_eq!(::utils::quorem(-24.0, 6.0), (4, 0.0));
+}
+
+#[test]
+#[should_panic]
+fn quorem_negative_den_test() {
+    assert_eq!(::utils::quorem(24.0, -6.0), (4, 0.0));
+}
+
+#[test]
+#[should_panic]
+fn quorem_negative_numden_test() {
+    // A valid argument could be made that this test should work, but there is no situation in
+    // this library where two negative numbers should be considered a valid input.
+    assert_eq!(::utils::quorem(-24.0, -6.0), (4, 0.0));
+}
