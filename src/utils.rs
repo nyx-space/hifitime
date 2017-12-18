@@ -23,6 +23,7 @@ impl fmt::Display for Errors {
     }
 }
 
+/// quorem returns a tuple of the quotient and the remainder a numerator and a denominator.
 pub fn quorem(numerator: f64, denominator: f64) -> (i32, f64) {
     if numerator < 0.0 || denominator < 0.0 {
         panic!("quorem only supports positive numbers");
@@ -32,14 +33,18 @@ pub fn quorem(numerator: f64, denominator: f64) -> (i32, f64) {
     }
     (
         (numerator / denominator).floor() as i32,
-        ((numerator % denominator) / denominator),
+        (numerator % denominator),
     )
 }
 
 #[test]
 fn quorem_nominal_test() {
     assert_eq!(::utils::quorem(24.0, 6.0), (4, 0.0));
-    assert_eq!(::utils::quorem(25.0, 6.0), (4, 1.0 / 6.0));
+    assert_eq!(::utils::quorem(25.0, 6.0), (4, 1.0));
+    assert_eq!(::utils::quorem(6.0, 6.0), (1, 0.0));
+    assert_eq!(::utils::quorem(5.0, 6.0), (0, 5.0));
+    assert_eq!(::utils::quorem(3540.0, 3600.0), (0, 3540.0));
+    assert_eq!(::utils::quorem(3540.0, 60.0), (59, 0.0));
 }
 
 #[test]

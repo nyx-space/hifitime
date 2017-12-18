@@ -42,7 +42,7 @@ const JULY_YEARS: [i32; 11] = [
     2015,
 ];
 
-const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+pub const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 pub const USUAL_DAYS_PER_YEAR: f64 = 365.0;
 
 fn is_leap_year(year: i32) -> bool {
@@ -97,8 +97,7 @@ where
         }
         // General incorrect date times
         if month == 0 || month > 12 || day == 0 || day > 31 || hour > 24 || minute > 59 ||
-            second > max_seconds || nanos as f64 > 1e9 ||
-            (nanos > 0 && second == max_seconds)
+            second > max_seconds || nanos as f64 > 1e9
         {
             return Err(Errors::Carry);
         }
@@ -140,22 +139,40 @@ impl TimeSystem for Utc {
     /// rounding or truncation, depending on the method used in the
     /// computation.
     fn from_instant(instant: Instant) -> Utc {
+        // println!("init instant {:?}", instant.secs());
         let (year, year_fraction) = quorem(instant.secs() as f64, DAYS_PER_YEAR * SECONDS_PER_DAY);
-        let (mut month, month_faction) =
-            quorem(year_fraction, DAYS_PER_YEAR * SECONDS_PER_DAY / 12.0);
+        // println!("year = {:?} \t frac = {:?}", year, year_fraction);
+        let (mut month, month_fraction) = quorem(year_fraction, 30.4365 * SECONDS_PER_DAY);
         month += 1; // Otherwise the month count starts at 0
         let mut days_this_month = USUAL_DAYS_PER_MONTH[(month - 1) as usize];
         if month == 2 && is_leap_year(year) {
             days_this_month += 1;
         }
-        println!("{:?}", month_faction);
-        let (mut day, day_faction) =
-            quorem(month_faction, days_this_month as f64 * SECONDS_PER_DAY);
+        // println!("days_this_month = {:?}", days_this_month);
+        // println!(
+        //     "month = {:?} \t frac = {:?} \t next = {:?}",
+        //     month,
+        //     month_fraction,
+        //     SECONDS_PER_DAY * days_this_month as f64
+        // );
+        let (mut day, day_fraction) =
+            quorem(month_fraction, SECONDS_PER_DAY * days_this_month as f64);
         day += 1; // Otherwise the day count starts at 0
-        let (hours, hours_faction) = quorem(day_faction, 24.0 * 3600.0);
-        let (mins, mins_faction) = quorem(hours_faction, 60.0 * 60.0);
-        let (secs, secs_faction) = quorem(mins_faction, 60.0);
-        println!("secs fraction = {} (should be zero)", secs_faction);
+        // println!(
+        //     "day = {:?} \t frac = {:?} \t next = {:?}",
+        //     day,
+        //     day_fraction,
+        //     SECONDS_PER_DAY
+        // );
+        let (hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
+        // println!(
+        //     "hours = {:?} \t frac = {:?} \t next = {:?}",
+        //     hours,
+        //     hours_fraction,
+        //     60.0 * 60.0
+        // );
+        let (mins, secs) = quorem(hours_fraction, 60.0);
+        // println!("mins = {:?} \t frac = {:?}", mins, secs);
         // XXX: How to support leap seconds?
         println!("{} {} {}\t{} {} {}", year, month, day, hours, mins, secs);
         match instant.era() {

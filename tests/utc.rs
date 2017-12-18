@@ -2,8 +2,8 @@ extern crate hifitime;
 
 #[test]
 fn utc_valid_dates() {
-    use hifitime::utc::Utc;
-    use hifitime::julian::SECONDS_PER_DAY;
+    use hifitime::utc::{Utc, USUAL_DAYS_PER_MONTH};
+    use hifitime::julian::{SECONDS_PER_DAY, DAYS_PER_YEAR};
     use hifitime::instant::{Era, Instant};
     use hifitime::traits::{TimeSystem, TimeZone};
 
@@ -14,37 +14,51 @@ fn utc_valid_dates() {
         "Incorrect Epoch computed"
     );
 
-    for dyear in 0..4 {
-        // TODO: Reset this to -4..4.
+    for dyear in 0..1 {
+        // TODO: Reset this to -1..1.
         let era: Era;
         if dyear >= 0 {
             era = Era::Present;
         } else {
             era = Era::Past;
         }
-        for dday in 0..5 {
-            let utc = Utc::new(1900 + dyear, 01, 01 + dday as u8, 0, 0, 0, 1590)
-                .expect("epoch plus a day failed");
-            let inst = Instant::new(
-                3600 * 24 * dday + (SECONDS_PER_DAY as u64) * 365 * (dyear.abs() as u64),
-                1590,
-                era,
-            );
-            assert_eq!(
-                utc.as_instant(),
-                inst,
-                "Incorrect Epoch+{} year + {} day + some computed (utc.as_instant)",
-                dyear,
-                dday
-            );
-            println!("from inst: {:?}", Utc::from_instant(inst));
-            assert_eq!(
-                Utc::from_instant(inst).as_instant(),
-                inst,
-                "Incorrect Epoch+{} year + {} day + some computed (utc.from_instant)",
-                dyear,
-                dday
-            );
+        for dhour in 0..7 {
+            for dminute in (0..60).rev() {
+                for dsecond in 0..60 {
+                    let utc = Utc::new(
+                        1900 + dyear,
+                        1,
+                        1,
+                        dhour as u8,
+                        dminute as u8,
+                        dsecond,
+                        1590,
+                    ).expect("epoch plus a day failed");
+                    let inst =
+                        Instant::new(3600 * dhour + 60 * dminute + dsecond as u64, 1590, era);
+                    // println!("{} {} {}\t{} {} {}", dyear, 1, 1, dhour, dminute, dsecond);
+                    assert_eq!(
+                        utc.as_instant(),
+                        inst,
+                        "Incorrect Epoch+{} year(s) + {} hour(s) + {} minute(s) + {} second(s)
+                     + some computed (utc.as_instant)",
+                        dyear,
+                        dhour,
+                        dminute,
+                        dsecond
+                    );
+                    assert_eq!(
+                        Utc::from_instant(inst).as_instant(),
+                        inst,
+                        "Incorrect Epoch+{} year(s) + {} hour(s) + {} minute(s) + {} second(s)
+                     + some computed (utc.from_instant)",
+                        dyear,
+                        dhour,
+                        dminute,
+                        dsecond
+                    );
+                }
+            }
         }
     }
 
@@ -372,6 +386,6 @@ fn utc_invalid_dates() {
     use hifitime::traits::TimeZone;
 
     Utc::new(2001, 02, 29, 22, 08, 47, 0).expect_err("29 Feb 2001 did not fail");
-    Utc::new(2016, 12, 31, 23, 59, 60, 1).expect_err("January leap second did not fail");
-    Utc::new(2015, 06, 30, 23, 59, 60, 1).expect_err("July leap second did not fail");
+    Utc::new(2016, 12, 31, 23, 59, 61, 0).expect_err("January leap second did not fail");
+    Utc::new(2015, 06, 30, 23, 59, 61, 0).expect_err("July leap second did not fail");
 }
