@@ -14,8 +14,7 @@ fn utc_valid_dates() {
         "Incorrect Epoch computed"
     );
 
-    for dyear in 0..1 {
-        // TODO: Reset this to -1..1.
+    for dyear in -2..2 {
         let era: Era;
         if dyear >= 0 {
             era = Era::Present;
@@ -34,9 +33,12 @@ fn utc_valid_dates() {
                         dsecond,
                         1590,
                     ).expect("epoch plus a day failed");
-                    let inst =
-                        Instant::new(3600 * dhour + 60 * dminute + dsecond as u64, 1590, era);
-                    // println!("{} {} {}\t{} {} {}", dyear, 1, 1, dhour, dminute, dsecond);
+                    let inst = Instant::new(
+                        3600 * dhour + 60 * dminute + dsecond as u64 +
+                            (SECONDS_PER_DAY as u64) * 365 * (dyear.abs() as u64),
+                        1590,
+                        era,
+                    );
                     assert_eq!(
                         utc.as_instant(),
                         inst,

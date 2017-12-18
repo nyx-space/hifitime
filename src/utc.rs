@@ -139,42 +139,18 @@ impl TimeSystem for Utc {
     /// rounding or truncation, depending on the method used in the
     /// computation.
     fn from_instant(instant: Instant) -> Utc {
-        // println!("init instant {:?}", instant.secs());
-        let (year, year_fraction) = quorem(instant.secs() as f64, DAYS_PER_YEAR * SECONDS_PER_DAY);
-        // println!("year = {:?} \t frac = {:?}", year, year_fraction);
+        let (year, year_fraction) = quorem(instant.secs() as f64, 365.0 * SECONDS_PER_DAY);
         let (mut month, month_fraction) = quorem(year_fraction, 30.4365 * SECONDS_PER_DAY);
         month += 1; // Otherwise the month count starts at 0
         let mut days_this_month = USUAL_DAYS_PER_MONTH[(month - 1) as usize];
         if month == 2 && is_leap_year(year) {
             days_this_month += 1;
         }
-        // println!("days_this_month = {:?}", days_this_month);
-        // println!(
-        //     "month = {:?} \t frac = {:?} \t next = {:?}",
-        //     month,
-        //     month_fraction,
-        //     SECONDS_PER_DAY * days_this_month as f64
-        // );
         let (mut day, day_fraction) =
             quorem(month_fraction, SECONDS_PER_DAY * days_this_month as f64);
         day += 1; // Otherwise the day count starts at 0
-        // println!(
-        //     "day = {:?} \t frac = {:?} \t next = {:?}",
-        //     day,
-        //     day_fraction,
-        //     SECONDS_PER_DAY
-        // );
         let (hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
-        // println!(
-        //     "hours = {:?} \t frac = {:?} \t next = {:?}",
-        //     hours,
-        //     hours_fraction,
-        //     60.0 * 60.0
-        // );
         let (mins, secs) = quorem(hours_fraction, 60.0);
-        // println!("mins = {:?} \t frac = {:?}", mins, secs);
-        // XXX: How to support leap seconds?
-        println!("{} {} {}\t{} {} {}", year, month, day, hours, mins, secs);
         match instant.era() {
             Era::Past => {
                 Utc::new(
@@ -212,6 +188,7 @@ impl TimeSystem for Utc {
 
         let mut seconds_wrt_1900: f64 = ((self.year - 1900).abs() as f64) * SECONDS_PER_DAY *
             USUAL_DAYS_PER_YEAR;
+
         // Now add the seconds for all the years prior to the current year
         for year in 1900..self.year {
             if is_leap_year(year) {
@@ -229,7 +206,7 @@ impl TimeSystem for Utc {
             self.minute as f64 * 60.0 +
             self.second as f64;
         if self.second == 60 {
-            // Hrein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
+            // Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
             // same number of second after J1900.0.
             seconds_wrt_1900 -= 1.0;
         }
