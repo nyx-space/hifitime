@@ -1,4 +1,4 @@
-use super::traits;
+use super::traits::TimeSystem;
 use super::instant::{Era, Instant};
 
 /// J1900_OFFSET determines the offset in julian days between 01 Jan 1900 at midnight and the
@@ -28,7 +28,7 @@ impl ModifiedJulian {
     }
 }
 
-impl traits::TimeSystem for ModifiedJulian {
+impl TimeSystem for ModifiedJulian {
     /// `from_instant` converts an Instant to a ModifiedJulian as detailed
     /// in https://www.ietf.org/timezones/data/leap-seconds.list , specifically the following
     /// quote:

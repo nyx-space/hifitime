@@ -35,11 +35,28 @@ pub struct Instant {
 }
 
 impl Instant {
-    /// Creates a new `Instant` with respect to TAI Epoch. All time systems are represented
-    /// with respect to this epoch.
+    /// Creates a new `Instant` with respect to TAI Epoch: 01 January 1900, 00:00:00.0.
+    /// All time systems are represented with respect to this epoch.
     /// Note: this constructor relies on the constructor for std::time::Duration; as such,
     /// refer to https://doc.rust-lang.org/std/time/struct.Duration.html#method.new for
     /// pertinent warnings and limitations.
+    ///
+    /// # Examples
+    /// ```
+    /// use hifitime::instant::{Era, Instant};
+    ///
+    /// let epoch = Instant::new(0, 0, Era::Present);
+    /// assert_eq!(epoch.secs(), 0);
+    /// assert_eq!(epoch.nanos(), 0);
+    ///
+    /// let one_second_before_1900 = Instant::new(1, 0, Era::Past);
+    /// assert_eq!(one_second_before_1900.secs(), 1);
+    /// assert_eq!(one_second_before_1900.era(), Era::Past);
+    ///
+    /// let one_second_after_1900 = Instant::new(1, 0, Era::Present);
+    /// assert_eq!(one_second_after_1900.secs(), 1);
+    /// assert_eq!(one_second_after_1900.era(), Era::Present);
+    /// ```
     pub fn new(seconds: u64, nanos: u32, era: Era) -> Instant {
         Instant {
             duration: Duration::new(seconds, nanos),
@@ -47,6 +64,8 @@ impl Instant {
         }
     }
 
+    /// Returns the number of seconds with respect to the epoch.
+    /// *NOTE:* Check the `era` if the date may be before 1900.
     pub fn secs(self) -> u64 {
         self.duration.as_secs()
     }

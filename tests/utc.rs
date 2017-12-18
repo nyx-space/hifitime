@@ -2,8 +2,8 @@ extern crate hifitime;
 
 #[test]
 fn utc_valid_dates() {
-    use hifitime::utc::{Utc, USUAL_DAYS_PER_MONTH};
-    use hifitime::julian::{SECONDS_PER_DAY, DAYS_PER_YEAR};
+    use hifitime::utc::Utc;
+    use hifitime::julian::SECONDS_PER_DAY;
     use hifitime::instant::{Era, Instant};
     use hifitime::traits::{TimeSystem, TimeZone};
 

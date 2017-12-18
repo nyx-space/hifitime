@@ -22,6 +22,8 @@ fn epochs() {
     use hifitime::instant;
     use hifitime::traits::TimeSystem;
     use hifitime::julian::{ModifiedJulian, J2000_OFFSET, SECONDS_PER_DAY, DAYS_PER_YEAR};
+    // use hifitime::utc::Utc;
+    // use hifitime::traits::TimeZone;
 
     // J2000 is defined at noon
     let j2000 = instant::Instant::new(

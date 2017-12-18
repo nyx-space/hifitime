@@ -1,8 +1,7 @@
 use super::utils::{Errors, Offset, quorem};
 use super::traits::{TimeZone, TimeSystem};
 use super::instant::{Era, Instant};
-use super::julian::{DAYS_PER_YEAR, SECONDS_PER_DAY};
-use std::time::Duration;
+use super::julian::SECONDS_PER_DAY;
 use std::marker::Sized;
 
 // There is no way to define a constant map in Rust (yet), so we're combining several structures
@@ -74,8 +73,41 @@ where
     fn utc_offset() -> Offset {
         Offset::new(0, 0, Era::Present)
     }
-    /// Creates a new Utc date. WARNING: Does not support automatic carry and will return an error
-    /// if so.
+    /// Creates a new UTC date, with support for all the leap seconds with respect to TAI.
+    /// *NOTE:* UTC leap seconds may be confusing because several dates have the **same** number
+    /// of seconds since TAI epoch.
+    /// *WARNING:* Does not support automatic carry and will return an error if so.
+    ///
+    /// # Examples
+    /// ```
+    /// use hifitime::utc::Utc;
+    /// use hifitime::instant::{Era, Instant};
+    /// use hifitime::traits::{TimeZone, TimeSystem};
+    ///
+    /// let epoch = Utc::new(1900, 01, 01, 0, 0, 0, 0).expect("epoch failed");
+    /// assert_eq!(
+    ///     epoch.as_instant(),
+    ///     Instant::new(0, 0, Era::Present),
+    ///     "Incorrect Epoch computed"
+    /// );
+    ///
+    /// assert_eq!(
+    ///     Utc::new(1971, 12, 31, 23, 59, 59, 0)
+    ///         .expect("January 1972 leap second failed")
+    ///         .as_instant(),
+    ///     Instant::new(2272060799, 0, Era::Present),
+    ///     "Incorrect January 1972 pre-leap second number computed"
+    /// );
+    /// assert_eq!(
+    ///     Utc::new(1971, 12, 31, 23, 59, 59, 0)
+    ///         .expect("January 1972 1 second before leap second failed")
+    ///         .as_instant(),
+    ///     Utc::new(1971, 12, 31, 23, 59, 60, 0)
+    ///         .expect("January 1972 1 second before leap second failed")
+    ///         .as_instant(),
+    ///     "Incorrect January 1972 leap second number computed"
+    /// );
+    /// ```
     fn new(
         year: i32,
         month: u8,
