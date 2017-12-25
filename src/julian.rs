@@ -5,7 +5,7 @@ use super::instant::{Era, Instant};
 /// Modified Julian Day at 17 November 1858. NOTE: Julian days, as defined for astronomy, start
 /// at noon instead of midnight. This explains the 0.5 difference used in the base computation
 /// of Julian days with respect to the NIST/NTP Instant epoch used in this library.
-const NIST_J1900_OFFSET: f64 = 15_020.5;
+const NIST_J1900_OFFSET: f64 = 15_020.0;
 /// DAYS_PER_YEAR corresponds to the number of days per year in the Julian calendar. This is fixed.
 pub const DAYS_PER_YEAR: f64 = 365.25;
 /// SECONDS_PER_DAY defines the number of seconds per day.

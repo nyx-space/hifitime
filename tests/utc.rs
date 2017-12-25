@@ -1,71 +1,6 @@
 extern crate hifitime;
 
 #[test]
-fn utc_julian_dates() {
-    use hifitime::utc::Utc;
-    use hifitime::julian::ModifiedJulian;
-    use hifitime::instant::{Era, Instant};
-    use hifitime::traits::{TimeSystem, TimeZone};
-
-    // Cross validation NASA HEASARC: https://goo.gl/6EW7J3
-    assert_eq!(
-        ModifiedJulian::from_instant(
-            Utc::new(1900, 01, 01, 0, 0, 0, 0)
-                .expect("01 January 1900 invalid?!")
-                .as_instant(),
-        ).days,
-        15_020.0
-    );
-
-    assert_eq!(
-        ModifiedJulian::from_instant(
-            Utc::new(1900, 01, 01, 0, 0, 0, 0)
-                .expect("01 January 1900 invalid?!")
-                .as_instant(),
-        ).julian_days(),
-        2415020.5
-    );
-
-    // Cross validation NASA HEASARC: https://goo.gl/Z77L3v
-    assert_eq!(
-        ModifiedJulian::from_instant(
-            Utc::new(1900, 01, 01, 12, 0, 0, 0)
-                .expect("01 January 1900 invalid?!")
-                .as_instant(),
-        ).days,
-        15_020.5
-    );
-
-    assert_eq!(
-        ModifiedJulian::from_instant(
-            Utc::new(1900, 01, 01, 12, 0, 0, 0)
-                .expect("01 January 1900 invalid?!")
-                .as_instant(),
-        ).julian_days(),
-        2415021.0
-    );
-
-    // Cross validation NASA HEASARC: https://goo.gl/tvqY23
-    assert_eq!(
-        ModifiedJulian::from_instant(
-            Utc::new(2000, 01, 01, 0, 0, 0, 0)
-                .expect("01 January 2000 invalid?!")
-                .as_instant(),
-        ).days,
-        51544.0
-    );
-
-    assert_eq!(
-        ModifiedJulian::from_instant(
-            Utc::new(2000, 01, 01, 0, 0, 0, 0)
-                .expect("01 January 1900 invalid?!")
-                .as_instant(),
-        ).julian_days(),
-        2451544.50000000
-    );
-}
-
-#[test]
 fn utc_valid_dates() {
     use hifitime::utc::Utc;
     use hifitime::julian::SECONDS_PER_DAY;
@@ -121,6 +56,22 @@ fn utc_valid_dates() {
             }
         }
     }
+
+    assert_eq!(
+        Utc::new(1900, 01, 01, 0, 0, 0, 0)
+            .expect("01 January 1900 invalid?!")
+            .as_instant(),
+        Instant::new(0, 0, Era::Present),
+        "1900 Epoch should be zero"
+    );
+
+    assert_eq!(
+        Utc::new(1900, 01, 01, 12, 0, 0, 0)
+            .expect("01 January 1900 invalid?!")
+            .as_instant(),
+        Instant::new(12 * 3600, 0, Era::Present),
+        "1900 Epoch should be zero"
+    );
 
     assert_eq!(
         Utc::new(1905, 01, 01, 0, 0, 0, 1590).expect("epoch 1905 failed").as_instant(),
