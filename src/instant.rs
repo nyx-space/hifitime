@@ -111,6 +111,11 @@ impl Add<Duration> for Instant {
     /// assert_eq!(tick.secs(), 1);
     /// assert_eq!(tick.nanos(), 0);
     /// assert_eq!(tick.era(), Era::Present);
+
+    /// let tick = Instant::new(0, 5, Era::Past) + Duration::new(0, 6);
+    /// assert_eq!(tick.secs(), 0);
+    /// assert_eq!(tick.nanos(), 1);
+    /// assert_eq!(tick.era(), Era::Present);
     /// ```
     fn add(self, delta: Duration) -> Instant {
         // Switch the era, an exact time of zero is in the Present era
@@ -136,6 +141,65 @@ impl Add<Duration> for Instant {
                 let mut cln = self.clone();
                 cln.duration += delta;
                 return cln;
+            }
+        }
+    }
+}
+
+impl Sub<Duration> for Instant {
+    type Output = Instant;
+
+    /// Subtracts a given std::time::Duration from an `Instant`.
+    /// # Examples
+    ///
+    /// use hifitime::instant::{Era, Instant, Duration};
+    /// // Sub in the Present era.
+    /// let tick = Instant::new(159, 10, Era::Present) - Duration::new(5, 2);
+    /// assert_eq!(tick.secs(), 154);
+    /// assert_eq!(tick.nanos(), 8);
+    /// assert_eq!(tick.era(), Era::Present);
+
+    /// // Sub in the Past era.
+    /// let tick = Instant::new(159, 10, Era::Past) - Duration::new(5, 2);
+    /// assert_eq!(tick.secs(), 159);
+    /// assert_eq!(tick.nanos(), 12);
+    /// assert_eq!(tick.era(), Era::Past);
+
+    /// // Sub from the Present to overflow into the Past
+    /// let tick = Instant::new(159, 0, Era::Present) - Duration::new(160, 0);
+    /// assert_eq!(tick.secs(), 1);
+    /// assert_eq!(tick.nanos(), 0);
+    /// assert_eq!(tick.era(), Era::Past);
+
+    /// let tick = Instant::new(0, 5, Era::Present) - Duration::new(0, 6);
+    /// assert_eq!(tick.secs(), 0);
+    /// assert_eq!(tick.nanos(), 1);
+    /// assert_eq!(tick.era(), Era::Past);
+    /// ```
+    fn sub(self, delta: Duration) -> Instant {
+        // Switch the era, an exact time of zero is in the Present era
+        match self.era {
+            Era::Past => {
+                // Subtracting a duration in the past is trivial
+                let mut cln = self.clone();
+                cln.duration += delta;
+                return cln;
+            }
+            Era::Present => {
+                if (delta.as_secs() >= self.duration.as_secs()) ||
+                    (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0 &&
+                         delta.subsec_nanos() >= self.duration.subsec_nanos())
+                {
+                    return Instant::new(
+                        delta.as_secs() - self.duration.as_secs(),
+                        delta.subsec_nanos() - self.duration.subsec_nanos(),
+                        Era::Past,
+                    );
+                } else {
+                    let mut cln = self.clone();
+                    cln.duration -= delta;
+                    return cln;
+                }
             }
         }
     }
