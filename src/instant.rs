@@ -4,7 +4,7 @@
 
 use std::cmp::PartialEq;
 use std::ops::{Add, Sub};
-use std::time::Duration;
+pub use std::time::Duration;
 use std::fmt;
 
 /// An `Era` represents whether the associated `Instant` is before the TAI Epoch

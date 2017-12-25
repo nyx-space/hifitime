@@ -57,29 +57,32 @@ fn utc_valid_dates() {
         }
     }
 
+    let dt = Utc::new(1900, 01, 01, 0, 0, 0, 0).expect("01 January 1900 invalid?!");
     assert_eq!(
-        Utc::new(1900, 01, 01, 0, 0, 0, 0)
-            .expect("01 January 1900 invalid?!")
-            .as_instant(),
+        dt.as_instant(),
         Instant::new(0, 0, Era::Present),
         "1900 Epoch should be zero"
     );
+    assert_eq!(format!("{}", dt), "1900-01-01T00:00:00+00:00");
 
+    let dt = Utc::new(1900, 01, 01, 12, 0, 0, 0).expect("01 January 1900 invalid?!");
     assert_eq!(
-        Utc::new(1900, 01, 01, 12, 0, 0, 0)
-            .expect("01 January 1900 invalid?!")
-            .as_instant(),
+        dt.as_instant(),
         Instant::new(12 * 3600, 0, Era::Present),
-        "1900 Epoch should be zero"
+        "1900 Epoch should be 12 hours"
     );
+    assert_eq!(format!("{}", dt), "1900-01-01T12:00:00+00:00");
 
+    let dt = Utc::new(1905, 01, 01, 0, 0, 0, 1590).expect("epoch 1905 failed");
     assert_eq!(
-        Utc::new(1905, 01, 01, 0, 0, 0, 1590).expect("epoch 1905 failed").as_instant(),
+        dt.as_instant(),
         Instant::new(3600 * 24 + (SECONDS_PER_DAY as u64) * 365 * 5, 1590, Era::Present),
         "Incorrect Epoch 1905 + some computed",
     );
+    assert_eq!(format!("{}", dt), "1905-01-01T00:00:00+00:00");
 
-    Utc::new(2018, 10, 08, 22, 08, 47, 0).expect("standard date failed");
+    let dt = Utc::new(2018, 10, 08, 22, 08, 47, 0).expect("standard date failed");
+    assert_eq!(format!("{}", dt), "2018-10-08T22:08:47+00:00");
 
     assert_eq!(
         Utc::new(1971, 12, 31, 23, 59, 59, 0)

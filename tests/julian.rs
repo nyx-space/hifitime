@@ -26,13 +26,8 @@ fn epochs() {
     use hifitime::traits::TimeZone;
 
     // Tests are chronological dates.
-
-    // NOTE: There's a half day offset between the epoch of NTP (and hence `Instant`) and J1900
-    // As explained in Vallado, this is because Julian days "start" at noon so that astronomical
-    // observations throughout the night happen at the same Julian day. Note however that the
-    // Modified Julian Date (MJD) starts at midnight, not noon, cf.
-    // http://tycho.usno.navy.mil/mjd.html . All of the following examples are validated against
-    // NASA HEASARC refered to as "X-Val" for "cross validation."
+    // All of the following examples are cross validated against NASA HEASARC,
+    // refered to as "X-Val" for "cross validation."
 
     // X-Val: https://goo.gl/6EW7J3
     let nist_j1900 = instant::Instant::new(0, 0, instant::Era::Present);

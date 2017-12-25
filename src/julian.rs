@@ -1,11 +1,12 @@
 use super::traits::TimeSystem;
 use super::instant::{Era, Instant};
 
-/// NIST_J1900_OFFSET determines the offset in julian days between 01 Jan 1900 at midnight and the
-/// Modified Julian Day at 17 November 1858. NOTE: Julian days, as defined for astronomy, start
-/// at noon instead of midnight. This explains the 0.5 difference used in the base computation
-/// of Julian days with respect to the NIST/NTP Instant epoch used in this library.
-const NIST_J1900_OFFSET: f64 = 15_020.0;
+/// J1900_OFFSET determines the offset in julian days between 01 Jan 1900 at midnight and the
+/// Modified Julian Day at 17 November 1858.
+/// NOTE: Julian days "start" at noon so that astronomical observations throughout the night
+/// happen at the same Julian day. Note however that the Modified Julian Date (MJD) starts at
+/// midnight, not noon, cf. http://tycho.usno.navy.mil/mjd.html .
+const J1900_OFFSET: f64 = 15_020.0;
 /// DAYS_PER_YEAR corresponds to the number of days per year in the Julian calendar. This is fixed.
 pub const DAYS_PER_YEAR: f64 = 365.25;
 /// SECONDS_PER_DAY defines the number of seconds per day.
@@ -54,7 +55,7 @@ impl TimeSystem for ModifiedJulian {
             modifier = -1.0;
         }
         ModifiedJulian {
-            days: NIST_J1900_OFFSET + modifier * (instant.secs() as f64) / SECONDS_PER_DAY +
+            days: J1900_OFFSET + modifier * (instant.secs() as f64) / SECONDS_PER_DAY +
                 instant.nanos() as f64 * 1e-9,
         }
     }
@@ -63,14 +64,14 @@ impl TimeSystem for ModifiedJulian {
     fn as_instant(self) -> Instant {
         let era: Era;
         let modifier: f64;
-        if self.days >= NIST_J1900_OFFSET {
+        if self.days >= J1900_OFFSET {
             era = Era::Present;
             modifier = 1.0;
         } else {
             era = Era::Past;
             modifier = -1.0;
         }
-        let secs_frac = (self.days - NIST_J1900_OFFSET) * SECONDS_PER_DAY * modifier;
+        let secs_frac = (self.days - J1900_OFFSET) * SECONDS_PER_DAY * modifier;
         let seconds = secs_frac.round();
         let nanos = (secs_frac - seconds) * 1e9 / (SECONDS_PER_DAY * modifier);
         Instant::new(seconds as u64, nanos.round() as u32, era)

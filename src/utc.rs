@@ -1,8 +1,10 @@
-use super::utils::{Errors, Offset, quorem};
-use super::traits::{TimeZone, TimeSystem};
+pub use super::utils::Offset;
+pub use super::traits::{TimeZone, TimeSystem};
+use super::utils::{Errors, quorem};
 use super::instant::{Era, Instant};
 use super::julian::SECONDS_PER_DAY;
 use std::marker::Sized;
+use std::fmt;
 
 // There is no way to define a constant map in Rust (yet), so we're combining several structures
 // to store when the leap seconds should be added. An updated list of leap seconds can be found
@@ -70,9 +72,11 @@ impl TimeZone for Utc
 where
     Self: Sized,
 {
+    /// Returns the offset between this TimeZone and UTC. In this case, the offset is strictly zero.
     fn utc_offset() -> Offset {
         Offset::new(0, 0, Era::Present)
     }
+
     /// Creates a new UTC date, with support for all the leap seconds with respect to TAI.
     /// *NOTE:* UTC leap seconds may be confusing because several dates have the **same** number
     /// of seconds since TAI epoch.
@@ -80,9 +84,8 @@ where
     ///
     /// # Examples
     /// ```
-    /// use hifitime::utc::Utc;
+    /// use hifitime::utc::{Utc, TimeZone, TimeSystem};
     /// use hifitime::instant::{Era, Instant};
-    /// use hifitime::traits::{TimeZone, TimeSystem};
     ///
     /// let epoch = Utc::new(1900, 01, 01, 0, 0, 0, 0).expect("epoch failed");
     /// assert_eq!(
@@ -243,5 +246,20 @@ impl TimeSystem for Utc {
             seconds_wrt_1900 -= 1.0;
         }
         Instant::new(seconds_wrt_1900 as u64, self.nanos as u32, era)
+    }
+}
+
+impl fmt::Display for Utc {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}+00:00",
+            self.year,
+            self.month,
+            self.day,
+            self.hour,
+            self.minute,
+            self.second
+        )
     }
 }

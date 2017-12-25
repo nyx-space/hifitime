@@ -1,15 +1,15 @@
-// use std::fmt;
+use std::fmt::Display;
 use super::instant::Instant;
 use super::utils::{Errors, Offset};
 
 pub trait TimeSystem {
     fn from_instant(Instant) -> Self;
     fn as_instant(self) -> Instant;
-    //fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result;
 }
 
-pub trait TimeZone {
-    fn utc_offset() -> Offset; // Returns the difference between a given TZ and UTC
+pub trait TimeZone: Display {
+    /// utc_offset returns the difference between a given TZ and UTC.
+    fn utc_offset() -> Offset;
     fn new(
         year: i32,
         month: u8,
@@ -21,5 +21,4 @@ pub trait TimeZone {
     ) -> Result<Self, Errors>
     where
         Self: Sized;
-    //fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result;
 }
