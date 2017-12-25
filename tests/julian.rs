@@ -21,38 +21,68 @@ fn reciprocity() {
 fn epochs() {
     use hifitime::instant;
     use hifitime::traits::TimeSystem;
-    use hifitime::julian::{ModifiedJulian, J2000_OFFSET, SECONDS_PER_DAY, DAYS_PER_YEAR};
+    use hifitime::julian::{ModifiedJulian, SECONDS_PER_DAY, DAYS_PER_YEAR};
     use hifitime::utc::Utc;
     use hifitime::traits::TimeZone;
 
-    // J2000 is defined at noon
-    let j2000 = instant::Instant::new(
-        (DAYS_PER_YEAR * SECONDS_PER_DAY * 100.0) as u64,
-        0,
-        instant::Era::Present,
-    );
-    let mjd = ModifiedJulian::from_instant(j2000);
-    assert_eq!(mjd.days, J2000_OFFSET);
-    assert_eq!(mjd.julian_days(), 2_451_545.0);
+    // Tests are chronological dates.
 
-    // TODO: Add epoch tests from Vallado, p. 183, after UTC is implemented
-    // NOTE: The J1900.0 offset in Vallado is different from the one given by NIST.
-    // NOTE: From Nerem's slides:
+    // NOTE: There's a half day offset between the epoch of NTP (and hence `Instant`) and J1900
+    // As explained in Vallado, this is because Julian days "start" at noon so that astronomical
+    // observations throughout the night happen at the same Julian day.
+
+    let nist_j1900 = instant::Instant::new(0, 0, instant::Era::Present);
+    let mjd = ModifiedJulian::from_instant(nist_j1900);
+    assert_eq!(mjd.days, 15_020.5);
+    assert_eq!(mjd.julian_days(), 2_415_021.0);
+
+    // Cross validation NASA HEASARC: https://goo.gl/DXRUfh
+    let j1900 = instant::Instant::new((SECONDS_PER_DAY * 0.5) as u64, 0, instant::Era::Present);
+    let mjd = ModifiedJulian::from_instant(j1900);
+    assert_eq!(mjd.days, 15_021.0);
+    assert_eq!(mjd.julian_days(), 2_415_021.5);
+
+    let post_j1900 =
+        instant::Instant::new((SECONDS_PER_DAY * 7.5) as u64, 0, instant::Era::Present);
+    let mjd = ModifiedJulian::from_instant(post_j1900);
+    assert_eq!(mjd.days, 15_027.5);
+    assert_eq!(mjd.julian_days(), 2_415_028.0);
+
     // 1980 Jan 6.0 2444244.5 GPS Standard Epoch
     let gps_std_epoch = ModifiedJulian::from_instant(
-        Utc::new(1980, 01, 06, 12, 0, 0, 0)
+        Utc::new(1980, 01, 06, 0, 0, 0, 0)
             .expect("06 January 1980 invalid?!")
             .as_instant(),
     );
     assert_eq!(gps_std_epoch.julian_days(), 2_444_244.5);
+
+    let nist_j2000 = instant::Instant::new(
+        (DAYS_PER_YEAR * SECONDS_PER_DAY * 100.0) as u64,
+        0,
+        instant::Era::Present,
+    );
+    let mjd = ModifiedJulian::from_instant(nist_j2000);
+    assert_eq!(mjd.days, 51_544.5);
+    assert_eq!(mjd.julian_days(), 2_451_544.5);
+
+    let j2000 = instant::Instant::new(
+        (DAYS_PER_YEAR * SECONDS_PER_DAY * 100.0 + SECONDS_PER_DAY * 0.5) as u64,
+        0,
+        instant::Era::Present,
+    );
+    let mjd = ModifiedJulian::from_instant(j2000);
+    assert_eq!(mjd.days, 51_545.0);
+    assert_eq!(mjd.julian_days(), 2_451_545.0);
+
     // 2000 Jan 1.5 2451545.0 J2000 Epoch
     let j2k_epoch = ModifiedJulian::from_instant(
-        Utc::new(2000, 01, 01, 12, 0, 0, 0)
-            .expect("7 February 2002 invalid?!")
+        Utc::new(2000, 01, 01, 0, 0, 0, 0)
+            .expect("01 January 2000 invalid?!")
             .as_instant(),
     );
     assert_eq!(j2k_epoch.julian_days(), 2_451_545.0);
-    // The Julian Day Number for 7 February 2002 is 2452313
+
+    // 2002 February 01 <=> 2_452_313
     let jd020207 = ModifiedJulian::from_instant(
         Utc::new(2002, 02, 07, 12, 0, 0, 0)
             .expect("7 February 2002 invalid?!")
