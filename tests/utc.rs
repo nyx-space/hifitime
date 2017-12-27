@@ -43,10 +43,10 @@ fn utc_valid_dates() {
                         dsecond
                     );
                     assert_eq!(
-                        Utc::from_instant(inst).as_instant(),
-                        inst,
-                        "Incorrect Epoch+{} year(s) + {} hour(s) + {} minute(s) + {} second(s)
-                     + some computed (utc.from_instant)",
+                        Utc::from_instant(utc.as_instant()),
+                        utc,
+                        "Incorrect reciprocity Epoch+{} year(s) + {} hour(s) + {} minute(s) +
+                        {} second(s) + some computed (utc.from_instant)",
                         dyear,
                         dhour,
                         dminute,
@@ -64,6 +64,7 @@ fn utc_valid_dates() {
         "1900 Epoch should be zero"
     );
     assert_eq!(format!("{}", dt), "1900-01-01T00:00:00+00:00");
+    assert_eq!(Utc::from_instant(dt.as_instant()), dt, "Reciprocity error");
 
     let dt = Utc::new(1900, 01, 01, 12, 0, 0, 0).expect("01 January 1900 invalid?!");
     assert_eq!(
@@ -72,6 +73,7 @@ fn utc_valid_dates() {
         "1900 Epoch should be 12 hours"
     );
     assert_eq!(format!("{}", dt), "1900-01-01T12:00:00+00:00");
+    assert_eq!(Utc::from_instant(dt.as_instant()), dt, "Reciprocity error");
 
     let dt = Utc::new(1905, 01, 01, 0, 0, 0, 1590).expect("epoch 1905 failed");
     assert_eq!(
@@ -80,9 +82,11 @@ fn utc_valid_dates() {
         "Incorrect Epoch 1905 + some computed",
     );
     assert_eq!(format!("{}", dt), "1905-01-01T00:00:00+00:00");
+    assert_eq!(Utc::from_instant(dt.as_instant()), dt, "Reciprocity error");
 
     let dt = Utc::new(2018, 10, 08, 22, 08, 47, 0).expect("standard date failed");
     assert_eq!(format!("{}", dt), "2018-10-08T22:08:47+00:00");
+    assert_eq!(Utc::from_instant(dt.as_instant()), dt, "Reciprocity error");
 
     assert_eq!(
         Utc::new(1971, 12, 31, 23, 59, 59, 0)

@@ -73,6 +73,11 @@ impl Instant {
         }
     }
 
+    /// Returns the Duration with respect to Epoch (past OR present), check the `era()`
+    pub fn duration(self) -> Duration {
+        self.duration
+    }
+
     /// Returns the number of seconds with respect to the epoch.
     pub fn secs(self) -> u64 {
         self.duration.as_secs()
