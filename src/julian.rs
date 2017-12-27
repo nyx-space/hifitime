@@ -12,6 +12,8 @@ pub const DAYS_PER_YEAR: f64 = 365.25;
 /// SECONDS_PER_DAY defines the number of seconds per day.
 pub const SECONDS_PER_DAY: f64 = 86_400.0;
 
+/// `ModifiedJulian` handles the Modified Julian Days as explained
+/// [here](http://tycho.usno.navy.mil/mjd.html).
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
 pub struct ModifiedJulian {
     pub days: f64,
@@ -20,17 +22,17 @@ pub struct ModifiedJulian {
 impl ModifiedJulian {
     /// `julian_days` returns the true Julian days from epoch 01 Jan -4713, 12:00
     /// as explained in "Fundamentals of astrodynamics and applications", Vallado et al.
-    /// 4th edition, page 182.
+    /// 4th edition, page 182, and on [Wikipedia](https://en.wikipedia.org/wiki/Julian_day).
     pub fn julian_days(self) -> f64 {
         self.days + 2_400_000.5
     }
 }
 
 impl TimeSystem for ModifiedJulian {
-    /// `from_instant` converts an Instant to a ModifiedJulian as detailed in Vallado et al.
+    /// `from_instant` converts an `Instant` to a ModifiedJulian as detailed in Vallado et al.
     /// 4th edition, page 182.
     ///
-    /// Leap second source https://www.ietf.org/timezones/data/leap-seconds.list, contains
+    /// [Leap second source](https://www.ietf.org/timezones/data/leap-seconds.list) contains
     /// information pertinent to the NTP time definition, whose epoch is twelve hours *ahead* of
     /// the Julian Day. Here is the relevant quote:
     /// > The NTP timestamps are in units of seconds since the NTP epoch,
@@ -60,7 +62,7 @@ impl TimeSystem for ModifiedJulian {
         }
     }
 
-    /// `as_instant` returns an Instant from the ModifiedJulian.
+    /// `as_instant` returns an `Instant` from the ModifiedJulian.
     fn as_instant(self) -> Instant {
         let era: Era;
         let modifier: f64;

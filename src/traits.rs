@@ -3,6 +3,8 @@ use std::cmp::PartialOrd;
 use super::instant::Instant;
 use super::utils::{Errors, Offset};
 
+/// A TimeSystem enabled the creation of system for measuring spans of time, such as UTC or Julian
+/// days.
 pub trait TimeSystem: PartialOrd {
     fn from_instant(Instant) -> Self;
     fn as_instant(self) -> Instant;

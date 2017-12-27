@@ -1,9 +1,12 @@
 // Part of hifitime.
 // TODO: Add LICENSE.txt and README.md
 
-//! hifitime 0.0.1
+//! # hifitime 0.0.1
 //!
-//! Precise date and time handling in Rust. Epoch is 01 Jan 1900 at midnight.
+//! Precise date and time handling in Rust built on top of
+//! [` std::time::Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html).
+//! The Epoch used is 01 Jan 1900 at midnight, but that should not matter in day-to-day use of this
+//! library. This time corresponds to the TAI Epoch.
 //!
 //! Features:
 //!
@@ -15,12 +18,38 @@
 //! Most (all?) examples are validated with external references, as detailed on a test-by-test
 //! basis.
 //!
+//! *NOTE:* Each time computing library may decide when the extra leap second exists as explained
+//! in the [IETF leap second reference](https://www.ietf.org/timezones/data/leap-seconds.list).
+//! To ease computation, `hifitime` decides that second is the 60th of a UTC date, if such exists.
+//! Note that this second exists at a different time than defined on NASA HEASARC. That tool is
+//! used for validation of Julian dates. As an example of how this is handled, check the Julian
+//! day computations for [2015-06-30 23:59:59](https://goo.gl/o3KXSR),
+//! [2015-06-30 23:59:60](https://goo.gl/QyUyrC) and [2015-07-01 00:00:00](https://goo.gl/Y25hpn).
+//!
 //! Does not includes:
+//!
 //! * Dates only, or times only (i.e. handles only the combination of both)
 //! * Custom formatting of date time objects (for now)
 //!
-//! Examples:
+//! ## Usage
+//! **WARNING: NOT YET AVAILABLE ON CARGO**
+//!
+//! Put this in your `Cargo.toml`:
+//!
+//! ```toml
+//! [dependencies]
+//! hifitime = "0.0.1"
 //! ```
+//!
+//! And add the following to your crate root:
+//!
+//! ```rust
+//! extern crate hifitime;
+//! ```
+//!
+//! ### Examples:
+//!
+//! ```rust
 //! use hifitime::utc::{Utc, TimeZone, TimeSystem};
 //! use hifitime::instant::Duration;
 //! use hifitime::julian::ModifiedJulian;

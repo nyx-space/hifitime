@@ -91,4 +91,41 @@ fn epochs() {
     );
     assert_eq!(jd020207.days, 52312.0);
     assert_eq!(jd020207.julian_days(), 2_452_312.5);
+
+    // Test leap seconds and Julian at the same time
+    // X-Val: https://goo.gl/o3KXSR
+    // NOTE: Precision of HEASARC is less than hifitime, hence the last four digit difference
+    // HEASARC reports 57203.99998843 but hifitime computes 57203.99998842592 (three additional)
+    // significant digits.
+    assert_eq!(
+        ModifiedJulian::from_instant(
+            Utc::new(2015, 06, 30, 23, 59, 59, 0)
+                .expect("July leap second failed")
+                .as_instant(),
+        ).days,
+        57203.99998842592,
+        "Incorrect July 2015 leap second MJD computed"
+    );
+
+    // X-Val: https://goo.gl/QyUyrC
+    assert_eq!(
+        ModifiedJulian::from_instant(
+            Utc::new(2015, 06, 30, 23, 59, 60, 0)
+                .expect("July leap second failed")
+                .as_instant(),
+        ).days,
+        57203.99998842592,
+        "Incorrect July 2015 leap second MJD computed"
+    );
+
+    // X-Val: https://goo.gl/Y25hpn
+    assert_eq!(
+        ModifiedJulian::from_instant(
+            Utc::new(2015, 07, 01, 0, 0, 0, 0)
+                .expect("Post July leap second failed")
+                .as_instant(),
+        ).days,
+        57204.00000000,
+        "Incorrect Post July 2015 leap second MJD computed"
+    );
 }

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `hifitime` crate.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, hifitime">
+
+    <title>hifitime - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc mod">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'>Crate hifitime</p><div class="block items"><ul><li><a href="#modules">Modules</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'hifitime', ty: 'mod', relpath: '../'};</script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content">
+<h1 class='fqn'><span class='in-band'>Crate <a class="mod" href=''>hifitime</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a class='srclink' href='../src/hifitime/lib.rs.html#4-82' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'>
+<h1 id='hifitime-001' class='section-header'><a href='#hifitime-001'>hifitime 0.0.1</a></h1>
+<p>Precise date and time handling in Rust built on top of
+<a href="https://doc.rust-lang.org/std/time/struct.Duration.html"><code>std::time::Duration</code></a>.
+The Epoch used is 01 Jan 1900 at midnight, but that should not matter in day-to-day use of this
+library. This time corresponds to the TAI Epoch.</p>
+
+<p>Features:</p>
+
+<ul>
+<li>Leap seconds (as announced by the IETF on a yearly basis)</li>
+<li>Julian dates and Modified Julian dates</li>
+<li>UTC representation with ISO8601 formatting</li>
+<li>Time varying <code>TimeZone</code>s to represent very high speed reference frames</li>
+</ul>
+
+<p>Most (all?) examples are validated with external references, as detailed on a test-by-test
+basis.</p>
+
+<p><em>NOTE:</em> Each time computing library may decide when the extra leap second exists as explained
+in the <a href="https://www.ietf.org/timezones/data/leap-seconds.list">IETF leap second reference</a>.
+To ease computation, <code>hifitime</code> decides that second is the 60th of a UTC date, if such exists.
+Note that this second exists at a different time than defined on NASA HEASARC. That tool is
+used for validation of Julian dates. As an example of how this is handled, check the Julian
+day computations for <a href="https://goo.gl/o3KXSR">2015-06-30 23:59:59</a>,
+<a href="https://goo.gl/QyUyrC">2015-06-30 23:59:60</a> and <a href="https://goo.gl/Y25hpn">2015-07-01 00:00:00</a>.</p>
+
+<p>Does not includes:</p>
+
+<ul>
+<li>Dates only, or times only (i.e. handles only the combination of both)</li>
+<li>Custom formatting of date time objects (for now)</li>
+</ul>
+
+<h2 id='usage' class='section-header'><a href='#usage'>Usage</a></h2>
+<p><strong>WARNING: NOT YET AVAILABLE ON CARGO</strong></p>
+
+<p>Put this in your <code>Cargo.toml</code>:</p>
+
+<pre><code class="language-toml">[dependencies]
+hifitime = &quot;0.0.1&quot;
+</code></pre>
+
+<p>And add the following to your crate root:</p>
+
+<pre class="rust rust-example-rendered">
+<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">hifitime</span>;</pre>
+
+<h3 id='examples' class='section-header'><a href='#examples'>Examples:</a></h3>
+<pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">hifitime</span>::<span class="ident">utc</span>::{<span class="ident">Utc</span>, <span class="ident">TimeZone</span>, <span class="ident">TimeSystem</span>};
+<span class="kw">use</span> <span class="ident">hifitime</span>::<span class="ident">instant</span>::<span class="ident">Duration</span>;
+<span class="kw">use</span> <span class="ident">hifitime</span>::<span class="ident">julian</span>::<span class="ident">ModifiedJulian</span>;
+
+<span class="kw">let</span> <span class="ident">santa</span> <span class="op">=</span> <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">01</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>).<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>);
+
+<span class="macro">assert_eq</span><span class="macro">!</span>(
+    <span class="ident">santa</span>.<span class="ident">as_instant</span>() <span class="op">+</span> <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">3600</span>, <span class="number">0</span>),
+    <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">02</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>)
+        .<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>)
+        .<span class="ident">as_instant</span>(),
+    <span class="string">&quot;Could not add one hour to Christmas&quot;</span>
+);
+<span class="macro">assert_eq</span><span class="macro">!</span>(<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">santa</span>), <span class="string">&quot;2017-12-25T01:02:14+00:00&quot;</span>);
+<span class="macro">assert_eq</span><span class="macro">!</span>(
+    <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">as_instant</span>()).<span class="ident">days</span>,
+    <span class="number">58112.043217592596</span>
+);
+<span class="macro">assert_eq</span><span class="macro">!</span>(
+    <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">as_instant</span>()).<span class="ident">julian_days</span>(),
+    <span class="number">2458112.5432175924</span>
+);</pre>
+</div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="instant/index.html"
+                                  title='mod hifitime::instant'>instant</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="julian/index.html"
+                                  title='mod hifitime::julian'>julian</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="traits/index.html"
+                                  title='mod hifitime::traits'>traits</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="utc/index.html"
+                                  title='mod hifitime::utc'>utc</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="utils/index.html"
+                                  title='mod hifitime::utils'>utils</a></td>
+                           <td class='docblock-short'>
+                                
+                           </td>
+                       </tr></table></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../";
+        window.currentCrate = "hifitime";
+    </script>
+    <script src="../main.js"></script>
+    <script defer src="../search-index.js"></script>
+</body>
+</html>

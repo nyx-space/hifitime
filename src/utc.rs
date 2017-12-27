@@ -3,7 +3,6 @@ pub use super::traits::{TimeZone, TimeSystem};
 use super::utils::{Errors, quorem};
 use super::instant::{Era, Instant};
 use super::julian::SECONDS_PER_DAY;
-use std::cmp::{PartialOrd, Ord, Eq, Ordering};
 use std::fmt;
 use std::marker::Sized;
 
@@ -58,7 +57,7 @@ fn is_leap_year(year: i32) -> bool {
 /// has been announced. WARNING: The historical oddities with calendars are not yet supported.
 /// Moreover, despite the fields of Utc being public, it is recommended to use the `new` function
 /// to ensure proper overflow.
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
 pub struct Utc {
     pub year: i32,
     pub month: u8,
@@ -86,7 +85,8 @@ where
     /// # Examples
     /// ```
     /// use hifitime::utc::{Utc, TimeZone, TimeSystem};
-    /// use hifitime::instant::{Era, Instant};
+    /// use hifitime::instant::{Duration, Era, Instant};
+    /// use hifitime::julian::ModifiedJulian;
     ///
     /// let epoch = Utc::new(1900, 01, 01, 0, 0, 0, 0).expect("epoch failed");
     /// assert_eq!(
@@ -110,6 +110,25 @@ where
     ///         .expect("January 1972 1 second before leap second failed")
     ///         .as_instant(),
     ///     "Incorrect January 1972 leap second number computed"
+    /// );
+    ///
+    /// let santa = Utc::new(2017, 12, 25, 01, 02, 14, 0).expect("Xmas failed");
+    ///
+    /// assert_eq!(
+    ///     santa.as_instant() + Duration::new(3600, 0),
+    ///     Utc::new(2017, 12, 25, 02, 02, 14, 0)
+    ///         .expect("Xmas failed")
+    ///         .as_instant(),
+    ///     "Could not add one hour to Christmas"
+    /// );
+    /// assert_eq!(format!("{}", santa), "2017-12-25T01:02:14+00:00");
+    /// assert_eq!(
+    ///     ModifiedJulian::from_instant(santa.as_instant()).days,
+    ///     58112.043217592596
+    /// );
+    /// assert_eq!(
+    ///     ModifiedJulian::from_instant(santa.as_instant()).julian_days(),
+    ///     2458112.5432175924
     /// );
     /// ```
     fn new(
@@ -153,7 +172,6 @@ where
             nanos,
         })
     }
-    //fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result;
 }
 
 impl TimeSystem for Utc {
@@ -262,30 +280,5 @@ impl fmt::Display for Utc {
             self.minute,
             self.second
         )
-    }
-}
-
-impl PartialEq for Utc {
-    fn eq(&self, other: &Utc) -> bool {
-        self.as_instant() == other.as_instant()
-    }
-}
-
-impl PartialOrd for Utc {
-    fn partial_cmp(&self, other: &Utc) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-
-    fn lt(&self, other: &Utc) -> bool {
-        self.as_instant() < other.as_instant()
-    }
-    fn le(&self, other: &Utc) -> bool {
-        self.as_instant() <= other.as_instant()
-    }
-    fn gt(&self, other: &Utc) -> bool {
-        self.as_instant() > other.as_instant()
-    }
-    fn ge(&self, other: &Utc) -> bool {
-        self.as_instant() >= other.as_instant()
     }
 }

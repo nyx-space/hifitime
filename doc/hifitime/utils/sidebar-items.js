@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Errors",""]],"fn":[["quorem","quorem returns a tuple of the quotient and the remainder a numerator and a denominator."]],"type":[["Offset","Offset is an alias of Instant. It contains the same kind of information, but is used in a very different context"]]});

@@ -2,7 +2,7 @@
 // time spans and leap seconds. Moreover, an Instant is defined with respect to
 // 01 Jan 1900, as per NTP specifications.
 
-use std::cmp::{PartialEq, PartialOrd};
+use std::cmp::PartialEq;
 use std::ops::{Add, Sub};
 pub use std::time::Duration;
 use std::fmt;
@@ -74,13 +74,11 @@ impl Instant {
     }
 
     /// Returns the number of seconds with respect to the epoch.
-    /// *NOTE:* Check the `era` if the date may be before 1900.
     pub fn secs(self) -> u64 {
         self.duration.as_secs()
     }
 
     /// Returns the number of nanoseconds of the given instant.
-    /// *NOTE:* Check the `era` if the date may be before 1900.
     pub fn nanos(self) -> u32 {
         self.duration.subsec_nanos()
     }
@@ -89,25 +87,6 @@ impl Instant {
     /// the TAI Epoch.
     pub fn era(self) -> Era {
         self.era
-    }
-
-    /// Returns whether `self` represents a time that is *strictly* before `other`.
-    /// If `self == other`, this function returns `false`.
-    pub fn before(self, other: Instant) -> bool {
-        if self.era == Era::Past && other.era == Era::Present {
-            true
-        } else if (self == other) || (self.era == Era::Present && other.era == Era::Past) {
-            false
-        } else {
-            (self.secs() < other.secs()) ||
-                (self.secs() == other.secs() && self.nanos() < other.nanos())
-        }
-    }
-
-    /// Returns whether `self` represents a time that is *strictly* after `other`.
-    /// If `self == other`, this function returns `false`.
-    pub fn after(self, other: Instant) -> bool {
-        !self.before(other)
     }
 }
 
@@ -121,7 +100,7 @@ impl PartialEq for Instant {
 impl Add<Duration> for Instant {
     type Output = Instant;
 
-    /// Adds a given std::time::Duration to an `Instant`.
+    /// Adds a given `std::time::Duration` to an `Instant`.
     ///
     /// # Examples
     /// ```
@@ -181,7 +160,7 @@ impl Add<Duration> for Instant {
 impl Sub<Duration> for Instant {
     type Output = Instant;
 
-    /// Subtracts a given std::time::Duration from an `Instant`.
+    /// Subtracts a given `std::time::Duration` from an `Instant`.
     /// # Examples
     ///
     /// ```
