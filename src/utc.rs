@@ -1,5 +1,5 @@
 pub use super::utils::Offset;
-pub use super::traits::{TimeZone, TimeSystem};
+pub use super::traits::TimeSystem;
 use super::utils::Errors;
 use super::instant::{Era, Instant};
 use super::julian::SECONDS_PER_DAY;
@@ -46,8 +46,20 @@ const JULY_YEARS: [i32; 11] = [
 pub const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 pub const USUAL_DAYS_PER_YEAR: f64 = 365.0;
 
-fn is_leap_year(year: i32) -> bool {
-    (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
+pub trait TimeZone: fmt::Display {
+    /// utc_offset returns the difference between a given TZ and UTC.
+    fn utc_offset() -> Offset;
+    fn new(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        nanos: u32,
+    ) -> Result<Self, Errors>
+    where
+        Self: Sized;
 }
 
 /// Utc is the interface between a time system and a time zone. All time zones are defined with
@@ -313,6 +325,12 @@ impl fmt::Display for Utc {
             self.second
         )
     }
+}
+
+/// is_leap_year returns whether the provided year is a leap year or not.
+/// Tests for this function are part of the Utc tests.
+fn is_leap_year(year: i32) -> bool {
+    (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
 }
 
 /// quorem returns a tuple of the quotient and the remainder a numerator and a denominator.

@@ -22,8 +22,7 @@ fn epochs() {
     use hifitime::instant;
     use hifitime::traits::TimeSystem;
     use hifitime::julian::{ModifiedJulian, SECONDS_PER_DAY};
-    use hifitime::utc::Utc;
-    use hifitime::traits::TimeZone;
+    use hifitime::utc::{TimeZone, Utc};
 
     // Tests are chronological dates.
     // All of the following examples are cross validated against NASA HEASARC,

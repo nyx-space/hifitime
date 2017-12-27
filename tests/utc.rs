@@ -2,10 +2,10 @@ extern crate hifitime;
 
 #[test]
 fn utc_valid_dates() {
-    use hifitime::utc::Utc;
+    use hifitime::utc::{Utc, TimeZone};
     use hifitime::julian::SECONDS_PER_DAY;
     use hifitime::instant::{Era, Instant};
-    use hifitime::traits::{TimeSystem, TimeZone};
+    use hifitime::traits::TimeSystem;
 
     for dyear in -2..2 {
         let era: Era;
@@ -396,8 +396,7 @@ fn utc_valid_dates() {
 
 #[test]
 fn utc_invalid_dates() {
-    use hifitime::utc::Utc;
-    use hifitime::traits::TimeZone;
+    use hifitime::utc::{Utc, TimeZone};
 
     Utc::new(2001, 02, 29, 22, 08, 47, 0).expect_err("29 Feb 2001 did not fail");
     Utc::new(2016, 12, 31, 23, 59, 61, 0).expect_err("January leap second did not fail");
