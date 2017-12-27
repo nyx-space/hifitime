@@ -3,7 +3,7 @@ extern crate hifitime;
 #[test]
 fn reciprocity() {
     use hifitime::instant;
-    use hifitime::traits::TimeSystem;
+    use hifitime::TimeSystem;
     use hifitime::julian::ModifiedJulian;
 
     // Check reciprocity in the Present
@@ -20,7 +20,7 @@ fn reciprocity() {
 #[test]
 fn epochs() {
     use hifitime::instant;
-    use hifitime::traits::TimeSystem;
+    use hifitime::TimeSystem;
     use hifitime::julian::{ModifiedJulian, SECONDS_PER_DAY};
     use hifitime::utc::{TimeZone, Utc};
 

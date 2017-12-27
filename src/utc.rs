@@ -1,5 +1,5 @@
 pub use super::utils::Offset;
-pub use super::traits::TimeSystem;
+pub use super::TimeSystem;
 use super::utils::Errors;
 use super::instant::{Era, Instant};
 use super::julian::SECONDS_PER_DAY;
@@ -100,7 +100,8 @@ where
     ///
     /// # Examples
     /// ```
-    /// use hifitime::utc::{Utc, TimeZone, TimeSystem};
+    /// use hifitime::utc::TimeSystem;
+    /// use hifitime::utc::{Utc, TimeZone};
     /// use hifitime::instant::{Duration, Era, Instant};
     /// use hifitime::julian::ModifiedJulian;
     ///

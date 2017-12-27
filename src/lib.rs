@@ -50,7 +50,8 @@
 //! ### Examples:
 //!
 //! ```rust
-//! use hifitime::utc::{Utc, TimeZone, TimeSystem};
+//! use hifitime::TimeSystem;
+//! use hifitime::utc::{Utc, TimeZone};
 //! use hifitime::instant::Duration;
 //! use hifitime::julian::ModifiedJulian;
 //!
@@ -76,7 +77,16 @@
 //!
 
 pub mod utils;
-pub mod traits;
 pub mod instant;
 pub mod julian;
 pub mod utc;
+
+use std::cmp::PartialOrd;
+use instant::Instant;
+
+/// A TimeSystem enabled the creation of system for measuring spans of time, such as UTC or Julian
+/// days.
+pub trait TimeSystem: PartialOrd {
+    fn from_instant(Instant) -> Self;
+    fn as_instant(self) -> Instant;
+}

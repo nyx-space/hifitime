@@ -5,7 +5,7 @@ fn utc_valid_dates() {
     use hifitime::utc::{Utc, TimeZone};
     use hifitime::julian::SECONDS_PER_DAY;
     use hifitime::instant::{Era, Instant};
-    use hifitime::traits::TimeSystem;
+    use hifitime::TimeSystem;
 
     for dyear in -2..2 {
         let era: Era;

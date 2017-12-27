@@ -1,4 +1,4 @@
-use super::traits::TimeSystem;
+use super::TimeSystem;
 use super::instant::{Era, Instant};
 
 /// J1900_OFFSET determines the offset in julian days between 01 Jan 1900 at midnight and the
