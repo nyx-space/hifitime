@@ -9,8 +9,8 @@ pub type Offset = Instant;
 #[derive(Debug)]
 pub enum Errors {
     /// Carry is returned when a provided function does not support time carry. For example,
-    /// if a Timezone `new` receives 60 seconds and there are only 59 seconds in the provided date
-    /// time then a Carry is returned as the Result.
+    /// if a call to `Utc::new` receives 60 seconds and there are only 59 seconds in the provided
+    /// date time then a Carry Error is returned as the Result.
     Carry,
 }
 

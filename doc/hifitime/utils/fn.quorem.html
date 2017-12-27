@@ -48,8 +48,10 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../../src/hifitime/utils.rs.html#27-38' title='goto source code'>[src]</a></span></h1>
-<pre class='rust fn'>pub fn quorem(numerator: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>, denominator: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">)</a></pre><div class='docblock'><p>quorem returns a tuple of the quotient and the remainder a numerator and a denominator.</p>
+               </span><a class='srclink' href='../../src/hifitime/utils.rs.html#36-47' title='goto source code'>[src]</a></span></h1>
+<pre class='rust fn'>pub fn quorem(numerator: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>, denominator: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">(</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>, <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.f64.html">f64</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.tuple.html">)</a></pre><div class='docblock'><p>quorem returns a tuple of the quotient and the remainder a numerator and a denominator.
+Usage examples
+<code>assert_eq!(::utils::quorem(24.0, 6.0), (4, 0.0)); assert_eq!(::utils::quorem(25.0, 6.0), (4, 1.0)); assert_eq!(::utils::quorem(6.0, 6.0), (1, 0.0)); assert_eq!(::utils::quorem(5.0, 6.0), (0, 5.0)); assert_eq!(::utils::quorem(3540.0, 3600.0), (0, 3540.0)); assert_eq!(::utils::quorem(3540.0, 60.0), (59, 0.0));</code></p>
 </div></section>
     <section id='search' class="content hidden"></section>
 

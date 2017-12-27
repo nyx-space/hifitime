@@ -54,8 +54,8 @@
 }</pre><h2 id='variants' class='variants small-section-header'>
                    Variants<a href='#variants' class='anchor'></a></h2>
 <span id='variant.Carry' class='variant'><span id='Carry.v' class='invisible'><code>Carry</code></span></span><div class='docblock'><p>Carry is returned when a provided function does not support time carry. For example,
-if a Timezone <code>new</code> receives 60 seconds and there are only 59 seconds in the provided date
-time then a Carry is returned as the Result.</p>
+if a call to <code>Utc::new</code> receives 60 seconds and there are only 59 seconds in the provided
+date time then a Carry Error is returned as the Result.</p>
 </div>
             <h2 id='implementations' class='small-section-header'>
               Trait Implementations<a href='#implementations' class='anchor'></a>

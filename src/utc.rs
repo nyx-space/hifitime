@@ -54,9 +54,11 @@ fn is_leap_year(year: i32) -> bool {
 /// respect to UTC. Moreover, Utc inherently supports the past leap seconds, as reported by the
 /// IETF and NIST at https://www.ietf.org/timezones/data/leap-seconds.list . NOTE: leap seconds
 /// cannot be predicted! This module will be updated as soon as possible after a new leap second
-/// has been announced. WARNING: The historical oddities with calendars are not yet supported.
-/// Moreover, despite the fields of Utc being public, it is recommended to use the `new` function
-/// to ensure proper overflow.
+/// has been announced.
+/// **WARNING**: The historical oddities with calendars are not yet supported.
+/// Moreover, despite the fields of Utc being public, it is strongly advised to use the `new`
+/// function to ensure proper bound checking and correct leap second support. If your code breaks
+/// because you're _not_ using `new`, don't file a bug.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
 pub struct Utc {
     pub year: i32,
@@ -80,7 +82,9 @@ where
     /// Creates a new UTC date, with support for all the leap seconds with respect to TAI.
     /// *NOTE:* UTC leap seconds may be confusing because several dates have the **same** number
     /// of seconds since TAI epoch.
-    /// *WARNING:* Does not support automatic carry and will return an error if so.
+    /// **WARNING:** Does not support automatic carry and will return an error if so.
+    /// **WARNING:** Although `PartialOrd` is implemented for Utc, the ambiguity of leap seconds
+    /// as explained elsewhere in this documentation may lead to odd results (cf. examples below).
     ///
     /// # Examples
     /// ```
@@ -110,6 +114,48 @@ where
     ///         .expect("January 1972 1 second before leap second failed")
     ///         .as_instant(),
     ///     "Incorrect January 1972 leap second number computed"
+    /// );
+    ///
+    /// // Example of odd behavior when comparing/ordering dates using Utc or `as_instant`
+    /// // Utc order claims (correctly) that the 60th second is _after_ the 59th. But the instant
+    /// // is actually different because the 60th second is where we've inserted the leap second.
+    /// assert!(
+    ///     Utc::new(1971, 12, 31, 23, 59, 59, 0).expect(
+    ///         "January 1972 1 second before leap second failed",
+    ///     ) <
+    ///         Utc::new(1971, 12, 31, 23, 59, 60, 0).expect(
+    ///             "January 1972 1 second before leap second failed",
+    ///         ),
+    ///     "60th second should have a different instant than 59th second"
+    /// );
+    /// assert!(
+    ///     Utc::new(1971, 12, 31, 23, 59, 59, 0)
+    ///         .expect("January 1972 1 second before leap second failed")
+    ///         .as_instant() ==
+    ///         Utc::new(1971, 12, 31, 23, 59, 60, 0)
+    ///             .expect("January 1972 1 second before leap second failed")
+    ///             .as_instant(),
+    ///     "60th second should have a different instant than 59th second"
+    /// );
+    /// // Hence one second after the leap second, we get the following behavior (note the change
+    /// // from equality to less when comparing via instant).
+    /// assert!(
+    ///     Utc::new(1971, 12, 31, 23, 59, 60, 0).expect(
+    ///         "January 1972 1 second before leap second failed",
+    ///     ) <
+    ///         Utc::new(1972, 01, 01, 00, 00, 00, 0).expect(
+    ///             "January 1972 1 second before leap second failed",
+    ///         ),
+    ///     "60th second should have a different instant than 59th second"
+    /// );
+    /// assert!(
+    ///     Utc::new(1971, 12, 31, 23, 59, 60, 0)
+    ///         .expect("January 1972 1 second before leap second failed")
+    ///         .as_instant() <
+    ///         Utc::new(1972, 01, 01, 00, 00, 00, 0)
+    ///             .expect("January 1972 1 second before leap second failed")
+    ///             .as_instant(),
+    ///     "60th second should have a different instant than 59th second"
     /// );
     ///
     /// let santa = Utc::new(2017, 12, 25, 01, 02, 14, 0).expect("Xmas failed");
@@ -175,23 +221,8 @@ where
 }
 
 impl TimeSystem for Utc {
-    /// `from_instant` converts an Instant to a ModifiedJulian as detailed
-    /// in https://www.ietf.org/timezones/data/leap-seconds.list , specifically the following
-    /// quote:
-    /// The NTP timestamps are in units of seconds since the NTP epoch,
-    /// which is 1 January 1900, 00:00:00. The Modified Julian Day number
-    /// corresponding to the NTP time stamp, X, can be computed as
-    ///
-    /// X/86400 + 15020
-    ///
-    /// where the first term converts seconds to days and the second
-    /// term adds the MJD corresponding to the time origin defined above.
-    /// The integer portion of the result is the integer MJD for that
-    /// day, and any remainder is the time of day, expressed as the
-    /// fraction of the day since 0 hours UTC. The conversion from day
-    /// fraction to seconds or to hours, minutes, and seconds may involve
-    /// rounding or truncation, depending on the method used in the
-    /// computation.
+    /// `from_instant` converts an Instant to a Utc.
+    /// Use this method to convert between different `TimeSystem` implementors.
     fn from_instant(instant: Instant) -> Utc {
         let (year, year_fraction) = quorem(instant.secs() as f64, 365.0 * SECONDS_PER_DAY);
         let (mut month, month_fraction) = quorem(year_fraction, 30.4365 * SECONDS_PER_DAY);
@@ -232,6 +263,7 @@ impl TimeSystem for Utc {
     }
 
     /// `as_instant` returns an Instant from the Utc.
+    /// Also use this method to convert between different `TimeSystem` implementors
     fn as_instant(self) -> Instant {
         let era: Era;
         if self.year >= 1900 {

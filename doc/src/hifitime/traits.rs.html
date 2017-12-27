@@ -68,12 +68,16 @@
 <span id="23">23</span>
 <span id="24">24</span>
 <span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
 </pre><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>::<span class="ident">Display</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">cmp</span>::<span class="ident">PartialOrd</span>;
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">instant</span>::<span class="ident">Instant</span>;
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">utils</span>::{<span class="ident">Errors</span>, <span class="ident">Offset</span>};
 
+<span class="doccomment">/// A TimeSystem enabled the creation of system for measuring spans of time, such as UTC or Julian</span>
+<span class="doccomment">/// days.</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">TimeSystem</span>: <span class="ident">PartialOrd</span> {
     <span class="kw">fn</span> <span class="ident">from_instant</span>(<span class="ident">Instant</span>) <span class="op">-&gt;</span> <span class="self">Self</span>;
     <span class="kw">fn</span> <span class="ident">as_instant</span>(<span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">Instant</span>;

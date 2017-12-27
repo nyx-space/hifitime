@@ -48,11 +48,13 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../../src/hifitime/traits.rs.html#6-9' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../../src/hifitime/traits.rs.html#8-11' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait TimeSystem: <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html" title="trait core::cmp::PartialOrd">PartialOrd</a> {
     fn <a href='#tymethod.from_instant' class='fnname'>from_instant</a>(_: <a class="struct" href="../../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a>) -&gt; Self;
 <div class='item-spacer'></div>    fn <a href='#tymethod.as_instant' class='fnname'>as_instant</a>(self) -&gt; <a class="struct" href="../../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a>;
-}</pre>
+}</pre><div class='docblock'><p>A TimeSystem enabled the creation of system for measuring spans of time, such as UTC or Julian
+days.</p>
+</div>
             <h2 id='required-methods' class='small-section-header'>
               Required Methods<a href='#required-methods' class='anchor'></a>
             </h2>

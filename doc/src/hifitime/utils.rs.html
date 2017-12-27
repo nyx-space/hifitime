@@ -110,7 +110,6 @@
 <span id="65">65</span>
 <span id="66">66</span>
 <span id="67">67</span>
-<span id="68">68</span>
 </pre><pre class="rust ">
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>;
 
@@ -123,8 +122,8 @@
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Errors</span> {
     <span class="doccomment">/// Carry is returned when a provided function does not support time carry. For example,</span>
-    <span class="doccomment">/// if a Timezone `new` receives 60 seconds and there are only 59 seconds in the provided date</span>
-    <span class="doccomment">/// time then a Carry is returned as the Result.</span>
+    <span class="doccomment">/// if a call to `Utc::new` receives 60 seconds and there are only 59 seconds in the provided</span>
+    <span class="doccomment">/// date time then a Carry Error is returned as the Result.</span>
     <span class="ident">Carry</span>,
 }
 
@@ -138,6 +137,15 @@
 }
 
 <span class="doccomment">/// quorem returns a tuple of the quotient and the remainder a numerator and a denominator.</span>
+<span class="doccomment">/// Usage examples</span>
+<span class="doccomment">/// ```</span>
+<span class="doccomment">/// assert_eq!(::utils::quorem(24.0, 6.0), (4, 0.0));</span>
+<span class="doccomment">/// assert_eq!(::utils::quorem(25.0, 6.0), (4, 1.0));</span>
+<span class="doccomment">/// assert_eq!(::utils::quorem(6.0, 6.0), (1, 0.0));</span>
+<span class="doccomment">/// assert_eq!(::utils::quorem(5.0, 6.0), (0, 5.0));</span>
+<span class="doccomment">/// assert_eq!(::utils::quorem(3540.0, 3600.0), (0, 3540.0));</span>
+<span class="doccomment">/// assert_eq!(::utils::quorem(3540.0, 60.0), (59, 0.0));</span>
+<span class="doccomment">/// ```</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">quorem</span>(<span class="ident">numerator</span>: <span class="ident">f64</span>, <span class="ident">denominator</span>: <span class="ident">f64</span>) <span class="op">-&gt;</span> (<span class="ident">i32</span>, <span class="ident">f64</span>) {
     <span class="kw">if</span> <span class="ident">numerator</span> <span class="op">&lt;</span> <span class="number">0.0</span> <span class="op">||</span> <span class="ident">denominator</span> <span class="op">&lt;</span> <span class="number">0.0</span> {
         <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;quorem only supports positive numbers&quot;</span>);
@@ -149,16 +157,6 @@
         (<span class="ident">numerator</span> <span class="op">/</span> <span class="ident">denominator</span>).<span class="ident">floor</span>() <span class="kw">as</span> <span class="ident">i32</span>,
         (<span class="ident">numerator</span> <span class="op">%</span> <span class="ident">denominator</span>),
     )
-}
-
-<span class="attribute">#[<span class="ident">test</span>]</span>
-<span class="kw">fn</span> <span class="ident">quorem_nominal_test</span>() {
-    <span class="macro">assert_eq</span><span class="macro">!</span>(::<span class="ident">utils</span>::<span class="ident">quorem</span>(<span class="number">24.0</span>, <span class="number">6.0</span>), (<span class="number">4</span>, <span class="number">0.0</span>));
-    <span class="macro">assert_eq</span><span class="macro">!</span>(::<span class="ident">utils</span>::<span class="ident">quorem</span>(<span class="number">25.0</span>, <span class="number">6.0</span>), (<span class="number">4</span>, <span class="number">1.0</span>));
-    <span class="macro">assert_eq</span><span class="macro">!</span>(::<span class="ident">utils</span>::<span class="ident">quorem</span>(<span class="number">6.0</span>, <span class="number">6.0</span>), (<span class="number">1</span>, <span class="number">0.0</span>));
-    <span class="macro">assert_eq</span><span class="macro">!</span>(::<span class="ident">utils</span>::<span class="ident">quorem</span>(<span class="number">5.0</span>, <span class="number">6.0</span>), (<span class="number">0</span>, <span class="number">5.0</span>));
-    <span class="macro">assert_eq</span><span class="macro">!</span>(::<span class="ident">utils</span>::<span class="ident">quorem</span>(<span class="number">3540.0</span>, <span class="number">3600.0</span>), (<span class="number">0</span>, <span class="number">3540.0</span>));
-    <span class="macro">assert_eq</span><span class="macro">!</span>(::<span class="ident">utils</span>::<span class="ident">quorem</span>(<span class="number">3540.0</span>, <span class="number">60.0</span>), (<span class="number">59</span>, <span class="number">0.0</span>));
 }
 
 <span class="attribute">#[<span class="ident">test</span>]</span>
