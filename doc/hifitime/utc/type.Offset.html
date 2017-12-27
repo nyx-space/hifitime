@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="API documentation for the Rust `USUAL_DAYS_PER_MONTH` constant in crate `hifitime`.">
-    <meta name="keywords" content="rust, rustlang, rust-lang, USUAL_DAYS_PER_MONTH">
+    <meta name="description" content="API documentation for the Rust `Offset` type in crate `hifitime`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, Offset">
 
-    <title>hifitime::utc::USUAL_DAYS_PER_MONTH - Rust</title>
+    <title>hifitime::utc::Offset - Rust</title>
 
     <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
@@ -17,7 +17,7 @@
     
     
 </head>
-<body class="rustdoc constant">
+<body class="rustdoc type">
     <!--[if lte IE 8]>
     <div class="warning">
         This old browser is unsupported and will most likely display funky
@@ -29,7 +29,7 @@
 
     <nav class="sidebar">
         
-        <p class='location'><a href='../index.html'>hifitime</a>::<wbr><a href='index.html'>utc</a></p><script>window.sidebarCurrent = {name: 'USUAL_DAYS_PER_MONTH', ty: 'constant', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+        <p class='location'>Type Definition Offset</p><p class='location'><a href='../index.html'>hifitime</a>::<wbr><a href='index.html'>utc</a></p><script>window.sidebarCurrent = {name: 'Offset', ty: 'type', relpath: ''};</script><script defer src="sidebar-items.js"></script>
     </nav>
 
     <nav class="sub">
@@ -44,12 +44,14 @@
     </nav>
 
     <section id='main' class="content">
-<h1 class='fqn'><span class='in-band'>Constant <a href='../index.html'>hifitime</a>::<wbr><a href='index.html'>utc</a>::<wbr><a class="constant" href=''>USUAL_DAYS_PER_MONTH</a></span><span class='out-of-band'><span id='render-detail'>
+<h1 class='fqn'><span class='in-band'>Type Definition <a href='../index.html'>hifitime</a>::<wbr><a href='index.html'>utc</a>::<wbr><a class="type" href=''>Offset</a></span><span class='out-of-band'><span id='render-detail'>
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../../src/hifitime/utc.rs.html#45' title='goto source code'>[src]</a></span></h1>
-<pre class='rust const'>pub const USUAL_DAYS_PER_MONTH: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">[</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a><a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.array.html">; 12]</a><code> = </code><code>[31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]</code></pre></section>
+               </span><a class='srclink' href='../../src/hifitime/utc.rs.html#50' title='goto source code'>[src]</a></span></h1>
+<pre class='rust typedef'>type Offset = <a class="struct" href="../../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a>;</pre><div class='docblock'><p>Offset is an alias of Instant. It contains the same kind of information, but is used in the
+context of defining an offset with respect to Utc.</p>
+</div></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>

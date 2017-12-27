@@ -42,13 +42,14 @@ const JULY_YEARS: [i32; 11] = [
     2015,
 ];
 
-pub const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-pub const USUAL_DAYS_PER_YEAR: f64 = 365.0;
+const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const USUAL_DAYS_PER_YEAR: f64 = 365.0;
 
-/// Offset is an alias of Instant. It contains the same kind of information, but is used in a
-/// very different context
+/// Offset is an alias of Instant. It contains the same kind of information, but is used in the
+/// context of defining an offset with respect to Utc.
 pub type Offset = Instant;
 
+/// TimeZone defines a timezone with respect to Utc.
 pub trait TimeZone: fmt::Display {
     /// utc_offset returns the difference between a given TZ and UTC.
     fn utc_offset() -> Offset;
@@ -238,7 +239,6 @@ where
 
 impl TimeSystem for Utc {
     /// `from_instant` converts an Instant to a Utc.
-    /// Use this method to convert between different `TimeSystem` implementors.
     fn from_instant(instant: Instant) -> Utc {
         let (year, year_fraction) = quorem(instant.secs() as f64, 365.0 * SECONDS_PER_DAY);
         let (mut month, month_fraction) = quorem(year_fraction, 30.4365 * SECONDS_PER_DAY);
@@ -279,7 +279,6 @@ impl TimeSystem for Utc {
     }
 
     /// `as_instant` returns an Instant from the Utc.
-    /// Also use this method to convert between different `TimeSystem` implementors
     fn as_instant(self) -> Instant {
         let era: Era;
         if self.year >= 1900 {

@@ -29,7 +29,7 @@
 
     <nav class="sidebar">
         
-        <p class='location'>Crate hifitime</p><div class="block items"><ul><li><a href="#modules">Modules</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'hifitime', ty: 'mod', relpath: '../'};</script>
+        <p class='location'>Crate hifitime</p><div class="block items"><ul><li><a href="#modules">Modules</a></li><li><a href="#enums">Enums</a></li><li><a href="#traits">Traits</a></li></ul></div><p class='location'></p><script>window.sidebarCurrent = {name: 'hifitime', ty: 'mod', relpath: '../'};</script>
     </nav>
 
     <nav class="sub">
@@ -48,7 +48,7 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../src/hifitime/lib.rs.html#4-82' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../src/hifitime/lib.rs.html#4-119' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'>
 <h1 id='hifitime-001' class='section-header'><a href='#hifitime-001'>hifitime 0.0.1</a></h1>
 <p>Precise date and time handling in Rust built on top of
@@ -62,6 +62,7 @@ library. This time corresponds to the TAI Epoch.</p>
 <li>Leap seconds (as announced by the IETF on a yearly basis)</li>
 <li>Julian dates and Modified Julian dates</li>
 <li>UTC representation with ISO8601 formatting</li>
+<li>Allows building custom TimeSystem (e.g. Julian days)</li>
 <li>Time varying <code>TimeZone</code>s to represent very high speed reference frames</li>
 </ul>
 
@@ -127,35 +128,43 @@ hifitime = &quot;0.0.1&quot;
                            <td><a class="mod" href="instant/index.html"
                                   title='mod hifitime::instant'>instant</a></td>
                            <td class='docblock-short'>
-                                
+                                <p>The <code>instant</code> module is built on top of std::time::Duration. It is the basis of almost
+all computations in this library. It is the only common denominator allowing for conversions
+between Time Systems.</p>
                            </td>
                        </tr>
                        <tr class=' module-item'>
                            <td><a class="mod" href="julian/index.html"
                                   title='mod hifitime::julian'>julian</a></td>
                            <td class='docblock-short'>
-                                
-                           </td>
-                       </tr>
-                       <tr class=' module-item'>
-                           <td><a class="mod" href="traits/index.html"
-                                  title='mod hifitime::traits'>traits</a></td>
-                           <td class='docblock-short'>
-                                
+                                <p>The <code>julian</code> module supports (Modified) Julian Days, which are heavily used in astronomy
+and its engineering friends.</p>
                            </td>
                        </tr>
                        <tr class=' module-item'>
                            <td><a class="mod" href="utc/index.html"
                                   title='mod hifitime::utc'>utc</a></td>
                            <td class='docblock-short'>
-                                
+                                <p>The <code>Utc</code> module supports conversions between Utc and other time systems. The main advantage
+(and challenge) is the inherent support for leap seconds. Refer to module documentation for
+leap second implementation details.</p>
                            </td>
-                       </tr>
+                       </tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+<table>
                        <tr class=' module-item'>
-                           <td><a class="mod" href="utils/index.html"
-                                  title='mod hifitime::utils'>utils</a></td>
+                           <td><a class="enum" href="enum.Errors.html"
+                                  title='enum hifitime::Errors'>Errors</a></td>
                            <td class='docblock-short'>
-                                
+                                <p>Errors handles all oddities which may occur in this library.</p>
+                           </td>
+                       </tr></table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="trait" href="trait.TimeSystem.html"
+                                  title='trait hifitime::TimeSystem'>TimeSystem</a></td>
+                           <td class='docblock-short'>
+                                <p>A TimeSystem enables the creation of system for measuring spans of time, such as UTC or Julian
+days.</p>
                            </td>
                        </tr></table></section>
     <section id='search' class="content hidden"></section>

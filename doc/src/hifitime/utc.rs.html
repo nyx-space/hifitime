@@ -359,10 +359,74 @@
 <span id="314">314</span>
 <span id="315">315</span>
 <span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
+<span id="357">357</span>
+<span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
+<span id="361">361</span>
+<span id="362">362</span>
+<span id="363">363</span>
+<span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
+<span id="375">375</span>
+<span id="376">376</span>
+<span id="377">377</span>
+<span id="378">378</span>
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
 </pre><pre class="rust ">
-<span class="kw">pub</span> <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">utils</span>::<span class="ident">Offset</span>;
-<span class="kw">pub</span> <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">traits</span>::{<span class="ident">TimeZone</span>, <span class="ident">TimeSystem</span>};
-<span class="kw">use</span> <span class="kw">super</span>::<span class="ident">utils</span>::{<span class="ident">Errors</span>, <span class="ident">quorem</span>};
+<span class="kw">pub</span> <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">TimeSystem</span>;
+<span class="kw">use</span> <span class="kw">super</span>::<span class="ident">Errors</span>;
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">instant</span>::{<span class="ident">Era</span>, <span class="ident">Instant</span>};
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">julian</span>::<span class="ident">SECONDS_PER_DAY</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">fmt</span>;
@@ -405,11 +469,28 @@
     <span class="number">2015</span>,
 ];
 
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">USUAL_DAYS_PER_MONTH</span>: [<span class="ident">u8</span>; <span class="number">12</span>] <span class="op">=</span> [<span class="number">31</span>, <span class="number">28</span>, <span class="number">31</span>, <span class="number">30</span>, <span class="number">31</span>, <span class="number">30</span>, <span class="number">31</span>, <span class="number">31</span>, <span class="number">30</span>, <span class="number">31</span>, <span class="number">30</span>, <span class="number">31</span>];
-<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">USUAL_DAYS_PER_YEAR</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="number">365.0</span>;
+<span class="kw">const</span> <span class="ident">USUAL_DAYS_PER_MONTH</span>: [<span class="ident">u8</span>; <span class="number">12</span>] <span class="op">=</span> [<span class="number">31</span>, <span class="number">28</span>, <span class="number">31</span>, <span class="number">30</span>, <span class="number">31</span>, <span class="number">30</span>, <span class="number">31</span>, <span class="number">31</span>, <span class="number">30</span>, <span class="number">31</span>, <span class="number">30</span>, <span class="number">31</span>];
+<span class="kw">const</span> <span class="ident">USUAL_DAYS_PER_YEAR</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="number">365.0</span>;
 
-<span class="kw">fn</span> <span class="ident">is_leap_year</span>(<span class="ident">year</span>: <span class="ident">i32</span>) <span class="op">-&gt;</span> <span class="ident">bool</span> {
-    (<span class="ident">year</span> <span class="op">%</span> <span class="number">4</span> <span class="op">==</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">year</span> <span class="op">%</span> <span class="number">100</span> <span class="op">!=</span> <span class="number">0</span>) <span class="op">||</span> <span class="ident">year</span> <span class="op">%</span> <span class="number">400</span> <span class="op">==</span> <span class="number">0</span>
+<span class="doccomment">/// Offset is an alias of Instant. It contains the same kind of information, but is used in the</span>
+<span class="doccomment">/// context of defining an offset with respect to Utc.</span>
+<span class="kw">pub</span> <span class="kw">type</span> <span class="ident">Offset</span> <span class="op">=</span> <span class="ident">Instant</span>;
+
+<span class="doccomment">/// TimeZone defines a timezone with respect to Utc.</span>
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">TimeZone</span>: <span class="ident">fmt</span>::<span class="ident">Display</span> {
+    <span class="doccomment">/// utc_offset returns the difference between a given TZ and UTC.</span>
+    <span class="kw">fn</span> <span class="ident">utc_offset</span>() <span class="op">-&gt;</span> <span class="ident">Offset</span>;
+    <span class="kw">fn</span> <span class="ident">new</span>(
+        <span class="ident">year</span>: <span class="ident">i32</span>,
+        <span class="ident">month</span>: <span class="ident">u8</span>,
+        <span class="ident">day</span>: <span class="ident">u8</span>,
+        <span class="ident">hour</span>: <span class="ident">u8</span>,
+        <span class="ident">minute</span>: <span class="ident">u8</span>,
+        <span class="ident">second</span>: <span class="ident">u8</span>,
+        <span class="ident">nanos</span>: <span class="ident">u32</span>,
+    ) <span class="op">-&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span>, <span class="ident">Errors</span><span class="op">&gt;</span>
+    <span class="kw">where</span>
+        <span class="self">Self</span>: <span class="ident">Sized</span>;
 }
 
 <span class="doccomment">/// Utc is the interface between a time system and a time zone. All time zones are defined with</span>
@@ -450,7 +531,8 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// use hifitime::utc::{Utc, TimeZone, TimeSystem};</span>
+    <span class="doccomment">/// use hifitime::utc::TimeSystem;</span>
+    <span class="doccomment">/// use hifitime::utc::{Utc, TimeZone};</span>
     <span class="doccomment">/// use hifitime::instant::{Duration, Era, Instant};</span>
     <span class="doccomment">/// use hifitime::julian::ModifiedJulian;</span>
     <span class="doccomment">///</span>
@@ -584,7 +666,6 @@
 
 <span class="kw">impl</span> <span class="ident">TimeSystem</span> <span class="kw">for</span> <span class="ident">Utc</span> {
     <span class="doccomment">/// `from_instant` converts an Instant to a Utc.</span>
-    <span class="doccomment">/// Use this method to convert between different `TimeSystem` implementors.</span>
     <span class="kw">fn</span> <span class="ident">from_instant</span>(<span class="ident">instant</span>: <span class="ident">Instant</span>) <span class="op">-&gt;</span> <span class="ident">Utc</span> {
         <span class="kw">let</span> (<span class="ident">year</span>, <span class="ident">year_fraction</span>) <span class="op">=</span> <span class="ident">quorem</span>(<span class="ident">instant</span>.<span class="ident">secs</span>() <span class="kw">as</span> <span class="ident">f64</span>, <span class="number">365.0</span> <span class="op">*</span> <span class="ident">SECONDS_PER_DAY</span>);
         <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">month</span>, <span class="ident">month_fraction</span>) <span class="op">=</span> <span class="ident">quorem</span>(<span class="ident">year_fraction</span>, <span class="number">30.4365</span> <span class="op">*</span> <span class="ident">SECONDS_PER_DAY</span>);
@@ -625,7 +706,6 @@
     }
 
     <span class="doccomment">/// `as_instant` returns an Instant from the Utc.</span>
-    <span class="doccomment">/// Also use this method to convert between different `TimeSystem` implementors</span>
     <span class="kw">fn</span> <span class="ident">as_instant</span>(<span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">Instant</span> {
         <span class="kw">let</span> <span class="ident">era</span>: <span class="ident">Era</span>;
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">year</span> <span class="op">&gt;=</span> <span class="number">1900</span> {
@@ -675,6 +755,56 @@
             <span class="self">self</span>.<span class="ident">second</span>
         )
     }
+}
+
+<span class="doccomment">/// is_leap_year returns whether the provided year is a leap year or not.</span>
+<span class="doccomment">/// Tests for this function are part of the Utc tests.</span>
+<span class="kw">fn</span> <span class="ident">is_leap_year</span>(<span class="ident">year</span>: <span class="ident">i32</span>) <span class="op">-&gt;</span> <span class="ident">bool</span> {
+    (<span class="ident">year</span> <span class="op">%</span> <span class="number">4</span> <span class="op">==</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">year</span> <span class="op">%</span> <span class="number">100</span> <span class="op">!=</span> <span class="number">0</span>) <span class="op">||</span> <span class="ident">year</span> <span class="op">%</span> <span class="number">400</span> <span class="op">==</span> <span class="number">0</span>
+}
+
+<span class="doccomment">/// quorem returns a tuple of the quotient and the remainder a numerator and a denominator.</span>
+<span class="kw">fn</span> <span class="ident">quorem</span>(<span class="ident">numerator</span>: <span class="ident">f64</span>, <span class="ident">denominator</span>: <span class="ident">f64</span>) <span class="op">-&gt;</span> (<span class="ident">i32</span>, <span class="ident">f64</span>) {
+    <span class="kw">if</span> <span class="ident">numerator</span> <span class="op">&lt;</span> <span class="number">0.0</span> <span class="op">||</span> <span class="ident">denominator</span> <span class="op">&lt;</span> <span class="number">0.0</span> {
+        <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;quorem only supports positive numbers&quot;</span>);
+    }
+    <span class="kw">if</span> <span class="ident">denominator</span> <span class="op">==</span> <span class="number">0.0</span> {
+        <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;cannot divide by zero&quot;</span>);
+    }
+    (
+        (<span class="ident">numerator</span> <span class="op">/</span> <span class="ident">denominator</span>).<span class="ident">floor</span>() <span class="kw">as</span> <span class="ident">i32</span>,
+        (<span class="ident">numerator</span> <span class="op">%</span> <span class="ident">denominator</span>),
+    )
+}
+
+<span class="attribute">#[<span class="ident">test</span>]</span>
+<span class="kw">fn</span> <span class="ident">quorem_nominal_test</span>() {
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">quorem</span>(<span class="number">24.0</span>, <span class="number">6.0</span>), (<span class="number">4</span>, <span class="number">0.0</span>));
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">quorem</span>(<span class="number">25.0</span>, <span class="number">6.0</span>), (<span class="number">4</span>, <span class="number">1.0</span>));
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">quorem</span>(<span class="number">6.0</span>, <span class="number">6.0</span>), (<span class="number">1</span>, <span class="number">0.0</span>));
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">quorem</span>(<span class="number">5.0</span>, <span class="number">6.0</span>), (<span class="number">0</span>, <span class="number">5.0</span>));
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">quorem</span>(<span class="number">3540.0</span>, <span class="number">3600.0</span>), (<span class="number">0</span>, <span class="number">3540.0</span>));
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">quorem</span>(<span class="number">3540.0</span>, <span class="number">60.0</span>), (<span class="number">59</span>, <span class="number">0.0</span>));
+}
+
+<span class="attribute">#[<span class="ident">test</span>]</span>
+<span class="attribute">#[<span class="ident">should_panic</span>]</span>
+<span class="kw">fn</span> <span class="ident">quorem_negative_num_test</span>() {
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">quorem</span>(<span class="op">-</span><span class="number">24.0</span>, <span class="number">6.0</span>), (<span class="number">4</span>, <span class="number">0.0</span>));
+}
+
+<span class="attribute">#[<span class="ident">test</span>]</span>
+<span class="attribute">#[<span class="ident">should_panic</span>]</span>
+<span class="kw">fn</span> <span class="ident">quorem_negative_den_test</span>() {
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">quorem</span>(<span class="number">24.0</span>, <span class="op">-</span><span class="number">6.0</span>), (<span class="number">4</span>, <span class="number">0.0</span>));
+}
+
+<span class="attribute">#[<span class="ident">test</span>]</span>
+<span class="attribute">#[<span class="ident">should_panic</span>]</span>
+<span class="kw">fn</span> <span class="ident">quorem_negative_numden_test</span>() {
+    <span class="comment">// A valid argument could be made that this test should work, but there is no situation in</span>
+    <span class="comment">// this library where two negative numbers should be considered a valid input.</span>
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">quorem</span>(<span class="op">-</span><span class="number">24.0</span>, <span class="op">-</span><span class="number">6.0</span>), (<span class="number">4</span>, <span class="number">0.0</span>));
 }
 </pre>
 </section>

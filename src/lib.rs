@@ -13,6 +13,7 @@
 //! * Leap seconds (as announced by the IETF on a yearly basis)
 //! * Julian dates and Modified Julian dates
 //! * UTC representation with ISO8601 formatting
+//! * Allows building custom TimeSystem (e.g. Julian days)
 //! * Time varying `TimeZone`s to represent very high speed reference frames
 //!
 //! Most (all?) examples are validated with external references, as detailed on a test-by-test
@@ -50,8 +51,7 @@
 //! ### Examples:
 //!
 //! ```rust
-//! use hifitime::TimeSystem;
-//! use hifitime::utc::{Utc, TimeZone};
+//! use hifitime::utc::{Utc, TimeZone, TimeSystem};
 //! use hifitime::instant::Duration;
 //! use hifitime::julian::ModifiedJulian;
 //!
@@ -76,21 +76,32 @@
 //! ```
 //!
 
+/// The `instant` module is built on top of std::time::Duration. It is the basis of almost
+/// all computations in this library. It is the only common denominator allowing for conversions
+/// between Time Systems.
 pub mod instant;
+/// The `julian` module supports (Modified) Julian Days, which are heavily used in astronomy
+/// and its engineering friends.
 pub mod julian;
+/// The `Utc` module supports conversions between Utc and other time systems. The main advantage
+/// (and challenge) is the inherent support for leap seconds. Refer to module documentation for
+/// leap second implementation details.
 pub mod utc;
 
 use std::cmp::PartialOrd;
 use instant::Instant;
 use std::fmt;
 
-/// A TimeSystem enabled the creation of system for measuring spans of time, such as UTC or Julian
+/// A TimeSystem enables the creation of system for measuring spans of time, such as UTC or Julian
 /// days.
 pub trait TimeSystem: PartialOrd {
+    /// Use this method to convert between different `TimeSystem` implementors.
     fn from_instant(Instant) -> Self;
+    /// Also use this method to convert between different `TimeSystem` implementors
     fn as_instant(self) -> Instant;
 }
 
+/// Errors handles all oddities which may occur in this library.
 #[derive(Debug)]
 pub enum Errors {
     /// Carry is returned when a provided function does not support time carry. For example,
