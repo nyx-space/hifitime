@@ -1,6 +1,5 @@
-pub use super::utils::Offset;
 pub use super::TimeSystem;
-use super::utils::Errors;
+use super::Errors;
 use super::instant::{Era, Instant};
 use super::julian::SECONDS_PER_DAY;
 use std::fmt;
@@ -45,6 +44,10 @@ const JULY_YEARS: [i32; 11] = [
 
 pub const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 pub const USUAL_DAYS_PER_YEAR: f64 = 365.0;
+
+/// Offset is an alias of Instant. It contains the same kind of information, but is used in a
+/// very different context
+pub type Offset = Instant;
 
 pub trait TimeZone: fmt::Display {
     /// utc_offset returns the difference between a given TZ and UTC.

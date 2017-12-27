@@ -76,17 +76,33 @@
 //! ```
 //!
 
-pub mod utils;
 pub mod instant;
 pub mod julian;
 pub mod utc;
 
 use std::cmp::PartialOrd;
 use instant::Instant;
+use std::fmt;
 
 /// A TimeSystem enabled the creation of system for measuring spans of time, such as UTC or Julian
 /// days.
 pub trait TimeSystem: PartialOrd {
     fn from_instant(Instant) -> Self;
     fn as_instant(self) -> Instant;
+}
+
+#[derive(Debug)]
+pub enum Errors {
+    /// Carry is returned when a provided function does not support time carry. For example,
+    /// if a call to `Utc::new` receives 60 seconds and there are only 59 seconds in the provided
+    /// date time then a Carry Error is returned as the Result.
+    Carry,
+}
+
+impl fmt::Display for Errors {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Errors::Carry => write!(f, "a carry error (e.g. 61 seconds)"),
+        }
+    }
 }
