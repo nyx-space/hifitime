@@ -12,7 +12,7 @@ pub const DAYS_PER_YEAR: f64 = 365.25;
 /// SECONDS_PER_DAY defines the number of seconds per day.
 pub const SECONDS_PER_DAY: f64 = 86_400.0;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
 pub struct ModifiedJulian {
     pub days: f64,
 }
@@ -76,5 +76,4 @@ impl TimeSystem for ModifiedJulian {
         let nanos = (secs_frac - seconds) * 1e9 / (SECONDS_PER_DAY * modifier);
         Instant::new(seconds as u64, nanos.round() as u32, era)
     }
-    //fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result;
 }

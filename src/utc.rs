@@ -3,8 +3,9 @@ pub use super::traits::{TimeZone, TimeSystem};
 use super::utils::{Errors, quorem};
 use super::instant::{Era, Instant};
 use super::julian::SECONDS_PER_DAY;
-use std::marker::Sized;
+use std::cmp::{PartialOrd, Ord, Eq, Ordering};
 use std::fmt;
+use std::marker::Sized;
 
 // There is no way to define a constant map in Rust (yet), so we're combining several structures
 // to store when the leap seconds should be added. An updated list of leap seconds can be found
@@ -242,7 +243,7 @@ impl TimeSystem for Utc {
             self.second as f64;
         if self.second == 60 {
             // Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
-            // same number of second after J1900.0.
+            // same number of second afters J1900.0.
             seconds_wrt_1900 -= 1.0;
         }
         Instant::new(seconds_wrt_1900 as u64, self.nanos as u32, era)
@@ -261,5 +262,30 @@ impl fmt::Display for Utc {
             self.minute,
             self.second
         )
+    }
+}
+
+impl PartialEq for Utc {
+    fn eq(&self, other: &Utc) -> bool {
+        self.as_instant() == other.as_instant()
+    }
+}
+
+impl PartialOrd for Utc {
+    fn partial_cmp(&self, other: &Utc) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+
+    fn lt(&self, other: &Utc) -> bool {
+        self.as_instant() < other.as_instant()
+    }
+    fn le(&self, other: &Utc) -> bool {
+        self.as_instant() <= other.as_instant()
+    }
+    fn gt(&self, other: &Utc) -> bool {
+        self.as_instant() > other.as_instant()
+    }
+    fn ge(&self, other: &Utc) -> bool {
+        self.as_instant() >= other.as_instant()
     }
 }

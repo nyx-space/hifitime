@@ -2,7 +2,7 @@
 // time spans and leap seconds. Moreover, an Instant is defined with respect to
 // 01 Jan 1900, as per NTP specifications.
 
-use std::cmp::PartialEq;
+use std::cmp::{PartialEq, PartialOrd};
 use std::ops::{Add, Sub};
 pub use std::time::Duration;
 use std::fmt;
@@ -10,10 +10,15 @@ use std::fmt;
 /// An `Era` represents whether the associated `Instant` is before the TAI Epoch
 /// (01 Jan 1900, midnight) or afterwards. If it is before, than it's refered to as "Past",
 /// otherwise is in the "Present" era.
-#[derive(Clone, Copy, Debug, PartialEq)]
+///
+/// ```
+/// use hifitime::instant::Era;
+/// assert!(Era::Past < Era::Present);
+/// ```
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub enum Era {
-    Present,
     Past,
+    Present,
 }
 
 impl fmt::Display for Era {
@@ -25,13 +30,12 @@ impl fmt::Display for Era {
     }
 }
 
-
 /// An `Instant` type represents an instant with respect to 01 Jan 1900 at midnight, as per
 /// the International Atomic Time (TAI) system.
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialOrd)]
 pub struct Instant {
-    duration: Duration,
     era: Era,
+    duration: Duration,
 }
 
 impl Instant {
@@ -56,6 +60,11 @@ impl Instant {
     /// let one_second_after_1900 = Instant::new(1, 0, Era::Present);
     /// assert_eq!(one_second_after_1900.secs(), 1);
     /// assert_eq!(one_second_after_1900.era(), Era::Present);
+    ///
+    /// assert!(one_second_after_1900 > epoch);
+    /// assert!(one_second_after_1900 >= epoch);
+    /// assert!(one_second_before_1900 < epoch);
+    /// assert!(one_second_before_1900 <= epoch);
     /// ```
     pub fn new(seconds: u64, nanos: u32, era: Era) -> Instant {
         Instant {
@@ -70,12 +79,35 @@ impl Instant {
         self.duration.as_secs()
     }
 
+    /// Returns the number of nanoseconds of the given instant.
+    /// *NOTE:* Check the `era` if the date may be before 1900.
     pub fn nanos(self) -> u32 {
         self.duration.subsec_nanos()
     }
 
+    /// Returns the Era associated with this instant, i.e. whether it's before or after
+    /// the TAI Epoch.
     pub fn era(self) -> Era {
         self.era
+    }
+
+    /// Returns whether `self` represents a time that is *strictly* before `other`.
+    /// If `self == other`, this function returns `false`.
+    pub fn before(self, other: Instant) -> bool {
+        if self.era == Era::Past && other.era == Era::Present {
+            true
+        } else if (self == other) || (self.era == Era::Present && other.era == Era::Past) {
+            false
+        } else {
+            (self.secs() < other.secs()) ||
+                (self.secs() == other.secs() && self.nanos() < other.nanos())
+        }
+    }
+
+    /// Returns whether `self` represents a time that is *strictly* after `other`.
+    /// If `self == other`, this function returns `false`.
+    pub fn after(self, other: Instant) -> bool {
+        !self.before(other)
     }
 }
 
@@ -152,6 +184,7 @@ impl Sub<Duration> for Instant {
     /// Subtracts a given std::time::Duration from an `Instant`.
     /// # Examples
     ///
+    /// ```
     /// use hifitime::instant::{Era, Instant, Duration};
     /// // Sub in the Present era.
     /// let tick = Instant::new(159, 10, Era::Present) - Duration::new(5, 2);
@@ -161,7 +194,7 @@ impl Sub<Duration> for Instant {
 
     /// // Sub in the Past era.
     /// let tick = Instant::new(159, 10, Era::Past) - Duration::new(5, 2);
-    /// assert_eq!(tick.secs(), 159);
+    /// assert_eq!(tick.secs(), 164);
     /// assert_eq!(tick.nanos(), 12);
     /// assert_eq!(tick.era(), Era::Past);
 
