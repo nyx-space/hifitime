@@ -262,14 +262,51 @@ impl TimeSystem for Utc {
         let (mut day, day_fraction) =
             quorem(month_fraction, SECONDS_PER_DAY * days_this_month as f64);
         println!(
-            "year_fraction = {:} || month_fraction = {:} || secs this month = {:}",
+            "year_fraction = {:} || month_fraction = {:} || day_fraction = {:} ||
+            secs this month = {:}",
             year_fraction,
             month_fraction,
+            day_fraction,
             SECONDS_PER_DAY * days_this_month as f64
         );
         day += 1; // Otherwise the day count starts at 0
-        let (hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
-        let (mins, secs) = quorem(hours_fraction, 60.0);
+        let (mut hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
+        if hours == 24 {
+            day += 1;
+            hours = 0;
+        }
+        let (mut mins, mut secs) = quorem(hours_fraction, 60.0);
+        if mins == 60 {
+            hours += 1;
+            mins = 0;
+        }
+        if secs == 60.0 {
+            mins += 1;
+            secs = 0.0;
+        }
+
+        // Now that we've done all the overflows, let's recheck them in reverse to overflow larger
+        // parts of the date.
+        if mins == 60 {
+            println!("fixed mins");
+            hours += 1;
+            mins = 1;
+        }
+        if hours >= 24 {
+            println!("fixed hours from {:} to {:}", hours, hours - 24);
+            day += 1;
+            hours -= 24;
+        }
+        if day == (days_this_month + 1) as i32 {
+            println!("fixed days");
+            month += 1;
+            day = 1;
+        }
+        if month == 13 {
+            println!("fixed months");
+            month = 1;
+            year += 1;
+        }
         println!(
             "{:} => {:} {:} {:} T {:} {:} {:}",
             day_fraction,

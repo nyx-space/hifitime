@@ -9,23 +9,26 @@ fn utc_valid_dates() {
 
     // Unix epoch tests for reciprocity prior to any leap second (leap years counted)
     let unix_epoch = Instant::new(2_208_988_800, 0, Era::Present); // 1970 Jan 01, midnight
-    for dhour in 0..24 {
-        for dmin in 0..60 {
-            for dsec in 0..60 {
-                println!("TEST ====> 1970 1 1 T {:} {:} {:}", dhour, dmin, dsec);
-                let this_epoch = unix_epoch + Duration::new(3600 * dhour + 60 * dmin + dsec, 0);
-                let unix_ref = Utc::new(1970, 1, 1, dhour as u8, dmin as u8, dsec as u8, 0)
-                    .expect("init unix epoch");
-                assert_eq!(
+    for dday in 1..31 {
+        for dhour in 0..24 {
+            for dmin in 0..60 {
+                for dsec in 0..60 {
+                    let this_epoch = unix_epoch +
+                        Duration::new(24 * 3600 * (dday - 1) + 3600 * dhour + 60 * dmin + dsec, 0);
+                    let unix_ref =
+                        Utc::new(1970, 1, dday as u8, dhour as u8, dmin as u8, dsec as u8, 0)
+                            .expect("init unix epoch");
+                    assert_eq!(
                     unix_ref.as_instant(),
                     this_epoch,
-                    "Incorrect Unix epoch + {:} {:} {:}",
+                    "Incorrect Unix epoch + {:} {:} {:} {:}",
+                    dday,
                     dhour,
                     dmin,
                     dsec,
                 );
-                let unix_ref_from_inst = Utc::from_instant(this_epoch);
-                assert_eq!(
+                    let unix_ref_from_inst = Utc::from_instant(this_epoch);
+                    assert_eq!(
                     unix_ref,
                     unix_ref_from_inst,
                     "Conversion from instant failed + {:} {:} {:}",
@@ -33,17 +36,13 @@ fn utc_valid_dates() {
                     dmin,
                     dsec,
                 );
+                }
             }
         }
     }
 
-    for dyear in -2..2 {
-        let era: Era;
-        if dyear >= 0 {
-            era = Era::Present;
-        } else {
-            era = Era::Past;
-        }
+    // Test negative years
+    for dyear in -2..0 {
         for dhour in 0..7 {
             for dminute in (0..60).rev() {
                 for dsecond in 0..60 {
@@ -60,7 +59,7 @@ fn utc_valid_dates() {
                         3600 * dhour + 60 * dminute + dsecond as u64 +
                             (SECONDS_PER_DAY as u64) * 365 * (dyear.abs() as u64),
                         1590,
-                        era,
+                        Era::Past,
                     );
                     assert_eq!(
                         utc.as_instant(),
