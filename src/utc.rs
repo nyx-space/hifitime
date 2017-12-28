@@ -240,22 +240,57 @@ where
 impl TimeSystem for Utc {
     /// `from_instant` converts an Instant to a Utc.
     fn from_instant(instant: Instant) -> Utc {
-        let (year, year_fraction) = quorem(instant.secs() as f64, 365.0 * SECONDS_PER_DAY);
+        let (mut year, mut year_fraction) = quorem(instant.secs() as f64, 365.0 * SECONDS_PER_DAY);
+        // let year_flt = instant.secs() as f64 / (365.0 * SECONDS_PER_DAY);
+        // let mut year_fraction = (year_flt - year_flt.floor()) * 365.0;
+        year = match instant.era() {
+            Era::Past => 1900 - year,
+            Era::Present => 1900 + year,
+        };
+        // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
+        // between 1900 and `year`
+        for year in 1900..year {
+            if is_leap_year(year) {
+                year_fraction -= 1.; // XXX: Change to SECONDS_PER_DAY when switching back to quorem
+            }
+        }
+        println!("{:?} ==> {:} / {:}", instant.secs(), year, year_fraction);
+        //println!("{:?} ==> {:} / {:}", instant.secs(), yearq, year_fractionq);
+        // Compute the number of days
         let (mut month, month_fraction) = quorem(year_fraction, 30.4365 * SECONDS_PER_DAY);
         month += 1; // Otherwise the month count starts at 0
         let mut days_this_month = USUAL_DAYS_PER_MONTH[(month - 1) as usize];
         if month == 2 && is_leap_year(year) {
             days_this_month += 1;
         }
-        let (mut day, day_fraction) =
-            quorem(month_fraction, SECONDS_PER_DAY * days_this_month as f64);
+        /*let (mut day, day_fraction) =
+            quorem(month_fraction, SECONDS_PER_DAY * days_this_month as f64);*/
+        let numerator = month_fraction;
+        let denominator = SECONDS_PER_DAY * days_this_month as f64;
+        let flrd = (numerator / denominator).floor();
+
+        let mut day = flrd as i32;
+        let mut secs = ((numerator / denominator) - flrd) * denominator;
+
         day += 1; // Otherwise the day count starts at 0
-        let (hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
-        let (mins, secs) = quorem(hours_fraction, 60.0);
+        //let mut secs = day_fraction * 3600.0 * 24.0;
+        println!("initial secs = {:?}", secs);
+        let (mut hours, mut mins) = (0, 0);
+        while secs >= 60.0 {
+            if secs >= 3600.0 {
+                hours += 1;
+                secs -= 3600.0;
+            } else {
+                mins += 1;
+                secs -= 60.0;
+            }
+        }
+        println!("{:} / {:} / {:} ({:})", hours, mins, secs, secs as u8);
+        // let (mins, secs) = quorem(hours_fraction, 60.0 * 60.0);
         match instant.era() {
             Era::Past => {
                 Utc::new(
-                    1900 - year,
+                    year,
                     month as u8,
                     day as u8,
                     hours as u8,
@@ -266,7 +301,7 @@ impl TimeSystem for Utc {
             }
             Era::Present => {
                 Utc::new(
-                    1900 + year,
+                    year,
                     month as u8,
                     day as u8,
                     hours as u8,
