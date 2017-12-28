@@ -240,7 +240,19 @@ where
 impl TimeSystem for Utc {
     /// `from_instant` converts an Instant to a Utc.
     fn from_instant(instant: Instant) -> Utc {
-        let (year, year_fraction) = quorem(instant.secs() as f64, 365.0 * SECONDS_PER_DAY);
+        let (mut year, mut year_fraction) = quorem(instant.secs() as f64, 365.0 * SECONDS_PER_DAY);
+        year = match instant.era() {
+            Era::Past => 1900 - year,
+            Era::Present => 1900 + year,
+        };
+        // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
+        // between 1900 and `year`
+        for year in 1900..year {
+            if is_leap_year(year) {
+                year_fraction -= SECONDS_PER_DAY;
+            }
+        }
+
         let (mut month, month_fraction) = quorem(year_fraction, 30.4365 * SECONDS_PER_DAY);
         month += 1; // Otherwise the month count starts at 0
         let mut days_this_month = USUAL_DAYS_PER_MONTH[(month - 1) as usize];
@@ -249,13 +261,39 @@ impl TimeSystem for Utc {
         }
         let (mut day, day_fraction) =
             quorem(month_fraction, SECONDS_PER_DAY * days_this_month as f64);
+        println!(
+            "year_fraction = {:} || month_fraction = {:} || secs this month = {:}",
+            year_fraction,
+            month_fraction,
+            SECONDS_PER_DAY * days_this_month as f64
+        );
         day += 1; // Otherwise the day count starts at 0
         let (hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
         let (mins, secs) = quorem(hours_fraction, 60.0);
+        println!(
+            "{:} => {:} {:} {:} T {:} {:} {:}",
+            day_fraction,
+            year,
+            month,
+            day,
+            hours,
+            mins,
+            secs
+        );
+        println!(
+            "{:} => {:} {:} {:} T {:} {:} {:} [u8]",
+            day_fraction,
+            year,
+            month as u8,
+            day as u8,
+            hours as u8,
+            mins as u8,
+            secs as u8
+        );
         match instant.era() {
             Era::Past => {
                 Utc::new(
-                    1900 - year,
+                    year,
                     month as u8,
                     day as u8,
                     hours as u8,
@@ -266,7 +304,7 @@ impl TimeSystem for Utc {
             }
             Era::Present => {
                 Utc::new(
-                    1900 + year,
+                    year,
                     month as u8,
                     day as u8,
                     hours as u8,

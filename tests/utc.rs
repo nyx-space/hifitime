@@ -10,8 +10,9 @@ fn utc_valid_dates() {
     // Unix epoch tests for reciprocity prior to any leap second (leap years counted)
     let unix_epoch = Instant::new(2_208_988_800, 0, Era::Present); // 1970 Jan 01, midnight
     for dhour in 0..24 {
-        for dmin in 0..61 {
-            for dsec in 0..61 {
+        for dmin in 0..60 {
+            for dsec in 0..60 {
+                println!("TEST ====> 1970 1 1 T {:} {:} {:}", dhour, dmin, dsec);
                 let this_epoch = unix_epoch + Duration::new(3600 * dhour + 60 * dmin + dsec, 0);
                 let unix_ref = Utc::new(1970, 1, 1, dhour as u8, dmin as u8, dsec as u8, 0)
                     .expect("init unix epoch");
