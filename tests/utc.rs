@@ -4,8 +4,37 @@ extern crate hifitime;
 fn utc_valid_dates() {
     use hifitime::utc::{Utc, TimeZone};
     use hifitime::julian::SECONDS_PER_DAY;
-    use hifitime::instant::{Era, Instant};
+    use hifitime::instant::{Duration, Era, Instant};
     use hifitime::TimeSystem;
+
+    // Unix epoch tests for reciprocity prior to any leap second (leap years counted)
+    let unix_epoch = Instant::new(2_208_988_800, 0, Era::Present); // 1970 Jan 01, midnight
+    for dhour in 0..24 {
+        for dmin in 0..61 {
+            for dsec in 0..61 {
+                let this_epoch = unix_epoch + Duration::new(3600 * dhour + 60 * dmin + dsec, 0);
+                let unix_ref = Utc::new(1970, 1, 1, dhour as u8, dmin as u8, dsec as u8, 0)
+                    .expect("init unix epoch");
+                assert_eq!(
+                    unix_ref.as_instant(),
+                    this_epoch,
+                    "Incorrect Unix epoch + {:} {:} {:}",
+                    dhour,
+                    dmin,
+                    dsec,
+                );
+                let unix_ref_from_inst = Utc::from_instant(this_epoch);
+                assert_eq!(
+                    unix_ref,
+                    unix_ref_from_inst,
+                    "Conversion from instant failed + {:} {:} {:}",
+                    dhour,
+                    dmin,
+                    dsec,
+                );
+            }
+        }
+    }
 
     for dyear in -2..2 {
         let era: Era;
