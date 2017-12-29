@@ -253,104 +253,56 @@ impl TimeSystem for Utc {
             }
         }
 
+        // Get the month from the average number of seconds per month
         let (mut month, month_fraction) = quorem(year_fraction, 30.4365 * SECONDS_PER_DAY);
         month += 1; // Otherwise the month count starts at 0
-        let mut days_this_month = USUAL_DAYS_PER_MONTH[(month - 1) as usize];
-        if month == 2 && is_leap_year(year) {
-            days_this_month += 1;
-        }
-        let (mut day, day_fraction) =
-            quorem(month_fraction, SECONDS_PER_DAY * days_this_month as f64);
-        println!(
-            "year_fraction = {:} || month_fraction = {:} || day_fraction = {:} ||
-            secs this month = {:}",
-            year_fraction,
-            month_fraction,
-            day_fraction,
-            SECONDS_PER_DAY * days_this_month as f64
-        );
+        // let mut days_this_month = USUAL_DAYS_PER_MONTH[(month - 1) as usize];
+        // if month == 2 && is_leap_year(year) {
+        //     days_this_month += 1;
+        // }
+        // Get the day by the exact number of seconds in a day
+        let (mut day, day_fraction) = quorem(month_fraction, SECONDS_PER_DAY);
+        // println!(
+        //     "year_fraction = {:} || month_fraction = {:} || day_fraction = {:} ||
+        //     days_this_month = {:} || secs this month = {:}",
+        //     year_fraction,
+        //     month_fraction,
+        //     day_fraction,
+        //     days_this_month,
+        //     SECONDS_PER_DAY * days_this_month as f64
+        // );
         day += 1; // Otherwise the day count starts at 0
-        let (mut hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
-        if hours == 24 {
-            day += 1;
-            hours = 0;
-        }
-        let (mut mins, mut secs) = quorem(hours_fraction, 60.0);
-        if mins == 60 {
-            hours += 1;
-            mins = 0;
-        }
-        if secs == 60.0 {
-            mins += 1;
-            secs = 0.0;
-        }
-
-        // Now that we've done all the overflows, let's recheck them in reverse to overflow larger
-        // parts of the date.
-        if mins == 60 {
-            println!("fixed mins");
-            hours += 1;
-            mins = 1;
-        }
-        if hours >= 24 {
-            println!("fixed hours from {:} to {:}", hours, hours - 24);
-            day += 1;
-            hours -= 24;
-        }
-        if day == (days_this_month + 1) as i32 {
-            println!("fixed days");
-            month += 1;
-            day = 1;
-        }
-        if month == 13 {
-            println!("fixed months");
-            month = 1;
-            year += 1;
-        }
-        println!(
-            "{:} => {:} {:} {:} T {:} {:} {:}",
-            day_fraction,
-            year,
-            month,
-            day,
-            hours,
-            mins,
-            secs
-        );
-        println!(
-            "{:} => {:} {:} {:} T {:} {:} {:} [u8]",
-            day_fraction,
+        let (hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
+        let (mins, secs) = quorem(hours_fraction, 60.0);
+        // println!(
+        //     "{:} => {:} {:} {:} T {:} {:} {:}",
+        //     day_fraction,
+        //     year,
+        //     month,
+        //     day,
+        //     hours,
+        //     mins,
+        //     secs
+        // );
+        // println!(
+        //     "{:} => {:} {:} {:} T {:} {:} {:} [u8]",
+        //     day_fraction,
+        //     year,
+        //     month as u8,
+        //     day as u8,
+        //     hours as u8,
+        //     mins as u8,
+        //     secs as u8
+        // );
+        Utc::new(
             year,
             month as u8,
             day as u8,
             hours as u8,
             mins as u8,
-            secs as u8
-        );
-        match instant.era() {
-            Era::Past => {
-                Utc::new(
-                    year,
-                    month as u8,
-                    day as u8,
-                    hours as u8,
-                    mins as u8,
-                    secs as u8,
-                    instant.nanos(),
-                ).expect("date computed from instant is invalid (past)")
-            }
-            Era::Present => {
-                Utc::new(
-                    year,
-                    month as u8,
-                    day as u8,
-                    hours as u8,
-                    mins as u8,
-                    secs as u8,
-                    instant.nanos(),
-                ).expect("date computed from instant is invalid")
-            }
-        }
+            secs as u8,
+            instant.nanos(),
+        ).expect("invalid date computed from_instant")
     }
 
     /// `as_instant` returns an Instant from the Utc.

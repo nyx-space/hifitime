@@ -8,7 +8,10 @@ fn utc_valid_dates() {
     use hifitime::TimeSystem;
 
     // Unix epoch tests for reciprocity prior to any leap second (leap years counted)
+    // This is a long test because I encountered many small bugs in the conversion when
+    // implementing this.
     let unix_epoch = Instant::new(2_208_988_800, 0, Era::Present); // 1970 Jan 01, midnight
+
     for dday in 1..31 {
         for dhour in 0..24 {
             for dmin in 0..60 {
@@ -19,27 +22,116 @@ fn utc_valid_dates() {
                         Utc::new(1970, 1, dday as u8, dhour as u8, dmin as u8, dsec as u8, 0)
                             .expect("init unix epoch");
                     assert_eq!(
-                    unix_ref.as_instant(),
-                    this_epoch,
-                    "Incorrect Unix epoch + {:} {:} {:} {:}",
-                    dday,
-                    dhour,
-                    dmin,
-                    dsec,
-                );
+                        unix_ref.as_instant(),
+                        this_epoch,
+                        "Incorrect Unix epoch + {:} {:} {:} {:}",
+                        dday,
+                        dhour,
+                        dmin,
+                        dsec
+                    );
                     let unix_ref_from_inst = Utc::from_instant(this_epoch);
                     assert_eq!(
-                    unix_ref,
-                    unix_ref_from_inst,
-                    "Conversion from instant failed + {:} {:} {:}",
-                    dhour,
-                    dmin,
-                    dsec,
-                );
+                        unix_ref,
+                        unix_ref_from_inst,
+                        "Conversion from instant failed + {:} {:} {:}",
+                        dhour,
+                        dmin,
+                        dsec
+                    );
                 }
             }
         }
     }
+
+    // Specific tests via timeanddate.com (tool validation: https://goo.gl/a3B5sF)
+    // X-Val: https://goo.gl/MouuES - 01 January 1939 04:12:48
+    let this_epoch = Instant::new(1_230_696_768, 0, Era::Present);
+    let epoch_utc = Utc::new(1939, 01, 01, 4, 12, 48, 0).expect("init epoch");
+    assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
+    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
+    assert_eq!(
+        epoch_utc,
+        epoch_utc_from_inst,
+        "Conversion from instant failed"
+    );
+
+    // X-Val: https://goo.gl/49d3oo - 01 March 1939 04:12:48
+    let this_epoch = Instant::new(1_235_794_368, 0, Era::Present);
+    let epoch_utc = Utc::new(1939, 03, 01, 4, 12, 48, 0).expect("init epoch");
+    assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
+    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
+    assert_eq!(
+        epoch_utc,
+        epoch_utc_from_inst,
+        "Conversion from instant failed"
+    );
+
+    // X-Val: https://goo.gl/Je9yv4 - 01 March 1940 04:12:48
+    let this_epoch = Instant::new(1_267_416_768, 0, Era::Present);
+    let epoch_utc = Utc::new(1940, 03, 01, 4, 12, 48, 0).expect("init epoch");
+    assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
+    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
+    assert_eq!(
+        epoch_utc,
+        epoch_utc_from_inst,
+        "Conversion from instant failed"
+    );
+
+    // X-Val: https://goo.gl/qYNmVA - 01 February 1939 04:12:48
+    let this_epoch = Instant::new(1_264_911_168, 0, Era::Present);
+    let epoch_utc = Utc::new(1939, 02, 01, 4, 12, 48, 0).expect("init epoch");
+    assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
+    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
+    assert_eq!(
+        epoch_utc,
+        epoch_utc_from_inst,
+        "Conversion from instant failed"
+    );
+
+    // X-Val: https://goo.gl/736Xn2 - 01 February 1940 04:12:48
+    let this_epoch = Instant::new(1_264_911_168, 0, Era::Present);
+    let epoch_utc = Utc::new(1940, 02, 01, 4, 12, 48, 0).expect("init epoch");
+    assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
+    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
+    assert_eq!(
+        epoch_utc,
+        epoch_utc_from_inst,
+        "Conversion from instant failed"
+    );
+
+    // X-Val: https://goo.gl/CrPDrc - 28 February 1940 04:12:48
+    let this_epoch = Instant::new(1_267_243_968, 0, Era::Present);
+    let epoch_utc = Utc::new(1940, 02, 28, 4, 12, 48, 0).expect("init epoch");
+    assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
+    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
+    assert_eq!(
+        epoch_utc,
+        epoch_utc_from_inst,
+        "Conversion from instant failed"
+    );
+
+    // X-Val: https://goo.gl/GRcV9U - 29 February 1940 04:12:48
+    let this_epoch = Instant::new(1_267_330_368, 0, Era::Present);
+    let epoch_utc = Utc::new(1940, 02, 29, 4, 12, 48, 0).expect("init epoch");
+    assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
+    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
+    assert_eq!(
+        epoch_utc,
+        epoch_utc_from_inst,
+        "Conversion from instant failed"
+    );
+
+    // X-Val: https://goo.gl/rEkhKD - 16 February 1970 16:36:13
+    let this_epoch = unix_epoch + Duration::new(4_034_173, 0);
+    let epoch_utc = Utc::new(1970, 02, 16, 16, 36, 13, 0).expect("init epoch");
+    assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
+    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
+    assert_eq!(
+        epoch_utc,
+        epoch_utc_from_inst,
+        "Conversion from instant failed"
+    );
 
     // Test negative years
     for dyear in -2..0 {
