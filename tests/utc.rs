@@ -7,44 +7,68 @@ fn utc_valid_dates() {
     use hifitime::instant::{Duration, Era, Instant};
     use hifitime::TimeSystem;
 
-    // Unix epoch tests for reciprocity prior to any leap second (leap years counted)
-    // This is a long test because I encountered many small bugs in the conversion when
-    // implementing this.
-    let unix_epoch = Instant::new(2_208_988_800, 0, Era::Present); // 1970 Jan 01, midnight
+    // Tests arbitrary dates in chronological order.
+    // Cross validated via timeanddate.com (tool validation: https://goo.gl/a3B5sF)
+    let dt = Utc::new(1900, 01, 01, 0, 0, 0, 0).expect("01 January 1900 invalid?!");
+    assert_eq!(
+        dt.as_instant(),
+        Instant::new(0, 0, Era::Present),
+        "1900 Epoch should be zero"
+    );
+    assert_eq!(format!("{}", dt), "1900-01-01T00:00:00+00:00");
+    assert_eq!(Utc::from_instant(dt.as_instant()), dt, "Reciprocity error");
 
-    for dday in 1..31 {
-        for dhour in 0..24 {
-            for dmin in 0..60 {
-                for dsec in 0..60 {
-                    let this_epoch = unix_epoch +
-                        Duration::new(24 * 3600 * (dday - 1) + 3600 * dhour + 60 * dmin + dsec, 0);
-                    let unix_ref =
-                        Utc::new(1970, 1, dday as u8, dhour as u8, dmin as u8, dsec as u8, 0)
-                            .expect("init unix epoch");
-                    assert_eq!(
-                        unix_ref.as_instant(),
-                        this_epoch,
-                        "Incorrect Unix epoch + {:} {:} {:} {:}",
-                        dday,
-                        dhour,
-                        dmin,
-                        dsec
-                    );
-                    let unix_ref_from_inst = Utc::from_instant(this_epoch);
-                    assert_eq!(
-                        unix_ref,
-                        unix_ref_from_inst,
-                        "Conversion from instant failed + {:} {:} {:}",
-                        dhour,
-                        dmin,
-                        dsec
-                    );
-                }
-            }
-        }
-    }
+    let dt = Utc::new(1900, 01, 01, 12, 0, 0, 0).expect("01 January 1900 invalid?!");
+    assert_eq!(
+        dt.as_instant(),
+        Instant::new(12 * 3600, 0, Era::Present),
+        "1900 Epoch should be 12 hours"
+    );
+    assert_eq!(format!("{}", dt), "1900-01-01T12:00:00+00:00");
+    assert_eq!(Utc::from_instant(dt.as_instant()), dt, "Reciprocity error");
 
-    // Specific tests via timeanddate.com (tool validation: https://goo.gl/a3B5sF)
+    let dt = Utc::new(1905, 01, 01, 0, 0, 0, 1590).expect("epoch 1905 failed");
+    assert_eq!(
+        dt.as_instant(),
+        Instant::new(3600 * 24 + (SECONDS_PER_DAY as u64) * 365 * 5, 1590, Era::Present),
+        "Incorrect Epoch 1905 + some computed",
+    );
+    assert_eq!(format!("{}", dt), "1905-01-01T00:00:00+00:00");
+    assert_eq!(Utc::from_instant(dt.as_instant()), dt, "Reciprocity error");
+
+    // X-Val: https://goo.gl/dYGDxB - 03 January 1938 04:12:48
+    let this_epoch = Instant::new(1_199_333_568, 0, Era::Present);
+    let epoch_utc = Utc::new(1938, 01, 03, 4, 12, 48, 0).expect("init epoch");
+    assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
+    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
+    assert_eq!(
+        epoch_utc,
+        epoch_utc_from_inst,
+        "Conversion from instant failed"
+    );
+
+    // X-Val: https://goo.gl/nBRKZN - 24 June 193804:12:48
+    let this_epoch = Instant::new(1_214_194_368, 0, Era::Present);
+    let epoch_utc = Utc::new(1938, 06, 24, 4, 12, 48, 0).expect("init epoch");
+    assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
+    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
+    assert_eq!(
+        epoch_utc,
+        epoch_utc_from_inst,
+        "Conversion from instant failed"
+    );
+
+    // X-Val: https://goo.gl/eH6YJZ - 31 August 1938 04:12:48
+    let this_epoch = Instant::new(1_220_069_568, 0, Era::Present);
+    let epoch_utc = Utc::new(1938, 08, 31, 4, 12, 48, 0).expect("init epoch");
+    assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
+    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
+    assert_eq!(
+        epoch_utc,
+        epoch_utc_from_inst,
+        "Conversion from instant failed"
+    );
+
     // X-Val: https://goo.gl/MouuES - 01 January 1939 04:12:48
     let this_epoch = Instant::new(1_230_696_768, 0, Era::Present);
     let epoch_utc = Utc::new(1939, 01, 01, 4, 12, 48, 0).expect("init epoch");
@@ -122,6 +146,17 @@ fn utc_valid_dates() {
         "Conversion from instant failed"
     );
 
+    // Arbitrary date
+    let dt = Utc::new(2018, 10, 08, 22, 08, 47, 0).expect("standard date failed");
+    assert_eq!(format!("{}", dt), "2018-10-08T22:08:47+00:00");
+    assert_eq!(Utc::from_instant(dt.as_instant()), dt, "Reciprocity error");
+
+    // Unix epoch tests for reciprocity prior to any leap second (leap years counted)
+    // This is a long test because I encountered many small bugs in the conversion when
+    // implementing this.
+    let unix_epoch = Instant::new(2_208_988_800, 0, Era::Present); // 1970 Jan 01, midnight
+    const USUAL_DAYS_PER_MONTH: [u64; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
     // X-Val: https://goo.gl/rEkhKD - 16 February 1970 16:36:13
     let this_epoch = unix_epoch + Duration::new(4_034_173, 0);
     let epoch_utc = Utc::new(1970, 02, 16, 16, 36, 13, 0).expect("init epoch");
@@ -132,6 +167,56 @@ fn utc_valid_dates() {
         epoch_utc_from_inst,
         "Conversion from instant failed"
     );
+
+    for dmonth in 1..4 {
+        for dday in 1..31 {
+            for dhour in 0..24 {
+                for dmin in 0..60 {
+                    for dsec in 0..60 {
+                        let mut this_epoch = unix_epoch +
+                            Duration::new(
+                                24 * 3600 * (dday - 1) + 3600 * dhour + 60 * dmin + dsec,
+                                0,
+                            );
+                        for month in 1..dmonth {
+                            this_epoch = this_epoch +
+                                Duration::new(24 * 3600 * USUAL_DAYS_PER_MONTH[month as usize], 0);
+                        }
+                        let unix_ref = Utc::new(
+                            1970,
+                            dmonth,
+                            dday as u8,
+                            dhour as u8,
+                            dmin as u8,
+                            dsec as u8,
+                            0,
+                        ).expect("init unix epoch");
+                        assert_eq!(
+                            unix_ref.as_instant(),
+                            this_epoch,
+                            "Incorrect Unix epoch + 1970 {:} {:} {:} {:} {:}",
+                            dmonth,
+                            dday,
+                            dhour,
+                            dmin,
+                            dsec
+                        );
+                        let unix_ref_from_inst = Utc::from_instant(this_epoch);
+                        assert_eq!(
+                            unix_ref,
+                            unix_ref_from_inst,
+                            "Conversion from instant failed + {:} {:} {:} {:}",
+                            dmonth,
+                            dhour,
+                            dmin,
+                            dsec
+                        );
+                    }
+                }
+            }
+        }
+        println!("Unix ref done for month {:}", dmonth);
+    }
 
     // Test negative years
     for dyear in -2..0 {
@@ -178,37 +263,7 @@ fn utc_valid_dates() {
         }
     }
 
-    let dt = Utc::new(1900, 01, 01, 0, 0, 0, 0).expect("01 January 1900 invalid?!");
-    assert_eq!(
-        dt.as_instant(),
-        Instant::new(0, 0, Era::Present),
-        "1900 Epoch should be zero"
-    );
-    assert_eq!(format!("{}", dt), "1900-01-01T00:00:00+00:00");
-    assert_eq!(Utc::from_instant(dt.as_instant()), dt, "Reciprocity error");
-
-    let dt = Utc::new(1900, 01, 01, 12, 0, 0, 0).expect("01 January 1900 invalid?!");
-    assert_eq!(
-        dt.as_instant(),
-        Instant::new(12 * 3600, 0, Era::Present),
-        "1900 Epoch should be 12 hours"
-    );
-    assert_eq!(format!("{}", dt), "1900-01-01T12:00:00+00:00");
-    assert_eq!(Utc::from_instant(dt.as_instant()), dt, "Reciprocity error");
-
-    let dt = Utc::new(1905, 01, 01, 0, 0, 0, 1590).expect("epoch 1905 failed");
-    assert_eq!(
-        dt.as_instant(),
-        Instant::new(3600 * 24 + (SECONDS_PER_DAY as u64) * 365 * 5, 1590, Era::Present),
-        "Incorrect Epoch 1905 + some computed",
-    );
-    assert_eq!(format!("{}", dt), "1905-01-01T00:00:00+00:00");
-    assert_eq!(Utc::from_instant(dt.as_instant()), dt, "Reciprocity error");
-
-    let dt = Utc::new(2018, 10, 08, 22, 08, 47, 0).expect("standard date failed");
-    assert_eq!(format!("{}", dt), "2018-10-08T22:08:47+00:00");
-    assert_eq!(Utc::from_instant(dt.as_instant()), dt, "Reciprocity error");
-
+    // Specific leap year and leap second tests
     assert_eq!(
         Utc::new(1971, 12, 31, 23, 59, 59, 0)
             .expect("January 1972 leap second failed")
