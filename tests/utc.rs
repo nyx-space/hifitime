@@ -16,6 +16,7 @@ fn utc_valid_dates() {
         "1900 Epoch should be zero"
     );
     assert_eq!(format!("{}", dt), "1900-01-01T00:00:00+00:00");
+    assert_eq!(dt.nanos(), &0);
     assert_eq!(
         Utc::from_instant(dt.into_instant()),
         dt,
