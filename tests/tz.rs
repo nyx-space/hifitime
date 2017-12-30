@@ -82,7 +82,7 @@ where
         second: u8,
         nanos: u32,
     ) -> Result<WhiskeyTZ, Errors> {
-        // Check this date can exist in UTC (otherw it's invalid regardless of the timezone)
+        // Check this date can exist in UTC (otherwise it's invalid regardless of the timezone)
         let init_utc = Utc::new(year, month, day, hour, minute, second, nanos)?;
         // Perform the time zone correction and store the UTC value.
         let base_utc = Utc::from_instant(init_utc.into_instant() - Self::utc_offset().duration());
