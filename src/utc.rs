@@ -121,10 +121,10 @@ impl Utc {
     /// use hifitime::utc::{Utc, TimeSystem, TimeZone};
     /// use hifitime::instant::{Era, Instant};
     ///
-    /// let epoch = Utc::at_midnight(1900, 01, 01).expect("epoch failed");
+    /// let epoch = Utc::at_noon(1900, 01, 01).expect("epoch failed");
     /// assert_eq!(
     ///     epoch.as_instant(),
-    ///     Instant::new(0, 0, Era::Present),
+    ///     Instant::new(43200, 0, Era::Present),
     ///     "Incorrect Epoch computed"
     /// );
     ///
