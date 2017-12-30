@@ -171,6 +171,17 @@
 <span id="126">126</span>
 <span id="127">127</span>
 <span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
 </pre><pre class="rust ">
 <span class="doccomment">//! # hifitime 0.0.1</span>
 <span class="doccomment">//!</span>
@@ -209,11 +220,12 @@
 <span class="doccomment">//! * A simple to use TimeZone offset</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ### Note on short links</span>
-<span class="doccomment">//! The validation tools used generate very long URLs. As such, whenever a validation link is</span>
-<span class="doccomment">//! provided, it has been shortened using Google&#39;s http://goo.gl service. If this is an issue,</span>
-<span class="doccomment">//! please add `info/` between `goo.gl/` and the unique identifier: this will allow you to see</span>
-<span class="doccomment">//! the redirection link prior to being redirected (as well as the link analytics). For example,</span>
-<span class="doccomment">//! `https://goo.gl/o3KXSR` becomes `https://goo.gl/info/o3KXSR`.</span>
+<span class="doccomment">//! The validation tools used generate very long URLs, which aren&#39;t supported by `rustfmt`.</span>
+<span class="doccomment">//! As such, whenever a validation link is provided, it has been shortened using Google&#39;s</span>
+<span class="doccomment">//! http://goo.gl service. If this is an issue, please add `info/` between `goo.gl/` and the</span>
+<span class="doccomment">//! unique identifier: this will allow you to see the redirection link prior to being redirected</span>
+<span class="doccomment">//! (as well as the link analytics). For example, `https://goo.gl/o3KXSR` becomes</span>
+<span class="doccomment">//! `https://goo.gl/info/o3KXSR`.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Usage</span>
 <span class="doccomment">//! **WARNING: NOT YET AVAILABLE ON CARGO**</span>
@@ -299,6 +311,16 @@
             <span class="ident">Errors</span>::<span class="ident">Carry</span> <span class="op">=&gt;</span> <span class="macro">write</span><span class="macro">!</span>(<span class="ident">f</span>, <span class="string">&quot;a carry error (e.g. 61 seconds)&quot;</span>),
         }
     }
+}
+
+
+
+<span class="attribute">#[<span class="ident">test</span>]</span>
+<span class="kw">fn</span> <span class="ident">error_unittest</span>() {
+    <span class="macro">assert_eq</span><span class="macro">!</span>(
+        <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">Errors</span>::<span class="ident">Carry</span>),
+        <span class="string">&quot;a carry error (e.g. 61 seconds)&quot;</span>
+    );
 }
 </pre>
 </section>

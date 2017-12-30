@@ -1,6 +1,6 @@
-// Disclamer: this is heavily inspired by std::time::Duration, but it supports longer
+// Disclaimer: this is heavily inspired by std::time::Duration, but it supports longer
 // time spans and leap seconds. Moreover, an Instant is defined with respect to
-// 01 Jan 1900, as per NTP specifications.
+// 01 Jan 1900, as per NTP and TAI specifications.
 
 use std::cmp::PartialEq;
 use std::ops::{Add, Sub};
@@ -220,4 +220,62 @@ impl Sub<Duration> for Instant {
             }
         }
     }
+}
+
+
+#[test]
+fn era_unittest() {
+    assert_eq!(format!("{}", Era::Past), "Past");
+    assert_eq!(format!("{}", Era::Present), "Present");
+    assert!(Era::Past < Era::Present);
+}
+
+#[test]
+fn instant_unittest() {
+    // NOTE: These tests are copy-pasted into the documentation.
+    // Add in the Present era.
+    let tick = Instant::new(159, 10, Era::Present) + Duration::new(5, 2);
+    assert_eq!(tick.secs(), 164);
+    assert_eq!(tick.nanos(), 12);
+    assert_eq!(tick.era(), Era::Present);
+
+    // Add in the Past era.
+    let tick = Instant::new(159, 10, Era::Past) + Duration::new(5, 2);
+    assert_eq!(tick.secs(), 154);
+    assert_eq!(tick.nanos(), 8);
+    assert_eq!(tick.era(), Era::Past);
+
+    // Add from the Past to overflow into the Present
+    let tick = Instant::new(159, 0, Era::Past) + Duration::new(160, 0);
+    assert_eq!(tick.secs(), 1);
+    assert_eq!(tick.nanos(), 0);
+    assert_eq!(tick.era(), Era::Present);
+
+    let tick = Instant::new(0, 5, Era::Past) + Duration::new(0, 6);
+    assert_eq!(tick.secs(), 0);
+    assert_eq!(tick.nanos(), 1);
+    assert_eq!(tick.era(), Era::Present);
+
+    // Sub in the Present era.
+    let tick = Instant::new(159, 10, Era::Present) - Duration::new(5, 2);
+    assert_eq!(tick.secs(), 154);
+    assert_eq!(tick.nanos(), 8);
+    assert_eq!(tick.era(), Era::Present);
+
+    // Sub in the Past era.
+    let tick = Instant::new(159, 10, Era::Past) - Duration::new(5, 2);
+    assert_eq!(tick.secs(), 164);
+    assert_eq!(tick.nanos(), 12);
+    assert_eq!(tick.era(), Era::Past);
+
+    // Sub from the Present to overflow into the Past
+    let tick = Instant::new(159, 0, Era::Present) - Duration::new(160, 0);
+    assert_eq!(tick.secs(), 1);
+    assert_eq!(tick.nanos(), 0);
+    assert_eq!(tick.era(), Era::Past);
+
+    let tick = Instant::new(0, 5, Era::Present) - Duration::new(0, 6);
+    assert_eq!(tick.secs(), 0);
+    assert_eq!(tick.nanos(), 1);
+    assert_eq!(tick.era(), Era::Past);
 }

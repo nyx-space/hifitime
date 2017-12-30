@@ -127,3 +127,13 @@ impl fmt::Display for Errors {
         }
     }
 }
+
+
+
+#[test]
+fn error_unittest() {
+    assert_eq!(
+        format!("{}", Errors::Carry),
+        "a carry error (e.g. 61 seconds)"
+    );
+}
