@@ -48,13 +48,13 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../src/hifitime/lib.rs.html#4-119' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../src/hifitime/lib.rs.html#4-120' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'>
 <h1 id='hifitime-001' class='section-header'><a href='#hifitime-001'>hifitime 0.0.1</a></h1>
 <p>Precise date and time handling in Rust built on top of
-<a href="https://doc.rust-lang.org/std/time/struct.Duration.html"><code>std::time::Duration</code></a>.
-The Epoch used is 01 Jan 1900 at midnight, but that should not matter in day-to-day use of this
-library. This time corresponds to the TAI Epoch.</p>
+ <a href="https://doc.rust-lang.org/std/time/struct.Duration.html"><code>std::time::Duration</code></a>.
+ The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in
+ day-to-day use of this library.</p>
 
 <p>Features:</p>
 
@@ -63,10 +63,10 @@ library. This time corresponds to the TAI Epoch.</p>
 <li>Julian dates and Modified Julian dates</li>
 <li>UTC representation with ISO8601 formatting</li>
 <li>Allows building custom TimeSystem (e.g. Julian days)</li>
-<li>Time varying <code>TimeZone</code>s to represent very high speed reference frames</li>
-</ul>
+<li><p>Time varying <code>TimeZone</code>s to represent static or very high speed reference frames
+(cf. the <code>tz</code> test in the <code>tests</code> module)</p>
 
-<p>Most (all?) examples are validated with external references, as detailed on a test-by-test
+<p>Almost all examples are validated with external references, as detailed on a test-by-test
 basis.</p>
 
 <p><em>NOTE:</em> Each time computing library may decide when the extra leap second exists as explained
@@ -77,12 +77,9 @@ used for validation of Julian dates. As an example of how this is handled, check
 day computations for <a href="https://goo.gl/o3KXSR">2015-06-30 23:59:59</a>,
 <a href="https://goo.gl/QyUyrC">2015-06-30 23:59:60</a> and <a href="https://goo.gl/Y25hpn">2015-07-01 00:00:00</a>.</p>
 
-<p>Does not includes:</p>
-
-<ul>
-<li>Dates only, or times only (i.e. handles only the combination of both)</li>
-<li>Custom formatting of date time objects (for now)</li>
-</ul>
+<p>Does not include:</p></li>
+<li><p>Dates only, or times only (i.e. handles only the combination of both)</p></li>
+<li><p>Custom formatting of date time objects (for now)</p>
 
 <h2 id='usage' class='section-header'><a href='#usage'>Usage</a></h2>
 <p><strong>WARNING: NOT YET AVAILABLE ON CARGO</strong></p>
@@ -107,21 +104,22 @@ hifitime = &quot;0.0.1&quot;
 <span class="kw">let</span> <span class="ident">santa</span> <span class="op">=</span> <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">01</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>).<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>);
 
 <span class="macro">assert_eq</span><span class="macro">!</span>(
-    <span class="ident">santa</span>.<span class="ident">as_instant</span>() <span class="op">+</span> <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">3600</span>, <span class="number">0</span>),
-    <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">02</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>)
-        .<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>)
-        .<span class="ident">as_instant</span>(),
-    <span class="string">&quot;Could not add one hour to Christmas&quot;</span>
+ <span class="ident">santa</span>.<span class="ident">as_instant</span>() <span class="op">+</span> <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">3600</span>, <span class="number">0</span>),
+ <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">02</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>)
+     .<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>)
+     .<span class="ident">as_instant</span>(),
+ <span class="string">&quot;Could not add one hour to Christmas&quot;</span>
 );
 <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">santa</span>), <span class="string">&quot;2017-12-25T01:02:14+00:00&quot;</span>);
 <span class="macro">assert_eq</span><span class="macro">!</span>(
-    <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">as_instant</span>()).<span class="ident">days</span>,
-    <span class="number">58112.043217592596</span>
+ <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">as_instant</span>()).<span class="ident">days</span>,
+ <span class="number">58112.043217592596</span>
 );
 <span class="macro">assert_eq</span><span class="macro">!</span>(
-    <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">as_instant</span>()).<span class="ident">julian_days</span>(),
-    <span class="number">2458112.5432175924</span>
-);</pre>
+ <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">as_instant</span>()).<span class="ident">julian_days</span>(),
+ <span class="number">2458112.5432175924</span>
+);</pre></li>
+</ul>
 </div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
 <table>
                        <tr class=' module-item'>

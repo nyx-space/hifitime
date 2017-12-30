@@ -261,6 +261,11 @@
 <span id="216">216</span>
 <span id="217">217</span>
 <span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
 </pre><pre class="rust ">
 <span class="comment">// Disclamer: this is heavily inspired by std::time::Duration, but it supports longer</span>
 <span class="comment">// time spans and leap seconds. Moreover, an Instant is defined with respect to</span>
@@ -335,6 +340,11 @@
             <span class="ident">duration</span>: <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="ident">seconds</span>, <span class="ident">nanos</span>),
             <span class="ident">era</span>: <span class="ident">era</span>,
         }
+    }
+
+    <span class="doccomment">/// Returns the Duration with respect to Epoch (past OR present), check the `era()`</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">duration</span>(<span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">Duration</span> {
+        <span class="self">self</span>.<span class="ident">duration</span>
     }
 
     <span class="doccomment">/// Returns the number of seconds with respect to the epoch.</span>

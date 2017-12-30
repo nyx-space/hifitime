@@ -5,8 +5,8 @@
 //!
 //! Precise date and time handling in Rust built on top of
 //! [` std::time::Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html).
-//! The Epoch used is 01 Jan 1900 at midnight, but that should not matter in day-to-day use of this
-//! library. This time corresponds to the TAI Epoch.
+//! The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in
+//! day-to-day use of this library.
 //!
 //! Features:
 //!
@@ -14,9 +14,10 @@
 //! * Julian dates and Modified Julian dates
 //! * UTC representation with ISO8601 formatting
 //! * Allows building custom TimeSystem (e.g. Julian days)
-//! * Time varying `TimeZone`s to represent very high speed reference frames
+//! * Time varying `TimeZone`s to represent static or very high speed reference frames
+//!(cf. the `tz` test in the `tests` module)
 //!
-//! Most (all?) examples are validated with external references, as detailed on a test-by-test
+//! Almost all examples are validated with external references, as detailed on a test-by-test
 //! basis.
 //!
 //! *NOTE:* Each time computing library may decide when the extra leap second exists as explained
@@ -27,7 +28,7 @@
 //! day computations for [2015-06-30 23:59:59](https://goo.gl/o3KXSR),
 //! [2015-06-30 23:59:60](https://goo.gl/QyUyrC) and [2015-07-01 00:00:00](https://goo.gl/Y25hpn).
 //!
-//! Does not includes:
+//! Does not include:
 //!
 //! * Dates only, or times only (i.e. handles only the combination of both)
 //! * Custom formatting of date time objects (for now)

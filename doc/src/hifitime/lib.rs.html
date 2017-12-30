@@ -162,6 +162,7 @@
 <span id="117">117</span>
 <span id="118">118</span>
 <span id="119">119</span>
+<span id="120">120</span>
 </pre><pre class="rust ">
 <span class="comment">// Part of hifitime.</span>
 <span class="comment">// TODO: Add LICENSE.txt and README.md</span>
@@ -170,8 +171,8 @@
 <span class="doccomment">//!</span>
 <span class="doccomment">//! Precise date and time handling in Rust built on top of</span>
 <span class="doccomment">//! [` std::time::Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html).</span>
-<span class="doccomment">//! The Epoch used is 01 Jan 1900 at midnight, but that should not matter in day-to-day use of this</span>
-<span class="doccomment">//! library. This time corresponds to the TAI Epoch.</span>
+<span class="doccomment">//! The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in</span>
+<span class="doccomment">//! day-to-day use of this library.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! Features:</span>
 <span class="doccomment">//!</span>
@@ -179,9 +180,10 @@
 <span class="doccomment">//! * Julian dates and Modified Julian dates</span>
 <span class="doccomment">//! * UTC representation with ISO8601 formatting</span>
 <span class="doccomment">//! * Allows building custom TimeSystem (e.g. Julian days)</span>
-<span class="doccomment">//! * Time varying `TimeZone`s to represent very high speed reference frames</span>
+<span class="doccomment">//! * Time varying `TimeZone`s to represent static or very high speed reference frames</span>
+<span class="doccomment">//!(cf. the `tz` test in the `tests` module)</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! Most (all?) examples are validated with external references, as detailed on a test-by-test</span>
+<span class="doccomment">//! Almost all examples are validated with external references, as detailed on a test-by-test</span>
 <span class="doccomment">//! basis.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! *NOTE:* Each time computing library may decide when the extra leap second exists as explained</span>
@@ -192,7 +194,7 @@
 <span class="doccomment">//! day computations for [2015-06-30 23:59:59](https://goo.gl/o3KXSR),</span>
 <span class="doccomment">//! [2015-06-30 23:59:60](https://goo.gl/QyUyrC) and [2015-07-01 00:00:00](https://goo.gl/Y25hpn).</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! Does not includes:</span>
+<span class="doccomment">//! Does not include:</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! * Dates only, or times only (i.e. handles only the combination of both)</span>
 <span class="doccomment">//! * Custom formatting of date time objects (for now)</span>
