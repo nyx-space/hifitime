@@ -43,7 +43,6 @@
 //! <https://goo.gl/info/o3KXSR>.
 //!
 //! ## Usage
-//! **WARNING: NOT YET AVAILABLE ON CARGO**
 //!
 //! Put this in your `Cargo.toml`:
 //!
