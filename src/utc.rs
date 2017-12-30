@@ -276,29 +276,15 @@ impl TimeSystem for Utc {
         if month == 2 && is_leap_year(year) {
             days_this_month += 1;
         }
-        println!(
-            "year_fraction = {:} ==> month {:} ==> days = {:}",
-            year_fraction,
-            month,
-            days_this_month
-        );
         // Get the month fraction by the number of seconds in this month from the number of
         // seconds since the start of this month.
-        let (_, mut month_fraction) = quorem(
+        let (_, month_fraction) = quorem(
             year_fraction - seconds_til_this_month,
             days_this_month as f64 * SECONDS_PER_DAY,
         );
-
-        println!("month = {:} frac = {:}", month, month_fraction);
-        if month_fraction >= SECONDS_PER_DAY * days_this_month as f64 {
-            month += 1;
-            month_fraction -= SECONDS_PER_DAY * days_this_month as f64;
-            panic!("fixed");
-        }
         // Get the day by the exact number of seconds in a day
         let (mut day, day_fraction) = quorem(month_fraction, SECONDS_PER_DAY);
         if day < 0 {
-            println!("negative days");
             // Overflow backwards (this happens for end of year calculations)
             month -= 1;
             if month == 0 {
@@ -306,70 +292,12 @@ impl TimeSystem for Utc {
                 year -= 1;
             }
             day = USUAL_DAYS_PER_MONTH[(month - 1) as usize] as i32;
-            if month == 2 && is_leap_year(year) {
-                days_this_month += 1;
-            }
         }
         day += 1; // Otherwise the day count starts at 0
-        println!(
-            "month = {:} & month_fraction = {:} => day = {:} frac = {:}",
-            month,
-            month_fraction,
-            day,
-            day_fraction
-        );
         // Get the hours by the exact number of seconds in an hour
-        let (mut hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
-        if hours >= 24 {
-            day += 1;
-            hours = 0;
-            panic!("hours");
-        }
+        let (hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
         // Get the minutes and seconds by the exact number of seconds in a minute
-        let (mut mins, mut secs) = quorem(hours_fraction, 60.0);
-        if mins >= 60 {
-            hours += 1;
-            mins = 0;
-            panic!("mins");
-        }
-        if secs >= 60.0 {
-            mins += 1;
-            secs = 0.0;
-            panic!("secs");
-        }
-
-        // Now that we've done all the overflows, let's recheck them in reverse to overflow larger
-        // parts of the date.
-        if mins == 60 {
-            hours += 1;
-            mins = 1;
-            panic!("fixed mins");
-        }
-        if hours >= 24 {
-            day += 1;
-            hours -= 24;
-            panic!("fixed hours from {:} to {:}", hours, hours - 24);
-        }
-        if day == (days_this_month + 1) as i32 {
-            month += 1;
-            day = 1;
-            panic!("fixed days");
-        }
-        if month == 13 {
-            month = 1;
-            year += 1;
-            panic!("fixed months");
-        }
-        println!(
-            "{:} => {:} {:} {:} T {:} {:} {:}",
-            day_fraction,
-            year,
-            month,
-            day,
-            hours,
-            mins,
-            secs
-        );
+        let (mins, secs) = quorem(hours_fraction, 60.0);
         Utc::new(
             year,
             month as u8,
@@ -443,7 +371,6 @@ fn is_leap_year(year: i32) -> bool {
 
 /// quorem returns a tuple of the quotient and the remainder a numerator and a denominator.
 fn quorem(numerator: f64, denominator: f64) -> (i32, f64) {
-    println!("num = {:?}\tdem = {:}", numerator, denominator);
     if denominator == 0.0 {
         panic!("cannot divide by zero");
     }
@@ -465,24 +392,13 @@ fn quorem_nominal_test() {
     assert_eq!(quorem(5.0, 6.0), (0, 5.0));
     assert_eq!(quorem(3540.0, 3600.0), (0, 3540.0));
     assert_eq!(quorem(3540.0, 60.0), (59, 0.0));
+    assert_eq!(quorem(24.0, -6.0), (-4, 0.0));
+    assert_eq!(quorem(-24.0, 6.0), (-4, 0.0));
+    assert_eq!(quorem(-24.0, -6.0), (4, 0.0));
 }
 
 #[test]
 #[should_panic]
-fn quorem_negative_num_test() {
-    assert_eq!(quorem(-24.0, 6.0), (4, 0.0)); // TODO: Update test
-}
-
-#[test]
-#[should_panic]
-fn quorem_negative_den_test() {
-    assert_eq!(quorem(24.0, -6.0), (4, 0.0)); // TODO: Update test
-}
-
-#[test]
-#[should_panic]
-fn quorem_negative_numden_test() {
-    // A valid argument could be made that this test should work, but there is no situation in
-    // this library where two negative numbers should be considered a valid input.
-    assert_eq!(quorem(-24.0, -6.0), (4, 0.0)); // TODO: Update test
+fn quorem_nil_den_test() {
+    assert_eq!(quorem(24.0, 0.0), (4, 0.0));
 }
