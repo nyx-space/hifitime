@@ -33,7 +33,7 @@ fn epochs() {
     let nist_j1900 = instant::Instant::new(0, 0, instant::Era::Present);
     let mjd = ModifiedJulian::from_instant(nist_j1900);
     assert!((mjd.days - 15_020.0).abs() < std::f64::EPSILON);
-    assert!((mjd.days - 2_415_020.5).abs() < std::f64::EPSILON);
+    assert!((mjd.julian_days() - 2_415_020.5).abs() < std::f64::EPSILON);
     assert!(
         (ModifiedJulian::from_instant(
             Utc::new(1900, 1, 1, 0, 0, 0, 0)
@@ -47,7 +47,7 @@ fn epochs() {
     let j1900 = instant::Instant::new((SECONDS_PER_DAY * 0.5) as u64, 0, instant::Era::Present);
     let mjd = ModifiedJulian::from_instant(j1900);
     assert!((mjd.days - 15_020.5).abs() < std::f64::EPSILON);
-    assert!((mjd.days - 2_415_021.0).abs() < std::f64::EPSILON);
+    assert!((mjd.julian_days() - 2_415_021.0).abs() < std::f64::EPSILON);
     assert!(
         (ModifiedJulian::from_instant(
             Utc::new(1900, 1, 1, 12, 0, 0, 0)
@@ -64,7 +64,7 @@ fn epochs() {
             .as_instant(),
     );
     assert!((mjd.days - 15_027.0).abs() < std::f64::EPSILON);
-    assert!((mjd.days - 2_415_027.5).abs() < std::f64::EPSILON);
+    assert!((mjd.julian_days() - 2_415_027.5).abs() < std::f64::EPSILON);
 
     // X-Val: https://goo.gl/drKoeV
     let gps_std_epoch = ModifiedJulian::from_instant(
@@ -73,7 +73,7 @@ fn epochs() {
             .as_instant(),
     );
     assert!((gps_std_epoch.days - 44244.0).abs() < std::f64::EPSILON);
-    assert!((gps_std_epoch.days - 2_444_244.5).abs() < std::f64::EPSILON);
+    assert!((gps_std_epoch.julian_days() - 2_444_244.5).abs() < std::f64::EPSILON);
 
     // X-Val: https://goo.gl/tvqY23
     let j2000 = Utc::new(2000, 1, 1, 0, 0, 0, 0)
@@ -81,7 +81,7 @@ fn epochs() {
         .as_instant();
     let mjd = ModifiedJulian::from_instant(j2000);
     assert!((mjd.days - 51_544.0).abs() < std::f64::EPSILON);
-    assert!((mjd.days - 2_451_544.5).abs() < std::f64::EPSILON);
+    assert!((mjd.julian_days() - 2_451_544.5).abs() < std::f64::EPSILON);
 
     // X-Val: https://goo.gl/Bu4YKh
     let jd020207 = ModifiedJulian::from_instant(
@@ -90,7 +90,7 @@ fn epochs() {
             .as_instant(),
     );
     assert!((jd020207.days - 52_312.0).abs() < std::f64::EPSILON);
-    assert!((jd020207.days - 2_452_312.5).abs() < std::f64::EPSILON);
+    assert!((jd020207.julian_days() - 2_452_312.5).abs() < std::f64::EPSILON);
 
     // Test leap seconds and Julian at the same time
     // X-Val: https://goo.gl/o3KXSR
