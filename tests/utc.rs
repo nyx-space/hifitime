@@ -208,7 +208,7 @@ fn utc_valid_dates() {
 
     // This is a very long test because I encountered many small bugs in the conversion when
     // implementing this.
-    for dmonth in 1..4 {
+    for dmonth in 1..3 {
         for dday in 1..32 {
             if dday > USUAL_DAYS_PER_MONTH[(dmonth - 1) as usize] {
                 break;
