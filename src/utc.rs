@@ -273,7 +273,6 @@ impl TimeSystem for Utc {
         //let mut month_fraction = (year_fraction % (days_this_month as f64 * SECONDS_PER_DAY));
         let mut month_fraction = (year_fraction % (seconds_til_this_month / (month as f64)));
         if month_fraction >= SECONDS_PER_DAY * days_this_month as f64 {
-            // Must overflow the month
             month += 1;
             month_fraction -= SECONDS_PER_DAY * days_this_month as f64;
             panic!("fixed");

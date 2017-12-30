@@ -46,9 +46,9 @@ fn utc_valid_dates() {
         "Conversion from instant failed"
     );
 
-    // X-Val: https://goo.gl/zbMBg1 - 31 December 1938 04:12:48
-    let this_epoch = Instant::new(1_230_610_368, 0, Era::Present);
-    let epoch_utc = Utc::new(1938, 12, 31, 4, 12, 48, 0).expect("init epoch");
+    // X-Val: https://goo.gl/tHkQtV - 31 March 1938 04:12:48
+    let this_epoch = Instant::new(1_206_850_368, 0, Era::Present);
+    let epoch_utc = Utc::new(1938, 03, 31, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
@@ -69,6 +69,16 @@ fn utc_valid_dates() {
     // X-Val: https://goo.gl/eH6YJZ - 31 August 1938 04:12:48
     let this_epoch = Instant::new(1_220_069_568, 0, Era::Present);
     let epoch_utc = Utc::new(1938, 08, 31, 4, 12, 48, 0).expect("init epoch");
+    assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
+    assert_eq!(
+        epoch_utc,
+        Utc::from_instant(this_epoch),
+        "Conversion from instant failed"
+    );
+
+    // X-Val: https://goo.gl/zbMBg1 - 31 December 1938 04:12:48
+    let this_epoch = Instant::new(1_230_610_368, 0, Era::Present);
+    let epoch_utc = Utc::new(1938, 12, 31, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
