@@ -1,6 +1,14 @@
 [package]
 name = "hifitime"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
+description = "Precise date and time handling in Rust built on top of std::time::Duration with leap second support."
+homepage = "https://github.com/ChristopherRabotin/hifitime"
+documentation = "https://docs.rs/hifitime/"
+repository = "https://github.com/ChristopherRabotin/hifitime"
+keywords = ["date", "time", "calendar", "leap second", "leap year"]
+categories = ["date-and-time"]
+readme = "README.md"
+license = "Apache-2.0"
 
 [dependencies]
