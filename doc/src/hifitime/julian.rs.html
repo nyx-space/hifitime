@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="Source to the Rust file `src/julian.rs`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang">
+
+    <title>julian.rs.html -- source</title>
+
+    <link rel="stylesheet" type="text/css" href="../../normalize.css">
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc source">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content"><pre class="line-numbers"><span id="1"> 1</span>
+<span id="2"> 2</span>
+<span id="3"> 3</span>
+<span id="4"> 4</span>
+<span id="5"> 5</span>
+<span id="6"> 6</span>
+<span id="7"> 7</span>
+<span id="8"> 8</span>
+<span id="9"> 9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+</pre><pre class="rust ">
+<span class="kw">use</span> <span class="kw">super</span>::<span class="ident">TimeSystem</span>;
+<span class="kw">use</span> <span class="kw">super</span>::<span class="ident">instant</span>::{<span class="ident">Era</span>, <span class="ident">Instant</span>};
+
+<span class="doccomment">/// J1900_OFFSET determines the offset in julian days between 01 Jan 1900 at midnight and the</span>
+<span class="doccomment">/// Modified Julian Day at 17 November 1858.</span>
+<span class="doccomment">/// NOTE: Julian days &quot;start&quot; at noon so that astronomical observations throughout the night</span>
+<span class="doccomment">/// happen at the same Julian day. Note however that the Modified Julian Date (MJD) starts at</span>
+<span class="doccomment">/// midnight, not noon, cf. http://tycho.usno.navy.mil/mjd.html .</span>
+<span class="kw">const</span> <span class="ident">J1900_OFFSET</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="number">15_020.0</span>;
+<span class="doccomment">/// DAYS_PER_YEAR corresponds to the number of days per year in the Julian calendar. This is fixed.</span>
+<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">DAYS_PER_YEAR</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="number">365.25</span>;
+<span class="doccomment">/// SECONDS_PER_DAY defines the number of seconds per day.</span>
+<span class="kw">pub</span> <span class="kw">const</span> <span class="ident">SECONDS_PER_DAY</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="number">86_400.0</span>;
+
+<span class="doccomment">/// `ModifiedJulian` handles the Modified Julian Days as explained</span>
+<span class="doccomment">/// [here](http://tycho.usno.navy.mil/mjd.html).</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">PartialOrd</span>)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">ModifiedJulian</span> {
+    <span class="kw">pub</span> <span class="ident">days</span>: <span class="ident">f64</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">ModifiedJulian</span> {
+    <span class="doccomment">/// `julian_days` returns the true Julian days from epoch 01 Jan -4713, 12:00</span>
+    <span class="doccomment">/// as explained in &quot;Fundamentals of astrodynamics and applications&quot;, Vallado et al.</span>
+    <span class="doccomment">/// 4th edition, page 182, and on [Wikipedia](https://en.wikipedia.org/wiki/Julian_day).</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">julian_days</span>(<span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">f64</span> {
+        <span class="self">self</span>.<span class="ident">days</span> <span class="op">+</span> <span class="number">2_400_000.5</span>
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">TimeSystem</span> <span class="kw">for</span> <span class="ident">ModifiedJulian</span> {
+    <span class="doccomment">/// `from_instant` converts an `Instant` to a ModifiedJulian as detailed in Vallado et al.</span>
+    <span class="doccomment">/// 4th edition, page 182.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// [Leap second source](https://www.ietf.org/timezones/data/leap-seconds.list) contains</span>
+    <span class="doccomment">/// information pertinent to the NTP time definition, whose epoch is twelve hours *ahead* of</span>
+    <span class="doccomment">/// the Julian Day. Here is the relevant quote:</span>
+    <span class="doccomment">/// &gt; The NTP timestamps are in units of seconds since the NTP epoch,</span>
+    <span class="doccomment">/// &gt; which is 1 January 1900, 00:00:00. The Modified Julian Day number</span>
+    <span class="doccomment">/// &gt; corresponding to the NTP time stamp, X, can be computed as</span>
+    <span class="doccomment">/// &gt;</span>
+    <span class="doccomment">/// &gt; `X/86400 + 15020`</span>
+    <span class="doccomment">/// &gt;</span>
+    <span class="doccomment">/// &gt; where the first term converts seconds to days and the second</span>
+    <span class="doccomment">/// &gt; term adds the MJD corresponding to the time origin defined above.</span>
+    <span class="doccomment">/// &gt; The integer portion of the result is the integer MJD for that</span>
+    <span class="doccomment">/// &gt; day, and any remainder is the time of day, expressed as the</span>
+    <span class="doccomment">/// &gt; fraction of the day since 0 hours UTC. The conversion from day</span>
+    <span class="doccomment">/// &gt; fraction to seconds or to hours, minutes, and seconds may involve</span>
+    <span class="doccomment">/// &gt; rounding or truncation, depending on the method used in the</span>
+    <span class="doccomment">/// &gt; computation.</span>
+    <span class="kw">fn</span> <span class="ident">from_instant</span>(<span class="ident">instant</span>: <span class="ident">Instant</span>) <span class="op">-&gt;</span> <span class="ident">ModifiedJulian</span> {
+        <span class="kw">let</span> <span class="ident">modifier</span>: <span class="ident">f64</span>;
+        <span class="kw">if</span> <span class="ident">instant</span>.<span class="ident">era</span>() <span class="op">==</span> <span class="ident">Era</span>::<span class="ident">Present</span> {
+            <span class="ident">modifier</span> <span class="op">=</span> <span class="number">1.0</span>;
+        } <span class="kw">else</span> {
+            <span class="ident">modifier</span> <span class="op">=</span> <span class="op">-</span><span class="number">1.0</span>;
+        }
+        <span class="ident">ModifiedJulian</span> {
+            <span class="ident">days</span>: <span class="ident">J1900_OFFSET</span> <span class="op">+</span> <span class="ident">modifier</span> <span class="op">*</span> (<span class="ident">instant</span>.<span class="ident">secs</span>() <span class="kw">as</span> <span class="ident">f64</span>) <span class="op">/</span> <span class="ident">SECONDS_PER_DAY</span> <span class="op">+</span>
+                <span class="ident">instant</span>.<span class="ident">nanos</span>() <span class="kw">as</span> <span class="ident">f64</span> <span class="op">*</span> <span class="number">1e-9</span>,
+        }
+    }
+
+    <span class="doccomment">/// `as_instant` returns an `Instant` from the ModifiedJulian.</span>
+    <span class="kw">fn</span> <span class="ident">as_instant</span>(<span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">Instant</span> {
+        <span class="kw">let</span> <span class="ident">era</span>: <span class="ident">Era</span>;
+        <span class="kw">let</span> <span class="ident">modifier</span>: <span class="ident">f64</span>;
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">days</span> <span class="op">&gt;=</span> <span class="ident">J1900_OFFSET</span> {
+            <span class="ident">era</span> <span class="op">=</span> <span class="ident">Era</span>::<span class="ident">Present</span>;
+            <span class="ident">modifier</span> <span class="op">=</span> <span class="number">1.0</span>;
+        } <span class="kw">else</span> {
+            <span class="ident">era</span> <span class="op">=</span> <span class="ident">Era</span>::<span class="ident">Past</span>;
+            <span class="ident">modifier</span> <span class="op">=</span> <span class="op">-</span><span class="number">1.0</span>;
+        }
+        <span class="kw">let</span> <span class="ident">secs_frac</span> <span class="op">=</span> (<span class="self">self</span>.<span class="ident">days</span> <span class="op">-</span> <span class="ident">J1900_OFFSET</span>) <span class="op">*</span> <span class="ident">SECONDS_PER_DAY</span> <span class="op">*</span> <span class="ident">modifier</span>;
+        <span class="kw">let</span> <span class="ident">seconds</span> <span class="op">=</span> <span class="ident">secs_frac</span>.<span class="ident">round</span>();
+        <span class="kw">let</span> <span class="ident">nanos</span> <span class="op">=</span> (<span class="ident">secs_frac</span> <span class="op">-</span> <span class="ident">seconds</span>) <span class="op">*</span> <span class="number">1e9</span> <span class="op">/</span> (<span class="ident">SECONDS_PER_DAY</span> <span class="op">*</span> <span class="ident">modifier</span>);
+        <span class="ident">Instant</span>::<span class="ident">new</span>(<span class="ident">seconds</span> <span class="kw">as</span> <span class="ident">u64</span>, <span class="ident">nanos</span>.<span class="ident">round</span>() <span class="kw">as</span> <span class="ident">u32</span>, <span class="ident">era</span>)
+    }
+}
+</pre>
+</section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                    <dt>+</dt>
+                    <dd>Collapse/expand all sections</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "hifitime";
+    </script>
+    <script src="../../main.js"></script>
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>
