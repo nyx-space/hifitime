@@ -86,6 +86,61 @@ pub struct Utc {
     pub nanos: u32,
 }
 
+impl Utc {
+    /// Creates a new UTC date at midnight (i.e. hours = 0, mins = 0, secs = 0, nanos = 0)
+    ///
+    /// # Examples
+    /// ```
+    /// use hifitime::utc::{Utc, TimeSystem, TimeZone};
+    /// use hifitime::instant::{Era, Instant};
+    ///
+    /// let epoch = Utc::at_midnight(1900, 01, 01).expect("epoch failed");
+    /// assert_eq!(
+    ///     epoch.as_instant(),
+    ///     Instant::new(0, 0, Era::Present),
+    ///     "Incorrect Epoch computed"
+    /// );
+    ///
+    /// assert_eq!(
+    ///     Utc::at_midnight(1972, 01, 01)
+    ///         .expect("Post January 1972 leap second failed")
+    ///         .as_instant(),
+    ///     Instant::new(2272060800, 0, Era::Present),
+    ///     "Incorrect January 1972 post-leap second number computed at midnight"
+    /// );
+    /// ```
+
+    pub fn at_midnight(year: i32, month: u8, day: u8) -> Result<Utc, Errors> {
+        Ok(Utc::new(year, month, day, 00, 00, 00, 00)?)
+    }
+
+    /// Creates a new UTC date at noon (i.e. hours = 12, mins = 0, secs = 0, nanos = 0)
+    ///
+    /// # Examples
+    /// ```
+    /// use hifitime::utc::{Utc, TimeSystem, TimeZone};
+    /// use hifitime::instant::{Era, Instant};
+    ///
+    /// let epoch = Utc::at_noon(1900, 01, 01).expect("epoch failed");
+    /// assert_eq!(
+    ///     epoch.as_instant(),
+    ///     Instant::new(43200, 0, Era::Present),
+    ///     "Incorrect Epoch computed"
+    /// );
+    ///
+    /// assert_eq!(
+    ///     Utc::at_noon(1972, 01, 01)
+    ///         .expect("Post January 1972 leap second failed")
+    ///         .as_instant(),
+    ///     Instant::new(2272104000, 0, Era::Present),
+    ///     "Incorrect January 1972 post-leap second number computed at noon"
+    /// );
+    /// ```
+    pub fn at_noon(year: i32, month: u8, day: u8) -> Result<Utc, Errors> {
+        Ok(Utc::new(year, month, day, 12, 00, 00, 00)?)
+    }
+}
+
 impl TimeZone for Utc
 where
     Self: Sized,
@@ -104,8 +159,7 @@ where
     ///
     /// # Examples
     /// ```
-    /// use hifitime::utc::TimeSystem;
-    /// use hifitime::utc::{Utc, TimeZone};
+    /// use hifitime::utc::{Utc, TimeSystem, TimeZone};
     /// use hifitime::instant::{Duration, Era, Instant};
     /// use hifitime::julian::ModifiedJulian;
     ///

@@ -447,6 +447,60 @@
 <span id="402">402</span>
 <span id="403">403</span>
 <span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
+<span id="414">414</span>
+<span id="415">415</span>
+<span id="416">416</span>
+<span id="417">417</span>
+<span id="418">418</span>
+<span id="419">419</span>
+<span id="420">420</span>
+<span id="421">421</span>
+<span id="422">422</span>
+<span id="423">423</span>
+<span id="424">424</span>
+<span id="425">425</span>
+<span id="426">426</span>
+<span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
+<span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
 </pre><pre class="rust ">
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">TimeSystem</span>;
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">Errors</span>;
@@ -536,6 +590,61 @@
     <span class="kw">pub</span> <span class="ident">nanos</span>: <span class="ident">u32</span>,
 }
 
+<span class="kw">impl</span> <span class="ident">Utc</span> {
+    <span class="doccomment">/// Creates a new UTC date at midnight (i.e. hours = 0, mins = 0, secs = 0, nanos = 0)</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// # Examples</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use hifitime::utc::{Utc, TimeSystem, TimeZone};</span>
+    <span class="doccomment">/// use hifitime::instant::{Era, Instant};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let epoch = Utc::at_midnight(1900, 01, 01).expect(&quot;epoch failed&quot;);</span>
+    <span class="doccomment">/// assert_eq!(</span>
+    <span class="doccomment">///     epoch.as_instant(),</span>
+    <span class="doccomment">///     Instant::new(0, 0, Era::Present),</span>
+    <span class="doccomment">///     &quot;Incorrect Epoch computed&quot;</span>
+    <span class="doccomment">/// );</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// assert_eq!(</span>
+    <span class="doccomment">///     Utc::at_midnight(1972, 01, 01)</span>
+    <span class="doccomment">///         .expect(&quot;Post January 1972 leap second failed&quot;)</span>
+    <span class="doccomment">///         .as_instant(),</span>
+    <span class="doccomment">///     Instant::new(2272060800, 0, Era::Present),</span>
+    <span class="doccomment">///     &quot;Incorrect January 1972 post-leap second number computed at midnight&quot;</span>
+    <span class="doccomment">/// );</span>
+    <span class="doccomment">/// ```</span>
+
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">at_midnight</span>(<span class="ident">year</span>: <span class="ident">i32</span>, <span class="ident">month</span>: <span class="ident">u8</span>, <span class="ident">day</span>: <span class="ident">u8</span>) <span class="op">-&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Utc</span>, <span class="ident">Errors</span><span class="op">&gt;</span> {
+        <span class="prelude-val">Ok</span>(<span class="ident">Utc</span>::<span class="ident">new</span>(<span class="ident">year</span>, <span class="ident">month</span>, <span class="ident">day</span>, <span class="number">00</span>, <span class="number">00</span>, <span class="number">00</span>, <span class="number">00</span>)<span class="question-mark">?</span>)
+    }
+
+    <span class="doccomment">/// Creates a new UTC date at noon (i.e. hours = 12, mins = 0, secs = 0, nanos = 0)</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// # Examples</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use hifitime::utc::{Utc, TimeSystem, TimeZone};</span>
+    <span class="doccomment">/// use hifitime::instant::{Era, Instant};</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let epoch = Utc::at_midnight(1900, 01, 01).expect(&quot;epoch failed&quot;);</span>
+    <span class="doccomment">/// assert_eq!(</span>
+    <span class="doccomment">///     epoch.as_instant(),</span>
+    <span class="doccomment">///     Instant::new(0, 0, Era::Present),</span>
+    <span class="doccomment">///     &quot;Incorrect Epoch computed&quot;</span>
+    <span class="doccomment">/// );</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// assert_eq!(</span>
+    <span class="doccomment">///     Utc::at_noon(1972, 01, 01)</span>
+    <span class="doccomment">///         .expect(&quot;Post January 1972 leap second failed&quot;)</span>
+    <span class="doccomment">///         .as_instant(),</span>
+    <span class="doccomment">///     Instant::new(2272104000, 0, Era::Present),</span>
+    <span class="doccomment">///     &quot;Incorrect January 1972 post-leap second number computed at noon&quot;</span>
+    <span class="doccomment">/// );</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">at_noon</span>(<span class="ident">year</span>: <span class="ident">i32</span>, <span class="ident">month</span>: <span class="ident">u8</span>, <span class="ident">day</span>: <span class="ident">u8</span>) <span class="op">-&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Utc</span>, <span class="ident">Errors</span><span class="op">&gt;</span> {
+        <span class="prelude-val">Ok</span>(<span class="ident">Utc</span>::<span class="ident">new</span>(<span class="ident">year</span>, <span class="ident">month</span>, <span class="ident">day</span>, <span class="number">12</span>, <span class="number">00</span>, <span class="number">00</span>, <span class="number">00</span>)<span class="question-mark">?</span>)
+    }
+}
+
 <span class="kw">impl</span> <span class="ident">TimeZone</span> <span class="kw">for</span> <span class="ident">Utc</span>
 <span class="kw">where</span>
     <span class="self">Self</span>: <span class="ident">Sized</span>,
@@ -554,8 +663,7 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
     <span class="doccomment">/// ```</span>
-    <span class="doccomment">/// use hifitime::utc::TimeSystem;</span>
-    <span class="doccomment">/// use hifitime::utc::{Utc, TimeZone};</span>
+    <span class="doccomment">/// use hifitime::utc::{Utc, TimeSystem, TimeZone};</span>
     <span class="doccomment">/// use hifitime::instant::{Duration, Era, Instant};</span>
     <span class="doccomment">/// use hifitime::julian::ModifiedJulian;</span>
     <span class="doccomment">///</span>
