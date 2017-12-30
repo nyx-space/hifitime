@@ -48,7 +48,7 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../../src/hifitime/utc.rs.html#1-458' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../../src/hifitime/utc.rs.html#1-480' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'><p>The <code>Utc</code> module supports conversions between Utc and other time systems. The main advantage
 (and challenge) is the inherent support for leap seconds. Refer to module documentation for
 leap second implementation details.</p>
@@ -61,13 +61,10 @@ leap second implementation details.</p>
                            <td class='docblock-short'>
                                 <p>Utc is the interface between a time system and a time zone. All time zones are defined with
 respect to UTC. Moreover, Utc inherently supports the past leap seconds, as reported by the
-IETF and NIST at <a href="https://www.ietf.org/timezones/data/leap-seconds.list">https://www.ietf.org/timezones/data/leap-seconds.list</a> . NOTE: leap seconds
+IETF and NIST at <a href="https://www.ietf.org/timezones/data/leap-seconds.list">https://www.ietf.org/timezones/data/leap-seconds.list</a>. NOTE: leap seconds
 cannot be predicted! This module will be updated as soon as possible after a new leap second
 has been announced.
-<strong>WARNING</strong>: The historical oddities with calendars are not yet supported.
-Moreover, despite the fields of Utc being public, it is strongly advised to use the <code>new</code>
-function to ensure proper bound checking and correct leap second support. If your code breaks
-because you&#39;re <em>not</em> using <code>new</code>, don&#39;t file a bug.</p>
+<strong>WARNING</strong>: The historical oddities with calendars are not yet supported.</p>
                            </td>
                        </tr></table><h2 id='traits' class='section-header'><a href="#traits">Traits</a></h2>
 <table>
@@ -75,7 +72,7 @@ because you&#39;re <em>not</em> using <code>new</code>, don&#39;t file a bug.</p
                            <td><a class="trait" href="trait.TimeZone.html"
                                   title='trait hifitime::utc::TimeZone'>TimeZone</a></td>
                            <td class='docblock-short'>
-                                <p>TimeZone defines a timezone with respect to Utc.</p>
+                                <p><code>TimeZone</code> defines a timezone with respect to Utc.</p>
                            </td>
                        </tr></table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
 <table>

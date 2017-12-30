@@ -501,6 +501,28 @@
 <span id="456">456</span>
 <span id="457">457</span>
 <span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
 </pre><pre class="rust ">
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">TimeSystem</span>;
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">Errors</span>;
@@ -553,7 +575,7 @@
 <span class="doccomment">/// context of defining an offset with respect to Utc.</span>
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">Offset</span> <span class="op">=</span> <span class="ident">Instant</span>;
 
-<span class="doccomment">/// TimeZone defines a timezone with respect to Utc.</span>
+<span class="doccomment">/// `TimeZone` defines a timezone with respect to Utc.</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">TimeZone</span>: <span class="ident">fmt</span>::<span class="ident">Display</span> {
     <span class="doccomment">/// utc_offset returns the difference between a given TZ and UTC.</span>
     <span class="kw">fn</span> <span class="ident">utc_offset</span>() <span class="op">-&gt;</span> <span class="ident">Offset</span>;
@@ -572,25 +594,50 @@
 
 <span class="doccomment">/// Utc is the interface between a time system and a time zone. All time zones are defined with</span>
 <span class="doccomment">/// respect to UTC. Moreover, Utc inherently supports the past leap seconds, as reported by the</span>
-<span class="doccomment">/// IETF and NIST at https://www.ietf.org/timezones/data/leap-seconds.list . NOTE: leap seconds</span>
+<span class="doccomment">/// IETF and NIST at &lt;https://www.ietf.org/timezones/data/leap-seconds.list&gt;. NOTE: leap seconds</span>
 <span class="doccomment">/// cannot be predicted! This module will be updated as soon as possible after a new leap second</span>
 <span class="doccomment">/// has been announced.</span>
 <span class="doccomment">/// **WARNING**: The historical oddities with calendars are not yet supported.</span>
-<span class="doccomment">/// Moreover, despite the fields of Utc being public, it is strongly advised to use the `new`</span>
-<span class="doccomment">/// function to ensure proper bound checking and correct leap second support. If your code breaks</span>
-<span class="doccomment">/// because you&#39;re _not_ using `new`, don&#39;t file a bug.</span>
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Copy</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">PartialEq</span>, <span class="ident">PartialOrd</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">Utc</span> {
-    <span class="kw">pub</span> <span class="ident">year</span>: <span class="ident">i32</span>,
-    <span class="kw">pub</span> <span class="ident">month</span>: <span class="ident">u8</span>,
-    <span class="kw">pub</span> <span class="ident">day</span>: <span class="ident">u8</span>,
-    <span class="kw">pub</span> <span class="ident">hour</span>: <span class="ident">u8</span>,
-    <span class="kw">pub</span> <span class="ident">minute</span>: <span class="ident">u8</span>,
-    <span class="kw">pub</span> <span class="ident">second</span>: <span class="ident">u8</span>,
-    <span class="kw">pub</span> <span class="ident">nanos</span>: <span class="ident">u32</span>,
+    <span class="ident">year</span>: <span class="ident">i32</span>,
+    <span class="ident">month</span>: <span class="ident">u8</span>,
+    <span class="ident">day</span>: <span class="ident">u8</span>,
+    <span class="ident">hour</span>: <span class="ident">u8</span>,
+    <span class="ident">minute</span>: <span class="ident">u8</span>,
+    <span class="ident">second</span>: <span class="ident">u8</span>,
+    <span class="ident">nanos</span>: <span class="ident">u32</span>,
 }
 
 <span class="kw">impl</span> <span class="ident">Utc</span> {
+    <span class="doccomment">/// Returns the year of this Utc date time.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">year</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="kw-2">&amp;</span><span class="ident">i32</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">year</span>
+    }
+    <span class="doccomment">/// Returns the month of this Utc date time.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">month</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="kw-2">&amp;</span><span class="ident">u8</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">month</span>
+    }
+    <span class="doccomment">/// Returns the day of this Utc date time.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">day</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="kw-2">&amp;</span><span class="ident">u8</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">day</span>
+    }
+    <span class="doccomment">/// Returns the hour of this Utc date time.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">hour</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="kw-2">&amp;</span><span class="ident">u8</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">hour</span>
+    }
+    <span class="doccomment">/// Returns the minute of this Utc date time.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">minute</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="kw-2">&amp;</span><span class="ident">u8</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">minute</span>
+    }
+    <span class="doccomment">/// Returns the second of this Utc date time.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">second</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="kw-2">&amp;</span><span class="ident">u8</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">second</span>
+    }
+    <span class="doccomment">/// Returns the nanoseconds of this Utc date time.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">nanos</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-&gt;</span> <span class="kw-2">&amp;</span><span class="ident">u32</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">nanos</span>
+    }
     <span class="doccomment">/// Creates a new UTC date at midnight (i.e. hours = 0, mins = 0, secs = 0, nanos = 0)</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// # Examples</span>
@@ -600,7 +647,7 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// let epoch = Utc::at_midnight(1900, 01, 01).expect(&quot;epoch failed&quot;);</span>
     <span class="doccomment">/// assert_eq!(</span>
-    <span class="doccomment">///     epoch.as_instant(),</span>
+    <span class="doccomment">///     epoch.into_instant(),</span>
     <span class="doccomment">///     Instant::new(0, 0, Era::Present),</span>
     <span class="doccomment">///     &quot;Incorrect Epoch computed&quot;</span>
     <span class="doccomment">/// );</span>
@@ -608,7 +655,7 @@
     <span class="doccomment">/// assert_eq!(</span>
     <span class="doccomment">///     Utc::at_midnight(1972, 01, 01)</span>
     <span class="doccomment">///         .expect(&quot;Post January 1972 leap second failed&quot;)</span>
-    <span class="doccomment">///         .as_instant(),</span>
+    <span class="doccomment">///         .into_instant(),</span>
     <span class="doccomment">///     Instant::new(2272060800, 0, Era::Present),</span>
     <span class="doccomment">///     &quot;Incorrect January 1972 post-leap second number computed at midnight&quot;</span>
     <span class="doccomment">/// );</span>
@@ -625,17 +672,17 @@
     <span class="doccomment">/// use hifitime::utc::{Utc, TimeSystem, TimeZone};</span>
     <span class="doccomment">/// use hifitime::instant::{Era, Instant};</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// let epoch = Utc::at_midnight(1900, 01, 01).expect(&quot;epoch failed&quot;);</span>
+    <span class="doccomment">/// let epoch = Utc::at_noon(1900, 01, 01).expect(&quot;epoch failed&quot;);</span>
     <span class="doccomment">/// assert_eq!(</span>
-    <span class="doccomment">///     epoch.as_instant(),</span>
-    <span class="doccomment">///     Instant::new(0, 0, Era::Present),</span>
+    <span class="doccomment">///     epoch.into_instant(),</span>
+    <span class="doccomment">///     Instant::new(43200, 0, Era::Present),</span>
     <span class="doccomment">///     &quot;Incorrect Epoch computed&quot;</span>
     <span class="doccomment">/// );</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// assert_eq!(</span>
     <span class="doccomment">///     Utc::at_noon(1972, 01, 01)</span>
     <span class="doccomment">///         .expect(&quot;Post January 1972 leap second failed&quot;)</span>
-    <span class="doccomment">///         .as_instant(),</span>
+    <span class="doccomment">///         .into_instant(),</span>
     <span class="doccomment">///     Instant::new(2272104000, 0, Era::Present),</span>
     <span class="doccomment">///     &quot;Incorrect January 1972 post-leap second number computed at noon&quot;</span>
     <span class="doccomment">/// );</span>
@@ -669,7 +716,7 @@
     <span class="doccomment">///</span>
     <span class="doccomment">/// let epoch = Utc::new(1900, 01, 01, 0, 0, 0, 0).expect(&quot;epoch failed&quot;);</span>
     <span class="doccomment">/// assert_eq!(</span>
-    <span class="doccomment">///     epoch.as_instant(),</span>
+    <span class="doccomment">///     epoch.into_instant(),</span>
     <span class="doccomment">///     Instant::new(0, 0, Era::Present),</span>
     <span class="doccomment">///     &quot;Incorrect Epoch computed&quot;</span>
     <span class="doccomment">/// );</span>
@@ -677,21 +724,21 @@
     <span class="doccomment">/// assert_eq!(</span>
     <span class="doccomment">///     Utc::new(1971, 12, 31, 23, 59, 59, 0)</span>
     <span class="doccomment">///         .expect(&quot;January 1972 leap second failed&quot;)</span>
-    <span class="doccomment">///         .as_instant(),</span>
+    <span class="doccomment">///         .into_instant(),</span>
     <span class="doccomment">///     Instant::new(2272060799, 0, Era::Present),</span>
     <span class="doccomment">///     &quot;Incorrect January 1972 pre-leap second number computed&quot;</span>
     <span class="doccomment">/// );</span>
     <span class="doccomment">/// assert_eq!(</span>
     <span class="doccomment">///     Utc::new(1971, 12, 31, 23, 59, 59, 0)</span>
     <span class="doccomment">///         .expect(&quot;January 1972 1 second before leap second failed&quot;)</span>
-    <span class="doccomment">///         .as_instant(),</span>
+    <span class="doccomment">///         .into_instant(),</span>
     <span class="doccomment">///     Utc::new(1971, 12, 31, 23, 59, 60, 0)</span>
     <span class="doccomment">///         .expect(&quot;January 1972 1 second before leap second failed&quot;)</span>
-    <span class="doccomment">///         .as_instant(),</span>
+    <span class="doccomment">///         .into_instant(),</span>
     <span class="doccomment">///     &quot;Incorrect January 1972 leap second number computed&quot;</span>
     <span class="doccomment">/// );</span>
     <span class="doccomment">///</span>
-    <span class="doccomment">/// // Example of odd behavior when comparing/ordering dates using Utc or `as_instant`</span>
+    <span class="doccomment">/// // Example of odd behavior when comparing/ordering dates using Utc or `into_instant`</span>
     <span class="doccomment">/// // Utc order claims (correctly) that the 60th second is _after_ the 59th. But the instant</span>
     <span class="doccomment">/// // is actually different because the 60th second is where we&#39;ve inserted the leap second.</span>
     <span class="doccomment">/// assert!(</span>
@@ -706,10 +753,10 @@
     <span class="doccomment">/// assert!(</span>
     <span class="doccomment">///     Utc::new(1971, 12, 31, 23, 59, 59, 0)</span>
     <span class="doccomment">///         .expect(&quot;January 1972 1 second before leap second failed&quot;)</span>
-    <span class="doccomment">///         .as_instant() ==</span>
+    <span class="doccomment">///         .into_instant() ==</span>
     <span class="doccomment">///         Utc::new(1971, 12, 31, 23, 59, 60, 0)</span>
     <span class="doccomment">///             .expect(&quot;January 1972 1 second before leap second failed&quot;)</span>
-    <span class="doccomment">///             .as_instant(),</span>
+    <span class="doccomment">///             .into_instant(),</span>
     <span class="doccomment">///     &quot;60th second should have a different instant than 59th second&quot;</span>
     <span class="doccomment">/// );</span>
     <span class="doccomment">/// // Hence one second after the leap second, we get the following behavior (note the change</span>
@@ -726,29 +773,29 @@
     <span class="doccomment">/// assert!(</span>
     <span class="doccomment">///     Utc::new(1971, 12, 31, 23, 59, 60, 0)</span>
     <span class="doccomment">///         .expect(&quot;January 1972 1 second before leap second failed&quot;)</span>
-    <span class="doccomment">///         .as_instant() &lt;</span>
+    <span class="doccomment">///         .into_instant() &lt;</span>
     <span class="doccomment">///         Utc::new(1972, 01, 01, 00, 00, 00, 0)</span>
     <span class="doccomment">///             .expect(&quot;January 1972 1 second before leap second failed&quot;)</span>
-    <span class="doccomment">///             .as_instant(),</span>
+    <span class="doccomment">///             .into_instant(),</span>
     <span class="doccomment">///     &quot;60th second should have a different instant than 59th second&quot;</span>
     <span class="doccomment">/// );</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// let santa = Utc::new(2017, 12, 25, 01, 02, 14, 0).expect(&quot;Xmas failed&quot;);</span>
     <span class="doccomment">///</span>
     <span class="doccomment">/// assert_eq!(</span>
-    <span class="doccomment">///     santa.as_instant() + Duration::new(3600, 0),</span>
+    <span class="doccomment">///     santa.into_instant() + Duration::new(3600, 0),</span>
     <span class="doccomment">///     Utc::new(2017, 12, 25, 02, 02, 14, 0)</span>
     <span class="doccomment">///         .expect(&quot;Xmas failed&quot;)</span>
-    <span class="doccomment">///         .as_instant(),</span>
+    <span class="doccomment">///         .into_instant(),</span>
     <span class="doccomment">///     &quot;Could not add one hour to Christmas&quot;</span>
     <span class="doccomment">/// );</span>
     <span class="doccomment">/// assert_eq!(format!(&quot;{}&quot;, santa), &quot;2017-12-25T01:02:14+00:00&quot;);</span>
     <span class="doccomment">/// assert_eq!(</span>
-    <span class="doccomment">///     ModifiedJulian::from_instant(santa.as_instant()).days,</span>
+    <span class="doccomment">///     ModifiedJulian::from_instant(santa.into_instant()).days,</span>
     <span class="doccomment">///     58112.043217592596</span>
     <span class="doccomment">/// );</span>
     <span class="doccomment">/// assert_eq!(</span>
-    <span class="doccomment">///     ModifiedJulian::from_instant(santa.as_instant()).julian_days(),</span>
+    <span class="doccomment">///     ModifiedJulian::from_instant(santa.into_instant()).julian_days(),</span>
     <span class="doccomment">///     2458112.5432175924</span>
     <span class="doccomment">/// );</span>
     <span class="doccomment">/// ```</span>
@@ -761,27 +808,25 @@
         <span class="ident">second</span>: <span class="ident">u8</span>,
         <span class="ident">nanos</span>: <span class="ident">u32</span>,
     ) <span class="op">-&gt;</span> <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Utc</span>, <span class="ident">Errors</span><span class="op">&gt;</span> {
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">max_seconds</span>: <span class="ident">u8</span> <span class="op">=</span> <span class="number">59</span>;
-        <span class="kw">if</span> (<span class="ident">month</span> <span class="op">==</span> <span class="number">12</span> <span class="op">||</span> <span class="ident">month</span> <span class="op">==</span> <span class="number">6</span>) <span class="op">&amp;&amp;</span> <span class="ident">day</span> <span class="op">==</span> <span class="ident">USUAL_DAYS_PER_MONTH</span>[<span class="ident">month</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="number">1</span>] <span class="op">&amp;&amp;</span>
-            <span class="ident">hour</span> <span class="op">==</span> <span class="number">23</span> <span class="op">&amp;&amp;</span> <span class="ident">minute</span> <span class="op">==</span> <span class="number">59</span>
+        <span class="kw">let</span> <span class="ident">max_seconds</span> <span class="op">=</span> <span class="kw">if</span> (<span class="ident">month</span> <span class="op">==</span> <span class="number">12</span> <span class="op">||</span> <span class="ident">month</span> <span class="op">==</span> <span class="number">6</span>) <span class="op">&amp;&amp;</span>
+            <span class="ident">day</span> <span class="op">==</span> <span class="ident">USUAL_DAYS_PER_MONTH</span>[<span class="ident">month</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="number">1</span>] <span class="op">&amp;&amp;</span>
+            <span class="ident">hour</span> <span class="op">==</span> <span class="number">23</span> <span class="op">&amp;&amp;</span> <span class="ident">minute</span> <span class="op">==</span> <span class="number">59</span> <span class="op">&amp;&amp;</span>
+            ((<span class="ident">month</span> <span class="op">==</span> <span class="number">6</span> <span class="op">&amp;&amp;</span> <span class="ident">JULY_YEARS</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">year</span>)) <span class="op">||</span>
+                 (<span class="ident">month</span> <span class="op">==</span> <span class="number">12</span> <span class="op">&amp;&amp;</span> <span class="ident">JANUARY_YEARS</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span>(<span class="ident">year</span> <span class="op">+</span> <span class="number">1</span>))))
         {
-            <span class="kw">if</span> (<span class="ident">month</span> <span class="op">==</span> <span class="number">6</span> <span class="op">&amp;&amp;</span> <span class="ident">JULY_YEARS</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span><span class="ident">year</span>)) <span class="op">||</span>
-                (<span class="ident">month</span> <span class="op">==</span> <span class="number">12</span> <span class="op">&amp;&amp;</span> <span class="ident">JANUARY_YEARS</span>.<span class="ident">contains</span>(<span class="kw-2">&amp;</span>(<span class="ident">year</span> <span class="op">+</span> <span class="number">1</span>)))
-            {
-                <span class="ident">max_seconds</span> <span class="op">=</span> <span class="number">60</span>;
-            }
-        }
+            <span class="number">60</span>
+        } <span class="kw">else</span> {
+            <span class="number">59</span>
+        };
         <span class="comment">// General incorrect date times</span>
         <span class="kw">if</span> <span class="ident">month</span> <span class="op">==</span> <span class="number">0</span> <span class="op">||</span> <span class="ident">month</span> <span class="op">&gt;</span> <span class="number">12</span> <span class="op">||</span> <span class="ident">day</span> <span class="op">==</span> <span class="number">0</span> <span class="op">||</span> <span class="ident">day</span> <span class="op">&gt;</span> <span class="number">31</span> <span class="op">||</span> <span class="ident">hour</span> <span class="op">&gt;</span> <span class="number">24</span> <span class="op">||</span> <span class="ident">minute</span> <span class="op">&gt;</span> <span class="number">59</span> <span class="op">||</span>
-            <span class="ident">second</span> <span class="op">&gt;</span> <span class="ident">max_seconds</span> <span class="op">||</span> <span class="ident">nanos</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">&gt;</span> <span class="number">1e9</span>
+            <span class="ident">second</span> <span class="op">&gt;</span> <span class="ident">max_seconds</span> <span class="op">||</span> <span class="ident">f64</span>::<span class="ident">from</span>(<span class="ident">nanos</span>) <span class="op">&gt;</span> <span class="number">1e9</span>
         {
             <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Errors</span>::<span class="ident">Carry</span>);
         }
-        <span class="kw">if</span> <span class="ident">day</span> <span class="op">&gt;</span> <span class="ident">USUAL_DAYS_PER_MONTH</span>[<span class="ident">month</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="number">1</span>] {
-            <span class="kw">if</span> <span class="ident">month</span> <span class="op">!=</span> <span class="number">2</span> <span class="op">||</span> <span class="op">!</span><span class="ident">is_leap_year</span>(<span class="ident">year</span>) {
-                <span class="comment">// Not in February or not a leap year</span>
-                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Errors</span>::<span class="ident">Carry</span>);
-            }
+        <span class="kw">if</span> <span class="ident">day</span> <span class="op">&gt;</span> <span class="ident">USUAL_DAYS_PER_MONTH</span>[<span class="ident">month</span> <span class="kw">as</span> <span class="ident">usize</span> <span class="op">-</span> <span class="number">1</span>] <span class="op">&amp;&amp;</span> (<span class="ident">month</span> <span class="op">!=</span> <span class="number">2</span> <span class="op">||</span> <span class="op">!</span><span class="ident">is_leap_year</span>(<span class="ident">year</span>)) {
+            <span class="comment">// Not in February or not a leap year</span>
+            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Errors</span>::<span class="ident">Carry</span>);
         }
         <span class="prelude-val">Ok</span>(<span class="ident">Utc</span> {
             <span class="ident">year</span>,
@@ -820,7 +865,7 @@
         } <span class="kw">else</span> {
             <span class="kw">loop</span> {
                 <span class="ident">seconds_til_this_month</span> <span class="op">+=</span> <span class="ident">SECONDS_PER_DAY</span> <span class="op">*</span>
-                    <span class="ident">USUAL_DAYS_PER_MONTH</span>[(<span class="ident">month</span> <span class="op">-</span> <span class="number">1</span>) <span class="kw">as</span> <span class="ident">usize</span>] <span class="kw">as</span> <span class="ident">f64</span>;
+                    <span class="ident">f64</span>::<span class="ident">from</span>(<span class="ident">USUAL_DAYS_PER_MONTH</span>[(<span class="ident">month</span> <span class="op">-</span> <span class="number">1</span>) <span class="kw">as</span> <span class="ident">usize</span>]);
                 <span class="kw">if</span> <span class="ident">is_leap_year</span>(<span class="ident">year</span>) <span class="op">&amp;&amp;</span> <span class="ident">month</span> <span class="op">==</span> <span class="number">2</span> {
                     <span class="ident">seconds_til_this_month</span> <span class="op">+=</span> <span class="ident">SECONDS_PER_DAY</span>;
                 }
@@ -838,7 +883,7 @@
         <span class="comment">// seconds since the start of this month.</span>
         <span class="kw">let</span> (_, <span class="ident">month_fraction</span>) <span class="op">=</span> <span class="ident">quorem</span>(
             <span class="ident">year_fraction</span> <span class="op">-</span> <span class="ident">seconds_til_this_month</span>,
-            <span class="ident">days_this_month</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">*</span> <span class="ident">SECONDS_PER_DAY</span>,
+            <span class="ident">f64</span>::<span class="ident">from</span>(<span class="ident">days_this_month</span>) <span class="op">*</span> <span class="ident">SECONDS_PER_DAY</span>,
         );
         <span class="comment">// Get the day by the exact number of seconds in a day</span>
         <span class="kw">let</span> (<span class="kw-2">mut</span> <span class="ident">day</span>, <span class="ident">day_fraction</span>) <span class="op">=</span> <span class="ident">quorem</span>(<span class="ident">month_fraction</span>, <span class="ident">SECONDS_PER_DAY</span>);
@@ -849,7 +894,7 @@
                 <span class="ident">month</span> <span class="op">=</span> <span class="number">12</span>;
                 <span class="ident">year</span> <span class="op">-=</span> <span class="number">1</span>;
             }
-            <span class="ident">day</span> <span class="op">=</span> <span class="ident">USUAL_DAYS_PER_MONTH</span>[(<span class="ident">month</span> <span class="op">-</span> <span class="number">1</span>) <span class="kw">as</span> <span class="ident">usize</span>] <span class="kw">as</span> <span class="ident">i32</span>;
+            <span class="ident">day</span> <span class="op">=</span> <span class="ident">i32</span>::<span class="ident">from</span>(<span class="ident">USUAL_DAYS_PER_MONTH</span>[(<span class="ident">month</span> <span class="op">-</span> <span class="number">1</span>) <span class="kw">as</span> <span class="ident">usize</span>]);
         }
         <span class="ident">day</span> <span class="op">+=</span> <span class="number">1</span>; <span class="comment">// Otherwise the day count starts at 0</span>
         <span class="comment">// Get the hours by the exact number of seconds in an hour</span>
@@ -867,16 +912,15 @@
         ).<span class="ident">expect</span>(<span class="string">&quot;date computed from instant is invalid (past)&quot;</span>)
     }
 
-    <span class="doccomment">/// `as_instant` returns an Instant from the Utc.</span>
-    <span class="kw">fn</span> <span class="ident">as_instant</span>(<span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">Instant</span> {
-        <span class="kw">let</span> <span class="ident">era</span>: <span class="ident">Era</span>;
-        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">year</span> <span class="op">&gt;=</span> <span class="number">1900</span> {
-            <span class="ident">era</span> <span class="op">=</span> <span class="ident">Era</span>::<span class="ident">Present</span>;
+    <span class="doccomment">/// `into_instant` returns an Instant from the Utc.</span>
+    <span class="kw">fn</span> <span class="ident">into_instant</span>(<span class="self">self</span>) <span class="op">-&gt;</span> <span class="ident">Instant</span> {
+        <span class="kw">let</span> <span class="ident">era</span> <span class="op">=</span> <span class="kw">if</span> <span class="self">self</span>.<span class="ident">year</span> <span class="op">&gt;=</span> <span class="number">1900</span> {
+            <span class="ident">Era</span>::<span class="ident">Present</span>
         } <span class="kw">else</span> {
-            <span class="ident">era</span> <span class="op">=</span> <span class="ident">Era</span>::<span class="ident">Past</span>;
-        }
+            <span class="ident">Era</span>::<span class="ident">Past</span>
+        };
 
-        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">seconds_wrt_1900</span>: <span class="ident">f64</span> <span class="op">=</span> ((<span class="self">self</span>.<span class="ident">year</span> <span class="op">-</span> <span class="number">1900</span>).<span class="ident">abs</span>() <span class="kw">as</span> <span class="ident">f64</span>) <span class="op">*</span> <span class="ident">SECONDS_PER_DAY</span> <span class="op">*</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">seconds_wrt_1900</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="ident">f64</span>::<span class="ident">from</span>((<span class="self">self</span>.<span class="ident">year</span> <span class="op">-</span> <span class="number">1900</span>).<span class="ident">abs</span>()) <span class="op">*</span> <span class="ident">SECONDS_PER_DAY</span> <span class="op">*</span>
             <span class="ident">USUAL_DAYS_PER_YEAR</span>;
 
         <span class="comment">// Now add the seconds for all the years prior to the current year</span>
@@ -887,16 +931,16 @@
         }
         <span class="comment">// Add the seconds for the months prior to the current month</span>
         <span class="kw">for</span> <span class="ident">month</span> <span class="kw">in</span> <span class="number">0</span>..<span class="self">self</span>.<span class="ident">month</span> <span class="op">-</span> <span class="number">1</span> {
-            <span class="ident">seconds_wrt_1900</span> <span class="op">+=</span> <span class="ident">SECONDS_PER_DAY</span> <span class="op">*</span> <span class="ident">USUAL_DAYS_PER_MONTH</span>[(<span class="ident">month</span>) <span class="kw">as</span> <span class="ident">usize</span>] <span class="kw">as</span> <span class="ident">f64</span>;
+            <span class="ident">seconds_wrt_1900</span> <span class="op">+=</span> <span class="ident">SECONDS_PER_DAY</span> <span class="op">*</span> <span class="ident">f64</span>::<span class="ident">from</span>(<span class="ident">USUAL_DAYS_PER_MONTH</span>[(<span class="ident">month</span>) <span class="kw">as</span> <span class="ident">usize</span>]);
         }
         <span class="kw">if</span> <span class="ident">is_leap_year</span>(<span class="self">self</span>.<span class="ident">year</span>) <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">month</span> <span class="op">&gt;</span> <span class="number">2</span> {
             <span class="comment">// NOTE: If on 29th of February, then the day is not finished yet, and therefore</span>
             <span class="comment">// the extra seconds are added below as per a normal day.</span>
             <span class="ident">seconds_wrt_1900</span> <span class="op">+=</span> <span class="ident">SECONDS_PER_DAY</span>;
         }
-        <span class="ident">seconds_wrt_1900</span> <span class="op">+=</span> (<span class="self">self</span>.<span class="ident">day</span> <span class="op">-</span> <span class="number">1</span>) <span class="kw">as</span> <span class="ident">f64</span> <span class="op">*</span> <span class="ident">SECONDS_PER_DAY</span> <span class="op">+</span> <span class="self">self</span>.<span class="ident">hour</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">*</span> <span class="number">3600.0</span> <span class="op">+</span>
-            <span class="self">self</span>.<span class="ident">minute</span> <span class="kw">as</span> <span class="ident">f64</span> <span class="op">*</span> <span class="number">60.0</span> <span class="op">+</span>
-            <span class="self">self</span>.<span class="ident">second</span> <span class="kw">as</span> <span class="ident">f64</span>;
+        <span class="ident">seconds_wrt_1900</span> <span class="op">+=</span> <span class="ident">f64</span>::<span class="ident">from</span>(<span class="self">self</span>.<span class="ident">day</span> <span class="op">-</span> <span class="number">1</span>) <span class="op">*</span> <span class="ident">SECONDS_PER_DAY</span> <span class="op">+</span>
+            <span class="ident">f64</span>::<span class="ident">from</span>(<span class="self">self</span>.<span class="ident">hour</span>) <span class="op">*</span> <span class="number">3600.0</span> <span class="op">+</span>
+            <span class="ident">f64</span>::<span class="ident">from</span>(<span class="self">self</span>.<span class="ident">minute</span>) <span class="op">*</span> <span class="number">60.0</span> <span class="op">+</span> <span class="ident">f64</span>::<span class="ident">from</span>(<span class="self">self</span>.<span class="ident">second</span>);
         <span class="kw">if</span> <span class="self">self</span>.<span class="ident">second</span> <span class="op">==</span> <span class="number">60</span> {
             <span class="comment">// Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the</span>
             <span class="comment">// same number of second afters J1900.0.</span>
@@ -921,13 +965,13 @@
     }
 }
 
-<span class="doccomment">/// is_leap_year returns whether the provided year is a leap year or not.</span>
+<span class="doccomment">/// `is_leap_year` returns whether the provided year is a leap year or not.</span>
 <span class="doccomment">/// Tests for this function are part of the Utc tests.</span>
 <span class="kw">fn</span> <span class="ident">is_leap_year</span>(<span class="ident">year</span>: <span class="ident">i32</span>) <span class="op">-&gt;</span> <span class="ident">bool</span> {
     (<span class="ident">year</span> <span class="op">%</span> <span class="number">4</span> <span class="op">==</span> <span class="number">0</span> <span class="op">&amp;&amp;</span> <span class="ident">year</span> <span class="op">%</span> <span class="number">100</span> <span class="op">!=</span> <span class="number">0</span>) <span class="op">||</span> <span class="ident">year</span> <span class="op">%</span> <span class="number">400</span> <span class="op">==</span> <span class="number">0</span>
 }
 
-<span class="doccomment">/// quorem returns a tuple of the quotient and the remainder a numerator and a denominator.</span>
+<span class="doccomment">/// `quorem` returns a tuple of the quotient and the remainder a numerator and a denominator.</span>
 <span class="kw">fn</span> <span class="ident">quorem</span>(<span class="ident">numerator</span>: <span class="ident">f64</span>, <span class="ident">denominator</span>: <span class="ident">f64</span>) <span class="op">-&gt;</span> (<span class="ident">i32</span>, <span class="ident">f64</span>) {
     <span class="kw">if</span> <span class="ident">denominator</span> <span class="op">==</span> <span class="number">0.0</span> {
         <span class="macro">panic</span><span class="macro">!</span>(<span class="string">&quot;cannot divide by zero&quot;</span>);

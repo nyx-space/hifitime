@@ -1,6 +1,6 @@
-// Disclamer: this is heavily inspired by std::time::Duration, but it supports longer
+// Disclaimer: this is heavily inspired by std::time::Duration, but it supports longer
 // time spans and leap seconds. Moreover, an Instant is defined with respect to
-// 01 Jan 1900, as per NTP specifications.
+// 01 Jan 1900, as per NTP and TAI specifications.
 
 use std::cmp::PartialEq;
 use std::ops::{Add, Sub};
@@ -141,22 +141,22 @@ impl Add<Duration> for Instant {
                     (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0 &&
                          delta.subsec_nanos() >= self.duration.subsec_nanos())
                 {
-                    return Instant::new(
+                    Instant::new(
                         delta.as_secs() - self.duration.as_secs(),
                         delta.subsec_nanos() - self.duration.subsec_nanos(),
                         Era::Present,
-                    );
+                    )
                 } else {
-                    let mut cln = self.clone();
+                    let mut cln = self;
                     cln.duration -= delta;
-                    return cln;
+                    cln
                 }
             }
             Era::Present => {
                 // Adding a duration in the present is trivial
-                let mut cln = self.clone();
+                let mut cln = self;
                 cln.duration += delta;
-                return cln;
+                cln
             }
         }
     }
@@ -198,26 +198,84 @@ impl Sub<Duration> for Instant {
         match self.era {
             Era::Past => {
                 // Subtracting a duration in the past is trivial
-                let mut cln = self.clone();
+                let mut cln = self;
                 cln.duration += delta;
-                return cln;
+                cln
             }
             Era::Present => {
                 if (delta.as_secs() >= self.duration.as_secs()) ||
                     (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0 &&
                          delta.subsec_nanos() >= self.duration.subsec_nanos())
                 {
-                    return Instant::new(
+                    Instant::new(
                         delta.as_secs() - self.duration.as_secs(),
                         delta.subsec_nanos() - self.duration.subsec_nanos(),
                         Era::Past,
-                    );
+                    )
                 } else {
-                    let mut cln = self.clone();
+                    let mut cln = self;
                     cln.duration -= delta;
-                    return cln;
+                    cln
                 }
             }
         }
     }
+}
+
+
+#[test]
+fn era_unittest() {
+    assert_eq!(format!("{}", Era::Past), "Past");
+    assert_eq!(format!("{}", Era::Present), "Present");
+    assert!(Era::Past < Era::Present);
+}
+
+#[test]
+fn instant_unittest() {
+    // NOTE: These tests are copy-pasted into the documentation.
+    // Add in the Present era.
+    let tick = Instant::new(159, 10, Era::Present) + Duration::new(5, 2);
+    assert_eq!(tick.secs(), 164);
+    assert_eq!(tick.nanos(), 12);
+    assert_eq!(tick.era(), Era::Present);
+
+    // Add in the Past era.
+    let tick = Instant::new(159, 10, Era::Past) + Duration::new(5, 2);
+    assert_eq!(tick.secs(), 154);
+    assert_eq!(tick.nanos(), 8);
+    assert_eq!(tick.era(), Era::Past);
+
+    // Add from the Past to overflow into the Present
+    let tick = Instant::new(159, 0, Era::Past) + Duration::new(160, 0);
+    assert_eq!(tick.secs(), 1);
+    assert_eq!(tick.nanos(), 0);
+    assert_eq!(tick.era(), Era::Present);
+
+    let tick = Instant::new(0, 5, Era::Past) + Duration::new(0, 6);
+    assert_eq!(tick.secs(), 0);
+    assert_eq!(tick.nanos(), 1);
+    assert_eq!(tick.era(), Era::Present);
+
+    // Sub in the Present era.
+    let tick = Instant::new(159, 10, Era::Present) - Duration::new(5, 2);
+    assert_eq!(tick.secs(), 154);
+    assert_eq!(tick.nanos(), 8);
+    assert_eq!(tick.era(), Era::Present);
+
+    // Sub in the Past era.
+    let tick = Instant::new(159, 10, Era::Past) - Duration::new(5, 2);
+    assert_eq!(tick.secs(), 164);
+    assert_eq!(tick.nanos(), 12);
+    assert_eq!(tick.era(), Era::Past);
+
+    // Sub from the Present to overflow into the Past
+    let tick = Instant::new(159, 0, Era::Present) - Duration::new(160, 0);
+    assert_eq!(tick.secs(), 1);
+    assert_eq!(tick.nanos(), 0);
+    assert_eq!(tick.era(), Era::Past);
+
+    let tick = Instant::new(0, 5, Era::Present) - Duration::new(0, 6);
+    assert_eq!(tick.secs(), 0);
+    assert_eq!(tick.nanos(), 1);
+    assert_eq!(tick.era(), Era::Past);
 }

@@ -48,11 +48,11 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../src/hifitime/lib.rs.html#98-103' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../src/hifitime/lib.rs.html#107-112' title='goto source code'>[src]</a></span></h1>
 <pre class='rust trait'>pub trait TimeSystem: <a class="trait" href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html" title="trait core::cmp::PartialOrd">PartialOrd</a> {
     fn <a href='#tymethod.from_instant' class='fnname'>from_instant</a>(_: <a class="struct" href="../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a>) -&gt; Self;
-<div class='item-spacer'></div>    fn <a href='#tymethod.as_instant' class='fnname'>as_instant</a>(self) -&gt; <a class="struct" href="../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a>;
-}</pre><div class='docblock'><p>A TimeSystem enables the creation of system for measuring spans of time, such as UTC or Julian
+<div class='item-spacer'></div>    fn <a href='#tymethod.into_instant' class='fnname'>into_instant</a>(self) -&gt; <a class="struct" href="../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a>;
+}</pre><div class='docblock'><p>A <code>TimeSystem</code> enables the creation of system for measuring spans of time, such as UTC or Julian
 days.</p>
 </div>
             <h2 id='required-methods' class='small-section-header'>
@@ -60,7 +60,7 @@ days.</p>
             </h2>
             <div class='methods'>
         <h3 id='tymethod.from_instant' class='method'><span id='from_instant.v' class='invisible'><code>fn <a href='#tymethod.from_instant' class='fnname'>from_instant</a>(_: <a class="struct" href="../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a>) -&gt; Self</code></span></h3><div class='docblock'><p>Use this method to convert between different <code>TimeSystem</code> implementors.</p>
-</div><h3 id='tymethod.as_instant' class='method'><span id='as_instant.v' class='invisible'><code>fn <a href='#tymethod.as_instant' class='fnname'>as_instant</a>(self) -&gt; <a class="struct" href="../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a></code></span></h3><div class='docblock'><p>Also use this method to convert between different <code>TimeSystem</code> implementors</p>
+</div><h3 id='tymethod.into_instant' class='method'><span id='into_instant.v' class='invisible'><code>fn <a href='#tymethod.into_instant' class='fnname'>into_instant</a>(self) -&gt; <a class="struct" href="../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a></code></span></h3><div class='docblock'><p>Also use this method to convert between different <code>TimeSystem</code> implementors</p>
 </div></div>
         <h2 id='implementors' class='small-section-header'>
           Implementors<a href='#implementors' class='anchor'></a>
