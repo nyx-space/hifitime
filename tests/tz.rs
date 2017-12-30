@@ -16,7 +16,7 @@ where
     /// Returns the offset between this TimeZone and UTC. In this case, the offset is 10 hours.
     /// cf. https://en.wikipedia.org/wiki/List_of_military_time_zones
     fn utc_offset() -> Offset {
-        Offset::new(00, 0, Era::Present)
+        Offset::new(10 * 3600, 0, Era::Present)
     }
 
     fn new(
@@ -31,16 +31,7 @@ where
         // Check this date can exist in UTC (otherw it's invalid regardless of the timezone)
         let init_utc = Utc::new(year, month, day, hour, minute, second, nanos)?;
         // Perform the time zone correction and store the UTC value.
-        //let base_utc = Utc::from_instant(init_utc.as_instant() - Self::utc_offset().duration());
-        let base_utc = Utc::from_instant(init_utc.as_instant());
-        println!(
-            "{:}\t{:?}\t{:}",
-            init_utc,
-            init_utc.as_instant(),
-            Utc::from_instant(init_utc.as_instant())
-        );
-        println!("{:}", base_utc);
-        assert_eq!(format!("{}", base_utc), "2017-12-25T00:00:00+10:00");
+        let base_utc = Utc::from_instant(init_utc.as_instant() - Self::utc_offset().duration());
         Ok(KiloTZ { base_utc: base_utc })
     }
 }
