@@ -193,8 +193,6 @@ fn utc_valid_dates() {
     assert_eq!(Utc::from_instant(dt.as_instant()), dt, "Reciprocity error");
 
     // Unix epoch tests for reciprocity prior to any leap second (leap years counted)
-    // This is a long test because I encountered many small bugs in the conversion when
-    // implementing this.
     let unix_epoch = Instant::new(2_208_988_800, 0, Era::Present); // 1970 Jan 01, midnight
     const USUAL_DAYS_PER_MONTH: [u64; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
@@ -208,8 +206,13 @@ fn utc_valid_dates() {
         "Conversion from instant failed"
     );
 
+    // This is a very long test because I encountered many small bugs in the conversion when
+    // implementing this.
     for dmonth in 1..4 {
-        for dday in 1..31 {
+        for dday in 1..32 {
+            if dday > USUAL_DAYS_PER_MONTH[(dmonth - 1) as usize] {
+                break;
+            }
             for dhour in 0..24 {
                 for dmin in 0..60 {
                     for dsec in 0..60 {
@@ -218,9 +221,13 @@ fn utc_valid_dates() {
                                 24 * 3600 * (dday - 1) + 3600 * dhour + 60 * dmin + dsec,
                                 0,
                             );
+                        // Add all the seconds of the previous months
                         for month in 1..dmonth {
                             this_epoch = this_epoch +
-                                Duration::new(24 * 3600 * USUAL_DAYS_PER_MONTH[month as usize], 0);
+                                Duration::new(
+                                    24 * 3600 * USUAL_DAYS_PER_MONTH[(month - 1) as usize],
+                                    0,
+                                );
                         }
                         let unix_ref = Utc::new(
                             1970,
