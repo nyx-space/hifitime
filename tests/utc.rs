@@ -40,21 +40,29 @@ fn utc_valid_dates() {
     let this_epoch = Instant::new(1_199_333_568, 0, Era::Present);
     let epoch_utc = Utc::new(1938, 01, 03, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
-    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
     assert_eq!(
         epoch_utc,
-        epoch_utc_from_inst,
+        Utc::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
-    // X-Val: https://goo.gl/nBRKZN - 24 June 193804:12:48
+    // X-Val: https://goo.gl/zbMBg1 - 31 December 1938 04:12:48
+    let this_epoch = Instant::new(1_230_610_368, 0, Era::Present);
+    let epoch_utc = Utc::new(1938, 12, 31, 4, 12, 48, 0).expect("init epoch");
+    assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
+    assert_eq!(
+        epoch_utc,
+        Utc::from_instant(this_epoch),
+        "Conversion from instant failed"
+    );
+
+    // X-Val: https://goo.gl/nBRKZN - 24 June 1938 04:12:48
     let this_epoch = Instant::new(1_214_194_368, 0, Era::Present);
     let epoch_utc = Utc::new(1938, 06, 24, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
-    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
     assert_eq!(
         epoch_utc,
-        epoch_utc_from_inst,
+        Utc::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
@@ -62,10 +70,9 @@ fn utc_valid_dates() {
     let this_epoch = Instant::new(1_220_069_568, 0, Era::Present);
     let epoch_utc = Utc::new(1938, 08, 31, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
-    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
     assert_eq!(
         epoch_utc,
-        epoch_utc_from_inst,
+        Utc::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
@@ -73,10 +80,9 @@ fn utc_valid_dates() {
     let this_epoch = Instant::new(1_230_696_768, 0, Era::Present);
     let epoch_utc = Utc::new(1939, 01, 01, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
-    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
     assert_eq!(
         epoch_utc,
-        epoch_utc_from_inst,
+        Utc::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
@@ -84,10 +90,9 @@ fn utc_valid_dates() {
     let this_epoch = Instant::new(1_235_794_368, 0, Era::Present);
     let epoch_utc = Utc::new(1939, 03, 01, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
-    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
     assert_eq!(
         epoch_utc,
-        epoch_utc_from_inst,
+        Utc::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
@@ -95,10 +100,9 @@ fn utc_valid_dates() {
     let this_epoch = Instant::new(1_267_416_768, 0, Era::Present);
     let epoch_utc = Utc::new(1940, 03, 01, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
-    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
     assert_eq!(
         epoch_utc,
-        epoch_utc_from_inst,
+        Utc::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
@@ -106,10 +110,9 @@ fn utc_valid_dates() {
     let this_epoch = Instant::new(1_264_911_168, 0, Era::Present);
     let epoch_utc = Utc::new(1939, 02, 01, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
-    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
     assert_eq!(
         epoch_utc,
-        epoch_utc_from_inst,
+        Utc::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
@@ -117,10 +120,9 @@ fn utc_valid_dates() {
     let this_epoch = Instant::new(1_264_911_168, 0, Era::Present);
     let epoch_utc = Utc::new(1940, 02, 01, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
-    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
     assert_eq!(
         epoch_utc,
-        epoch_utc_from_inst,
+        Utc::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
@@ -128,10 +130,9 @@ fn utc_valid_dates() {
     let this_epoch = Instant::new(1_267_243_968, 0, Era::Present);
     let epoch_utc = Utc::new(1940, 02, 28, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
-    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
     assert_eq!(
         epoch_utc,
-        epoch_utc_from_inst,
+        Utc::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
@@ -139,10 +140,9 @@ fn utc_valid_dates() {
     let this_epoch = Instant::new(1_267_330_368, 0, Era::Present);
     let epoch_utc = Utc::new(1940, 02, 29, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
-    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
     assert_eq!(
         epoch_utc,
-        epoch_utc_from_inst,
+        Utc::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
@@ -161,10 +161,9 @@ fn utc_valid_dates() {
     let this_epoch = unix_epoch + Duration::new(4_034_173, 0);
     let epoch_utc = Utc::new(1970, 02, 16, 16, 36, 13, 0).expect("init epoch");
     assert_eq!(epoch_utc.as_instant(), this_epoch, "Incorrect epoch");
-    let epoch_utc_from_inst = Utc::from_instant(this_epoch);
     assert_eq!(
         epoch_utc,
-        epoch_utc_from_inst,
+        Utc::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 

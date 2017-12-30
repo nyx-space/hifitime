@@ -249,39 +249,71 @@ impl TimeSystem for Utc {
         // between 1900 and `year`
         for year in 1900..year {
             if is_leap_year(year) {
-                year_fraction -= SECONDS_PER_DAY;
+                year_fraction -= SECONDS_PER_DAY; // BUG: This may lead to a negative year_fraction
             }
         }
 
-        // Get the month from the average number of seconds per month
-        let (mut month, mut month_fraction) = quorem(year_fraction, 30.4365 * SECONDS_PER_DAY);
-        month += 1; // Otherwise the month count starts at 0
+        // Get the month from the exact number of seconds between the start of the year and now
+        println!("year_fraction = {:}", year_fraction);
+        let mut seconds_til_this_month = 0.0;
+        let mut month = 1;
+        loop {
+            seconds_til_this_month += SECONDS_PER_DAY *
+                USUAL_DAYS_PER_MONTH[(month - 1) as usize] as f64;
+            if seconds_til_this_month >= year_fraction {
+                break;
+            }
+            month += 1;
+        }
+        // Should be: Get the month number by the number of seconds in this month?
         let mut days_this_month = USUAL_DAYS_PER_MONTH[(month - 1) as usize];
         if month == 2 && is_leap_year(year) {
             days_this_month += 1;
         }
+        //let mut month_fraction = (year_fraction % (days_this_month as f64 * SECONDS_PER_DAY));
+        let mut month_fraction = (year_fraction % (seconds_til_this_month / (month as f64)));
         if month_fraction >= SECONDS_PER_DAY * days_this_month as f64 {
             // Must overflow the month
             month += 1;
             month_fraction -= SECONDS_PER_DAY * days_this_month as f64;
             panic!("fixed");
         }
-        // Get the day by the exact number of seconds in that month
+        // Get the day by the exact number of seconds in a day
         let (mut day, day_fraction) = quorem(month_fraction, SECONDS_PER_DAY);
         day += 1; // Otherwise the day count starts at 0
+        if day < 0 {
+            // Overflow backwards (this happens for end of year calculations)
+            month -= 1;
+            if month == 0 {
+                month = 12;
+                year -= 1;
+            }
+            day = USUAL_DAYS_PER_MONTH[(month - 1) as usize] as i32;
+            if month == 2 && is_leap_year(year) {
+                days_this_month += 1;
+            }
+        }
+        println!(
+            "month_fraction = {:} => day = {:} frac = {:}",
+            month_fraction,
+            day,
+            day_fraction
+        );
+        // Get the hours by the exact number of seconds in an hour
         let (mut hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
-        if hours == 24 {
+        if hours >= 24 {
             day += 1;
             hours = 0;
             panic!("hours");
         }
+        // Get the minutes and seconds by the exact number of seconds in a minute
         let (mut mins, mut secs) = quorem(hours_fraction, 60.0);
-        if mins == 60 {
+        if mins >= 60 {
             hours += 1;
             mins = 0;
             panic!("mins");
         }
-        if secs == 60.0 {
+        if secs >= 60.0 {
             mins += 1;
             secs = 0.0;
             panic!("secs");
@@ -390,16 +422,20 @@ fn is_leap_year(year: i32) -> bool {
 
 /// quorem returns a tuple of the quotient and the remainder a numerator and a denominator.
 fn quorem(numerator: f64, denominator: f64) -> (i32, f64) {
-    if numerator < 0.0 || denominator < 0.0 {
+    /*if numerator < 0.0 || denominator < 0.0 {
         panic!("quorem only supports positive numbers");
-    }
+    }*/
     if denominator == 0.0 {
         panic!("cannot divide by zero");
     }
-    (
-        (numerator / denominator).floor() as i32,
-        (numerator % denominator),
-    )
+    let quotient = (numerator / denominator).floor() as i32;
+    let remainder = (numerator % denominator);
+    if remainder >= 0.0 {
+        (quotient, remainder)
+    } else {
+        (quotient - 1, remainder + denominator)
+    }
+
 }
 
 #[test]
