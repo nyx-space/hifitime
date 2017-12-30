@@ -249,29 +249,47 @@ impl TimeSystem for Utc {
         // between 1900 and `year`
         for year in 1900..year {
             if is_leap_year(year) {
-                year_fraction -= SECONDS_PER_DAY; // BUG: This may lead to a negative year_fraction
+                year_fraction -= SECONDS_PER_DAY;
             }
         }
 
         // Get the month from the exact number of seconds between the start of the year and now
-        println!("year_fraction = {:}", year_fraction);
         let mut seconds_til_this_month = 0.0;
         let mut month = 1;
-        loop {
-            seconds_til_this_month += SECONDS_PER_DAY *
-                USUAL_DAYS_PER_MONTH[(month - 1) as usize] as f64;
-            if seconds_til_this_month >= year_fraction {
-                break;
+        if year_fraction < 0.0 {
+            month = 12;
+            year -= 1;
+        } else {
+            loop {
+                seconds_til_this_month += SECONDS_PER_DAY *
+                    USUAL_DAYS_PER_MONTH[(month - 1) as usize] as f64;
+                if is_leap_year(year) && month == 2 {
+                    seconds_til_this_month += SECONDS_PER_DAY;
+                }
+                if seconds_til_this_month > year_fraction {
+                    break;
+                }
+                month += 1;
             }
-            month += 1;
         }
-        // Should be: Get the month number by the number of seconds in this month?
         let mut days_this_month = USUAL_DAYS_PER_MONTH[(month - 1) as usize];
         if month == 2 && is_leap_year(year) {
             days_this_month += 1;
         }
-        //let mut month_fraction = (year_fraction % (days_this_month as f64 * SECONDS_PER_DAY));
-        let mut month_fraction = (year_fraction % (seconds_til_this_month / (month as f64)));
+        println!(
+            "year_fraction = {:} ==> month {:} ==> days = {:}",
+            year_fraction,
+            month,
+            days_this_month
+        );
+        // Get the month fraction by the number of seconds in this month from the number of
+        // seconds since the start of this month.
+        let (_, mut month_fraction) = quorem(
+            year_fraction - seconds_til_this_month,
+            days_this_month as f64 * SECONDS_PER_DAY,
+        );
+
+        println!("month = {:} frac = {:}", month, month_fraction);
         if month_fraction >= SECONDS_PER_DAY * days_this_month as f64 {
             month += 1;
             month_fraction -= SECONDS_PER_DAY * days_this_month as f64;
@@ -279,8 +297,8 @@ impl TimeSystem for Utc {
         }
         // Get the day by the exact number of seconds in a day
         let (mut day, day_fraction) = quorem(month_fraction, SECONDS_PER_DAY);
-        day += 1; // Otherwise the day count starts at 0
         if day < 0 {
+            println!("negative days");
             // Overflow backwards (this happens for end of year calculations)
             month -= 1;
             if month == 0 {
@@ -292,8 +310,10 @@ impl TimeSystem for Utc {
                 days_this_month += 1;
             }
         }
+        day += 1; // Otherwise the day count starts at 0
         println!(
-            "month_fraction = {:} => day = {:} frac = {:}",
+            "month = {:} & month_fraction = {:} => day = {:} frac = {:}",
+            month,
             month_fraction,
             day,
             day_fraction
@@ -421,14 +441,12 @@ fn is_leap_year(year: i32) -> bool {
 
 /// quorem returns a tuple of the quotient and the remainder a numerator and a denominator.
 fn quorem(numerator: f64, denominator: f64) -> (i32, f64) {
-    /*if numerator < 0.0 || denominator < 0.0 {
-        panic!("quorem only supports positive numbers");
-    }*/
+    println!("num = {:?}\tdem = {:}", numerator, denominator);
     if denominator == 0.0 {
         panic!("cannot divide by zero");
     }
     let quotient = (numerator / denominator).floor() as i32;
-    let remainder = (numerator % denominator);
+    let remainder = numerator % denominator;
     if remainder >= 0.0 {
         (quotient, remainder)
     } else {
@@ -450,13 +468,13 @@ fn quorem_nominal_test() {
 #[test]
 #[should_panic]
 fn quorem_negative_num_test() {
-    assert_eq!(quorem(-24.0, 6.0), (4, 0.0));
+    assert_eq!(quorem(-24.0, 6.0), (4, 0.0)); // TODO: Update test
 }
 
 #[test]
 #[should_panic]
 fn quorem_negative_den_test() {
-    assert_eq!(quorem(24.0, -6.0), (4, 0.0));
+    assert_eq!(quorem(24.0, -6.0), (4, 0.0)); // TODO: Update test
 }
 
 #[test]
@@ -464,5 +482,5 @@ fn quorem_negative_den_test() {
 fn quorem_negative_numden_test() {
     // A valid argument could be made that this test should work, but there is no situation in
     // this library where two negative numbers should be considered a valid input.
-    assert_eq!(quorem(-24.0, -6.0), (4, 0.0));
+    assert_eq!(quorem(-24.0, -6.0), (4, 0.0)); // TODO: Update test
 }
