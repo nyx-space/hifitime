@@ -51,7 +51,7 @@
                </span><a class='srclink' href='../../src/hifitime/utc.rs.html#76-84' title='goto source code'>[src]</a></span></h1>
 <pre class='rust struct'>pub struct Utc { /* fields omitted */ }</pre><div class='docblock'><p>Utc is the interface between a time system and a time zone. All time zones are defined with
 respect to UTC. Moreover, Utc inherently supports the past leap seconds, as reported by the
-IETF and NIST at <a href="https://www.ietf.org/timezones/data/leap-seconds.list">https://www.ietf.org/timezones/data/leap-seconds.list</a> . NOTE: leap seconds
+IETF and NIST at <a href="https://www.ietf.org/timezones/data/leap-seconds.list">https://www.ietf.org/timezones/data/leap-seconds.list</a>. NOTE: leap seconds
 cannot be predicted! This module will be updated as soon as possible after a new leap second
 has been announced.
 <strong>WARNING</strong>: The historical oddities with calendars are not yet supported.</p>
@@ -84,7 +84,7 @@ has been announced.
 
 <span class="kw">let</span> <span class="ident">epoch</span> <span class="op">=</span> <span class="ident">Utc</span>::<span class="ident">at_midnight</span>(<span class="number">1900</span>, <span class="number">01</span>, <span class="number">01</span>).<span class="ident">expect</span>(<span class="string">&quot;epoch failed&quot;</span>);
 <span class="macro">assert_eq</span><span class="macro">!</span>(
-    <span class="ident">epoch</span>.<span class="ident">as_instant</span>(),
+    <span class="ident">epoch</span>.<span class="ident">into_instant</span>(),
     <span class="ident">Instant</span>::<span class="ident">new</span>(<span class="number">0</span>, <span class="number">0</span>, <span class="ident">Era</span>::<span class="ident">Present</span>),
     <span class="string">&quot;Incorrect Epoch computed&quot;</span>
 );
@@ -92,7 +92,7 @@ has been announced.
 <span class="macro">assert_eq</span><span class="macro">!</span>(
     <span class="ident">Utc</span>::<span class="ident">at_midnight</span>(<span class="number">1972</span>, <span class="number">01</span>, <span class="number">01</span>)
         .<span class="ident">expect</span>(<span class="string">&quot;Post January 1972 leap second failed&quot;</span>)
-        .<span class="ident">as_instant</span>(),
+        .<span class="ident">into_instant</span>(),
     <span class="ident">Instant</span>::<span class="ident">new</span>(<span class="number">2272060800</span>, <span class="number">0</span>, <span class="ident">Era</span>::<span class="ident">Present</span>),
     <span class="string">&quot;Incorrect January 1972 post-leap second number computed at midnight&quot;</span>
 );</pre>
@@ -106,7 +106,7 @@ has been announced.
 
 <span class="kw">let</span> <span class="ident">epoch</span> <span class="op">=</span> <span class="ident">Utc</span>::<span class="ident">at_noon</span>(<span class="number">1900</span>, <span class="number">01</span>, <span class="number">01</span>).<span class="ident">expect</span>(<span class="string">&quot;epoch failed&quot;</span>);
 <span class="macro">assert_eq</span><span class="macro">!</span>(
-    <span class="ident">epoch</span>.<span class="ident">as_instant</span>(),
+    <span class="ident">epoch</span>.<span class="ident">into_instant</span>(),
     <span class="ident">Instant</span>::<span class="ident">new</span>(<span class="number">43200</span>, <span class="number">0</span>, <span class="ident">Era</span>::<span class="ident">Present</span>),
     <span class="string">&quot;Incorrect Epoch computed&quot;</span>
 );
@@ -114,7 +114,7 @@ has been announced.
 <span class="macro">assert_eq</span><span class="macro">!</span>(
     <span class="ident">Utc</span>::<span class="ident">at_noon</span>(<span class="number">1972</span>, <span class="number">01</span>, <span class="number">01</span>)
         .<span class="ident">expect</span>(<span class="string">&quot;Post January 1972 leap second failed&quot;</span>)
-        .<span class="ident">as_instant</span>(),
+        .<span class="ident">into_instant</span>(),
     <span class="ident">Instant</span>::<span class="ident">new</span>(<span class="number">2272104000</span>, <span class="number">0</span>, <span class="ident">Era</span>::<span class="ident">Present</span>),
     <span class="string">&quot;Incorrect January 1972 post-leap second number computed at noon&quot;</span>
 );</pre>
@@ -147,10 +147,10 @@ has been announced.
 <div class='docblock'><p>This method tests greater than (for <code>self</code> and <code>other</code>) and is used by the <code>&gt;</code> operator. <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html#method.gt">Read more</a></p>
 </div><h4 id='method.ge' class="method"><span id='ge.v' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html#method.ge' class='fnname'>ge</a>(&amp;self, __arg_0: &amp;<a class="struct" href="../../hifitime/utc/struct.Utc.html" title="struct hifitime::utc::Utc">Utc</a>) -&gt; <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.bool.html">bool</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#75' title='goto source code'>[src]</a></span></h4>
 <div class='docblock'><p>This method tests greater than or equal to (for <code>self</code> and <code>other</code>) and is used by the <code>&gt;=</code> operator. <a href="https://doc.rust-lang.org/nightly/core/cmp/trait.PartialOrd.html#method.ge">Read more</a></p>
-</div></div><h3 id='impl-TimeZone' class='impl'><span class='in-band'><code>impl <a class="trait" href="../../hifitime/utc/trait.TimeZone.html" title="trait hifitime::utc::TimeZone">TimeZone</a> for <a class="struct" href="../../hifitime/utc/struct.Utc.html" title="struct hifitime::utc::Utc">Utc</a> <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,&nbsp;</span></code><a href='#impl-TimeZone' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#169-317' title='goto source code'>[src]</a></span></h3>
+</div></div><h3 id='impl-TimeZone' class='impl'><span class='in-band'><code>impl <a class="trait" href="../../hifitime/utc/trait.TimeZone.html" title="trait hifitime::utc::TimeZone">TimeZone</a> for <a class="struct" href="../../hifitime/utc/struct.Utc.html" title="struct hifitime::utc::Utc">Utc</a> <span class="where fmt-newline">where<br>&nbsp;&nbsp;&nbsp;&nbsp;Self: <a class="trait" href="https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html" title="trait core::marker::Sized">Sized</a>,&nbsp;</span></code><a href='#impl-TimeZone' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#169-315' title='goto source code'>[src]</a></span></h3>
 <div class='impl-items'><h4 id='method.utc_offset' class="method"><span id='utc_offset.v' class='invisible'><code>fn <a href='../../hifitime/utc/trait.TimeZone.html#tymethod.utc_offset' class='fnname'>utc_offset</a>() -&gt; <a class="type" href="../../hifitime/utc/type.Offset.html" title="type hifitime::utc::Offset">Offset</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#174-176' title='goto source code'>[src]</a></span></h4>
 <div class='docblock'><p>Returns the offset between this TimeZone and UTC. In this case, the offset is strictly zero.</p>
-</div><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>fn <a href='../../hifitime/utc/trait.TimeZone.html#tymethod.new' class='fnname'>new</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;year: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;month: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;day: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;hour: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;minute: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;second: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;nanos: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a><br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../../hifitime/utc/struct.Utc.html" title="struct hifitime::utc::Utc">Utc</a>, <a class="enum" href="../../hifitime/enum.Errors.html" title="enum hifitime::Errors">Errors</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#276-316' title='goto source code'>[src]</a></span></h4>
+</div><h4 id='method.new' class="method"><span id='new.v' class='invisible'><code>fn <a href='../../hifitime/utc/trait.TimeZone.html#tymethod.new' class='fnname'>new</a>(<br>&nbsp;&nbsp;&nbsp;&nbsp;year: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.i32.html">i32</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;month: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;day: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;hour: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;minute: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;second: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u8.html">u8</a>, <br>&nbsp;&nbsp;&nbsp;&nbsp;nanos: <a class="primitive" href="https://doc.rust-lang.org/nightly/std/primitive.u32.html">u32</a><br>) -&gt; <a class="enum" href="https://doc.rust-lang.org/nightly/core/result/enum.Result.html" title="enum core::result::Result">Result</a>&lt;<a class="struct" href="../../hifitime/utc/struct.Utc.html" title="struct hifitime::utc::Utc">Utc</a>, <a class="enum" href="../../hifitime/enum.Errors.html" title="enum hifitime::Errors">Errors</a>&gt;</code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#276-314' title='goto source code'>[src]</a></span></h4>
 <div class='docblock'><p>Creates a new UTC date, with support for all the leap seconds with respect to TAI.
 <em>NOTE:</em> UTC leap seconds may be confusing because several dates have the <strong>same</strong> number
 of seconds since TAI epoch.
@@ -166,7 +166,7 @@ as explained elsewhere in this documentation may lead to odd results (cf. exampl
 
 <span class="kw">let</span> <span class="ident">epoch</span> <span class="op">=</span> <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">1900</span>, <span class="number">01</span>, <span class="number">01</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>).<span class="ident">expect</span>(<span class="string">&quot;epoch failed&quot;</span>);
 <span class="macro">assert_eq</span><span class="macro">!</span>(
-    <span class="ident">epoch</span>.<span class="ident">as_instant</span>(),
+    <span class="ident">epoch</span>.<span class="ident">into_instant</span>(),
     <span class="ident">Instant</span>::<span class="ident">new</span>(<span class="number">0</span>, <span class="number">0</span>, <span class="ident">Era</span>::<span class="ident">Present</span>),
     <span class="string">&quot;Incorrect Epoch computed&quot;</span>
 );
@@ -174,21 +174,21 @@ as explained elsewhere in this documentation may lead to odd results (cf. exampl
 <span class="macro">assert_eq</span><span class="macro">!</span>(
     <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">1971</span>, <span class="number">12</span>, <span class="number">31</span>, <span class="number">23</span>, <span class="number">59</span>, <span class="number">59</span>, <span class="number">0</span>)
         .<span class="ident">expect</span>(<span class="string">&quot;January 1972 leap second failed&quot;</span>)
-        .<span class="ident">as_instant</span>(),
+        .<span class="ident">into_instant</span>(),
     <span class="ident">Instant</span>::<span class="ident">new</span>(<span class="number">2272060799</span>, <span class="number">0</span>, <span class="ident">Era</span>::<span class="ident">Present</span>),
     <span class="string">&quot;Incorrect January 1972 pre-leap second number computed&quot;</span>
 );
 <span class="macro">assert_eq</span><span class="macro">!</span>(
     <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">1971</span>, <span class="number">12</span>, <span class="number">31</span>, <span class="number">23</span>, <span class="number">59</span>, <span class="number">59</span>, <span class="number">0</span>)
         .<span class="ident">expect</span>(<span class="string">&quot;January 1972 1 second before leap second failed&quot;</span>)
-        .<span class="ident">as_instant</span>(),
+        .<span class="ident">into_instant</span>(),
     <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">1971</span>, <span class="number">12</span>, <span class="number">31</span>, <span class="number">23</span>, <span class="number">59</span>, <span class="number">60</span>, <span class="number">0</span>)
         .<span class="ident">expect</span>(<span class="string">&quot;January 1972 1 second before leap second failed&quot;</span>)
-        .<span class="ident">as_instant</span>(),
+        .<span class="ident">into_instant</span>(),
     <span class="string">&quot;Incorrect January 1972 leap second number computed&quot;</span>
 );
 
-<span class="comment">// Example of odd behavior when comparing/ordering dates using Utc or `as_instant`</span>
+<span class="comment">// Example of odd behavior when comparing/ordering dates using Utc or `into_instant`</span>
 <span class="comment">// Utc order claims (correctly) that the 60th second is _after_ the 59th. But the instant</span>
 <span class="comment">// is actually different because the 60th second is where we&#39;ve inserted the leap second.</span>
 <span class="macro">assert</span><span class="macro">!</span>(
@@ -203,10 +203,10 @@ as explained elsewhere in this documentation may lead to odd results (cf. exampl
 <span class="macro">assert</span><span class="macro">!</span>(
     <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">1971</span>, <span class="number">12</span>, <span class="number">31</span>, <span class="number">23</span>, <span class="number">59</span>, <span class="number">59</span>, <span class="number">0</span>)
         .<span class="ident">expect</span>(<span class="string">&quot;January 1972 1 second before leap second failed&quot;</span>)
-        .<span class="ident">as_instant</span>() <span class="op">==</span>
+        .<span class="ident">into_instant</span>() <span class="op">==</span>
         <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">1971</span>, <span class="number">12</span>, <span class="number">31</span>, <span class="number">23</span>, <span class="number">59</span>, <span class="number">60</span>, <span class="number">0</span>)
             .<span class="ident">expect</span>(<span class="string">&quot;January 1972 1 second before leap second failed&quot;</span>)
-            .<span class="ident">as_instant</span>(),
+            .<span class="ident">into_instant</span>(),
     <span class="string">&quot;60th second should have a different instant than 59th second&quot;</span>
 );
 <span class="comment">// Hence one second after the leap second, we get the following behavior (note the change</span>
@@ -223,38 +223,38 @@ as explained elsewhere in this documentation may lead to odd results (cf. exampl
 <span class="macro">assert</span><span class="macro">!</span>(
     <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">1971</span>, <span class="number">12</span>, <span class="number">31</span>, <span class="number">23</span>, <span class="number">59</span>, <span class="number">60</span>, <span class="number">0</span>)
         .<span class="ident">expect</span>(<span class="string">&quot;January 1972 1 second before leap second failed&quot;</span>)
-        .<span class="ident">as_instant</span>() <span class="op">&lt;</span>
+        .<span class="ident">into_instant</span>() <span class="op">&lt;</span>
         <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">1972</span>, <span class="number">01</span>, <span class="number">01</span>, <span class="number">00</span>, <span class="number">00</span>, <span class="number">00</span>, <span class="number">0</span>)
             .<span class="ident">expect</span>(<span class="string">&quot;January 1972 1 second before leap second failed&quot;</span>)
-            .<span class="ident">as_instant</span>(),
+            .<span class="ident">into_instant</span>(),
     <span class="string">&quot;60th second should have a different instant than 59th second&quot;</span>
 );
 
 <span class="kw">let</span> <span class="ident">santa</span> <span class="op">=</span> <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">01</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>).<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>);
 
 <span class="macro">assert_eq</span><span class="macro">!</span>(
-    <span class="ident">santa</span>.<span class="ident">as_instant</span>() <span class="op">+</span> <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">3600</span>, <span class="number">0</span>),
+    <span class="ident">santa</span>.<span class="ident">into_instant</span>() <span class="op">+</span> <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">3600</span>, <span class="number">0</span>),
     <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">02</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>)
         .<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>)
-        .<span class="ident">as_instant</span>(),
+        .<span class="ident">into_instant</span>(),
     <span class="string">&quot;Could not add one hour to Christmas&quot;</span>
 );
 <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">santa</span>), <span class="string">&quot;2017-12-25T01:02:14+00:00&quot;</span>);
 <span class="macro">assert_eq</span><span class="macro">!</span>(
-    <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">as_instant</span>()).<span class="ident">days</span>,
+    <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">into_instant</span>()).<span class="ident">days</span>,
     <span class="number">58112.043217592596</span>
 );
 <span class="macro">assert_eq</span><span class="macro">!</span>(
-    <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">as_instant</span>()).<span class="ident">julian_days</span>(),
+    <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">into_instant</span>()).<span class="ident">julian_days</span>(),
     <span class="number">2458112.5432175924</span>
 );</pre>
-</div></div><h3 id='impl-TimeSystem' class='impl'><span class='in-band'><code>impl <a class="trait" href="../../hifitime/trait.TimeSystem.html" title="trait hifitime::TimeSystem">TimeSystem</a> for <a class="struct" href="../../hifitime/utc/struct.Utc.html" title="struct hifitime::utc::Utc">Utc</a></code><a href='#impl-TimeSystem' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#319-428' title='goto source code'>[src]</a></span></h3>
-<div class='impl-items'><h4 id='method.from_instant' class="method"><span id='from_instant.v' class='invisible'><code>fn <a href='../../hifitime/trait.TimeSystem.html#tymethod.from_instant' class='fnname'>from_instant</a>(instant: <a class="struct" href="../../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a>) -&gt; <a class="struct" href="../../hifitime/utc/struct.Utc.html" title="struct hifitime::utc::Utc">Utc</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#321-389' title='goto source code'>[src]</a></span></h4>
+</div></div><h3 id='impl-TimeSystem' class='impl'><span class='in-band'><code>impl <a class="trait" href="../../hifitime/trait.TimeSystem.html" title="trait hifitime::TimeSystem">TimeSystem</a> for <a class="struct" href="../../hifitime/utc/struct.Utc.html" title="struct hifitime::utc::Utc">Utc</a></code><a href='#impl-TimeSystem' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#317-425' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.from_instant' class="method"><span id='from_instant.v' class='invisible'><code>fn <a href='../../hifitime/trait.TimeSystem.html#tymethod.from_instant' class='fnname'>from_instant</a>(instant: <a class="struct" href="../../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a>) -&gt; <a class="struct" href="../../hifitime/utc/struct.Utc.html" title="struct hifitime::utc::Utc">Utc</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#319-387' title='goto source code'>[src]</a></span></h4>
 <div class='docblock'><p><code>from_instant</code> converts an Instant to a Utc.</p>
-</div><h4 id='method.as_instant' class="method"><span id='as_instant.v' class='invisible'><code>fn <a href='../../hifitime/trait.TimeSystem.html#tymethod.as_instant' class='fnname'>as_instant</a>(self) -&gt; <a class="struct" href="../../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#392-427' title='goto source code'>[src]</a></span></h4>
-<div class='docblock'><p><code>as_instant</code> returns an Instant from the Utc.</p>
-</div></div><h3 id='impl-Display' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html" title="trait core::fmt::Display">Display</a> for <a class="struct" href="../../hifitime/utc/struct.Utc.html" title="struct hifitime::utc::Utc">Utc</a></code><a href='#impl-Display' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#430-443' title='goto source code'>[src]</a></span></h3>
-<div class='impl-items'><h4 id='method.fmt-1' class="method"><span id='fmt.v-1' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#431-442' title='goto source code'>[src]</a></span></h4>
+</div><h4 id='method.into_instant' class="method"><span id='into_instant.v' class='invisible'><code>fn <a href='../../hifitime/trait.TimeSystem.html#tymethod.into_instant' class='fnname'>into_instant</a>(self) -&gt; <a class="struct" href="../../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#390-424' title='goto source code'>[src]</a></span></h4>
+<div class='docblock'><p><code>into_instant</code> returns an Instant from the Utc.</p>
+</div></div><h3 id='impl-Display' class='impl'><span class='in-band'><code>impl <a class="trait" href="https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html" title="trait core::fmt::Display">Display</a> for <a class="struct" href="../../hifitime/utc/struct.Utc.html" title="struct hifitime::utc::Utc">Utc</a></code><a href='#impl-Display' class='anchor'></a></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#427-440' title='goto source code'>[src]</a></span></h3>
+<div class='impl-items'><h4 id='method.fmt-1' class="method"><span id='fmt.v-1' class='invisible'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, f: &amp;mut <a class="struct" href="https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html" title="struct core::fmt::Formatter">Formatter</a>) -&gt; <a class="type" href="https://doc.rust-lang.org/nightly/core/fmt/type.Result.html" title="type core::fmt::Result">Result</a></code></span><span class='out-of-band'><div class='ghost'></div><a class='srclink' href='../../src/hifitime/utc.rs.html#428-439' title='goto source code'>[src]</a></span></h4>
 <div class='docblock'><p>Formats the value using the given formatter. <a href="https://doc.rust-lang.org/nightly/core/fmt/trait.Display.html#tymethod.fmt">Read more</a></p>
 </div></div></section>
     <section id='search' class="content hidden"></section>

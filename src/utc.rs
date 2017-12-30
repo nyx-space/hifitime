@@ -49,7 +49,7 @@ const USUAL_DAYS_PER_YEAR: f64 = 365.0;
 /// context of defining an offset with respect to Utc.
 pub type Offset = Instant;
 
-/// TimeZone defines a timezone with respect to Utc.
+/// `TimeZone` defines a timezone with respect to Utc.
 pub trait TimeZone: fmt::Display {
     /// utc_offset returns the difference between a given TZ and UTC.
     fn utc_offset() -> Offset;
@@ -68,7 +68,7 @@ pub trait TimeZone: fmt::Display {
 
 /// Utc is the interface between a time system and a time zone. All time zones are defined with
 /// respect to UTC. Moreover, Utc inherently supports the past leap seconds, as reported by the
-/// IETF and NIST at https://www.ietf.org/timezones/data/leap-seconds.list . NOTE: leap seconds
+/// IETF and NIST at <https://www.ietf.org/timezones/data/leap-seconds.list>. NOTE: leap seconds
 /// cannot be predicted! This module will be updated as soon as possible after a new leap second
 /// has been announced.
 /// **WARNING**: The historical oddities with calendars are not yet supported.
@@ -121,7 +121,7 @@ impl Utc {
     ///
     /// let epoch = Utc::at_midnight(1900, 01, 01).expect("epoch failed");
     /// assert_eq!(
-    ///     epoch.as_instant(),
+    ///     epoch.into_instant(),
     ///     Instant::new(0, 0, Era::Present),
     ///     "Incorrect Epoch computed"
     /// );
@@ -129,7 +129,7 @@ impl Utc {
     /// assert_eq!(
     ///     Utc::at_midnight(1972, 01, 01)
     ///         .expect("Post January 1972 leap second failed")
-    ///         .as_instant(),
+    ///         .into_instant(),
     ///     Instant::new(2272060800, 0, Era::Present),
     ///     "Incorrect January 1972 post-leap second number computed at midnight"
     /// );
@@ -148,7 +148,7 @@ impl Utc {
     ///
     /// let epoch = Utc::at_noon(1900, 01, 01).expect("epoch failed");
     /// assert_eq!(
-    ///     epoch.as_instant(),
+    ///     epoch.into_instant(),
     ///     Instant::new(43200, 0, Era::Present),
     ///     "Incorrect Epoch computed"
     /// );
@@ -156,7 +156,7 @@ impl Utc {
     /// assert_eq!(
     ///     Utc::at_noon(1972, 01, 01)
     ///         .expect("Post January 1972 leap second failed")
-    ///         .as_instant(),
+    ///         .into_instant(),
     ///     Instant::new(2272104000, 0, Era::Present),
     ///     "Incorrect January 1972 post-leap second number computed at noon"
     /// );
@@ -190,7 +190,7 @@ where
     ///
     /// let epoch = Utc::new(1900, 01, 01, 0, 0, 0, 0).expect("epoch failed");
     /// assert_eq!(
-    ///     epoch.as_instant(),
+    ///     epoch.into_instant(),
     ///     Instant::new(0, 0, Era::Present),
     ///     "Incorrect Epoch computed"
     /// );
@@ -198,21 +198,21 @@ where
     /// assert_eq!(
     ///     Utc::new(1971, 12, 31, 23, 59, 59, 0)
     ///         .expect("January 1972 leap second failed")
-    ///         .as_instant(),
+    ///         .into_instant(),
     ///     Instant::new(2272060799, 0, Era::Present),
     ///     "Incorrect January 1972 pre-leap second number computed"
     /// );
     /// assert_eq!(
     ///     Utc::new(1971, 12, 31, 23, 59, 59, 0)
     ///         .expect("January 1972 1 second before leap second failed")
-    ///         .as_instant(),
+    ///         .into_instant(),
     ///     Utc::new(1971, 12, 31, 23, 59, 60, 0)
     ///         .expect("January 1972 1 second before leap second failed")
-    ///         .as_instant(),
+    ///         .into_instant(),
     ///     "Incorrect January 1972 leap second number computed"
     /// );
     ///
-    /// // Example of odd behavior when comparing/ordering dates using Utc or `as_instant`
+    /// // Example of odd behavior when comparing/ordering dates using Utc or `into_instant`
     /// // Utc order claims (correctly) that the 60th second is _after_ the 59th. But the instant
     /// // is actually different because the 60th second is where we've inserted the leap second.
     /// assert!(
@@ -227,10 +227,10 @@ where
     /// assert!(
     ///     Utc::new(1971, 12, 31, 23, 59, 59, 0)
     ///         .expect("January 1972 1 second before leap second failed")
-    ///         .as_instant() ==
+    ///         .into_instant() ==
     ///         Utc::new(1971, 12, 31, 23, 59, 60, 0)
     ///             .expect("January 1972 1 second before leap second failed")
-    ///             .as_instant(),
+    ///             .into_instant(),
     ///     "60th second should have a different instant than 59th second"
     /// );
     /// // Hence one second after the leap second, we get the following behavior (note the change
@@ -247,29 +247,29 @@ where
     /// assert!(
     ///     Utc::new(1971, 12, 31, 23, 59, 60, 0)
     ///         .expect("January 1972 1 second before leap second failed")
-    ///         .as_instant() <
+    ///         .into_instant() <
     ///         Utc::new(1972, 01, 01, 00, 00, 00, 0)
     ///             .expect("January 1972 1 second before leap second failed")
-    ///             .as_instant(),
+    ///             .into_instant(),
     ///     "60th second should have a different instant than 59th second"
     /// );
     ///
     /// let santa = Utc::new(2017, 12, 25, 01, 02, 14, 0).expect("Xmas failed");
     ///
     /// assert_eq!(
-    ///     santa.as_instant() + Duration::new(3600, 0),
+    ///     santa.into_instant() + Duration::new(3600, 0),
     ///     Utc::new(2017, 12, 25, 02, 02, 14, 0)
     ///         .expect("Xmas failed")
-    ///         .as_instant(),
+    ///         .into_instant(),
     ///     "Could not add one hour to Christmas"
     /// );
     /// assert_eq!(format!("{}", santa), "2017-12-25T01:02:14+00:00");
     /// assert_eq!(
-    ///     ModifiedJulian::from_instant(santa.as_instant()).days,
+    ///     ModifiedJulian::from_instant(santa.into_instant()).days,
     ///     58112.043217592596
     /// );
     /// assert_eq!(
-    ///     ModifiedJulian::from_instant(santa.as_instant()).julian_days(),
+    ///     ModifiedJulian::from_instant(santa.into_instant()).julian_days(),
     ///     2458112.5432175924
     /// );
     /// ```
@@ -282,27 +282,25 @@ where
         second: u8,
         nanos: u32,
     ) -> Result<Utc, Errors> {
-        let mut max_seconds: u8 = 59;
-        if (month == 12 || month == 6) && day == USUAL_DAYS_PER_MONTH[month as usize - 1] &&
-            hour == 23 && minute == 59
+        let max_seconds = if (month == 12 || month == 6) &&
+            day == USUAL_DAYS_PER_MONTH[month as usize - 1] &&
+            hour == 23 && minute == 59 &&
+            ((month == 6 && JULY_YEARS.contains(&year)) ||
+                 (month == 12 && JANUARY_YEARS.contains(&(year + 1))))
         {
-            if (month == 6 && JULY_YEARS.contains(&year)) ||
-                (month == 12 && JANUARY_YEARS.contains(&(year + 1)))
-            {
-                max_seconds = 60;
-            }
-        }
+            60
+        } else {
+            59
+        };
         // General incorrect date times
         if month == 0 || month > 12 || day == 0 || day > 31 || hour > 24 || minute > 59 ||
-            second > max_seconds || nanos as f64 > 1e9
+            second > max_seconds || f64::from(nanos) > 1e9
         {
             return Err(Errors::Carry);
         }
-        if day > USUAL_DAYS_PER_MONTH[month as usize - 1] {
-            if month != 2 || !is_leap_year(year) {
-                // Not in February or not a leap year
-                return Err(Errors::Carry);
-            }
+        if day > USUAL_DAYS_PER_MONTH[month as usize - 1] && (month != 2 || !is_leap_year(year)) {
+            // Not in February or not a leap year
+            return Err(Errors::Carry);
         }
         Ok(Utc {
             year,
@@ -341,7 +339,7 @@ impl TimeSystem for Utc {
         } else {
             loop {
                 seconds_til_this_month += SECONDS_PER_DAY *
-                    USUAL_DAYS_PER_MONTH[(month - 1) as usize] as f64;
+                    f64::from(USUAL_DAYS_PER_MONTH[(month - 1) as usize]);
                 if is_leap_year(year) && month == 2 {
                     seconds_til_this_month += SECONDS_PER_DAY;
                 }
@@ -359,7 +357,7 @@ impl TimeSystem for Utc {
         // seconds since the start of this month.
         let (_, month_fraction) = quorem(
             year_fraction - seconds_til_this_month,
-            days_this_month as f64 * SECONDS_PER_DAY,
+            f64::from(days_this_month) * SECONDS_PER_DAY,
         );
         // Get the day by the exact number of seconds in a day
         let (mut day, day_fraction) = quorem(month_fraction, SECONDS_PER_DAY);
@@ -370,7 +368,7 @@ impl TimeSystem for Utc {
                 month = 12;
                 year -= 1;
             }
-            day = USUAL_DAYS_PER_MONTH[(month - 1) as usize] as i32;
+            day = i32::from(USUAL_DAYS_PER_MONTH[(month - 1) as usize]);
         }
         day += 1; // Otherwise the day count starts at 0
         // Get the hours by the exact number of seconds in an hour
@@ -388,16 +386,15 @@ impl TimeSystem for Utc {
         ).expect("date computed from instant is invalid (past)")
     }
 
-    /// `as_instant` returns an Instant from the Utc.
-    fn as_instant(self) -> Instant {
-        let era: Era;
-        if self.year >= 1900 {
-            era = Era::Present;
+    /// `into_instant` returns an Instant from the Utc.
+    fn into_instant(self) -> Instant {
+        let era = if self.year >= 1900 {
+            Era::Present
         } else {
-            era = Era::Past;
-        }
+            Era::Past
+        };
 
-        let mut seconds_wrt_1900: f64 = ((self.year - 1900).abs() as f64) * SECONDS_PER_DAY *
+        let mut seconds_wrt_1900: f64 = f64::from((self.year - 1900).abs()) * SECONDS_PER_DAY *
             USUAL_DAYS_PER_YEAR;
 
         // Now add the seconds for all the years prior to the current year
@@ -408,16 +405,16 @@ impl TimeSystem for Utc {
         }
         // Add the seconds for the months prior to the current month
         for month in 0..self.month - 1 {
-            seconds_wrt_1900 += SECONDS_PER_DAY * USUAL_DAYS_PER_MONTH[(month) as usize] as f64;
+            seconds_wrt_1900 += SECONDS_PER_DAY * f64::from(USUAL_DAYS_PER_MONTH[(month) as usize]);
         }
         if is_leap_year(self.year) && self.month > 2 {
             // NOTE: If on 29th of February, then the day is not finished yet, and therefore
             // the extra seconds are added below as per a normal day.
             seconds_wrt_1900 += SECONDS_PER_DAY;
         }
-        seconds_wrt_1900 += (self.day - 1) as f64 * SECONDS_PER_DAY + self.hour as f64 * 3600.0 +
-            self.minute as f64 * 60.0 +
-            self.second as f64;
+        seconds_wrt_1900 += f64::from(self.day - 1) * SECONDS_PER_DAY +
+            f64::from(self.hour) * 3600.0 +
+            f64::from(self.minute) * 60.0 + f64::from(self.second);
         if self.second == 60 {
             // Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
             // same number of second afters J1900.0.
@@ -442,13 +439,13 @@ impl fmt::Display for Utc {
     }
 }
 
-/// is_leap_year returns whether the provided year is a leap year or not.
+/// `is_leap_year` returns whether the provided year is a leap year or not.
 /// Tests for this function are part of the Utc tests.
 fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
 }
 
-/// quorem returns a tuple of the quotient and the remainder a numerator and a denominator.
+/// `quorem` returns a tuple of the quotient and the remainder a numerator and a denominator.
 fn quorem(numerator: f64, denominator: f64) -> (i32, f64) {
     if denominator == 0.0 {
         panic!("cannot divide by zero");

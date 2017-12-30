@@ -147,14 +147,14 @@ impl Add<Duration> for Instant {
                         Era::Present,
                     )
                 } else {
-                    let mut cln = self.clone();
+                    let mut cln = self;
                     cln.duration -= delta;
                     cln
                 }
             }
             Era::Present => {
                 // Adding a duration in the present is trivial
-                let mut cln = self.clone();
+                let mut cln = self;
                 cln.duration += delta;
                 cln
             }
@@ -198,24 +198,24 @@ impl Sub<Duration> for Instant {
         match self.era {
             Era::Past => {
                 // Subtracting a duration in the past is trivial
-                let mut cln = self.clone();
+                let mut cln = self;
                 cln.duration += delta;
-                return cln;
+                cln
             }
             Era::Present => {
                 if (delta.as_secs() >= self.duration.as_secs()) ||
                     (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0 &&
                          delta.subsec_nanos() >= self.duration.subsec_nanos())
                 {
-                    return Instant::new(
+                    Instant::new(
                         delta.as_secs() - self.duration.as_secs(),
                         delta.subsec_nanos() - self.duration.subsec_nanos(),
                         Era::Past,
-                    );
+                    )
                 } else {
-                    let mut cln = self.clone();
+                    let mut cln = self;
                     cln.duration -= delta;
-                    return cln;
+                    cln
                 }
             }
         }
