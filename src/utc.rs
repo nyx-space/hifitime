@@ -403,7 +403,9 @@ impl TimeSystem for Utc {
         for month in 0..self.month - 1 {
             seconds_wrt_1900 += SECONDS_PER_DAY * USUAL_DAYS_PER_MONTH[(month) as usize] as f64;
         }
-        if is_leap_year(self.year) && ((self.month == 2 && self.day == 29) || self.month > 2) {
+        if is_leap_year(self.year) && self.month > 2 {
+            // NOTE: If on 29th of February, then the day is not finished yet, and therefore
+            // the extra seconds are added below as per a normal day.
             seconds_wrt_1900 += SECONDS_PER_DAY;
         }
         seconds_wrt_1900 += (self.day - 1) as f64 * SECONDS_PER_DAY + self.hour as f64 * 3600.0 +
