@@ -44,12 +44,12 @@ impl fmt::Display for KiloTZ {
         write!(
             f,
             "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}+10:00",
-            tz_corrected.year,
-            tz_corrected.month,
-            tz_corrected.day,
-            tz_corrected.hour,
-            tz_corrected.minute,
-            tz_corrected.second
+            tz_corrected.year(),
+            tz_corrected.month(),
+            tz_corrected.day(),
+            tz_corrected.hour(),
+            tz_corrected.minute(),
+            tz_corrected.second()
         )
     }
 }

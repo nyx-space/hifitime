@@ -141,22 +141,22 @@ impl Add<Duration> for Instant {
                     (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0 &&
                          delta.subsec_nanos() >= self.duration.subsec_nanos())
                 {
-                    return Instant::new(
+                    Instant::new(
                         delta.as_secs() - self.duration.as_secs(),
                         delta.subsec_nanos() - self.duration.subsec_nanos(),
                         Era::Present,
-                    );
+                    )
                 } else {
                     let mut cln = self.clone();
                     cln.duration -= delta;
-                    return cln;
+                    cln
                 }
             }
             Era::Present => {
                 // Adding a duration in the present is trivial
                 let mut cln = self.clone();
                 cln.duration += delta;
-                return cln;
+                cln
             }
         }
     }

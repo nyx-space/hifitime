@@ -48,38 +48,50 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../src/hifitime/lib.rs.html#4-120' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../src/hifitime/lib.rs.html#1-128' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'>
 <h1 id='hifitime-001' class='section-header'><a href='#hifitime-001'>hifitime 0.0.1</a></h1>
 <p>Precise date and time handling in Rust built on top of
- <a href="https://doc.rust-lang.org/std/time/struct.Duration.html"><code>std::time::Duration</code></a>.
- The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in
- day-to-day use of this library.</p>
+<a href="https://doc.rust-lang.org/std/time/struct.Duration.html"><code>std::time::Duration</code></a>.
+The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in
+day-to-day use of this library.</p>
 
-<p>Features:</p>
-
+<h2 id='features' class='section-header'><a href='#features'>Features</a></h2>
 <ul>
 <li>Leap seconds (as announced by the IETF on a yearly basis)</li>
 <li>Julian dates and Modified Julian dates</li>
 <li>UTC representation with ISO8601 formatting</li>
 <li>Allows building custom TimeSystem (e.g. Julian days)</li>
-<li><p>Time varying <code>TimeZone</code>s to represent static or very high speed reference frames
-(cf. the <code>tz</code> test in the <code>tests</code> module)</p>
+<li>Time varying <code>TimeZone</code>s to represent static or very high speed reference frames (cf.
+the <code>tz</code> test in the <code>tests</code> module)</li>
+</ul>
 
 <p>Almost all examples are validated with external references, as detailed on a test-by-test
 basis.</p>
 
-<p><em>NOTE:</em> Each time computing library may decide when the extra leap second exists as explained
+<h3 id='leap-second-support' class='section-header'><a href='#leap-second-support'>Leap second support</a></h3>
+<p>Each time computing library may decide when the extra leap second exists as explained
 in the <a href="https://www.ietf.org/timezones/data/leap-seconds.list">IETF leap second reference</a>.
 To ease computation, <code>hifitime</code> decides that second is the 60th of a UTC date, if such exists.
-Note that this second exists at a different time than defined on NASA HEASARC. That tool is
+Note that this second exists at a different time than defined on <a href="https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?">NASA HEASARC</a>. That tool is
 used for validation of Julian dates. As an example of how this is handled, check the Julian
 day computations for <a href="https://goo.gl/o3KXSR">2015-06-30 23:59:59</a>,
 <a href="https://goo.gl/QyUyrC">2015-06-30 23:59:60</a> and <a href="https://goo.gl/Y25hpn">2015-07-01 00:00:00</a>.</p>
 
-<p>Does not include:</p></li>
-<li><p>Dates only, or times only (i.e. handles only the combination of both)</p></li>
-<li><p>Custom formatting of date time objects (for now)</p>
+<h2 id='does-not-include' class='section-header'><a href='#does-not-include'>Does not include</a></h2>
+<ul>
+<li>Dates only, or times only (i.e. handles only the combination of both)</li>
+<li>Custom formatting of date time objects</li>
+<li>An initializer from machine time</li>
+<li>A simple to use TimeZone offset</li>
+</ul>
+
+<h3 id='note-on-short-links' class='section-header'><a href='#note-on-short-links'>Note on short links</a></h3>
+<p>The validation tools used generate very long URLs. As such, whenever a validation link is
+provided, it has been shortened using Google&#39;s <a href="http://goo.gl">http://goo.gl</a> service. If this is an issue,
+please add <code>info/</code> between <code>goo.gl/</code> and the unique identifier: this will allow you to see
+the redirection link prior to being redirected (as well as the link analytics). For example,
+<code>https://goo.gl/o3KXSR</code> becomes <code>https://goo.gl/info/o3KXSR</code>.</p>
 
 <h2 id='usage' class='section-header'><a href='#usage'>Usage</a></h2>
 <p><strong>WARNING: NOT YET AVAILABLE ON CARGO</strong></p>
@@ -104,22 +116,21 @@ hifitime = &quot;0.0.1&quot;
 <span class="kw">let</span> <span class="ident">santa</span> <span class="op">=</span> <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">01</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>).<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>);
 
 <span class="macro">assert_eq</span><span class="macro">!</span>(
- <span class="ident">santa</span>.<span class="ident">as_instant</span>() <span class="op">+</span> <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">3600</span>, <span class="number">0</span>),
- <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">02</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>)
-     .<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>)
-     .<span class="ident">as_instant</span>(),
- <span class="string">&quot;Could not add one hour to Christmas&quot;</span>
+    <span class="ident">santa</span>.<span class="ident">as_instant</span>() <span class="op">+</span> <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">3600</span>, <span class="number">0</span>),
+    <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">02</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>)
+        .<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>)
+        .<span class="ident">as_instant</span>(),
+    <span class="string">&quot;Could not add one hour to Christmas&quot;</span>
 );
 <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">santa</span>), <span class="string">&quot;2017-12-25T01:02:14+00:00&quot;</span>);
 <span class="macro">assert_eq</span><span class="macro">!</span>(
- <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">as_instant</span>()).<span class="ident">days</span>,
- <span class="number">58112.043217592596</span>
+    <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">as_instant</span>()).<span class="ident">days</span>,
+    <span class="number">58112.043217592596</span>
 );
 <span class="macro">assert_eq</span><span class="macro">!</span>(
- <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">as_instant</span>()).<span class="ident">julian_days</span>(),
- <span class="number">2458112.5432175924</span>
-);</pre></li>
-</ul>
+    <span class="ident">ModifiedJulian</span>::<span class="ident">from_instant</span>(<span class="ident">santa</span>.<span class="ident">as_instant</span>()).<span class="ident">julian_days</span>(),
+    <span class="number">2458112.5432175924</span>
+);</pre>
 </div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
 <table>
                        <tr class=' module-item'>

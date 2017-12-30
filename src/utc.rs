@@ -72,21 +72,46 @@ pub trait TimeZone: fmt::Display {
 /// cannot be predicted! This module will be updated as soon as possible after a new leap second
 /// has been announced.
 /// **WARNING**: The historical oddities with calendars are not yet supported.
-/// Moreover, despite the fields of Utc being public, it is strongly advised to use the `new`
-/// function to ensure proper bound checking and correct leap second support. If your code breaks
-/// because you're _not_ using `new`, don't file a bug.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
 pub struct Utc {
-    pub year: i32,
-    pub month: u8,
-    pub day: u8,
-    pub hour: u8,
-    pub minute: u8,
-    pub second: u8,
-    pub nanos: u32,
+    year: i32,
+    month: u8,
+    day: u8,
+    hour: u8,
+    minute: u8,
+    second: u8,
+    nanos: u32,
 }
 
 impl Utc {
+    /// Returns the year of this Utc date time.
+    pub fn year(&self) -> &i32 {
+        &self.year
+    }
+    /// Returns the month of this Utc date time.
+    pub fn month(&self) -> &u8 {
+        &self.month
+    }
+    /// Returns the day of this Utc date time.
+    pub fn day(&self) -> &u8 {
+        &self.day
+    }
+    /// Returns the hour of this Utc date time.
+    pub fn hour(&self) -> &u8 {
+        &self.hour
+    }
+    /// Returns the minute of this Utc date time.
+    pub fn minute(&self) -> &u8 {
+        &self.minute
+    }
+    /// Returns the second of this Utc date time.
+    pub fn second(&self) -> &u8 {
+        &self.second
+    }
+    /// Returns the nanoseconds of this Utc date time.
+    pub fn nanos(&self) -> &u32 {
+        &self.nanos
+    }
     /// Creates a new UTC date at midnight (i.e. hours = 0, mins = 0, secs = 0, nanos = 0)
     ///
     /// # Examples
