@@ -523,6 +523,57 @@
 <span id="478">478</span>
 <span id="479">479</span>
 <span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
 </pre><pre class="rust ">
 <span class="kw">pub</span> <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">TimeSystem</span>;
 <span class="kw">use</span> <span class="kw">super</span>::<span class="ident">Errors</span>;
@@ -571,9 +622,60 @@
 <span class="kw">const</span> <span class="ident">USUAL_DAYS_PER_MONTH</span>: [<span class="ident">u8</span>; <span class="number">12</span>] <span class="op">=</span> [<span class="number">31</span>, <span class="number">28</span>, <span class="number">31</span>, <span class="number">30</span>, <span class="number">31</span>, <span class="number">30</span>, <span class="number">31</span>, <span class="number">31</span>, <span class="number">30</span>, <span class="number">31</span>, <span class="number">30</span>, <span class="number">31</span>];
 <span class="kw">const</span> <span class="ident">USUAL_DAYS_PER_YEAR</span>: <span class="ident">f64</span> <span class="op">=</span> <span class="number">365.0</span>;
 
-<span class="doccomment">/// Offset is an alias of Instant. It contains the same kind of information, but is used in the</span>
+<span class="doccomment">/// `Offset` is an alias of Instant. It contains the same kind of information, but is used in the</span>
 <span class="doccomment">/// context of defining an offset with respect to Utc.</span>
 <span class="kw">pub</span> <span class="kw">type</span> <span class="ident">Offset</span> <span class="op">=</span> <span class="ident">Instant</span>;
+
+<span class="doccomment">/// `FixedOffset` implements a time fixed offset of a certain number of hours with regard to UTC.</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">FixedOffset</span> {}
+
+<span class="kw">impl</span> <span class="ident">FixedOffset</span> {
+    <span class="doccomment">/// `east_with_hours` returns an eastward offset (i.e. &quot;before&quot; the UTC time)</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// # Example</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use hifitime::utc::{Utc, TimeSystem, TimeZone, FixedOffset, Offset};</span>
+    <span class="doccomment">/// use hifitime::instant::Era;</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let whiskey_tz = FixedOffset::east_with_hours(10);</span>
+    <span class="doccomment">/// assert_eq!(</span>
+    <span class="doccomment">///     whiskey_tz.secs(),</span>
+    <span class="doccomment">///     36000,</span>
+    <span class="doccomment">///     &quot;Incorrect number of hours computed&quot;</span>
+    <span class="doccomment">/// );</span>
+    <span class="doccomment">/// assert_eq!(</span>
+    <span class="doccomment">///     whiskey_tz.era(),</span>
+    <span class="doccomment">///     Era::Past,</span>
+    <span class="doccomment">///     &quot;Incorrect era used&quot;</span>
+    <span class="doccomment">/// );</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">east_with_hours</span>(<span class="ident">hours</span>: <span class="ident">u64</span>) <span class="op">-&gt;</span> <span class="ident">Offset</span> {
+        <span class="ident">Offset</span>::<span class="ident">new</span>(<span class="ident">hours</span> <span class="op">*</span> <span class="number">3600</span>, <span class="number">0</span>, <span class="ident">Era</span>::<span class="ident">Past</span>)
+    }
+
+    <span class="doccomment">/// `west_with_hours` returns an eastward offset (i.e. &quot;before&quot; the UTC time)</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// # Example</span>
+    <span class="doccomment">/// ```</span>
+    <span class="doccomment">/// use hifitime::utc::{Utc, TimeSystem, TimeZone, FixedOffset, Offset};</span>
+    <span class="doccomment">/// use hifitime::instant::Era;</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// let kilo_tz = FixedOffset::west_with_hours(10);</span>
+    <span class="doccomment">/// assert_eq!(</span>
+    <span class="doccomment">///     kilo_tz.secs(),</span>
+    <span class="doccomment">///     36000,</span>
+    <span class="doccomment">///     &quot;Incorrect number of hours computed&quot;</span>
+    <span class="doccomment">/// );</span>
+    <span class="doccomment">/// assert_eq!(</span>
+    <span class="doccomment">///     kilo_tz.era(),</span>
+    <span class="doccomment">///     Era::Present,</span>
+    <span class="doccomment">///     &quot;Incorrect era used&quot;</span>
+    <span class="doccomment">/// );</span>
+    <span class="doccomment">/// ```</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">west_with_hours</span>(<span class="ident">hours</span>: <span class="ident">u64</span>) <span class="op">-&gt;</span> <span class="ident">Offset</span> {
+        <span class="ident">Offset</span>::<span class="ident">new</span>(<span class="ident">hours</span> <span class="op">*</span> <span class="number">3600</span>, <span class="number">0</span>, <span class="ident">Era</span>::<span class="ident">Present</span>)
+    }
+}
 
 <span class="doccomment">/// `TimeZone` defines a timezone with respect to Utc.</span>
 <span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">TimeZone</span>: <span class="ident">fmt</span>::<span class="ident">Display</span> {

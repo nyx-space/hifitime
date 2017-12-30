@@ -45,9 +45,60 @@ const JULY_YEARS: [i32; 11] = [
 const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const USUAL_DAYS_PER_YEAR: f64 = 365.0;
 
-/// Offset is an alias of Instant. It contains the same kind of information, but is used in the
+/// `Offset` is an alias of Instant. It contains the same kind of information, but is used in the
 /// context of defining an offset with respect to Utc.
 pub type Offset = Instant;
+
+/// `FixedOffset` implements a time fixed offset of a certain number of hours with regard to UTC.
+pub struct FixedOffset {}
+
+impl FixedOffset {
+    /// `east_with_hours` returns an eastward offset (i.e. "before" the UTC time)
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::utc::{Utc, TimeSystem, TimeZone, FixedOffset, Offset};
+    /// use hifitime::instant::Era;
+    ///
+    /// let whiskey_tz = FixedOffset::east_with_hours(10);
+    /// assert_eq!(
+    ///     whiskey_tz.secs(),
+    ///     36000,
+    ///     "Incorrect number of hours computed"
+    /// );
+    /// assert_eq!(
+    ///     whiskey_tz.era(),
+    ///     Era::Past,
+    ///     "Incorrect era used"
+    /// );
+    /// ```
+    pub fn east_with_hours(hours: u64) -> Offset {
+        Offset::new(hours * 3600, 0, Era::Past)
+    }
+
+    /// `west_with_hours` returns an eastward offset (i.e. "before" the UTC time)
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::utc::{Utc, TimeSystem, TimeZone, FixedOffset, Offset};
+    /// use hifitime::instant::Era;
+    ///
+    /// let kilo_tz = FixedOffset::west_with_hours(10);
+    /// assert_eq!(
+    ///     kilo_tz.secs(),
+    ///     36000,
+    ///     "Incorrect number of hours computed"
+    /// );
+    /// assert_eq!(
+    ///     kilo_tz.era(),
+    ///     Era::Present,
+    ///     "Incorrect era used"
+    /// );
+    /// ```
+    pub fn west_with_hours(hours: u64) -> Offset {
+        Offset::new(hours * 3600, 0, Era::Present)
+    }
+}
 
 /// `TimeZone` defines a timezone with respect to Utc.
 pub trait TimeZone: fmt::Display {
