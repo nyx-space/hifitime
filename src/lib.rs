@@ -35,11 +35,12 @@
 //! * A simple to use TimeZone offset
 //!
 //! ### Note on short links
-//! The validation tools used generate very long URLs. As such, whenever a validation link is
-//! provided, it has been shortened using Google's http://goo.gl service. If this is an issue,
-//! please add `info/` between `goo.gl/` and the unique identifier: this will allow you to see
-//! the redirection link prior to being redirected (as well as the link analytics). For example,
-//! `https://goo.gl/o3KXSR` becomes `https://goo.gl/info/o3KXSR`.
+//! The validation tools used generate very long URLs, which aren't supported by `rustfmt`.
+//! As such, whenever a validation link is provided, it has been shortened using Google's
+//! http://goo.gl service. If this is an issue, please add `info/` between `goo.gl/` and the
+//! unique identifier: this will allow you to see the redirection link prior to being redirected
+//! (as well as the link analytics). For example, `https://goo.gl/o3KXSR` becomes
+//! `https://goo.gl/info/o3KXSR`.
 //!
 //! ## Usage
 //! **WARNING: NOT YET AVAILABLE ON CARGO**

@@ -36,3 +36,11 @@ day computations for [2015-06-30 23:59:59](https://goo.gl/o3KXSR),
 * [ ] Custom formatting of date time objects (cf. [issue \#4](https://github.com/ChristopherRabotin/hifitime/issues/4))
 * [ ] An initializer from machine time (cf. [issue \#8](https://github.com/ChristopherRabotin/hifitime/issues/8))
 * [ ] A simple to use TimeZone offset (cf. [issue \#9](https://github.com/ChristopherRabotin/hifitime/issues/9))
+
+### Note on short links
+The validation tools used generate very long URLs, which aren't supported by `rustfmt`.
+As such, whenever a validation link is provided, it has been shortened using Google's
+http://goo.gl service. If this is an issue, please add `info/` between `goo.gl/` and the
+unique identifier: this will allow you to see the redirection link prior to being redirected
+(as well as the link analytics). For example, `https://goo.gl/o3KXSR` becomes
+`https://goo.gl/info/o3KXSR`.
