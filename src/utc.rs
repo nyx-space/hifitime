@@ -1,45 +1,21 @@
 pub use super::TimeSystem;
 use super::Errors;
-use super::instant::{Era, Instant};
+use super::instant::{Duration, Era, Instant};
 use super::julian::SECONDS_PER_DAY;
 use std::fmt;
 use std::marker::Sized;
+use std::ops::{Add, Sub};
 
 // There is no way to define a constant map in Rust (yet), so we're combining several structures
 // to store when the leap seconds should be added. An updated list of leap seconds can be found
 // here: https://www.ietf.org/timezones/data/leap-seconds.list .
 const JANUARY_YEARS: [i32; 17] = [
-    1972,
-    1973,
-    1974,
-    1975,
-    1976,
-    1977,
-    1978,
-    1979,
-    1980,
-    1988,
-    1990,
-    1991,
-    1996,
-    1999,
-    2006,
-    2009,
+    1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1988, 1990, 1991, 1996, 1999, 2006, 2009,
     2017,
 ];
 
 const JULY_YEARS: [i32; 11] = [
-    1972,
-    1981,
-    1982,
-    1983,
-    1985,
-    1992,
-    1993,
-    1994,
-    1997,
-    2012,
-    2015,
+    1972, 1981, 1982, 1983, 1985, 1992, 1993, 1994, 1997, 2012, 2015
 ];
 
 const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
@@ -333,19 +309,19 @@ where
         second: u8,
         nanos: u32,
     ) -> Result<Utc, Errors> {
-        let max_seconds = if (month == 12 || month == 6) &&
-            day == USUAL_DAYS_PER_MONTH[month as usize - 1] &&
-            hour == 23 && minute == 59 &&
-            ((month == 6 && JULY_YEARS.contains(&year)) ||
-                 (month == 12 && JANUARY_YEARS.contains(&(year + 1))))
+        let max_seconds = if (month == 12 || month == 6)
+            && day == USUAL_DAYS_PER_MONTH[month as usize - 1]
+            && hour == 23 && minute == 59
+            && ((month == 6 && JULY_YEARS.contains(&year))
+                || (month == 12 && JANUARY_YEARS.contains(&(year + 1))))
         {
             60
         } else {
             59
         };
         // General incorrect date times
-        if month == 0 || month > 12 || day == 0 || day > 31 || hour > 24 || minute > 59 ||
-            second > max_seconds || f64::from(nanos) > 1e9
+        if month == 0 || month > 12 || day == 0 || day > 31 || hour > 24 || minute > 59
+            || second > max_seconds || f64::from(nanos) > 1e9
         {
             return Err(Errors::Carry);
         }
@@ -389,8 +365,8 @@ impl TimeSystem for Utc {
             year -= 1;
         } else {
             loop {
-                seconds_til_this_month += SECONDS_PER_DAY *
-                    f64::from(USUAL_DAYS_PER_MONTH[(month - 1) as usize]);
+                seconds_til_this_month +=
+                    SECONDS_PER_DAY * f64::from(USUAL_DAYS_PER_MONTH[(month - 1) as usize]);
                 if is_leap_year(year) && month == 2 {
                     seconds_til_this_month += SECONDS_PER_DAY;
                 }
@@ -422,7 +398,7 @@ impl TimeSystem for Utc {
             day = i32::from(USUAL_DAYS_PER_MONTH[(month - 1) as usize]);
         }
         day += 1; // Otherwise the day count starts at 0
-        // Get the hours by the exact number of seconds in an hour
+                  // Get the hours by the exact number of seconds in an hour
         let (hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
         // Get the minutes and seconds by the exact number of seconds in a minute
         let (mins, secs) = quorem(hours_fraction, 60.0);
@@ -445,8 +421,8 @@ impl TimeSystem for Utc {
             Era::Past
         };
 
-        let mut seconds_wrt_1900: f64 = f64::from((self.year - 1900).abs()) * SECONDS_PER_DAY *
-            USUAL_DAYS_PER_YEAR;
+        let mut seconds_wrt_1900: f64 =
+            f64::from((self.year - 1900).abs()) * SECONDS_PER_DAY * USUAL_DAYS_PER_YEAR;
 
         // Now add the seconds for all the years prior to the current year
         for year in 1900..self.year {
@@ -463,9 +439,9 @@ impl TimeSystem for Utc {
             // the extra seconds are added below as per a normal day.
             seconds_wrt_1900 += SECONDS_PER_DAY;
         }
-        seconds_wrt_1900 += f64::from(self.day - 1) * SECONDS_PER_DAY +
-            f64::from(self.hour) * 3600.0 +
-            f64::from(self.minute) * 60.0 + f64::from(self.second);
+        seconds_wrt_1900 += f64::from(self.day - 1) * SECONDS_PER_DAY
+            + f64::from(self.hour) * 3600.0
+            + f64::from(self.minute) * 60.0 + f64::from(self.second);
         if self.second == 60 {
             // Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
             // same number of second afters J1900.0.
@@ -480,13 +456,45 @@ impl fmt::Display for Utc {
         write!(
             f,
             "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}+00:00",
-            self.year,
-            self.month,
-            self.day,
-            self.hour,
-            self.minute,
-            self.second
+            self.year, self.month, self.day, self.hour, self.minute, self.second
         )
+    }
+}
+
+impl Add<Duration> for Utc {
+    type Output = Utc;
+
+    /// Adds a given `std::time::Duration` to an `Utc`.
+    ///
+    /// # Examples
+    /// ```
+    /// use hifitime::utc::Utc;
+    /// use std::time::Duration;
+    /// let santa = Utc::at_midnight(2017, 12, 25).unwrap();
+    /// let santa_1h = Utc::at_midnight(2017, 12, 25).unwrap() + Duration::new(3600, 0);
+    /// assert_eq!(santa.hour() + &1, *santa_1h.hour());
+    /// ```
+    fn add(self, delta: Duration) -> Utc {
+        Utc::from_instant(self.into_instant() + delta)
+    }
+}
+
+impl Sub<Duration> for Utc {
+    type Output = Utc;
+
+    /// Adds a given `std::time::Duration` to an `Utc`.
+    ///
+    /// # Examples
+    /// ```
+    /// use hifitime::utc::Utc;
+    /// use std::time::Duration;
+    /// let santa = Utc::at_midnight(2017, 12, 25).unwrap();
+    /// let santa_1h = Utc::at_midnight(2017, 12, 25).unwrap() - Duration::new(3600, 0);
+    /// assert_eq!(santa.day() - &1, *santa_1h.day()); // Day underflow
+    /// assert_eq!(santa_1h.hour(), &23);
+    /// ```
+    fn sub(self, delta: Duration) -> Utc {
+        Utc::from_instant(self.into_instant() - delta)
     }
 }
 
@@ -508,7 +516,6 @@ fn quorem(numerator: f64, denominator: f64) -> (i32, f64) {
     } else {
         (quotient - 1, remainder + denominator)
     }
-
 }
 
 #[test]

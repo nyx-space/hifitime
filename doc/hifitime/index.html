@@ -48,7 +48,7 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../src/hifitime/lib.rs.html#1-129' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../src/hifitime/lib.rs.html#1-153' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'>
 <h1 id='hifitime-001' class='section-header'><a href='#hifitime-001'>hifitime 0.0.1</a></h1>
 <p>Precise date and time handling in Rust built on top of
@@ -109,7 +109,7 @@ hifitime = &quot;0.0.1&quot;
 <span class="kw">let</span> <span class="ident">santa</span> <span class="op">=</span> <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">01</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>).<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>);
 
 <span class="macro">assert_eq</span><span class="macro">!</span>(
-    <span class="ident">santa</span>.<span class="ident">into_instant</span>() <span class="op">+</span> <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">3600</span>, <span class="number">0</span>),
+    <span class="ident">santa</span>.<span class="ident">into_instant</span>() <span class="op">+</span> <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">3600</span>, <span class="number">0</span>),<span class="ident">Duration</span>
     <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">02</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>)
         .<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>)
         .<span class="ident">into_instant</span>(),
@@ -126,6 +126,13 @@ hifitime = &quot;0.0.1&quot;
 );</pre>
 </div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
 <table>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="durations/index.html"
+                                  title='mod hifitime::durations'>durations</a></td>
+                           <td class='docblock-short'>
+                                <p>The <code>durations</code> module provides helpers for initializing an <code>std::time::Duration</code>.</p>
+                           </td>
+                       </tr>
                        <tr class=' module-item'>
                            <td><a class="mod" href="instant/index.html"
                                   title='mod hifitime::instant'>instant</a></td>
@@ -147,7 +154,7 @@ and its engineering friends.</p>
                            <td><a class="mod" href="utc/index.html"
                                   title='mod hifitime::utc'>utc</a></td>
                            <td class='docblock-short'>
-                                <p>The <code>Utc</code> module supports conversions between Utc and other time systems. The main advantage
+                                <p>The <code>utc</code> module supports conversions between Utc and other time systems. The main advantage
 (and challenge) is the inherent support for leap seconds. Refer to module documentation for
 leap second implementation details.</p>
                            </td>

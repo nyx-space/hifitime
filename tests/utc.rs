@@ -1,6 +1,63 @@
 extern crate hifitime;
 
 #[test]
+fn utc_extras() {
+    use hifitime::utc::{TimeSystem, Utc};
+    use hifitime::instant::{Duration, Era, Instant};
+
+    let epoch = Utc::at_midnight(1900, 01, 01).expect("epoch failed");
+    assert_eq!(
+        epoch.into_instant(),
+        Instant::new(0, 0, Era::Present),
+        "Incorrect Epoch computed"
+    );
+
+    assert_eq!(
+        Utc::at_midnight(1972, 01, 01)
+            .expect("Post January 1972 leap second failed")
+            .into_instant(),
+        Instant::new(2272060800, 0, Era::Present),
+        "Incorrect January 1972 post-leap second number computed at midnight"
+    );
+
+    let epoch = Utc::at_noon(1900, 01, 01).expect("epoch failed");
+    assert_eq!(
+        epoch.into_instant(),
+        Instant::new(43200, 0, Era::Present),
+        "Incorrect Epoch computed"
+    );
+
+    assert_eq!(
+        Utc::at_noon(1972, 01, 01)
+            .expect("Post January 1972 leap second failed")
+            .into_instant(),
+        Instant::new(2272104000, 0, Era::Present),
+        "Incorrect January 1972 post-leap second number computed at noon"
+    );
+
+    // Slightly extended test of adding and subtracting durations from Utc
+    let santa = Utc::at_midnight(2017, 12, 25).unwrap();
+    let santa_1h = Utc::at_midnight(2017, 12, 25).unwrap() + Duration::new(3600, 0);
+    assert_eq!(santa.year(), santa_1h.year());
+    assert_eq!(santa.month(), santa_1h.month());
+    assert_eq!(santa.day(), santa_1h.day());
+    assert_eq!(santa.hour() + &1, *santa_1h.hour());
+    assert_eq!(santa.minute(), santa_1h.minute());
+    assert_eq!(santa.second(), santa_1h.second());
+    assert_eq!(santa.nanos(), santa_1h.nanos());
+
+    let santa = Utc::at_midnight(2017, 12, 25).unwrap();
+    let santa_1h = Utc::at_midnight(2017, 12, 25).unwrap() - Duration::new(3600, 0);
+    assert_eq!(santa.year(), santa_1h.year());
+    assert_eq!(santa.month(), santa_1h.month());
+    assert_eq!(santa.day() - &1, *santa_1h.day()); // Day underflow
+    assert_eq!(santa_1h.hour(), &23);
+    assert_eq!(santa.minute(), santa_1h.minute());
+    assert_eq!(santa.second(), santa_1h.second());
+    assert_eq!(santa.nanos(), santa_1h.nanos());
+}
+
+#[test]
 fn utc_valid_dates() {
     use hifitime::utc::{TimeZone, Utc};
     use hifitime::julian::SECONDS_PER_DAY;
@@ -504,7 +561,6 @@ fn utc_valid_dates() {
 #[test]
 fn utc_invalid_dates() {
     use hifitime::utc::{TimeZone, Utc};
-
     Utc::new(2001, 2, 29, 22, 8, 47, 0).expect_err("29 Feb 2001 did not fail");
     Utc::new(2016, 12, 31, 23, 59, 61, 0).expect_err("January leap second did not fail");
     Utc::new(2015, 6, 30, 23, 59, 61, 0).expect_err("July leap second did not fail");

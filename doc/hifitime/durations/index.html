@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="API documentation for the Rust `Offset` type in crate `hifitime`.">
-    <meta name="keywords" content="rust, rustlang, rust-lang, Offset">
+    <meta name="description" content="API documentation for the Rust `durations` mod in crate `hifitime`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, durations">
 
-    <title>hifitime::utc::Offset - Rust</title>
+    <title>hifitime::durations - Rust</title>
 
     <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
@@ -17,7 +17,7 @@
     
     
 </head>
-<body class="rustdoc type">
+<body class="rustdoc mod">
     <!--[if lte IE 8]>
     <div class="warning">
         This old browser is unsupported and will most likely display funky
@@ -29,7 +29,7 @@
 
     <nav class="sidebar">
         
-        <p class='location'>Type Definition Offset</p><p class='location'><a href='../index.html'>hifitime</a>::<wbr><a href='index.html'>utc</a></p><script>window.sidebarCurrent = {name: 'Offset', ty: 'type', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+        <p class='location'>Module durations</p><div class="block items"><ul><li><a href="#functions">Functions</a></li></ul></div><p class='location'><a href='../index.html'>hifitime</a></p><script>window.sidebarCurrent = {name: 'durations', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
     </nav>
 
     <nav class="sub">
@@ -44,14 +44,35 @@
     </nav>
 
     <section id='main' class="content">
-<h1 class='fqn'><span class='in-band'>Type Definition <a href='../index.html'>hifitime</a>::<wbr><a href='index.html'>utc</a>::<wbr><a class="type" href=''>Offset</a></span><span class='out-of-band'><span id='render-detail'>
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>hifitime</a>::<wbr><a class="mod" href=''>durations</a></span><span class='out-of-band'><span id='render-detail'>
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../../src/hifitime/utc.rs.html#26' title='goto source code'>[src]</a></span></h1>
-<pre class='rust typedef'>type Offset = <a class="struct" href="../../hifitime/instant/struct.Instant.html" title="struct hifitime::instant::Instant">Instant</a>;</pre><div class='docblock'><p><code>Offset</code> is an alias of Instant. It contains the same kind of information, but is used in the
-context of defining an offset with respect to Utc.</p>
-</div></section>
+               </span><a class='srclink' href='../../src/hifitime/lib.rs.html#124-138' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>The <code>durations</code> module provides helpers for initializing an <code>std::time::Duration</code>.</p>
+</div><h2 id='functions' class='section-header'><a href="#functions">Functions</a></h2>
+<table>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.from_days.html"
+                                  title='fn hifitime::durations::from_days'>from_days</a></td>
+                           <td class='docblock-short'>
+                                <p>Returns a duration from the while number of days requested.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.from_hours.html"
+                                  title='fn hifitime::durations::from_hours'>from_hours</a></td>
+                           <td class='docblock-short'>
+                                <p>Returns a duration from the while number of hours requested.</p>
+                           </td>
+                       </tr>
+                       <tr class=' module-item'>
+                           <td><a class="fn" href="fn.from_mins.html"
+                                  title='fn hifitime::durations::from_mins'>from_mins</a></td>
+                           <td class='docblock-short'>
+                                <p>Returns a duration from the while number of minutes requested.</p>
+                           </td>
+                       </tr></table></section>
     <section id='search' class="content hidden"></section>
 
     <section class="footer"></section>

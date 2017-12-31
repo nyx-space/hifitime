@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["from_days","Returns a duration from the while number of days requested."],["from_hours","Returns a duration from the while number of hours requested."],["from_mins","Returns a duration from the while number of minutes requested."]]});

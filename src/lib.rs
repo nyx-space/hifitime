@@ -60,7 +60,7 @@
 //! let santa = Utc::new(2017, 12, 25, 01, 02, 14, 0).expect("Xmas failed");
 //!
 //! assert_eq!(
-//!     santa.into_instant() + Duration::new(3600, 0),
+//!     santa.into_instant() + Duration::new(3600, 0),Duration
 //!     Utc::new(2017, 12, 25, 02, 02, 14, 0)
 //!         .expect("Xmas failed")
 //!         .into_instant(),
@@ -85,7 +85,7 @@ pub mod instant;
 /// The `julian` module supports (Modified) Julian Days, which are heavily used in astronomy
 /// and its engineering friends.
 pub mod julian;
-/// The `Utc` module supports conversions between Utc and other time systems. The main advantage
+/// The `utc` module supports conversions between Utc and other time systems. The main advantage
 /// (and challenge) is the inherent support for leap seconds. Refer to module documentation for
 /// leap second implementation details.
 pub mod utc;
@@ -120,10 +120,34 @@ impl fmt::Display for Errors {
     }
 }
 
+/// The `durations` module provides helpers for initializing an `std::time::Duration`.
+pub mod durations {
+    use std::time::Duration;
+    /// Returns a duration from the while number of days requested.
+    pub fn from_days(days: u64) -> Duration {
+        Duration::new(86_400 * days, 0)
+    }
+    /// Returns a duration from the while number of hours requested.
+    pub fn from_hours(hours: u64) -> Duration {
+        Duration::new(3600 * hours, 0)
+    }
+    /// Returns a duration from the while number of minutes requested.
+    pub fn from_mins(mins: u64) -> Duration {
+        Duration::new(60 * mins, 0)
+    }
+}
+
 #[test]
 fn error_unittest() {
     assert_eq!(
         format!("{}", Errors::Carry),
         "a carry error (e.g. 61 seconds)"
     );
+}
+
+#[test]
+fn durations() {
+    assert_eq!(durations::from_days(10).as_secs(), 86_400);
+    assert_eq!(durations::from_hours(10).as_secs(), 36000);
+    assert_eq!(durations::from_mins(10).as_secs(), 600);
 }

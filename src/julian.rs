@@ -56,8 +56,8 @@ impl TimeSystem for ModifiedJulian {
             -1.0
         };
         ModifiedJulian {
-            days: J1900_OFFSET + modifier * (instant.secs() as f64) / SECONDS_PER_DAY +
-                f64::from(instant.nanos()) * 1e-9,
+            days: J1900_OFFSET + modifier * (instant.secs() as f64) / SECONDS_PER_DAY
+                + f64::from(instant.nanos()) * 1e-9,
         }
     }
 
