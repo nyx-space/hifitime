@@ -147,7 +147,7 @@ fn error_unittest() {
 
 #[test]
 fn durations() {
-    assert_eq!(durations::from_days(10).as_secs(), 86_400);
+    assert_eq!(durations::from_days(10).as_secs(), 864_000);
     assert_eq!(durations::from_hours(10).as_secs(), 36000);
     assert_eq!(durations::from_mins(10).as_secs(), 600);
 }
