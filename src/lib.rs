@@ -60,7 +60,7 @@
 //! let santa = Utc::new(2017, 12, 25, 01, 02, 14, 0).expect("Xmas failed");
 //!
 //! assert_eq!(
-//!     santa.into_instant() + Duration::new(3600, 0),Duration
+//!     santa.into_instant() + Duration::new(3600, 0),
 //!     Utc::new(2017, 12, 25, 02, 02, 14, 0)
 //!         .expect("Xmas failed")
 //!         .into_instant(),

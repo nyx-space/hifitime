@@ -33,7 +33,7 @@ impl FixedOffset {
     ///
     /// # Example
     /// ```
-    /// use hifitime::utc::{Utc, TimeSystem, TimeZone, FixedOffset, Offset};
+    /// use hifitime::utc::FixedOffset;
     /// use hifitime::instant::Era;
     ///
     /// let whiskey_tz = FixedOffset::east_with_hours(10);
@@ -56,7 +56,7 @@ impl FixedOffset {
     ///
     /// # Example
     /// ```
-    /// use hifitime::utc::{Utc, TimeSystem, TimeZone, FixedOffset, Offset};
+    /// use hifitime::utc::FixedOffset;
     /// use hifitime::instant::Era;
     ///
     /// let kilo_tz = FixedOffset::west_with_hours(10);
@@ -143,7 +143,7 @@ impl Utc {
     ///
     /// # Examples
     /// ```
-    /// use hifitime::utc::{Utc, TimeSystem, TimeZone};
+    /// use hifitime::utc::{Utc, TimeSystem};
     /// use hifitime::instant::{Era, Instant};
     ///
     /// let epoch = Utc::at_midnight(1900, 01, 01).expect("epoch failed");
@@ -170,7 +170,7 @@ impl Utc {
     ///
     /// # Examples
     /// ```
-    /// use hifitime::utc::{Utc, TimeSystem, TimeZone};
+    /// use hifitime::utc::{Utc, TimeSystem};
     /// use hifitime::instant::{Era, Instant};
     ///
     /// let epoch = Utc::at_noon(1900, 01, 01).expect("epoch failed");
