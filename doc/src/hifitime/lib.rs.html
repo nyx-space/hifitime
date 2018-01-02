@@ -181,6 +181,21 @@
 <span id="136">136</span>
 <span id="137">137</span>
 <span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
 </pre><pre class="rust ">
 <span class="doccomment">//! # hifitime 0.0.1</span>
 <span class="doccomment">//!</span>
@@ -208,8 +223,9 @@
 <span class="doccomment">//! Note that this second exists at a different time than defined on</span>
 <span class="doccomment">//! [NASA HEASARC](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?). That tool is</span>
 <span class="doccomment">//! used for validation of Julian dates. As an example of how this is handled, check the Julian</span>
-<span class="doccomment">//! day computations for [2015-06-30 23:59:59](https://goo.gl/o3KXSR),</span>
-<span class="doccomment">//! [2015-06-30 23:59:60](https://goo.gl/QyUyrC) and [2015-07-01 00:00:00](https://goo.gl/Y25hpn).</span>
+<span class="doccomment">//! day computations for [2015-06-30 23:59:59](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A59&amp;time_in_c=&amp;time_in_d=&amp;time_in_j=&amp;time_in_m=&amp;time_in_sf=&amp;time_in_wf=&amp;time_in_sl=&amp;time_in_snu=&amp;time_in_s=&amp;time_in_h=&amp;time_in_n=&amp;time_in_f=&amp;time_in_sz=&amp;time_in_ss=&amp;time_in_sn=&amp;timesys_in=u&amp;timesys_out=u&amp;apply_clock_offset=yes),</span>
+<span class="doccomment">//! [2015-06-30 23:59:60](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A60&amp;time_in_c=&amp;time_in_d=&amp;time_in_j=&amp;time_in_m=&amp;time_in_sf=&amp;time_in_wf=&amp;time_in_sl=&amp;time_in_snu=&amp;time_in_s=&amp;time_in_h=&amp;time_in_n=&amp;time_in_f=&amp;time_in_sz=&amp;time_in_ss=&amp;time_in_sn=&amp;timesys_in=u&amp;timesys_out=u&amp;apply_clock_offset=yes)</span>
+<span class="doccomment">//! and [2015-07-01 00:00:00](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-07-01+00%3A00%3A00&amp;time_in_c=&amp;time_in_d=&amp;time_in_j=&amp;time_in_m=&amp;time_in_sf=&amp;time_in_wf=&amp;time_in_sl=&amp;time_in_snu=&amp;time_in_s=&amp;time_in_h=&amp;time_in_n=&amp;time_in_f=&amp;time_in_sz=&amp;time_in_ss=&amp;time_in_sn=&amp;timesys_in=u&amp;timesys_out=u&amp;apply_clock_offset=yes).</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Does not include</span>
 <span class="doccomment">//!</span>
@@ -217,14 +233,6 @@
 <span class="doccomment">//! * Custom formatting of date time objects</span>
 <span class="doccomment">//! * An initializer from machine time</span>
 <span class="doccomment">//! * A simple to use `TimeZone` offset</span>
-<span class="doccomment">//!</span>
-<span class="doccomment">//! ### Note on short links</span>
-<span class="doccomment">//! The validation tools used generate very long URLs, which aren&#39;t supported by `rustfmt`.</span>
-<span class="doccomment">//! As such, whenever a validation link is provided, it has been shortened using Google&#39;s</span>
-<span class="doccomment">//! &lt;http://goo.gl&gt; service. If this is an issue, please add `info/` between `goo.gl/` and the</span>
-<span class="doccomment">//! unique identifier: this will allow you to see the redirection link prior to being redirected</span>
-<span class="doccomment">//! (as well as the link analytics). For example, &lt;https://goo.gl/o3KXSR&gt; becomes</span>
-<span class="doccomment">//! &lt;https://goo.gl/info/o3KXSR&gt;.</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Usage</span>
 <span class="doccomment">//!</span>
@@ -251,7 +259,7 @@
 <span class="doccomment">//! let santa = Utc::new(2017, 12, 25, 01, 02, 14, 0).expect(&quot;Xmas failed&quot;);</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! assert_eq!(</span>
-<span class="doccomment">//!     santa.into_instant() + Duration::new(3600, 0),</span>
+<span class="doccomment">//!     santa.into_instant() + Duration::new(3600, 0),Duration</span>
 <span class="doccomment">//!     Utc::new(2017, 12, 25, 02, 02, 14, 0)</span>
 <span class="doccomment">//!         .expect(&quot;Xmas failed&quot;)</span>
 <span class="doccomment">//!         .into_instant(),</span>
@@ -276,7 +284,7 @@
 <span class="doccomment">/// The `julian` module supports (Modified) Julian Days, which are heavily used in astronomy</span>
 <span class="doccomment">/// and its engineering friends.</span>
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">julian</span>;
-<span class="doccomment">/// The `Utc` module supports conversions between Utc and other time systems. The main advantage</span>
+<span class="doccomment">/// The `utc` module supports conversions between Utc and other time systems. The main advantage</span>
 <span class="doccomment">/// (and challenge) is the inherent support for leap seconds. Refer to module documentation for</span>
 <span class="doccomment">/// leap second implementation details.</span>
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">utc</span>;
@@ -311,7 +319,22 @@
     }
 }
 
-
+<span class="doccomment">/// The `durations` module provides helpers for initializing an `std::time::Duration`.</span>
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">durations</span> {
+    <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">time</span>::<span class="ident">Duration</span>;
+    <span class="doccomment">/// Returns a duration from the while number of days requested.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_days</span>(<span class="ident">days</span>: <span class="ident">u64</span>) <span class="op">-&gt;</span> <span class="ident">Duration</span> {
+        <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">86_400</span> <span class="op">*</span> <span class="ident">days</span>, <span class="number">0</span>)
+    }
+    <span class="doccomment">/// Returns a duration from the while number of hours requested.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_hours</span>(<span class="ident">hours</span>: <span class="ident">u64</span>) <span class="op">-&gt;</span> <span class="ident">Duration</span> {
+        <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">3600</span> <span class="op">*</span> <span class="ident">hours</span>, <span class="number">0</span>)
+    }
+    <span class="doccomment">/// Returns a duration from the while number of minutes requested.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_mins</span>(<span class="ident">mins</span>: <span class="ident">u64</span>) <span class="op">-&gt;</span> <span class="ident">Duration</span> {
+        <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">60</span> <span class="op">*</span> <span class="ident">mins</span>, <span class="number">0</span>)
+    }
+}
 
 <span class="attribute">#[<span class="ident">test</span>]</span>
 <span class="kw">fn</span> <span class="ident">error_unittest</span>() {
@@ -319,6 +342,13 @@
         <span class="macro">format</span><span class="macro">!</span>(<span class="string">&quot;{}&quot;</span>, <span class="ident">Errors</span>::<span class="ident">Carry</span>),
         <span class="string">&quot;a carry error (e.g. 61 seconds)&quot;</span>
     );
+}
+
+<span class="attribute">#[<span class="ident">test</span>]</span>
+<span class="kw">fn</span> <span class="ident">durations</span>() {
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">durations</span>::<span class="ident">from_days</span>(<span class="number">10</span>).<span class="ident">as_secs</span>(), <span class="number">86_400</span>);
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">durations</span>::<span class="ident">from_hours</span>(<span class="number">10</span>).<span class="ident">as_secs</span>(), <span class="number">36000</span>);
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">durations</span>::<span class="ident">from_mins</span>(<span class="number">10</span>).<span class="ident">as_secs</span>(), <span class="number">600</span>);
 }
 </pre>
 </section>

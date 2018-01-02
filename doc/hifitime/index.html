@@ -48,7 +48,7 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../src/hifitime/lib.rs.html#1-138' title='goto source code'>[src]</a></span></h1>
+               </span><a class='srclink' href='../src/hifitime/lib.rs.html#1-153' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'>
 <h1 id='hifitime-001' class='section-header'><a href='#hifitime-001'>hifitime 0.0.1</a></h1>
 <p>Precise date and time handling in Rust built on top of
@@ -76,8 +76,9 @@ To ease computation, <code>hifitime</code> decides that second is the 60th of a 
 Note that this second exists at a different time than defined on
 <a href="https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?">NASA HEASARC</a>. That tool is
 used for validation of Julian dates. As an example of how this is handled, check the Julian
-day computations for <a href="https://goo.gl/o3KXSR">2015-06-30 23:59:59</a>,
-<a href="https://goo.gl/QyUyrC">2015-06-30 23:59:60</a> and <a href="https://goo.gl/Y25hpn">2015-07-01 00:00:00</a>.</p>
+day computations for <a href="https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A59&amp;time_in_c=&amp;time_in_d=&amp;time_in_j=&amp;time_in_m=&amp;time_in_sf=&amp;time_in_wf=&amp;time_in_sl=&amp;time_in_snu=&amp;time_in_s=&amp;time_in_h=&amp;time_in_n=&amp;time_in_f=&amp;time_in_sz=&amp;time_in_ss=&amp;time_in_sn=&amp;timesys_in=u&amp;timesys_out=u&amp;apply_clock_offset=yes">2015-06-30 23:59:59</a>,
+<a href="https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A60&amp;time_in_c=&amp;time_in_d=&amp;time_in_j=&amp;time_in_m=&amp;time_in_sf=&amp;time_in_wf=&amp;time_in_sl=&amp;time_in_snu=&amp;time_in_s=&amp;time_in_h=&amp;time_in_n=&amp;time_in_f=&amp;time_in_sz=&amp;time_in_ss=&amp;time_in_sn=&amp;timesys_in=u&amp;timesys_out=u&amp;apply_clock_offset=yes">2015-06-30 23:59:60</a>
+and <a href="https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-07-01+00%3A00%3A00&amp;time_in_c=&amp;time_in_d=&amp;time_in_j=&amp;time_in_m=&amp;time_in_sf=&amp;time_in_wf=&amp;time_in_sl=&amp;time_in_snu=&amp;time_in_s=&amp;time_in_h=&amp;time_in_n=&amp;time_in_f=&amp;time_in_sz=&amp;time_in_ss=&amp;time_in_sn=&amp;timesys_in=u&amp;timesys_out=u&amp;apply_clock_offset=yes">2015-07-01 00:00:00</a>.</p>
 
 <h2 id='does-not-include' class='section-header'><a href='#does-not-include'>Does not include</a></h2>
 <ul>
@@ -86,14 +87,6 @@ day computations for <a href="https://goo.gl/o3KXSR">2015-06-30 23:59:59</a>,
 <li>An initializer from machine time</li>
 <li>A simple to use <code>TimeZone</code> offset</li>
 </ul>
-
-<h3 id='note-on-short-links' class='section-header'><a href='#note-on-short-links'>Note on short links</a></h3>
-<p>The validation tools used generate very long URLs, which aren&#39;t supported by <code>rustfmt</code>.
-As such, whenever a validation link is provided, it has been shortened using Google&#39;s
-<a href="http://goo.gl">http://goo.gl</a> service. If this is an issue, please add <code>info/</code> between <code>goo.gl/</code> and the
-unique identifier: this will allow you to see the redirection link prior to being redirected
-(as well as the link analytics). For example, <a href="https://goo.gl/o3KXSR">https://goo.gl/o3KXSR</a> becomes
-<a href="https://goo.gl/info/o3KXSR">https://goo.gl/info/o3KXSR</a>.</p>
 
 <h2 id='usage' class='section-header'><a href='#usage'>Usage</a></h2>
 <p>Put this in your <code>Cargo.toml</code>:</p>
@@ -116,7 +109,7 @@ hifitime = &quot;0.0.1&quot;
 <span class="kw">let</span> <span class="ident">santa</span> <span class="op">=</span> <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">01</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>).<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>);
 
 <span class="macro">assert_eq</span><span class="macro">!</span>(
-    <span class="ident">santa</span>.<span class="ident">into_instant</span>() <span class="op">+</span> <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">3600</span>, <span class="number">0</span>),
+    <span class="ident">santa</span>.<span class="ident">into_instant</span>() <span class="op">+</span> <span class="ident">Duration</span>::<span class="ident">new</span>(<span class="number">3600</span>, <span class="number">0</span>),<span class="ident">Duration</span>
     <span class="ident">Utc</span>::<span class="ident">new</span>(<span class="number">2017</span>, <span class="number">12</span>, <span class="number">25</span>, <span class="number">02</span>, <span class="number">02</span>, <span class="number">14</span>, <span class="number">0</span>)
         .<span class="ident">expect</span>(<span class="string">&quot;Xmas failed&quot;</span>)
         .<span class="ident">into_instant</span>(),
@@ -133,6 +126,13 @@ hifitime = &quot;0.0.1&quot;
 );</pre>
 </div><h2 id='modules' class='section-header'><a href="#modules">Modules</a></h2>
 <table>
+                       <tr class=' module-item'>
+                           <td><a class="mod" href="durations/index.html"
+                                  title='mod hifitime::durations'>durations</a></td>
+                           <td class='docblock-short'>
+                                <p>The <code>durations</code> module provides helpers for initializing an <code>std::time::Duration</code>.</p>
+                           </td>
+                       </tr>
                        <tr class=' module-item'>
                            <td><a class="mod" href="instant/index.html"
                                   title='mod hifitime::instant'>instant</a></td>
@@ -154,7 +154,7 @@ and its engineering friends.</p>
                            <td><a class="mod" href="utc/index.html"
                                   title='mod hifitime::utc'>utc</a></td>
                            <td class='docblock-short'>
-                                <p>The <code>Utc</code> module supports conversions between Utc and other time systems. The main advantage
+                                <p>The <code>utc</code> module supports conversions between Utc and other time systems. The main advantage
 (and challenge) is the inherent support for leap seconds. Refer to module documentation for
 leap second implementation details.</p>
                            </td>

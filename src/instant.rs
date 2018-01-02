@@ -101,7 +101,6 @@ impl PartialEq for Instant {
     }
 }
 
-
 impl Add<Duration> for Instant {
     type Output = Instant;
 
@@ -137,9 +136,9 @@ impl Add<Duration> for Instant {
         // Switch the era, an exact time of zero is in the Present era
         match self.era {
             Era::Past => {
-                if (delta.as_secs() >= self.duration.as_secs()) ||
-                    (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0 &&
-                         delta.subsec_nanos() >= self.duration.subsec_nanos())
+                if (delta.as_secs() >= self.duration.as_secs())
+                    || (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0
+                        && delta.subsec_nanos() >= self.duration.subsec_nanos())
                 {
                     Instant::new(
                         delta.as_secs() - self.duration.as_secs(),
@@ -203,9 +202,9 @@ impl Sub<Duration> for Instant {
                 cln
             }
             Era::Present => {
-                if (delta.as_secs() >= self.duration.as_secs()) ||
-                    (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0 &&
-                         delta.subsec_nanos() >= self.duration.subsec_nanos())
+                if (delta.as_secs() >= self.duration.as_secs())
+                    || (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0
+                        && delta.subsec_nanos() >= self.duration.subsec_nanos())
                 {
                     Instant::new(
                         delta.as_secs() - self.duration.as_secs(),
@@ -221,7 +220,6 @@ impl Sub<Duration> for Instant {
         }
     }
 }
-
 
 #[test]
 fn era_unittest() {

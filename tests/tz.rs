@@ -1,6 +1,6 @@
 extern crate hifitime;
 
-use hifitime::utc::{Utc, TimeSystem, TimeZone, FixedOffset, Offset};
+use hifitime::utc::{FixedOffset, Offset, TimeSystem, TimeZone, Utc};
 use hifitime::Errors;
 use std::fmt;
 

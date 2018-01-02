@@ -24,8 +24,9 @@
 //! Note that this second exists at a different time than defined on
 //! [NASA HEASARC](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?). That tool is
 //! used for validation of Julian dates. As an example of how this is handled, check the Julian
-//! day computations for [2015-06-30 23:59:59](https://goo.gl/o3KXSR),
-//! [2015-06-30 23:59:60](https://goo.gl/QyUyrC) and [2015-07-01 00:00:00](https://goo.gl/Y25hpn).
+//! day computations for [2015-06-30 23:59:59](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A59&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes),
+//! [2015-06-30 23:59:60](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A60&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes)
+//! and [2015-07-01 00:00:00](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-07-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes).
 //!
 //! ## Does not include
 //!
@@ -33,14 +34,6 @@
 //! * Custom formatting of date time objects
 //! * An initializer from machine time
 //! * A simple to use `TimeZone` offset
-//!
-//! ### Note on short links
-//! The validation tools used generate very long URLs, which aren't supported by `rustfmt`.
-//! As such, whenever a validation link is provided, it has been shortened using Google's
-//! <http://goo.gl> service. If this is an issue, please add `info/` between `goo.gl/` and the
-//! unique identifier: this will allow you to see the redirection link prior to being redirected
-//! (as well as the link analytics). For example, <https://goo.gl/o3KXSR> becomes
-//! <https://goo.gl/info/o3KXSR>.
 //!
 //! ## Usage
 //!
@@ -92,7 +85,7 @@ pub mod instant;
 /// The `julian` module supports (Modified) Julian Days, which are heavily used in astronomy
 /// and its engineering friends.
 pub mod julian;
-/// The `Utc` module supports conversions between Utc and other time systems. The main advantage
+/// The `utc` module supports conversions between Utc and other time systems. The main advantage
 /// (and challenge) is the inherent support for leap seconds. Refer to module documentation for
 /// leap second implementation details.
 pub mod utc;
@@ -127,7 +120,22 @@ impl fmt::Display for Errors {
     }
 }
 
-
+/// The `durations` module provides helpers for initializing an `std::time::Duration`.
+pub mod durations {
+    use std::time::Duration;
+    /// Returns a duration from the while number of days requested.
+    pub fn from_days(days: u64) -> Duration {
+        Duration::new(86_400 * days, 0)
+    }
+    /// Returns a duration from the while number of hours requested.
+    pub fn from_hours(hours: u64) -> Duration {
+        Duration::new(3600 * hours, 0)
+    }
+    /// Returns a duration from the while number of minutes requested.
+    pub fn from_mins(mins: u64) -> Duration {
+        Duration::new(60 * mins, 0)
+    }
+}
 
 #[test]
 fn error_unittest() {
@@ -135,4 +143,11 @@ fn error_unittest() {
         format!("{}", Errors::Carry),
         "a carry error (e.g. 61 seconds)"
     );
+}
+
+#[test]
+fn durations() {
+    assert_eq!(durations::from_days(10).as_secs(), 864_000);
+    assert_eq!(durations::from_hours(10).as_secs(), 36000);
+    assert_eq!(durations::from_mins(10).as_secs(), 600);
 }
