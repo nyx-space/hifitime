@@ -53,7 +53,7 @@
 //! ### Examples:
 //!
 //! ```rust
-//! use hifitime::utc::{Utc, TimeZone, TimeSystem};
+//! use hifitime::datetime::{Utc, TimeZone, TimeSystem};
 //! use hifitime::instant::Duration;
 //! use hifitime::julian::ModifiedJulian;
 //!
@@ -85,10 +85,10 @@ pub mod instant;
 /// The `julian` module supports (Modified) Julian Days, which are heavily used in astronomy
 /// and its engineering friends.
 pub mod julian;
-/// The `utc` module supports conversions between Utc and other time systems. The main advantage
+/// The `datetime` module supports conversions between Utc and other time systems. The main advantage
 /// (and challenge) is the inherent support for leap seconds. Refer to module documentation for
 /// leap second implementation details.
-pub mod utc;
+pub mod datetime;
 
 use std::cmp::PartialOrd;
 use instant::Instant;

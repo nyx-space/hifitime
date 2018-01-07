@@ -33,7 +33,7 @@ impl FixedOffset {
     ///
     /// # Example
     /// ```
-    /// use hifitime::utc::FixedOffset;
+    /// use hifitime::datetime::FixedOffset;
     /// use hifitime::instant::Era;
     ///
     /// let whiskey_tz = FixedOffset::east_with_hours(10);
@@ -56,7 +56,7 @@ impl FixedOffset {
     ///
     /// # Example
     /// ```
-    /// use hifitime::utc::FixedOffset;
+    /// use hifitime::datetime::FixedOffset;
     /// use hifitime::instant::Era;
     ///
     /// let kilo_tz = FixedOffset::west_with_hours(10);
@@ -143,7 +143,7 @@ impl Utc {
     ///
     /// # Examples
     /// ```
-    /// use hifitime::utc::{Utc, TimeSystem};
+    /// use hifitime::datetime::{Utc, TimeSystem};
     /// use hifitime::instant::{Era, Instant};
     ///
     /// let epoch = Utc::at_midnight(1900, 01, 01).expect("epoch failed");
@@ -170,7 +170,7 @@ impl Utc {
     ///
     /// # Examples
     /// ```
-    /// use hifitime::utc::{Utc, TimeSystem};
+    /// use hifitime::datetime::{Utc, TimeSystem};
     /// use hifitime::instant::{Era, Instant};
     ///
     /// let epoch = Utc::at_noon(1900, 01, 01).expect("epoch failed");
@@ -211,7 +211,7 @@ where
     ///
     /// # Examples
     /// ```
-    /// use hifitime::utc::{Utc, TimeSystem, TimeZone};
+    /// use hifitime::datetime::{Utc, TimeSystem, TimeZone};
     /// use hifitime::instant::{Duration, Era, Instant};
     /// use hifitime::julian::ModifiedJulian;
     ///
@@ -468,7 +468,7 @@ impl Add<Duration> for Utc {
     ///
     /// # Examples
     /// ```
-    /// use hifitime::utc::Utc;
+    /// use hifitime::datetime::Utc;
     /// use std::time::Duration;
     /// let santa = Utc::at_midnight(2017, 12, 25).unwrap();
     /// let santa_1h = Utc::at_midnight(2017, 12, 25).unwrap() + Duration::new(3600, 0);
@@ -486,7 +486,7 @@ impl Sub<Duration> for Utc {
     ///
     /// # Examples
     /// ```
-    /// use hifitime::utc::Utc;
+    /// use hifitime::datetime::Utc;
     /// use std::time::Duration;
     /// let santa = Utc::at_midnight(2017, 12, 25).unwrap();
     /// let santa_1h = Utc::at_midnight(2017, 12, 25).unwrap() - Duration::new(3600, 0);

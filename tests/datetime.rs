@@ -2,7 +2,7 @@ extern crate hifitime;
 
 #[test]
 fn utc_extras() {
-    use hifitime::utc::{TimeSystem, Utc};
+    use hifitime::datetime::{TimeSystem, Utc};
     use hifitime::instant::{Duration, Era, Instant};
 
     let epoch = Utc::at_midnight(1900, 01, 01).expect("epoch failed");
@@ -59,7 +59,7 @@ fn utc_extras() {
 
 #[test]
 fn utc_valid_dates() {
-    use hifitime::utc::{TimeZone, Utc};
+    use hifitime::datetime::{TimeZone, Utc};
     use hifitime::julian::SECONDS_PER_DAY;
     use hifitime::instant::{Duration, Era, Instant};
     use hifitime::TimeSystem;
@@ -560,7 +560,7 @@ fn utc_valid_dates() {
 
 #[test]
 fn utc_invalid_dates() {
-    use hifitime::utc::{TimeZone, Utc};
+    use hifitime::datetime::{TimeZone, Utc};
     Utc::new(2001, 2, 29, 22, 8, 47, 0).expect_err("29 Feb 2001 did not fail");
     Utc::new(2016, 12, 31, 23, 59, 61, 0).expect_err("January leap second did not fail");
     Utc::new(2015, 6, 30, 23, 59, 61, 0).expect_err("July leap second did not fail");
