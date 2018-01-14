@@ -16,7 +16,7 @@ day-to-day use of this library.
  * [x] Julian dates and Modified Julian dates
  * [x] UTC representation with ISO8601 formatting
  * [x] Allows building custom TimeSystem (e.g. Julian days)
- * [x] Time varying `TimeZone`s to represent static or very high speed reference frames (cf. the `tz` test in the `tests` module)
+ * [x] Time varying `Offset`s to represent static or very high speed reference frames
 
 Almost all examples are validated with external references, as detailed on a test-by-test
 basis.

@@ -1,7 +1,7 @@
 extern crate hifitime;
 
 #[test]
-fn utc_extras() {
+fn datetime_extras() {
     use hifitime::datetime::{Datetime, TimeSystem};
     use hifitime::instant::{Duration, Era, Instant};
 
@@ -58,7 +58,7 @@ fn utc_extras() {
 }
 
 #[test]
-fn utc_valid_dates() {
+fn datetime_valid_dates() {
     use hifitime::datetime::Datetime;
     use hifitime::julian::SECONDS_PER_DAY;
     use hifitime::instant::{Duration, Era, Instant};
@@ -560,9 +560,55 @@ fn utc_valid_dates() {
 }
 
 #[test]
-fn utc_invalid_dates() {
+fn datetime_invalid_dates() {
     use hifitime::datetime::Datetime;
     Datetime::new(2001, 2, 29, 22, 8, 47, 0).expect_err("29 Feb 2001 did not fail");
     Datetime::new(2016, 12, 31, 23, 59, 61, 0).expect_err("January leap second did not fail");
     Datetime::new(2015, 6, 30, 23, 59, 61, 0).expect_err("July leap second did not fail");
+}
+
+#[test]
+fn datetime_time_varying_offset() {
+    // This test shows the possibility of implementing time varying datetime offsets.
+    // It's very rudimentary and there must be better ways to implement this, but it works.
+    use hifitime::datetime::{Datetime, Offset, TimeSystem};
+    use hifitime::instant::{Era, Instant};
+
+    struct TimeVaryingOffset {}
+    impl TimeVaryingOffset {
+        pub fn current_offset(inst: Instant) -> Offset {
+            let base_epoch = Datetime::new(2018, 1, 14, 0, 31, 55, 0)
+                .expect("huh")
+                .into_instant();
+            Offset::new((inst - base_epoch.duration()).secs(), 0, Era::Present)
+        }
+    }
+    let before = Datetime::new(2017, 1, 14, 0, 31, 55, 0)
+        .expect("huh")
+        .into_instant();
+    let before_dt = Datetime::with_offset(
+        2017,
+        1,
+        14,
+        0,
+        31,
+        55,
+        0,
+        TimeVaryingOffset::current_offset(before),
+    ).expect("huh");
+    let after = Datetime::new(2019, 1, 14, 0, 31, 55, 0)
+        .expect("huh")
+        .into_instant();
+    let after_dt = Datetime::with_offset(
+        2017,
+        1,
+        14,
+        0,
+        31,
+        55,
+        0,
+        TimeVaryingOffset::current_offset(after),
+    ).expect("huh");
+    // Since we've introduced an offset strictly equal to one hour, we have the following property
+    assert_eq!(before_dt.to_utc(), after_dt.to_utc());
 }

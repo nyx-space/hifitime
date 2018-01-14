@@ -67,6 +67,7 @@ impl Instant {
     /// assert!(one_second_before_1900 <= epoch);
     /// assert!(Instant::new(1, 0, Era::Past) < Instant::new(0, 0, Era::Present));
     /// assert!(Instant::new(1, 0, Era::Past) < Instant::new(1, 0, Era::Present));
+    /// // NOTE: Equality exists at epoch (or zero offset)
     /// assert_eq!(Instant::new(0, 0, Era::Past), Instant::new(0, 0, Era::Present));
     /// assert_ne!(Instant::new(0, 1, Era::Past), Instant::new(0, 1, Era::Present));
     /// assert_ne!(Instant::new(1, 1, Era::Past), Instant::new(1, 1, Era::Present));
