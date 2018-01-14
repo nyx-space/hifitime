@@ -11,8 +11,7 @@
 //!  * Julian dates and Modified Julian dates
 //!  * UTC representation with ISO8601 formatting
 //!  * Allows building custom `TimeSystem` (e.g. Julian days)
-//!  * Time varying `TimeZone`s to represent static or very high speed reference frames (cf.
-//! the `tz` test in the `tests` module)
+//!  * Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)
 //!
 //! Almost all examples are validated with external references, as detailed on a test-by-test
 //! basis.
@@ -30,10 +29,9 @@
 //!
 //! ## Does not include
 //!
-//! * Dates only, or times only (i.e. handles only the combination of both)
+//! * Dates only, or times only (i.e. handles only the combination of both), but the `Datetime::{at_midnight, at_noon}` help
 //! * Custom formatting of date time objects
 //! * An initializer from machine time
-//! * A simple to use `TimeZone` offset
 //!
 //! ## Usage
 //!
@@ -53,15 +51,15 @@
 //! ### Examples:
 //!
 //! ```rust
-//! use hifitime::utc::{Utc, TimeZone, TimeSystem};
+//! use hifitime::datetime::{Datetime, TimeSystem};
 //! use hifitime::instant::Duration;
 //! use hifitime::julian::ModifiedJulian;
 //!
-//! let santa = Utc::new(2017, 12, 25, 01, 02, 14, 0).expect("Xmas failed");
+//! let santa = Datetime::new(2017, 12, 25, 01, 02, 14, 0).expect("Xmas failed");
 //!
 //! assert_eq!(
 //!     santa.into_instant() + Duration::new(3600, 0),
-//!     Utc::new(2017, 12, 25, 02, 02, 14, 0)
+//!     Datetime::new(2017, 12, 25, 02, 02, 14, 0)
 //!         .expect("Xmas failed")
 //!         .into_instant(),
 //!     "Could not add one hour to Christmas"
@@ -85,10 +83,10 @@ pub mod instant;
 /// The `julian` module supports (Modified) Julian Days, which are heavily used in astronomy
 /// and its engineering friends.
 pub mod julian;
-/// The `utc` module supports conversions between Utc and other time systems. The main advantage
-/// (and challenge) is the inherent support for leap seconds. Refer to module documentation for
-/// leap second implementation details.
-pub mod utc;
+/// The `datetime` module supports conversions between seconds past TAI epoch and a Datetime struct.
+/// The main advantage (and challenge) is the inherent support for leap seconds. Refer to module
+/// documentation for leap second implementation details.
+pub mod datetime;
 
 use std::cmp::PartialOrd;
 use instant::Instant;
@@ -107,7 +105,7 @@ pub trait TimeSystem: PartialOrd {
 #[derive(Debug)]
 pub enum Errors {
     /// Carry is returned when a provided function does not support time carry. For example,
-    /// if a call to `Utc::new` receives 60 seconds and there are only 59 seconds in the provided
+    /// if a call to `Datetime::new` receives 60 seconds and there are only 59 seconds in the provided
     /// date time then a Carry Error is returned as the Result.
     Carry,
 }

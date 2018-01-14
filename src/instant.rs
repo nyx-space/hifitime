@@ -42,8 +42,8 @@ impl Instant {
     /// Creates a new `Instant` with respect to TAI Epoch: 01 January 1900, 00:00:00.0.
     /// All time systems are represented with respect to this epoch.
     /// Note: this constructor relies on the constructor for std::time::Duration; as such,
-    /// refer to https://doc.rust-lang.org/std/time/struct.Duration.html#method.new for
-    /// pertinent warnings and limitations.
+    /// refer to [`std::time::Duration::new`](https://doc.rust-lang.org/std/time/struct.Duration.html#method.new)
+    /// for pertinent warnings and limitations.
     ///
     /// # Examples
     /// ```
@@ -65,6 +65,13 @@ impl Instant {
     /// assert!(one_second_after_1900 >= epoch);
     /// assert!(one_second_before_1900 < epoch);
     /// assert!(one_second_before_1900 <= epoch);
+    /// assert!(Instant::new(1, 0, Era::Past) < Instant::new(0, 0, Era::Present));
+    /// assert!(Instant::new(1, 0, Era::Past) < Instant::new(1, 0, Era::Present));
+    /// // NOTE: Equality exists at epoch (or zero offset)
+    /// assert_eq!(Instant::new(0, 0, Era::Past), Instant::new(0, 0, Era::Present));
+    /// assert_ne!(Instant::new(0, 1, Era::Past), Instant::new(0, 1, Era::Present));
+    /// assert_ne!(Instant::new(1, 1, Era::Past), Instant::new(1, 1, Era::Present));
+    /// assert_ne!(Instant::new(1, 0, Era::Past), Instant::new(1, 0, Era::Present));
     /// ```
     pub fn new(seconds: u64, nanos: u32, era: Era) -> Instant {
         Instant {
@@ -97,7 +104,13 @@ impl Instant {
 
 impl PartialEq for Instant {
     fn eq(&self, other: &Instant) -> bool {
-        self.secs() == other.secs() && self.nanos() == other.nanos() && self.era() == other.era()
+        let spans_eq = self.secs() == other.secs() && self.nanos() == other.nanos();
+        if spans_eq && self.secs() == 0 && self.nanos() == 0 {
+            // Do not check the era if both Instants are strictly zero seconds before or after epoch
+            true
+        } else {
+            spans_eq && self.era() == other.era()
+        }
     }
 }
 
@@ -133,29 +146,33 @@ impl Add<Duration> for Instant {
     /// assert_eq!(tick.era(), Era::Present);
     /// ```
     fn add(self, delta: Duration) -> Instant {
-        // Switch the era, an exact time of zero is in the Present era
-        match self.era {
-            Era::Past => {
-                if (delta.as_secs() >= self.duration.as_secs())
-                    || (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0
-                        && delta.subsec_nanos() >= self.duration.subsec_nanos())
-                {
-                    Instant::new(
-                        delta.as_secs() - self.duration.as_secs(),
-                        delta.subsec_nanos() - self.duration.subsec_nanos(),
-                        Era::Present,
-                    )
-                } else {
+        if delta.as_secs() == 0 && delta.subsec_nanos() == 0 {
+            self
+        } else {
+            // Switch the era, an exact time of zero is in the Present era
+            match self.era {
+                Era::Past => {
+                    if (delta.as_secs() >= self.duration.as_secs())
+                        || (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0
+                            && delta.subsec_nanos() >= self.duration.subsec_nanos())
+                    {
+                        Instant::new(
+                            delta.as_secs() - self.duration.as_secs(),
+                            delta.subsec_nanos() - self.duration.subsec_nanos(),
+                            Era::Present,
+                        )
+                    } else {
+                        let mut cln = self;
+                        cln.duration -= delta;
+                        cln
+                    }
+                }
+                Era::Present => {
+                    // Adding a duration in the present is trivial
                     let mut cln = self;
-                    cln.duration -= delta;
+                    cln.duration += delta;
                     cln
                 }
-            }
-            Era::Present => {
-                // Adding a duration in the present is trivial
-                let mut cln = self;
-                cln.duration += delta;
-                cln
             }
         }
     }
@@ -193,28 +210,32 @@ impl Sub<Duration> for Instant {
     /// assert_eq!(tick.era(), Era::Past);
     /// ```
     fn sub(self, delta: Duration) -> Instant {
-        // Switch the era, an exact time of zero is in the Present era
-        match self.era {
-            Era::Past => {
-                // Subtracting a duration in the past is trivial
-                let mut cln = self;
-                cln.duration += delta;
-                cln
-            }
-            Era::Present => {
-                if (delta.as_secs() >= self.duration.as_secs())
-                    || (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0
-                        && delta.subsec_nanos() >= self.duration.subsec_nanos())
-                {
-                    Instant::new(
-                        delta.as_secs() - self.duration.as_secs(),
-                        delta.subsec_nanos() - self.duration.subsec_nanos(),
-                        Era::Past,
-                    )
-                } else {
+        if delta.as_secs() == 0 && delta.subsec_nanos() == 0 {
+            self
+        } else {
+            // Switch the era, an exact time of zero is in the Present era
+            match self.era {
+                Era::Past => {
+                    // Subtracting a duration in the past is trivial
                     let mut cln = self;
-                    cln.duration -= delta;
+                    cln.duration += delta;
                     cln
+                }
+                Era::Present => {
+                    if (delta.as_secs() >= self.duration.as_secs())
+                        || (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0
+                            && delta.subsec_nanos() >= self.duration.subsec_nanos())
+                    {
+                        Instant::new(
+                            delta.as_secs() - self.duration.as_secs(),
+                            delta.subsec_nanos() - self.duration.subsec_nanos(),
+                            Era::Past,
+                        )
+                    } else {
+                        let mut cln = self;
+                        cln.duration -= delta;
+                        cln
+                    }
                 }
             }
         }
