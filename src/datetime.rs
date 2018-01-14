@@ -21,12 +21,33 @@ const JULY_YEARS: [i32; 11] = [
 const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const USUAL_DAYS_PER_YEAR: f64 = 365.0;
 
+/// `TimeZone` defines a timezone with respect to Utc.
+pub trait TimeZone: fmt::Display {
+    /// tai_offset returns the difference between a given TZ and UTC at a specified time.
+    fn tai_offset(self: Self, now: Instant) -> Offset;
+}
+
 /// `Offset` is an alias of Instant. It contains the same kind of information, but is used in the
 /// context of defining an offset with respect to Utc.
 pub type Offset = Instant;
 
+impl fmt::Display for Offset {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let sign = match self.era() {
+            Era::Present => "+",
+            Era::Past => "-",
+        };
+        let (hours, hours_fraction) = quorem(self.secs() as f64, 60.0 * 60.0);
+        // Get the minutes and seconds by the exact number of seconds in a minute
+        let (mins, _) = quorem(hours_fraction, 60.0);
+        write!(f, "{:}{:02}:{:02}", sign, hours, mins)
+    }
+}
+
 /// `FixedOffset` implements a time fixed offset of a certain number of hours with regard to UTC.
-pub struct FixedOffset {}
+pub struct FixedOffset {
+    offset: Offset,
+}
 
 impl FixedOffset {
     /// `east_with_hours` returns an eastward offset (i.e. "before" the UTC time)
@@ -76,21 +97,10 @@ impl FixedOffset {
     }
 }
 
-/// `TimeZone` defines a timezone with respect to Utc.
-pub trait TimeZone: fmt::Display {
-    /// utc_offset returns the difference between a given TZ and UTC.
-    fn utc_offset() -> Offset;
-    fn new(
-        year: i32,
-        month: u8,
-        day: u8,
-        hour: u8,
-        minute: u8,
-        second: u8,
-        nanos: u32,
-    ) -> Result<Self, Errors>
-    where
-        Self: Sized;
+impl fmt::Display for FixedOffset {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:}", self.offset)
+    }
 }
 
 /// Utc is the interface between a time system and a time zone. All time zones are defined with
@@ -100,7 +110,7 @@ pub trait TimeZone: fmt::Display {
 /// has been announced.
 /// **WARNING**: The historical oddities with calendars are not yet supported.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
-pub struct Utc {
+pub struct Datetime {
     year: i32,
     month: u8,
     day: u8,
@@ -108,9 +118,171 @@ pub struct Utc {
     minute: u8,
     second: u8,
     nanos: u32,
+    offset: Offset,
 }
 
-impl Utc {
+impl Datetime {
+    /// Creates a new UTC date, with support for all the leap seconds with respect to TAI.
+    /// *NOTE:* UTC leap seconds may be confusing because several dates have the **same** number
+    /// of seconds since TAI epoch.
+    /// **WARNING:** Does not support automatic carry and will return an error if so.
+    /// **WARNING:** Although `PartialOrd` is implemented for Utc, the ambiguity of leap seconds
+    /// as explained elsewhere in this documentation may lead to odd results (cf. examples below).
+    ///
+    /// # Examples
+    /// ```
+    /// use hifitime::datetime::{Utc, TimeSystem, TimeZone};
+    /// use hifitime::instant::{Duration, Era, Instant};
+    /// use hifitime::julian::ModifiedJulian;
+    ///
+    /// let epoch = Datetime::new(1900, 01, 01, 0, 0, 0, 0).expect("epoch failed");
+    /// assert_eq!(
+    ///     epoch.into_instant(),
+    ///     Instant::new(0, 0, Era::Present),
+    ///     "Incorrect Epoch computed"
+    /// );
+    ///
+    /// assert_eq!(
+    ///     Datetime::new(1971, 12, 31, 23, 59, 59, 0)
+    ///         .expect("January 1972 leap second failed")
+    ///         .into_instant(),
+    ///     Instant::new(2272060799, 0, Era::Present),
+    ///     "Incorrect January 1972 pre-leap second number computed"
+    /// );
+    /// assert_eq!(
+    ///     Datetime::new(1971, 12, 31, 23, 59, 59, 0)
+    ///         .expect("January 1972 1 second before leap second failed")
+    ///         .into_instant(),
+    ///     Datetime::new(1971, 12, 31, 23, 59, 60, 0)
+    ///         .expect("January 1972 1 second before leap second failed")
+    ///         .into_instant(),
+    ///     "Incorrect January 1972 leap second number computed"
+    /// );
+    ///
+    /// // Example of odd behavior when comparing/ordering dates using Utc or `into_instant`
+    /// // Utc order claims (correctly) that the 60th second is _after_ the 59th. But the instant
+    /// // is actually different because the 60th second is where we've inserted the leap second.
+    /// assert!(
+    ///     Datetime::new(1971, 12, 31, 23, 59, 59, 0).expect(
+    ///         "January 1972 1 second before leap second failed",
+    ///     ) <
+    ///         Datetime::new(1971, 12, 31, 23, 59, 60, 0).expect(
+    ///             "January 1972 1 second before leap second failed",
+    ///         ),
+    ///     "60th second should have a different instant than 59th second"
+    /// );
+    /// assert!(
+    ///     Datetime::new(1971, 12, 31, 23, 59, 59, 0)
+    ///         .expect("January 1972 1 second before leap second failed")
+    ///         .into_instant() ==
+    ///         Datetime::new(1971, 12, 31, 23, 59, 60, 0)
+    ///             .expect("January 1972 1 second before leap second failed")
+    ///             .into_instant(),
+    ///     "60th second should have a different instant than 59th second"
+    /// );
+    /// // Hence one second after the leap second, we get the following behavior (note the change
+    /// // from equality to less when comparing via instant).
+    /// assert!(
+    ///     Datetime::new(1971, 12, 31, 23, 59, 60, 0).expect(
+    ///         "January 1972 1 second before leap second failed",
+    ///     ) <
+    ///         Datetime::new(1972, 01, 01, 00, 00, 00, 0).expect(
+    ///             "January 1972 1 second before leap second failed",
+    ///         ),
+    ///     "60th second should have a different instant than 59th second"
+    /// );
+    /// assert!(
+    ///     Datetime::new(1971, 12, 31, 23, 59, 60, 0)
+    ///         .expect("January 1972 1 second before leap second failed")
+    ///         .into_instant() <
+    ///         Datetime::new(1972, 01, 01, 00, 00, 00, 0)
+    ///             .expect("January 1972 1 second before leap second failed")
+    ///             .into_instant(),
+    ///     "60th second should have a different instant than 59th second"
+    /// );
+    ///
+    /// let santa = Datetime::new(2017, 12, 25, 01, 02, 14, 0).expect("Xmas failed");
+    ///
+    /// assert_eq!(
+    ///     santa.into_instant() + Duration::new(3600, 0),
+    ///     Datetime::new(2017, 12, 25, 02, 02, 14, 0)
+    ///         .expect("Xmas failed")
+    ///         .into_instant(),
+    ///     "Could not add one hour to Christmas"
+    /// );
+    /// assert_eq!(format!("{}", santa), "2017-12-25T01:02:14+00:00");
+    /// assert_eq!(
+    ///     ModifiedJulian::from_instant(santa.into_instant()).days,
+    ///     58112.043217592596
+    /// );
+    /// assert_eq!(
+    ///     ModifiedJulian::from_instant(santa.into_instant()).julian_days(),
+    ///     2458112.5432175924
+    /// );
+    /// ```
+    pub fn new(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        nanos: u32,
+    ) -> Result<Datetime, Errors> {
+        Datetime::with_offset(
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+            nanos,
+            FixedOffset::west_with_hours(0),
+        )
+    }
+
+    pub fn with_offset(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        nanos: u32,
+        offset: Offset,
+    ) -> Result<Datetime, Errors> {
+        let max_seconds = if (month == 12 || month == 6)
+            && day == USUAL_DAYS_PER_MONTH[month as usize - 1]
+            && hour == 23 && minute == 59
+            && ((month == 6 && JULY_YEARS.contains(&year))
+                || (month == 12 && JANUARY_YEARS.contains(&(year + 1))))
+        {
+            60
+        } else {
+            59
+        };
+        // General incorrect date times
+        if month == 0 || month > 12 || day == 0 || day > 31 || hour > 24 || minute > 59
+            || second > max_seconds || f64::from(nanos) > 1e9
+        {
+            return Err(Errors::Carry);
+        }
+        if day > USUAL_DAYS_PER_MONTH[month as usize - 1] && (month != 2 || !is_leap_year(year)) {
+            // Not in February or not a leap year
+            return Err(Errors::Carry);
+        }
+        Ok(Datetime {
+            year: year,
+            month: month,
+            day: day,
+            hour: hour,
+            minute: minute,
+            second: second,
+            nanos: nanos,
+            offset: offset,
+        })
+    }
+
     /// Returns the year of this Utc date time.
     pub fn year(&self) -> &i32 {
         &self.year
@@ -143,10 +315,10 @@ impl Utc {
     ///
     /// # Examples
     /// ```
-    /// use hifitime::datetime::{Utc, TimeSystem};
+    /// use hifitime::datetime::{Datetime, TimeSystem};
     /// use hifitime::instant::{Era, Instant};
     ///
-    /// let epoch = Utc::at_midnight(1900, 01, 01).expect("epoch failed");
+    /// let epoch = Datetime<Utc>::at_midnight(1900, 01, 01).expect("epoch failed");
     /// assert_eq!(
     ///     epoch.into_instant(),
     ///     Instant::new(0, 0, Era::Present),
@@ -154,7 +326,7 @@ impl Utc {
     /// );
     ///
     /// assert_eq!(
-    ///     Utc::at_midnight(1972, 01, 01)
+    ///     Datetime<Utc>::at_midnight(1972, 01, 01)
     ///         .expect("Post January 1972 leap second failed")
     ///         .into_instant(),
     ///     Instant::new(2272060800, 0, Era::Present),
@@ -162,18 +334,18 @@ impl Utc {
     /// );
     /// ```
 
-    pub fn at_midnight(year: i32, month: u8, day: u8) -> Result<Utc, Errors> {
-        Ok(Utc::new(year, month, day, 00, 00, 00, 00)?)
+    pub fn at_midnight(year: i32, month: u8, day: u8) -> Result<Datetime, Errors> {
+        Ok(Datetime::new(year, month, day, 00, 00, 00, 00)?)
     }
 
     /// Creates a new UTC date at noon (i.e. hours = 12, mins = 0, secs = 0, nanos = 0)
     ///
     /// # Examples
     /// ```
-    /// use hifitime::datetime::{Utc, TimeSystem};
+    /// use hifitime::datetime::{Datetime, TimeSystem};
     /// use hifitime::instant::{Era, Instant};
     ///
-    /// let epoch = Utc::at_noon(1900, 01, 01).expect("epoch failed");
+    /// let epoch = Datetime::at_noon(1900, 01, 01).expect("epoch failed");
     /// assert_eq!(
     ///     epoch.into_instant(),
     ///     Instant::new(43200, 0, Era::Present),
@@ -181,18 +353,30 @@ impl Utc {
     /// );
     ///
     /// assert_eq!(
-    ///     Utc::at_noon(1972, 01, 01)
+    ///     Datetime::at_noon(1972, 01, 01)
     ///         .expect("Post January 1972 leap second failed")
     ///         .into_instant(),
     ///     Instant::new(2272104000, 0, Era::Present),
     ///     "Incorrect January 1972 post-leap second number computed at noon"
     /// );
     /// ```
-    pub fn at_noon(year: i32, month: u8, day: u8) -> Result<Utc, Errors> {
-        Ok(Utc::new(year, month, day, 12, 00, 00, 00)?)
+    pub fn at_noon(year: i32, month: u8, day: u8) -> Result<Datetime, Errors> {
+        Ok(Datetime::new(year, month, day, 12, 00, 00, 00)?)
+    }
+
+    pub fn to_utc(self) -> Datetime {
+        self.to_offset(FixedOffset::east_with_hours(0))
+    }
+
+    pub fn to_offset(self, offset: Offset) -> Datetime {
+        // Start by canceling the initial offset and then apply the desired one
+        match offset.era() {
+            Era::Past => Datetime::from_instant(self.into_instant() - offset.duration()),
+            Era::Present => Datetime::from_instant(self.into_instant() + offset.duration()),
+        }
     }
 }
-
+/*
 impl TimeZone for Utc
 where
     Self: Sized,
@@ -201,149 +385,12 @@ where
     fn utc_offset() -> Offset {
         Offset::new(0, 0, Era::Present)
     }
-
-    /// Creates a new UTC date, with support for all the leap seconds with respect to TAI.
-    /// *NOTE:* UTC leap seconds may be confusing because several dates have the **same** number
-    /// of seconds since TAI epoch.
-    /// **WARNING:** Does not support automatic carry and will return an error if so.
-    /// **WARNING:** Although `PartialOrd` is implemented for Utc, the ambiguity of leap seconds
-    /// as explained elsewhere in this documentation may lead to odd results (cf. examples below).
-    ///
-    /// # Examples
-    /// ```
-    /// use hifitime::datetime::{Utc, TimeSystem, TimeZone};
-    /// use hifitime::instant::{Duration, Era, Instant};
-    /// use hifitime::julian::ModifiedJulian;
-    ///
-    /// let epoch = Utc::new(1900, 01, 01, 0, 0, 0, 0).expect("epoch failed");
-    /// assert_eq!(
-    ///     epoch.into_instant(),
-    ///     Instant::new(0, 0, Era::Present),
-    ///     "Incorrect Epoch computed"
-    /// );
-    ///
-    /// assert_eq!(
-    ///     Utc::new(1971, 12, 31, 23, 59, 59, 0)
-    ///         .expect("January 1972 leap second failed")
-    ///         .into_instant(),
-    ///     Instant::new(2272060799, 0, Era::Present),
-    ///     "Incorrect January 1972 pre-leap second number computed"
-    /// );
-    /// assert_eq!(
-    ///     Utc::new(1971, 12, 31, 23, 59, 59, 0)
-    ///         .expect("January 1972 1 second before leap second failed")
-    ///         .into_instant(),
-    ///     Utc::new(1971, 12, 31, 23, 59, 60, 0)
-    ///         .expect("January 1972 1 second before leap second failed")
-    ///         .into_instant(),
-    ///     "Incorrect January 1972 leap second number computed"
-    /// );
-    ///
-    /// // Example of odd behavior when comparing/ordering dates using Utc or `into_instant`
-    /// // Utc order claims (correctly) that the 60th second is _after_ the 59th. But the instant
-    /// // is actually different because the 60th second is where we've inserted the leap second.
-    /// assert!(
-    ///     Utc::new(1971, 12, 31, 23, 59, 59, 0).expect(
-    ///         "January 1972 1 second before leap second failed",
-    ///     ) <
-    ///         Utc::new(1971, 12, 31, 23, 59, 60, 0).expect(
-    ///             "January 1972 1 second before leap second failed",
-    ///         ),
-    ///     "60th second should have a different instant than 59th second"
-    /// );
-    /// assert!(
-    ///     Utc::new(1971, 12, 31, 23, 59, 59, 0)
-    ///         .expect("January 1972 1 second before leap second failed")
-    ///         .into_instant() ==
-    ///         Utc::new(1971, 12, 31, 23, 59, 60, 0)
-    ///             .expect("January 1972 1 second before leap second failed")
-    ///             .into_instant(),
-    ///     "60th second should have a different instant than 59th second"
-    /// );
-    /// // Hence one second after the leap second, we get the following behavior (note the change
-    /// // from equality to less when comparing via instant).
-    /// assert!(
-    ///     Utc::new(1971, 12, 31, 23, 59, 60, 0).expect(
-    ///         "January 1972 1 second before leap second failed",
-    ///     ) <
-    ///         Utc::new(1972, 01, 01, 00, 00, 00, 0).expect(
-    ///             "January 1972 1 second before leap second failed",
-    ///         ),
-    ///     "60th second should have a different instant than 59th second"
-    /// );
-    /// assert!(
-    ///     Utc::new(1971, 12, 31, 23, 59, 60, 0)
-    ///         .expect("January 1972 1 second before leap second failed")
-    ///         .into_instant() <
-    ///         Utc::new(1972, 01, 01, 00, 00, 00, 0)
-    ///             .expect("January 1972 1 second before leap second failed")
-    ///             .into_instant(),
-    ///     "60th second should have a different instant than 59th second"
-    /// );
-    ///
-    /// let santa = Utc::new(2017, 12, 25, 01, 02, 14, 0).expect("Xmas failed");
-    ///
-    /// assert_eq!(
-    ///     santa.into_instant() + Duration::new(3600, 0),
-    ///     Utc::new(2017, 12, 25, 02, 02, 14, 0)
-    ///         .expect("Xmas failed")
-    ///         .into_instant(),
-    ///     "Could not add one hour to Christmas"
-    /// );
-    /// assert_eq!(format!("{}", santa), "2017-12-25T01:02:14+00:00");
-    /// assert_eq!(
-    ///     ModifiedJulian::from_instant(santa.into_instant()).days,
-    ///     58112.043217592596
-    /// );
-    /// assert_eq!(
-    ///     ModifiedJulian::from_instant(santa.into_instant()).julian_days(),
-    ///     2458112.5432175924
-    /// );
-    /// ```
-    fn new(
-        year: i32,
-        month: u8,
-        day: u8,
-        hour: u8,
-        minute: u8,
-        second: u8,
-        nanos: u32,
-    ) -> Result<Utc, Errors> {
-        let max_seconds = if (month == 12 || month == 6)
-            && day == USUAL_DAYS_PER_MONTH[month as usize - 1]
-            && hour == 23 && minute == 59
-            && ((month == 6 && JULY_YEARS.contains(&year))
-                || (month == 12 && JANUARY_YEARS.contains(&(year + 1))))
-        {
-            60
-        } else {
-            59
-        };
-        // General incorrect date times
-        if month == 0 || month > 12 || day == 0 || day > 31 || hour > 24 || minute > 59
-            || second > max_seconds || f64::from(nanos) > 1e9
-        {
-            return Err(Errors::Carry);
-        }
-        if day > USUAL_DAYS_PER_MONTH[month as usize - 1] && (month != 2 || !is_leap_year(year)) {
-            // Not in February or not a leap year
-            return Err(Errors::Carry);
-        }
-        Ok(Utc {
-            year,
-            month,
-            day,
-            hour,
-            minute,
-            second,
-            nanos,
-        })
-    }
 }
+*/
 
-impl TimeSystem for Utc {
+impl TimeSystem for Datetime {
     /// `from_instant` converts an Instant to a Utc.
-    fn from_instant(instant: Instant) -> Utc {
+    fn from_instant(instant: Instant) -> Datetime {
         let (mut year, mut year_fraction) = quorem(instant.secs() as f64, 365.0 * SECONDS_PER_DAY);
         year = match instant.era() {
             Era::Past => 1900 - year,
@@ -402,7 +449,7 @@ impl TimeSystem for Utc {
         let (hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
         // Get the minutes and seconds by the exact number of seconds in a minute
         let (mins, secs) = quorem(hours_fraction, 60.0);
-        Utc::new(
+        Datetime::new(
             year,
             month as u8,
             day as u8,
@@ -447,54 +494,63 @@ impl TimeSystem for Utc {
             // same number of second afters J1900.0.
             seconds_wrt_1900 -= 1.0;
         }
-        Instant::new(seconds_wrt_1900 as u64, self.nanos as u32, era)
+        match self.offset.era() {
+            Era::Past => {
+                (Instant::new(seconds_wrt_1900 as u64, self.nanos as u32, era)
+                    + self.offset.duration())
+            }
+            Era::Present => {
+                Instant::new(seconds_wrt_1900 as u64, self.nanos as u32, era)
+                    - self.offset.duration()
+            }
+        }
     }
 }
 
-impl fmt::Display for Utc {
+impl fmt::Display for Datetime {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(
             f,
-            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}+00:00",
-            self.year, self.month, self.day, self.hour, self.minute, self.second
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}{:}",
+            self.year, self.month, self.day, self.hour, self.minute, self.second, self.offset
         )
     }
 }
 
-impl Add<Duration> for Utc {
-    type Output = Utc;
+impl Add<Duration> for Datetime {
+    type Output = Datetime;
 
     /// Adds a given `std::time::Duration` to an `Utc`.
     ///
     /// # Examples
     /// ```
-    /// use hifitime::datetime::Utc;
+    /// use hifitime::datetime::Datetime;
     /// use std::time::Duration;
-    /// let santa = Utc::at_midnight(2017, 12, 25).unwrap();
-    /// let santa_1h = Utc::at_midnight(2017, 12, 25).unwrap() + Duration::new(3600, 0);
+    /// let santa = Datetime::at_midnight(2017, 12, 25).unwrap();
+    /// let santa_1h = Datetime::at_midnight(2017, 12, 25).unwrap() + Duration::new(3600, 0);
     /// assert_eq!(santa.hour() + &1, *santa_1h.hour());
     /// ```
-    fn add(self, delta: Duration) -> Utc {
-        Utc::from_instant(self.into_instant() + delta)
+    fn add(self, delta: Duration) -> Datetime {
+        Datetime::from_instant(self.into_instant() + delta)
     }
 }
 
-impl Sub<Duration> for Utc {
-    type Output = Utc;
+impl Sub<Duration> for Datetime {
+    type Output = Datetime;
 
     /// Adds a given `std::time::Duration` to an `Utc`.
     ///
     /// # Examples
     /// ```
-    /// use hifitime::datetime::Utc;
+    /// use hifitime::datetime::Datetime;
     /// use std::time::Duration;
-    /// let santa = Utc::at_midnight(2017, 12, 25).unwrap();
-    /// let santa_1h = Utc::at_midnight(2017, 12, 25).unwrap() - Duration::new(3600, 0);
+    /// let santa = Datetime::at_midnight(2017, 12, 25).unwrap();
+    /// let santa_1h = Datetime::at_midnight(2017, 12, 25).unwrap() - Duration::new(3600, 0);
     /// assert_eq!(santa.day() - &1, *santa_1h.day()); // Day underflow
     /// assert_eq!(santa_1h.hour(), &23);
     /// ```
-    fn sub(self, delta: Duration) -> Utc {
-        Utc::from_instant(self.into_instant() - delta)
+    fn sub(self, delta: Duration) -> Datetime {
+        Datetime::from_instant(self.into_instant() - delta)
     }
 }
 

@@ -2,10 +2,10 @@ extern crate hifitime;
 
 #[test]
 fn utc_extras() {
-    use hifitime::datetime::{TimeSystem, Utc};
+    use hifitime::datetime::{Datetime, TimeSystem};
     use hifitime::instant::{Duration, Era, Instant};
 
-    let epoch = Utc::at_midnight(1900, 01, 01).expect("epoch failed");
+    let epoch = Datetime::at_midnight(1900, 01, 01).expect("epoch failed");
     assert_eq!(
         epoch.into_instant(),
         Instant::new(0, 0, Era::Present),
@@ -13,14 +13,14 @@ fn utc_extras() {
     );
 
     assert_eq!(
-        Utc::at_midnight(1972, 01, 01)
+        Datetime::at_midnight(1972, 01, 01)
             .expect("Post January 1972 leap second failed")
             .into_instant(),
         Instant::new(2272060800, 0, Era::Present),
         "Incorrect January 1972 post-leap second number computed at midnight"
     );
 
-    let epoch = Utc::at_noon(1900, 01, 01).expect("epoch failed");
+    let epoch = Datetime::at_noon(1900, 01, 01).expect("epoch failed");
     assert_eq!(
         epoch.into_instant(),
         Instant::new(43200, 0, Era::Present),
@@ -28,16 +28,16 @@ fn utc_extras() {
     );
 
     assert_eq!(
-        Utc::at_noon(1972, 01, 01)
+        Datetime::at_noon(1972, 01, 01)
             .expect("Post January 1972 leap second failed")
             .into_instant(),
         Instant::new(2272104000, 0, Era::Present),
         "Incorrect January 1972 post-leap second number computed at noon"
     );
 
-    // Slightly extended test of adding and subtracting durations from Utc
-    let santa = Utc::at_midnight(2017, 12, 25).unwrap();
-    let santa_1h = Utc::at_midnight(2017, 12, 25).unwrap() + Duration::new(3600, 0);
+    // Slightly extended test of adding and subtracting durations from Datetime
+    let santa = Datetime::at_midnight(2017, 12, 25).unwrap();
+    let santa_1h = Datetime::at_midnight(2017, 12, 25).unwrap() + Duration::new(3600, 0);
     assert_eq!(santa.year(), santa_1h.year());
     assert_eq!(santa.month(), santa_1h.month());
     assert_eq!(santa.day(), santa_1h.day());
@@ -46,8 +46,8 @@ fn utc_extras() {
     assert_eq!(santa.second(), santa_1h.second());
     assert_eq!(santa.nanos(), santa_1h.nanos());
 
-    let santa = Utc::at_midnight(2017, 12, 25).unwrap();
-    let santa_1h = Utc::at_midnight(2017, 12, 25).unwrap() - Duration::new(3600, 0);
+    let santa = Datetime::at_midnight(2017, 12, 25).unwrap();
+    let santa_1h = Datetime::at_midnight(2017, 12, 25).unwrap() - Duration::new(3600, 0);
     assert_eq!(santa.year(), santa_1h.year());
     assert_eq!(santa.month(), santa_1h.month());
     assert_eq!(santa.day() - &1, *santa_1h.day()); // Day underflow
@@ -59,14 +59,14 @@ fn utc_extras() {
 
 #[test]
 fn utc_valid_dates() {
-    use hifitime::datetime::{TimeZone, Utc};
+    use hifitime::datetime::Datetime;
     use hifitime::julian::SECONDS_PER_DAY;
     use hifitime::instant::{Duration, Era, Instant};
     use hifitime::TimeSystem;
 
     // Tests arbitrary dates in chronological order.
     // Cross validated via timeanddate.com (tool validation: https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=1&d2=1&y2=1970&h1=0&i1=0&s1=0&h2=0&i2=0&s2=0)
-    let dt = Utc::new(1900, 1, 1, 0, 0, 0, 0).expect("01 January 1900 invalid?!");
+    let dt = Datetime::new(1900, 1, 1, 0, 0, 0, 0).expect("01 January 1900 invalid?!");
     assert_eq!(
         dt.into_instant(),
         Instant::new(0, 0, Era::Present),
@@ -75,12 +75,12 @@ fn utc_valid_dates() {
     assert_eq!(format!("{}", dt), "1900-01-01T00:00:00+00:00");
     assert_eq!(dt.nanos(), &0);
     assert_eq!(
-        Utc::from_instant(dt.into_instant()),
+        Datetime::from_instant(dt.into_instant()),
         dt,
         "Reciprocity error"
     );
 
-    let dt = Utc::new(1900, 1, 1, 12, 0, 0, 0).expect("01 January 1900 invalid?!");
+    let dt = Datetime::new(1900, 1, 1, 12, 0, 0, 0).expect("01 January 1900 invalid?!");
     assert_eq!(
         dt.into_instant(),
         Instant::new(12 * 3600, 0, Era::Present),
@@ -88,12 +88,12 @@ fn utc_valid_dates() {
     );
     assert_eq!(format!("{}", dt), "1900-01-01T12:00:00+00:00");
     assert_eq!(
-        Utc::from_instant(dt.into_instant()),
+        Datetime::from_instant(dt.into_instant()),
         dt,
         "Reciprocity error"
     );
 
-    let dt = Utc::new(1905, 1, 1, 0, 0, 0, 1590).expect("epoch 1905 failed");
+    let dt = Datetime::new(1905, 1, 1, 0, 0, 0, 1590).expect("epoch 1905 failed");
     assert_eq!(
         dt.into_instant(),
         Instant::new(
@@ -105,167 +105,167 @@ fn utc_valid_dates() {
     );
     assert_eq!(format!("{}", dt), "1905-01-01T00:00:00+00:00");
     assert_eq!(
-        Utc::from_instant(dt.into_instant()),
+        Datetime::from_instant(dt.into_instant()),
         dt,
         "Reciprocity error"
     );
 
     // X-Val: 03 January 1938 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=1&d2=03&y2=1938&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Instant::new(1_199_333_568, 0, Era::Present);
-    let epoch_utc = Utc::new(1938, 1, 3, 4, 12, 48, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1938, 1, 3, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // X-Val: 28 February 1938 00:00:00 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=02&d2=28&y2=1938&h1=0&i1=0&s1=0&h2=0&i2=0&s2=0
     let this_epoch = Instant::new(1_204_156_800, 0, Era::Present);
-    let epoch_utc = Utc::new(1938, 2, 28, 00, 00, 00, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1938, 2, 28, 00, 00, 00, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // 28 February 1938 23:59:59 (no X-Val: took the next test and subtracted one second)
     let this_epoch = Instant::new(1_204_243_199, 0, Era::Present);
-    let epoch_utc = Utc::new(1938, 2, 28, 23, 59, 59, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1938, 2, 28, 23, 59, 59, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // X-Val: 01 March 1938 00:00:00 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=3&d2=01&y2=1938&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Instant::new(1_204_243_200, 0, Era::Present);
-    let epoch_utc = Utc::new(1938, 3, 1, 00, 00, 00, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1938, 3, 1, 00, 00, 00, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // X-Val: 31 March 1938 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=03&d2=31&y2=1938&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Instant::new(1_206_850_368, 0, Era::Present);
-    let epoch_utc = Utc::new(1938, 3, 31, 4, 12, 48, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1938, 3, 31, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // X-Val: 24 June 1938 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=6&d2=24&y2=1938&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Instant::new(1_214_194_368, 0, Era::Present);
-    let epoch_utc = Utc::new(1938, 6, 24, 4, 12, 48, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1938, 6, 24, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // X-Val: 31 August 1938 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=8&d2=31&y2=1938&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Instant::new(1_220_069_568, 0, Era::Present);
-    let epoch_utc = Utc::new(1938, 8, 31, 4, 12, 48, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1938, 8, 31, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // X-Val: 31 December 1938 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=12&d2=31&y2=1938&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Instant::new(1_230_610_368, 0, Era::Present);
-    let epoch_utc = Utc::new(1938, 12, 31, 4, 12, 48, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1938, 12, 31, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // X-Val: 01 January 1939 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=01&d2=1&y2=1939&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Instant::new(1_230_696_768, 0, Era::Present);
-    let epoch_utc = Utc::new(1939, 1, 1, 4, 12, 48, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1939, 1, 1, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // X-Val: 01 March 1939 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=3&d2=1&y2=1939&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Instant::new(1_235_794_368, 0, Era::Present);
-    let epoch_utc = Utc::new(1939, 3, 1, 4, 12, 48, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1939, 3, 1, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // X-Val: 01 March 1940 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=3&d2=1&y2=1940&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Instant::new(1_267_416_768, 0, Era::Present);
-    let epoch_utc = Utc::new(1940, 3, 1, 4, 12, 48, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1940, 3, 1, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // X-Val: 01 February 1939 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=2&d2=1&y2=1939&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Instant::new(1_233_375_168, 0, Era::Present);
-    let epoch_utc = Utc::new(1939, 2, 1, 4, 12, 48, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1939, 2, 1, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // X-Val: 01 February 1940 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=2&d2=01&y2=1940&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Instant::new(1_264_911_168, 0, Era::Present);
-    let epoch_utc = Utc::new(1940, 2, 1, 4, 12, 48, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1940, 2, 1, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // X-Val: 28 February 1940 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=2&d2=28&y2=1940&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Instant::new(1_267_243_968, 0, Era::Present);
-    let epoch_utc = Utc::new(1940, 2, 28, 4, 12, 48, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1940, 2, 28, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // X-Val: 29 February 1940 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=2&d2=29&y2=1940&h1=0&i1=0&s1=0&h2=04&i2=12&s2=48
     let this_epoch = Instant::new(1_267_330_368, 0, Era::Present);
-    let epoch_utc = Utc::new(1940, 2, 29, 4, 12, 48, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1940, 2, 29, 4, 12, 48, 0).expect("init epoch");
     assert_eq!(format!("{:}", epoch_utc), "1940-02-29T04:12:48+00:00");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
     // Arbitrary date
-    let dt = Utc::new(2018, 10, 8, 22, 8, 47, 0).expect("standard date failed");
+    let dt = Datetime::new(2018, 10, 8, 22, 8, 47, 0).expect("standard date failed");
     assert_eq!(format!("{}", dt), "2018-10-08T22:08:47+00:00");
     assert_eq!(
-        Utc::from_instant(dt.into_instant()),
+        Datetime::from_instant(dt.into_instant()),
         dt,
         "Reciprocity error"
     );
@@ -276,11 +276,11 @@ fn utc_valid_dates() {
 
     // X-Val: 16 February 1970 16:36:13 - https://www.timeanddate.com/date/durationresult.html?m1=02&d1=16&y1=1970&m2=01&d2=01&y2=1970&h1=16&i1=36&s1=13&h2=0&i2=0&s2=0
     let this_epoch = unix_epoch + Duration::new(4_034_173, 0);
-    let epoch_utc = Utc::new(1970, 2, 16, 16, 36, 13, 0).expect("init epoch");
+    let epoch_utc = Datetime::new(1970, 2, 16, 16, 36, 13, 0).expect("init epoch");
     assert_eq!(epoch_utc.into_instant(), this_epoch, "Incorrect epoch");
     assert_eq!(
         epoch_utc,
-        Utc::from_instant(this_epoch),
+        Datetime::from_instant(this_epoch),
         "Conversion from instant failed"
     );
 
@@ -307,7 +307,7 @@ fn utc_valid_dates() {
                                     0,
                                 );
                         }
-                        let unix_ref = Utc::new(
+                        let unix_ref = Datetime::new(
                             1970,
                             dmonth,
                             dday as u8,
@@ -326,7 +326,7 @@ fn utc_valid_dates() {
                             dmin,
                             dsec
                         );
-                        let unix_ref_from_inst = Utc::from_instant(this_epoch);
+                        let unix_ref_from_inst = Datetime::from_instant(this_epoch);
                         assert_eq!(
                             unix_ref,
                             unix_ref_from_inst,
@@ -348,7 +348,7 @@ fn utc_valid_dates() {
         for dhour in 0..7 {
             for dminute in (0..60).rev() {
                 for dsecond in 0..60 {
-                    let utc = Utc::new(
+                    let utc = Datetime::new(
                         1900 + dyear,
                         1,
                         1,
@@ -374,7 +374,7 @@ fn utc_valid_dates() {
                         dsecond
                     );
                     assert_eq!(
-                        Utc::from_instant(utc.into_instant()),
+                        Datetime::from_instant(utc.into_instant()),
                         utc,
                         "Incorrect reciprocity Epoch+{} year(s) + {} hour(s) + {} minute(s) +
                         {} second(s) + some computed (utc.from_instant)",
@@ -390,150 +390,150 @@ fn utc_valid_dates() {
 
     // Specific leap year and leap second tests
     assert_eq!(
-        Utc::new(1971, 12, 31, 23, 59, 59, 0)
+        Datetime::new(1971, 12, 31, 23, 59, 59, 0)
             .expect("January 1972 leap second failed")
             .into_instant(),
         Instant::new(2_272_060_799, 0, Era::Present),
         "Incorrect January 1972 pre-leap second number computed"
     );
     assert_eq!(
-        Utc::new(1971, 12, 31, 23, 59, 59, 0)
+        Datetime::new(1971, 12, 31, 23, 59, 59, 0)
             .expect("January 1972 1 second before leap second failed")
             .into_instant(),
-        Utc::new(1971, 12, 31, 23, 59, 60, 0)
+        Datetime::new(1971, 12, 31, 23, 59, 60, 0)
             .expect("January 1972 1 second before leap second failed")
             .into_instant(),
         "Incorrect January 1972 leap second number computed"
     );
     assert_eq!(
-        Utc::new(1972, 1, 1, 00, 00, 00, 0)
+        Datetime::new(1972, 1, 1, 00, 00, 00, 0)
             .expect("January 1972 leap second failed")
             .into_instant(),
         Instant::new(2_272_060_800, 0, Era::Present),
         "Incorrect January 1972 post-leap second number computed"
     );
     assert_eq!(
-        Utc::new(1972, 1, 1, 00, 00, 1, 0)
+        Datetime::new(1972, 1, 1, 00, 00, 1, 0)
             .expect("January 1972 leap second failed")
             .into_instant(),
         Instant::new(2_272_060_801, 0, Era::Present),
         "Incorrect January 1972 post-post-leap second number computed"
     );
     assert_eq!(
-        Utc::new(1972, 6, 30, 23, 59, 59, 0)
+        Datetime::new(1972, 6, 30, 23, 59, 59, 0)
             .expect("July leap second failed")
             .into_instant(),
         Instant::new(2_287_785_599, 0, Era::Present),
         "Incorrect July 1972 pre-leap second number computed"
     );
     assert_eq!(
-        Utc::new(1972, 6, 30, 23, 59, 59, 0)
+        Datetime::new(1972, 6, 30, 23, 59, 59, 0)
             .expect("July leap second failed")
             .into_instant(),
-        Utc::new(1972, 6, 30, 23, 59, 60, 0)
+        Datetime::new(1972, 6, 30, 23, 59, 60, 0)
             .expect("July leap second failed")
             .into_instant(),
         "Incorrect July 1972 leap second number computed"
     );
     assert_eq!(
-        Utc::new(1972, 7, 1, 00, 00, 00, 0)
+        Datetime::new(1972, 7, 1, 00, 00, 00, 0)
             .expect("July leap second failed")
             .into_instant(),
         Instant::new(2_287_785_600, 0, Era::Present),
         "Incorrect July 1972 post-leap second number computed"
     );
     assert_eq!(
-        Utc::new(1972, 7, 1, 00, 00, 1, 0)
+        Datetime::new(1972, 7, 1, 00, 00, 1, 0)
             .expect("July leap second failed")
             .into_instant(),
         Instant::new(2_287_785_601, 0, Era::Present),
         "Incorrect July 1972 post-post-leap second number computed"
     );
     assert_eq!(
-        Utc::new(1993, 6, 30, 23, 59, 59, 0)
+        Datetime::new(1993, 6, 30, 23, 59, 59, 0)
             .expect("July leap pre-second failed")
             .into_instant(),
         Instant::new(2_950_473_599, 0, Era::Present),
         "Incorrect July 1993 pre-leap second number computed"
     );
     assert_eq!(
-        Utc::new(1993, 6, 30, 23, 59, 59, 0)
+        Datetime::new(1993, 6, 30, 23, 59, 59, 0)
             .expect("July leap second failed")
             .into_instant(),
-        Utc::new(1993, 6, 30, 23, 59, 60, 0)
+        Datetime::new(1993, 6, 30, 23, 59, 60, 0)
             .expect("July leap second failed")
             .into_instant(),
         "Incorrect July 1993 leap second number computed"
     );
     assert_eq!(
-        Utc::new(1993, 7, 1, 00, 00, 00, 0)
+        Datetime::new(1993, 7, 1, 00, 00, 00, 0)
             .expect("July leap second failed")
             .into_instant(),
         Instant::new(2_950_473_600, 0, Era::Present),
         "Incorrect July 1993 post-leap second number computed"
     );
     assert_eq!(
-        Utc::new(1993, 7, 1, 00, 00, 1, 0)
+        Datetime::new(1993, 7, 1, 00, 00, 1, 0)
             .expect("July leap second failed")
             .into_instant(),
         Instant::new(2_950_473_601, 0, Era::Present),
         "Incorrect July 1993 post-post-leap second number computed"
     );
     assert_eq!(
-        Utc::new(2016, 12, 31, 23, 59, 60, 0)
+        Datetime::new(2016, 12, 31, 23, 59, 60, 0)
             .expect("January 2017 leap second failed")
             .into_instant(),
         Instant::new(3_692_217_599, 0, Era::Present),
         "Incorrect January 2017 pre-leap second number computed"
     );
     assert_eq!(
-        Utc::new(2016, 12, 31, 23, 59, 59, 0)
+        Datetime::new(2016, 12, 31, 23, 59, 59, 0)
             .expect("January 2017 leap second failed")
             .into_instant(),
-        Utc::new(2016, 12, 31, 23, 59, 60, 0)
+        Datetime::new(2016, 12, 31, 23, 59, 60, 0)
             .expect("January 2017 leap second failed")
             .into_instant(),
         "Incorrect January 2017 leap second number computed"
     );
     assert_eq!(
-        Utc::new(2017, 1, 1, 00, 00, 00, 0)
+        Datetime::new(2017, 1, 1, 00, 00, 00, 0)
             .expect("January 2017 leap second plus one failed")
             .into_instant(),
         Instant::new(3_692_217_600, 0, Era::Present),
         "Incorrect January 2017 post-leap second plus one number computed"
     );
     assert_eq!(
-        Utc::new(2017, 1, 1, 00, 00, 1, 0)
+        Datetime::new(2017, 1, 1, 00, 00, 1, 0)
             .expect("January 2017 post-leap second plus one failed")
             .into_instant(),
         Instant::new(3_692_217_601, 0, Era::Present),
         "Incorrect January 2017 post-post-leap second plus one number computed"
     );
     assert_eq!(
-        Utc::new(2015, 6, 30, 23, 59, 59, 0)
+        Datetime::new(2015, 6, 30, 23, 59, 59, 0)
             .expect("July leap pre-second failed")
             .into_instant(),
         Instant::new(3_644_697_599, 0, Era::Present),
         "Incorrect July 2015 pre-leap second number computed"
     );
     assert_eq!(
-        Utc::new(2015, 6, 30, 23, 59, 59, 0)
+        Datetime::new(2015, 6, 30, 23, 59, 59, 0)
             .expect("July leap second failed")
             .into_instant(),
-        Utc::new(2015, 6, 30, 23, 59, 60, 0)
+        Datetime::new(2015, 6, 30, 23, 59, 60, 0)
             .expect("July leap second failed")
             .into_instant(),
         "Incorrect July 2015 leap second number computed"
     );
     assert_eq!(
-        Utc::new(2015, 7, 1, 00, 00, 00, 0)
+        Datetime::new(2015, 7, 1, 00, 00, 00, 0)
             .expect("July leap second failed")
             .into_instant(),
         Instant::new(3_644_697_600, 0, Era::Present),
         "Incorrect July 2015 post-leap second number computed"
     );
     assert_eq!(
-        Utc::new(2015, 7, 1, 00, 00, 1, 0)
+        Datetime::new(2015, 7, 1, 00, 00, 1, 0)
             .expect("July leap second failed")
             .into_instant(),
         Instant::new(3_644_697_601, 0, Era::Present),
@@ -554,14 +554,15 @@ fn utc_valid_dates() {
         2360, 2364, 2368, 2372, 2376, 2380, 2384, 2388, 2392, 2396, 2400,
     ];
     for year in leap_years.iter() {
-        Utc::new(*year, 2, 29, 22, 8, 47, 0).expect(format!("{} leap year failed", year).as_str());
+        Datetime::new(*year, 2, 29, 22, 8, 47, 0)
+            .expect(format!("{} leap year failed", year).as_str());
     }
 }
 
 #[test]
 fn utc_invalid_dates() {
-    use hifitime::datetime::{TimeZone, Utc};
-    Utc::new(2001, 2, 29, 22, 8, 47, 0).expect_err("29 Feb 2001 did not fail");
-    Utc::new(2016, 12, 31, 23, 59, 61, 0).expect_err("January leap second did not fail");
-    Utc::new(2015, 6, 30, 23, 59, 61, 0).expect_err("July leap second did not fail");
+    use hifitime::datetime::Datetime;
+    Datetime::new(2001, 2, 29, 22, 8, 47, 0).expect_err("29 Feb 2001 did not fail");
+    Datetime::new(2016, 12, 31, 23, 59, 61, 0).expect_err("January leap second did not fail");
+    Datetime::new(2015, 6, 30, 23, 59, 61, 0).expect_err("July leap second did not fail");
 }
