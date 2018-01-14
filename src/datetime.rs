@@ -3,8 +3,7 @@ use super::Errors;
 use super::instant::{Duration, Era, Instant};
 use super::julian::SECONDS_PER_DAY;
 use std::fmt;
-use std::marker::Sized;
-use std::ops::{Add, Sub};
+use std::ops::{Add, Neg, Sub};
 
 // There is no way to define a constant map in Rust (yet), so we're combining several structures
 // to store when the leap seconds should be added. An updated list of leap seconds can be found
@@ -21,15 +20,40 @@ const JULY_YEARS: [i32; 11] = [
 const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 const USUAL_DAYS_PER_YEAR: f64 = 365.0;
 
-/// `TimeZone` defines a timezone with respect to Utc.
-pub trait TimeZone: fmt::Display {
-    /// tai_offset returns the difference between a given TZ and UTC at a specified time.
-    fn tai_offset(self: Self, now: Instant) -> Offset;
-}
-
 /// `Offset` is an alias of Instant. It contains the same kind of information, but is used in the
 /// context of defining an offset with respect to Utc.
 pub type Offset = Instant;
+
+/// Negates an Offset
+///
+/// # Examples
+/// ```
+/// use hifitime::datetime::Offset;
+/// use hifitime::instant::Era;
+///
+/// assert_eq!(
+///     -Offset::new(3600, 159, Era::Past),
+///     Offset::new(3600, 159, Era::Present),
+///     "Incorrect neg for Past offset"
+/// );
+///
+/// assert_eq!(
+///     -Offset::new(3600, 159, Era::Present),
+///     Offset::new(3600, 159, Era::Past),
+///     "Incorrect neg for Present offset"
+/// );
+/// ```
+impl Neg for Offset {
+    type Output = Offset;
+
+    fn neg(self) -> Offset {
+        let era = match self.era() {
+            Era::Past => Era::Present,
+            Era::Present => Era::Past,
+        };
+        Offset::new(self.secs(), self.nanos(), era)
+    }
+}
 
 impl fmt::Display for Offset {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -131,7 +155,7 @@ impl Datetime {
     ///
     /// # Examples
     /// ```
-    /// use hifitime::datetime::{Utc, TimeSystem, TimeZone};
+    /// use hifitime::datetime::{Datetime, TimeSystem};
     /// use hifitime::instant::{Duration, Era, Instant};
     /// use hifitime::julian::ModifiedJulian;
     ///
@@ -241,6 +265,49 @@ impl Datetime {
         )
     }
 
+    /// Creates a new Datetime with the specified UTC time offset. Works like `Datetime::new` in
+    /// every way but it sets the UTC time offset to the one provided.
+    ///
+    /// # Examples
+    /// ```
+    /// use hifitime::datetime::{Datetime, FixedOffset, TimeSystem};
+    ///
+    /// let santa_ktz = Datetime::with_offset(
+    ///     2017,
+    ///     12,
+    ///     25,
+    ///     00,
+    ///     00,
+    ///     00,
+    ///     00,
+    ///     FixedOffset::west_with_hours(10),
+    /// ).expect("Santa failed");
+    /// assert_eq!(format!("{}", santa_ktz), "2017-12-25T00:00:00+10:00");
+
+    /// let santa_wtz = Datetime::with_offset(
+    ///     2017,
+    ///     12,
+    ///     25,
+    ///     00,
+    ///     00,
+    ///     00,
+    ///     00,
+    ///     FixedOffset::east_with_hours(10),
+    /// ).expect("Santa failed");
+    /// assert_eq!(format!("{}", santa_wtz), "2017-12-25T00:00:00-10:00");
+    /// assert!(
+    ///     santa_wtz < santa_ktz,
+    ///     "PartialOrd with different timezones failed"
+    /// );
+    /// assert!(
+    ///     santa_wtz.into_instant() < santa_ktz.into_instant(),
+    ///     "PartialOrd with different timezones failed via Instant"
+    /// );
+    /// assert_eq!(
+    ///     format!("{}", santa_wtz.to_utc()),
+    ///     "2017-12-24T14:00:00+00:00"
+    /// );
+    /// ```
     pub fn with_offset(
         year: i32,
         month: u8,
@@ -283,33 +350,38 @@ impl Datetime {
         })
     }
 
-    /// Returns the year of this Utc date time.
+    /// Returns the year of this Datetime date time.
     pub fn year(&self) -> &i32 {
         &self.year
     }
-    /// Returns the month of this Utc date time.
+    /// Returns the month of this Datetime date time.
     pub fn month(&self) -> &u8 {
         &self.month
     }
-    /// Returns the day of this Utc date time.
+    /// Returns the day of this Datetime date time.
     pub fn day(&self) -> &u8 {
         &self.day
     }
-    /// Returns the hour of this Utc date time.
+    /// Returns the hour of this Datetime date time.
     pub fn hour(&self) -> &u8 {
         &self.hour
     }
-    /// Returns the minute of this Utc date time.
+    /// Returns the minute of this Datetime date time.
     pub fn minute(&self) -> &u8 {
         &self.minute
     }
-    /// Returns the second of this Utc date time.
+    /// Returns the second of this Datetime date time.
     pub fn second(&self) -> &u8 {
         &self.second
     }
-    /// Returns the nanoseconds of this Utc date time.
+    /// Returns the nanoseconds of this Datetime date time.
     pub fn nanos(&self) -> &u32 {
         &self.nanos
+    }
+
+    /// Returns the offset of this Datetime date time.
+    pub fn offset(&self) -> &Offset {
+        &self.offset
     }
     /// Creates a new UTC date at midnight (i.e. hours = 0, mins = 0, secs = 0, nanos = 0)
     ///
@@ -318,7 +390,7 @@ impl Datetime {
     /// use hifitime::datetime::{Datetime, TimeSystem};
     /// use hifitime::instant::{Era, Instant};
     ///
-    /// let epoch = Datetime<Utc>::at_midnight(1900, 01, 01).expect("epoch failed");
+    /// let epoch = Datetime::at_midnight(1900, 01, 01).expect("epoch failed");
     /// assert_eq!(
     ///     epoch.into_instant(),
     ///     Instant::new(0, 0, Era::Present),
@@ -326,7 +398,7 @@ impl Datetime {
     /// );
     ///
     /// assert_eq!(
-    ///     Datetime<Utc>::at_midnight(1972, 01, 01)
+    ///     Datetime::at_midnight(1972, 01, 01)
     ///         .expect("Post January 1972 leap second failed")
     ///         .into_instant(),
     ///     Instant::new(2272060800, 0, Era::Present),
@@ -376,20 +448,9 @@ impl Datetime {
         }
     }
 }
-/*
-impl TimeZone for Utc
-where
-    Self: Sized,
-{
-    /// Returns the offset between this TimeZone and UTC. In this case, the offset is strictly zero.
-    fn utc_offset() -> Offset {
-        Offset::new(0, 0, Era::Present)
-    }
-}
-*/
 
 impl TimeSystem for Datetime {
-    /// `from_instant` converts an Instant to a Utc.
+    /// `from_instant` converts an Instant to a Datetime with an offset of Utc (i.e zero).
     fn from_instant(instant: Instant) -> Datetime {
         let (mut year, mut year_fraction) = quorem(instant.secs() as f64, 365.0 * SECONDS_PER_DAY);
         year = match instant.era() {
@@ -460,7 +521,7 @@ impl TimeSystem for Datetime {
         ).expect("date computed from instant is invalid (past)")
     }
 
-    /// `into_instant` returns an Instant from the Utc.
+    /// `into_instant` returns an Instant from the Datetime while correcting for the offset.
     fn into_instant(self) -> Instant {
         let era = if self.year >= 1900 {
             Era::Present
@@ -496,12 +557,12 @@ impl TimeSystem for Datetime {
         }
         match self.offset.era() {
             Era::Past => {
-                (Instant::new(seconds_wrt_1900 as u64, self.nanos as u32, era)
-                    + self.offset.duration())
+                Instant::new(seconds_wrt_1900 as u64, self.nanos as u32, era)
+                    - self.offset.duration()
             }
             Era::Present => {
                 Instant::new(seconds_wrt_1900 as u64, self.nanos as u32, era)
-                    - self.offset.duration()
+                    + self.offset.duration()
             }
         }
     }
@@ -520,7 +581,7 @@ impl fmt::Display for Datetime {
 impl Add<Duration> for Datetime {
     type Output = Datetime;
 
-    /// Adds a given `std::time::Duration` to an `Utc`.
+    /// Adds a given `std::time::Duration` to a `Datetime`.
     ///
     /// # Examples
     /// ```
@@ -538,7 +599,7 @@ impl Add<Duration> for Datetime {
 impl Sub<Duration> for Datetime {
     type Output = Datetime;
 
-    /// Adds a given `std::time::Duration` to an `Utc`.
+    /// Adds a given `std::time::Duration` to a `Datetime`.
     ///
     /// # Examples
     /// ```
@@ -555,7 +616,7 @@ impl Sub<Duration> for Datetime {
 }
 
 /// `is_leap_year` returns whether the provided year is a leap year or not.
-/// Tests for this function are part of the Utc tests.
+/// Tests for this function are part of the Datetime tests.
 fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
 }
