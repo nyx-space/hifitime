@@ -69,9 +69,7 @@ impl fmt::Display for Offset {
 }
 
 /// `FixedOffset` implements a time fixed offset of a certain number of hours with regard to UTC.
-pub struct FixedOffset {
-    offset: Offset,
-}
+pub struct FixedOffset {}
 
 impl FixedOffset {
     /// `east_with_hours` returns an eastward offset (i.e. "before" the UTC time)
@@ -121,15 +119,9 @@ impl FixedOffset {
     }
 }
 
-impl fmt::Display for FixedOffset {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:}", self.offset)
-    }
-}
-
-/// Utc is the interface between a time system and a time zone. All time zones are defined with
-/// respect to UTC. Moreover, Utc inherently supports the past leap seconds, as reported by the
-/// IETF and NIST at <https://www.ietf.org/timezones/data/leap-seconds.list>. NOTE: leap seconds
+/// Datetime supports date time has used by most humans. All time zones are defined with
+/// respect to UTC. Moreover, `Datetime` inherently supports the past leap seconds, as reported by the
+/// IETF and NIST at [here](https://www.ietf.org/timezones/data/leap-seconds.list). NOTE: leap seconds
 /// cannot be predicted! This module will be updated as soon as possible after a new leap second
 /// has been announced.
 /// **WARNING**: The historical oddities with calendars are not yet supported.
@@ -146,7 +138,7 @@ pub struct Datetime {
 }
 
 impl Datetime {
-    /// Creates a new UTC date, with support for all the leap seconds with respect to TAI.
+    /// Creates a new UTC-offsetted datetime, with support for all the leap seconds with respect to TAI.
     /// *NOTE:* UTC leap seconds may be confusing because several dates have the **same** number
     /// of seconds since TAI epoch.
     /// **WARNING:** Does not support automatic carry and will return an error if so.

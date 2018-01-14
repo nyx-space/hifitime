@@ -5,7 +5,7 @@ fn datetime_extras() {
     use hifitime::datetime::{Datetime, TimeSystem};
     use hifitime::instant::{Duration, Era, Instant};
 
-    let epoch = Datetime::at_midnight(1900, 01, 01).expect("epoch failed");
+    let epoch = Datetime::at_midnight(1900, 1, 1).expect("epoch failed");
     assert_eq!(
         epoch.into_instant(),
         Instant::new(0, 0, Era::Present),
@@ -13,25 +13,25 @@ fn datetime_extras() {
     );
 
     assert_eq!(
-        Datetime::at_midnight(1972, 01, 01)
+        Datetime::at_midnight(1972, 1, 1)
             .expect("Post January 1972 leap second failed")
             .into_instant(),
-        Instant::new(2272060800, 0, Era::Present),
+        Instant::new(2_272_060_800, 0, Era::Present),
         "Incorrect January 1972 post-leap second number computed at midnight"
     );
 
-    let epoch = Datetime::at_noon(1900, 01, 01).expect("epoch failed");
+    let epoch = Datetime::at_noon(1900, 1, 1).expect("epoch failed");
     assert_eq!(
         epoch.into_instant(),
-        Instant::new(43200, 0, Era::Present),
+        Instant::new(43_200, 0, Era::Present),
         "Incorrect Epoch computed"
     );
 
     assert_eq!(
-        Datetime::at_noon(1972, 01, 01)
+        Datetime::at_noon(1972, 1, 1)
             .expect("Post January 1972 leap second failed")
             .into_instant(),
-        Instant::new(2272104000, 0, Era::Present),
+        Instant::new(2_272_104_000, 0, Era::Present),
         "Incorrect January 1972 post-leap second number computed at noon"
     );
 

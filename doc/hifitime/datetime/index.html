@@ -4,10 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="generator" content="rustdoc">
-    <meta name="description" content="API documentation for the Rust `instant` mod in crate `hifitime`.">
-    <meta name="keywords" content="rust, rustlang, rust-lang, instant">
+    <meta name="description" content="API documentation for the Rust `datetime` mod in crate `hifitime`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, datetime">
 
-    <title>hifitime::instant - Rust</title>
+    <title>hifitime::datetime - Rust</title>
 
     <link rel="stylesheet" type="text/css" href="../../normalize.css">
     <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
@@ -29,7 +29,7 @@
 
     <nav class="sidebar">
         
-        <p class='location'>Module instant</p><div class="block items"><ul><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li></ul></div><p class='location'><a href='../index.html'>hifitime</a></p><script>window.sidebarCurrent = {name: 'instant', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
+        <p class='location'>Module datetime</p><div class="block items"><ul><li><a href="#reexports">Reexports</a></li><li><a href="#structs">Structs</a></li><li><a href="#types">Type Definitions</a></li></ul></div><p class='location'><a href='../index.html'>hifitime</a></p><script>window.sidebarCurrent = {name: 'datetime', ty: 'mod', relpath: '../'};</script><script defer src="../sidebar-items.js"></script>
     </nav>
 
     <nav class="sub">
@@ -44,40 +44,43 @@
     </nav>
 
     <section id='main' class="content">
-<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>hifitime</a>::<wbr><a class="mod" href=''>instant</a></span><span class='out-of-band'><span id='render-detail'>
+<h1 class='fqn'><span class='in-band'>Module <a href='../index.html'>hifitime</a>::<wbr><a class="mod" href=''>datetime</a></span><span class='out-of-band'><span id='render-detail'>
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a class='srclink' href='../../src/hifitime/instant.rs.html#5-300' title='goto source code'>[src]</a></span></h1>
-<div class='docblock'><p>The <code>instant</code> module is built on top of <code>std::time::Duration</code>. It is the basis of almost
-all computations in this library. It is the only common denominator allowing for conversions
-between Time Systems.</p>
-</div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
+               </span><a class='srclink' href='../../src/hifitime/datetime.rs.html#1-647' title='goto source code'>[src]</a></span></h1>
+<div class='docblock'><p>The <code>datetime</code> module supports conversions between seconds past TAI epoch and a Datetime struct.
+The main advantage (and challenge) is the inherent support for leap seconds. Refer to module
+documentation for leap second implementation details.</p>
+</div><h2 id='reexports' class='section-header'><a href="#reexports">Reexports</a></h2>
+<table><tr><td><code>pub use super::<a class="trait" href="../../hifitime/trait.TimeSystem.html" title="trait hifitime::TimeSystem">TimeSystem</a>;</code></td></tr></table><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
                        <tr class=' module-item'>
-                           <td><a class="struct" href="struct.Duration.html"
-                                  title='struct hifitime::instant::Duration'>Duration</a></td>
+                           <td><a class="struct" href="struct.Datetime.html"
+                                  title='struct hifitime::datetime::Datetime'>Datetime</a></td>
                            <td class='docblock-short'>
-                                <p>A <code>Duration</code> type to represent a span of time, typically used for system
-timeouts.</p>
+                                <p>Datetime supports date time has used by most humans. All time zones are defined with
+respect to UTC. Moreover, <code>Datetime</code> inherently supports the past leap seconds, as reported by the
+IETF and NIST at <a href="https://www.ietf.org/timezones/data/leap-seconds.list">here</a>. NOTE: leap seconds
+cannot be predicted! This module will be updated as soon as possible after a new leap second
+has been announced.
+<strong>WARNING</strong>: The historical oddities with calendars are not yet supported.</p>
                            </td>
                        </tr>
                        <tr class=' module-item'>
-                           <td><a class="struct" href="struct.Instant.html"
-                                  title='struct hifitime::instant::Instant'>Instant</a></td>
+                           <td><a class="struct" href="struct.FixedOffset.html"
+                                  title='struct hifitime::datetime::FixedOffset'>FixedOffset</a></td>
                            <td class='docblock-short'>
-                                <p>An <code>Instant</code> type represents an instant with respect to 01 Jan 1900 at midnight, as per
-the International Atomic Time (TAI) system.</p>
+                                <p><code>FixedOffset</code> implements a time fixed offset of a certain number of hours with regard to UTC.</p>
                            </td>
-                       </tr></table><h2 id='enums' class='section-header'><a href="#enums">Enums</a></h2>
+                       </tr></table><h2 id='types' class='section-header'><a href="#types">Type Definitions</a></h2>
 <table>
                        <tr class=' module-item'>
-                           <td><a class="enum" href="enum.Era.html"
-                                  title='enum hifitime::instant::Era'>Era</a></td>
+                           <td><a class="type" href="type.Offset.html"
+                                  title='type hifitime::datetime::Offset'>Offset</a></td>
                            <td class='docblock-short'>
-                                <p>An <code>Era</code> represents whether the associated <code>Instant</code> is before the TAI Epoch
-(01 Jan 1900, midnight) or afterwards. If it is before, than it&#39;s refered to as &quot;Past&quot;,
-otherwise is in the &quot;Present&quot; era.</p>
+                                <p><code>Offset</code> is an alias of Instant. It contains the same kind of information, but is used in the
+context of defining an offset with respect to Utc.</p>
                            </td>
                        </tr></table></section>
     <section id='search' class="content hidden"></section>

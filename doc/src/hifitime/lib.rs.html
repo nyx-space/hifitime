@@ -194,8 +194,6 @@
 <span id="149">149</span>
 <span id="150">150</span>
 <span id="151">151</span>
-<span id="152">152</span>
-<span id="153">153</span>
 </pre><pre class="rust ">
 <span class="doccomment">//! # hifitime 0.0.1</span>
 <span class="doccomment">//!</span>
@@ -210,8 +208,7 @@
 <span class="doccomment">//!  * Julian dates and Modified Julian dates</span>
 <span class="doccomment">//!  * UTC representation with ISO8601 formatting</span>
 <span class="doccomment">//!  * Allows building custom `TimeSystem` (e.g. Julian days)</span>
-<span class="doccomment">//!  * Time varying `TimeZone`s to represent static or very high speed reference frames (cf.</span>
-<span class="doccomment">//! the `tz` test in the `tests` module)</span>
+<span class="doccomment">//!  * Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! Almost all examples are validated with external references, as detailed on a test-by-test</span>
 <span class="doccomment">//! basis.</span>
@@ -229,10 +226,9 @@
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Does not include</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! * Dates only, or times only (i.e. handles only the combination of both)</span>
+<span class="doccomment">//! * Dates only, or times only (i.e. handles only the combination of both), but the `Datetime::{at_midnight, at_noon}` help</span>
 <span class="doccomment">//! * Custom formatting of date time objects</span>
 <span class="doccomment">//! * An initializer from machine time</span>
-<span class="doccomment">//! * A simple to use `TimeZone` offset</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ## Usage</span>
 <span class="doccomment">//!</span>
@@ -252,15 +248,15 @@
 <span class="doccomment">//! ### Examples:</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! ```rust</span>
-<span class="doccomment">//! use hifitime::utc::{Utc, TimeZone, TimeSystem};</span>
+<span class="doccomment">//! use hifitime::datetime::{Datetime, TimeSystem};</span>
 <span class="doccomment">//! use hifitime::instant::Duration;</span>
 <span class="doccomment">//! use hifitime::julian::ModifiedJulian;</span>
 <span class="doccomment">//!</span>
-<span class="doccomment">//! let santa = Utc::new(2017, 12, 25, 01, 02, 14, 0).expect(&quot;Xmas failed&quot;);</span>
+<span class="doccomment">//! let santa = Datetime::new(2017, 12, 25, 01, 02, 14, 0).expect(&quot;Xmas failed&quot;);</span>
 <span class="doccomment">//!</span>
 <span class="doccomment">//! assert_eq!(</span>
-<span class="doccomment">//!     santa.into_instant() + Duration::new(3600, 0),Duration</span>
-<span class="doccomment">//!     Utc::new(2017, 12, 25, 02, 02, 14, 0)</span>
+<span class="doccomment">//!     santa.into_instant() + Duration::new(3600, 0),</span>
+<span class="doccomment">//!     Datetime::new(2017, 12, 25, 02, 02, 14, 0)</span>
 <span class="doccomment">//!         .expect(&quot;Xmas failed&quot;)</span>
 <span class="doccomment">//!         .into_instant(),</span>
 <span class="doccomment">//!     &quot;Could not add one hour to Christmas&quot;</span>
@@ -284,10 +280,10 @@
 <span class="doccomment">/// The `julian` module supports (Modified) Julian Days, which are heavily used in astronomy</span>
 <span class="doccomment">/// and its engineering friends.</span>
 <span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">julian</span>;
-<span class="doccomment">/// The `utc` module supports conversions between Utc and other time systems. The main advantage</span>
-<span class="doccomment">/// (and challenge) is the inherent support for leap seconds. Refer to module documentation for</span>
-<span class="doccomment">/// leap second implementation details.</span>
-<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">utc</span>;
+<span class="doccomment">/// The `datetime` module supports conversions between seconds past TAI epoch and a Datetime struct.</span>
+<span class="doccomment">/// The main advantage (and challenge) is the inherent support for leap seconds. Refer to module</span>
+<span class="doccomment">/// documentation for leap second implementation details.</span>
+<span class="kw">pub</span> <span class="kw">mod</span> <span class="ident">datetime</span>;
 
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">cmp</span>::<span class="ident">PartialOrd</span>;
 <span class="kw">use</span> <span class="ident">instant</span>::<span class="ident">Instant</span>;
@@ -306,7 +302,7 @@
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>)]</span>
 <span class="kw">pub</span> <span class="kw">enum</span> <span class="ident">Errors</span> {
     <span class="doccomment">/// Carry is returned when a provided function does not support time carry. For example,</span>
-    <span class="doccomment">/// if a call to `Utc::new` receives 60 seconds and there are only 59 seconds in the provided</span>
+    <span class="doccomment">/// if a call to `Datetime::new` receives 60 seconds and there are only 59 seconds in the provided</span>
     <span class="doccomment">/// date time then a Carry Error is returned as the Result.</span>
     <span class="ident">Carry</span>,
 }
@@ -346,7 +342,7 @@
 
 <span class="attribute">#[<span class="ident">test</span>]</span>
 <span class="kw">fn</span> <span class="ident">durations</span>() {
-    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">durations</span>::<span class="ident">from_days</span>(<span class="number">10</span>).<span class="ident">as_secs</span>(), <span class="number">86_400</span>);
+    <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">durations</span>::<span class="ident">from_days</span>(<span class="number">10</span>).<span class="ident">as_secs</span>(), <span class="number">864_000</span>);
     <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">durations</span>::<span class="ident">from_hours</span>(<span class="number">10</span>).<span class="ident">as_secs</span>(), <span class="number">36000</span>);
     <span class="macro">assert_eq</span><span class="macro">!</span>(<span class="ident">durations</span>::<span class="ident">from_mins</span>(<span class="number">10</span>).<span class="ident">as_secs</span>(), <span class="number">600</span>);
 }
@@ -368,13 +364,15 @@
                     <dd>Show this help dialog</dd>
                     <dt>S</dt>
                     <dd>Focus the search field</dd>
-                    <dt>&larrb;</dt>
+                    <dt>↑</dt>
                     <dd>Move up in search results</dd>
-                    <dt>&rarrb;</dt>
+                    <dt>↓</dt>
                     <dd>Move down in search results</dd>
+                    <dt>↹</dt>
+                    <dd>Switch tab</dd>
                     <dt>&#9166;</dt>
                     <dd>Go to active search result</dd>
-                    <dt>+</dt>
+                    <dt style="width:31px;">+ / -</dt>
                     <dd>Collapse/expand all sections</dd>
                 </dl>
             </div>

@@ -11,7 +11,7 @@
 //!  * Julian dates and Modified Julian dates
 //!  * UTC representation with ISO8601 formatting
 //!  * Allows building custom `TimeSystem` (e.g. Julian days)
-//!  * Time varying `Offset`s to represent static or very high speed reference frames
+//!  * Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)
 //!
 //! Almost all examples are validated with external references, as detailed on a test-by-test
 //! basis.
@@ -29,7 +29,7 @@
 //!
 //! ## Does not include
 //!
-//! * Dates only, or times only (i.e. handles only the combination of both)
+//! * Dates only, or times only (i.e. handles only the combination of both), but the `Datetime::{at_midnight, at_noon}` help
 //! * Custom formatting of date time objects
 //! * An initializer from machine time
 //!
@@ -83,9 +83,9 @@ pub mod instant;
 /// The `julian` module supports (Modified) Julian Days, which are heavily used in astronomy
 /// and its engineering friends.
 pub mod julian;
-/// The `datetime` module supports conversions between seconds past TAI epoch and Datetime. The main advantage
-/// (and challenge) is the inherent support for leap seconds. Refer to module documentation for
-/// leap second implementation details.
+/// The `datetime` module supports conversions between seconds past TAI epoch and a Datetime struct.
+/// The main advantage (and challenge) is the inherent support for leap seconds. Refer to module
+/// documentation for leap second implementation details.
 pub mod datetime;
 
 use std::cmp::PartialOrd;

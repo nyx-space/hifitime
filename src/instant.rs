@@ -42,8 +42,8 @@ impl Instant {
     /// Creates a new `Instant` with respect to TAI Epoch: 01 January 1900, 00:00:00.0.
     /// All time systems are represented with respect to this epoch.
     /// Note: this constructor relies on the constructor for std::time::Duration; as such,
-    /// refer to https://doc.rust-lang.org/std/time/struct.Duration.html#method.new for
-    /// pertinent warnings and limitations.
+    /// refer to [`std::time::Duration::new`](https://doc.rust-lang.org/std/time/struct.Duration.html#method.new)
+    /// for pertinent warnings and limitations.
     ///
     /// # Examples
     /// ```

@@ -16,7 +16,7 @@ day-to-day use of this library.
  * [x] Julian dates and Modified Julian dates
  * [x] UTC representation with ISO8601 formatting
  * [x] Allows building custom TimeSystem (e.g. Julian days)
- * [x] Time varying `Offset`s to represent static or very high speed reference frames
+ * [x] Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)
 
 Almost all examples are validated with external references, as detailed on a test-by-test
 basis.
@@ -32,7 +32,6 @@ day computations for [2015-06-30 23:59:59](https://heasarc.gsfc.nasa.gov/cgi-bin
 
 ## Does not include
 
-* [ ] Dates only, or times only (i.e. handles only the combination of both)
+* [ ] Dates only, or times only (i.e. handles only the combination of both), but the `Datetime::at_midnight` or `Datetime::at_noon` help
 * [ ] Custom formatting of date time objects (cf. [issue \#4](https://github.com/ChristopherRabotin/hifitime/issues/4))
 * [ ] An initializer from machine time (cf. [issue \#8](https://github.com/ChristopherRabotin/hifitime/issues/8))
-* [ ] A simple to use TimeZone offset (cf. [issue \#12](https://github.com/ChristopherRabotin/hifitime/issues/12))
