@@ -88,7 +88,7 @@ pub mod julian;
 /// documentation for leap second implementation details.
 pub mod datetime;
 
-//#[cfg(simulation)]
+#[cfg(feature = "simulation")]
 pub mod sim;
 
 use std::cmp::PartialOrd;
