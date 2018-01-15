@@ -8,6 +8,13 @@ day-to-day use of this library.
 
 [![Build Status](https://travis-ci.org/ChristopherRabotin/hifitime.svg?branch=master)](https://travis-ci.org/ChristopherRabotin/hifitime)
 [![codecov](https://codecov.io/gh/ChristopherRabotin/hifitime/branch/master/graph/badge.svg)](https://codecov.io/gh/ChristopherRabotin/hifitime)
+[![hifitime on crates.io][cratesio-image]][cratesio]
+[![hifitime on docs.rs][docsrs-image]][docsrs]
+
+[cratesio-image]: https://img.shields.io/crates/v/hifitime.svg
+[cratesio]: https://crates.io/crates/hifitime
+[docsrs-image]: https://docs.rs/hifitime/badge.svg?version=0.0.1
+[docsrs]: https://docs.rs/hifitime/0.0.1/
 
 
 ## Features

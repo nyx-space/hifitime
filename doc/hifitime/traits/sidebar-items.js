@@ -1,1 +1,0 @@
-initSidebarItems({"trait":[["TimeSystem","A TimeSystem enabled the creation of system for measuring spans of time, such as UTC or Julian days."],["TimeZone",""]]});

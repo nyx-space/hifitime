@@ -8,9 +8,9 @@ use std::time::Duration;
 /// measuring the time of flight of a signal with high precision oscillator, the engineering
 /// specifications will include the oscillator stability. This specification bounds the preciseness
 /// of time span calculations. On very short time spans, i.e. less than a few minutes, clock drift
-/// is usually negligible. However, in several high fidelity systems (e.g. two-way radar ranging)
-/// the clock drift may lead to an error of several kilometers. This module allows high fidelity
-/// simulation systems to test the resilience of algorithms with oscillator stability.
+/// is usually negligible. However, in several high fidelity systems the clock drift may lead to
+/// a significant error (e.g. several kilometers in two-way radar ranging). This module allows high
+/// fidelity simulation systems to test the resilience of algorithms with oscillator stability.
 /// The constructors here are specified in parts per million: for a parts per billion specification
 /// simply  multiply the value by `1e-3`.
 /// *NOTE:* Clock stability is not linear. If a clock is rated at stable within 15 ppm per
@@ -21,9 +21,23 @@ use std::time::Duration;
 /// use hifitime::sim::ClockNoise;
 /// use std::time::Duration;
 ///
+/// // The IRIS clock is 1 part per billion over one second
 /// let nasa_iris = ClockNoise::with_ppm_over_1sec(1e-3);
-/// let ddoor = Duration::new(8*60, 0);
-///
+/// let ddoor = Duration::new(8 * 60, 0);
+/// let noisy = nasa_iris.noise_up(ddoor);
+/// if noisy > ddoor {
+///     assert_eq!(
+///         (noisy - ddoor).as_secs(),
+///         0,
+///         "Expected a zero deviation for IRIS"
+///     );
+/// } else {
+///     assert_eq!(
+///         (ddoor - noisy).as_secs(),
+///         0,
+///         "Expected a zero deviation for IRIS"
+///     );
+/// }
 ///
 /// ```
 pub struct ClockNoise {

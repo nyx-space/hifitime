@@ -1,1 +1,0 @@
-initSidebarItems({"constant":[["DAYS_PER_YEAR","`DAYS_PER_YEAR` corresponds to the number of days per year in the Julian calendar."],["SECONDS_PER_DAY","`SECONDS_PER_DAY` defines the number of seconds per day."]],"struct":[["ModifiedJulian","`ModifiedJulian` handles the Modified Julian Days as explained here."]]});

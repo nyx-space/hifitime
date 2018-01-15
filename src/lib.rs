@@ -89,6 +89,7 @@ pub mod julian;
 pub mod datetime;
 
 #[cfg(feature = "simulation")]
+/// The `sim` module include high fidelity simulation tools related to date and time handling.
 pub mod sim;
 
 use std::cmp::PartialOrd;
