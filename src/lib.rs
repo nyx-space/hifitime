@@ -88,6 +88,9 @@ pub mod julian;
 /// documentation for leap second implementation details.
 pub mod datetime;
 
+//#[cfg(simulation)]
+pub mod sim;
+
 use std::cmp::PartialOrd;
 use instant::Instant;
 use std::fmt;
