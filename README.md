@@ -24,6 +24,7 @@ day-to-day use of this library.
  * [x] UTC representation with ISO8601 formatting
  * [x] Allows building custom TimeSystem (e.g. Julian days)
  * [x] Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)
+ * [x] Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
 
 Almost all examples are validated with external references, as detailed on a test-by-test
 basis.
