@@ -12,6 +12,8 @@ readme = "README.md"
 license = "Apache-2.0"
 
 [dependencies]
+lazy_static = "1.0.0"
+regex = "0.2"
 rand = { version = "0.4", optional=true }
 
 [features]

@@ -1,9 +1,12 @@
+extern crate regex;
+
 pub use super::TimeSystem;
 use super::Errors;
 use super::instant::{Duration, Era, Instant};
 use super::julian::SECONDS_PER_DAY;
 use std::fmt;
 use std::ops::{Add, Neg, Sub};
+use std::str::FromStr;
 
 // There is no way to define a constant map in Rust (yet), so we're combining several structures
 // to store when the leap seconds should be added. An updated list of leap seconds can be found
@@ -604,6 +607,39 @@ impl Sub<Duration> for Datetime {
     /// ```
     fn sub(self, delta: Duration) -> Datetime {
         Datetime::from_instant(self.into_instant() - delta)
+    }
+}
+
+impl FromStr for Datetime {
+    type Err = Errors;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        use self::regex::Regex;
+        lazy_static! {
+            static ref RE: Regex = Regex::new(r"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})([\+|-]\d{2}):(\d{2})$").unwrap();
+        }
+        // TODO: Add negative offset support
+        match RE.captures(s) {
+            Some(cap) => {
+                let offset_hours = cap[7].to_owned().parse::<i32>()?;
+                let offset = if offset_hours < 0 {
+                    Offset::new((-3600 * offset_hours) as u64, 0, Era::Past)
+                } else {
+                    Offset::new(u64::from((3600 * offset_hours) as u64), 0, Era::Present)
+                };
+                Datetime::with_offset(
+                    cap[1].to_owned().parse::<i32>()?,
+                    cap[2].to_owned().parse::<u8>()?,
+                    cap[3].to_owned().parse::<u8>()?,
+                    cap[4].to_owned().parse::<u8>()?,
+                    cap[5].to_owned().parse::<u8>()?,
+                    cap[6].to_owned().parse::<u8>()?,
+                    0,
+                    offset,
+                )
+            }
+            None => Err(Errors::ParseError("test".to_owned())),
+        }
     }
 }
 
