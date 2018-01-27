@@ -4,32 +4,34 @@ fn datetime_parsing() {
     use std::str::FromStr;
     use hifitime::datetime::{Datetime, FixedOffset};
 
-    // No offset test
-    let some_date =
-        Datetime::at_midnight(1972, 1, 1).expect("Post January 1972 leap second failed");
-    assert_eq!(
-        some_date,
-        Datetime::from_str(&format!("{}", some_date)).expect("could not un-parse date")
-    );
-
     // Negative offset test
-    let dt = Datetime::with_offset(2017, 1, 14, 0, 31, 55, 0, FixedOffset::east_with_hours(5))
-        .expect("huh");
+    let dt =
+        Datetime::with_offset(2017, 1, 14, 0, 31, 55, 0, FixedOffset::east_with_hours(5)).unwrap();
     assert_eq!(format!("{}", dt), "2017-01-14T00:31:55-05:00");
     assert_eq!(
         dt,
-        Datetime::from_str(&format!("{}", dt)).expect("could not un-parse date"),
+        Datetime::from_str(&format!("{}", dt)).expect("could not parse date"),
         "Reciprocity error"
+    );
+    assert_eq!(
+        dt,
+        Datetime::from_str("2017-01-14T00:31:55-05:00").expect("could not parse date"),
+        "Could not parse date from &str"
     );
 
     // Positive offset test
-    let dt = Datetime::with_offset(2017, 1, 14, 0, 31, 55, 0, FixedOffset::west_with_hours(7))
-        .expect("huh");
+    let dt =
+        Datetime::with_offset(2017, 1, 14, 0, 31, 55, 0, FixedOffset::west_with_hours(7)).unwrap();
     assert_eq!(format!("{}", dt), "2017-01-14T00:31:55+07:00");
     assert_eq!(
         dt,
-        Datetime::from_str(&format!("{}", dt)).expect("could not un-parse date"),
+        Datetime::from_str(&format!("{}", dt)).expect("could not parse date"),
         "Reciprocity error"
+    );
+    assert_eq!(
+        dt,
+        Datetime::from_str("2017-01-14T00:31:55+07:00").expect("could not parse date"),
+        "Could not parse date from &str"
     );
 }
 
@@ -115,7 +117,7 @@ fn datetime_valid_dates() {
     );
     assert_eq!(
         dt,
-        Datetime::from_str(&format!("{}", dt)).expect("could not un-parse date"),
+        Datetime::from_str(&format!("{}", dt)).expect("could not parse date"),
         "Reciprocity error"
     );
 
@@ -133,7 +135,7 @@ fn datetime_valid_dates() {
     );
     assert_eq!(
         dt,
-        Datetime::from_str(&format!("{}", dt)).expect("could not un-parse date"),
+        Datetime::from_str(&format!("{}", dt)).expect("could not parse date"),
         "Reciprocity error"
     );
 

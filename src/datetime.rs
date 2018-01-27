@@ -613,12 +613,24 @@ impl Sub<Duration> for Datetime {
 impl FromStr for Datetime {
     type Err = Errors;
 
+    /// Converts an ISO8601 Datetime representation with offset to a `Datetime` object with correct offset.
+    ///
+    /// # Examples
+    /// ```
+    /// use std::str::FromStr;
+    /// use hifitime::datetime::{Datetime, FixedOffset};
+    /// let offset = FixedOffset::east_with_hours(5);
+    /// let dt = Datetime::with_offset(2017, 1, 14, 0, 31, 55, 0, offset).unwrap();
+    /// assert_eq!(
+    ///     dt,
+    ///     Datetime::from_str("2017-01-14T00:31:55-05:00").unwrap()
+    /// );
+    /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use self::regex::Regex;
         lazy_static! {
             static ref RE: Regex = Regex::new(r"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})([\+|-]\d{2}):(\d{2})$").unwrap();
         }
-        // TODO: Add negative offset support
         match RE.captures(s) {
             Some(cap) => {
                 let offset_hours = cap[7].to_owned().parse::<i32>()?;
@@ -638,7 +650,10 @@ impl FromStr for Datetime {
                     offset,
                 )
             }
-            None => Err(Errors::ParseError("test".to_owned())),
+            None => Err(Errors::ParseError(
+                "Input not in ISO8601 format with offset (e.g. 2018-01-27T00:41:55+03:00)"
+                    .to_owned(),
+            )),
         }
     }
 }

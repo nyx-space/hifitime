@@ -9,7 +9,7 @@
 //!
 //!  * Leap seconds (as announced by the IETF on a yearly basis)
 //!  * Julian dates and Modified Julian dates
-//!  * UTC representation with ISO8601 formatting
+//!  * UTC representation with ISO8601 formatting (and parsing in that format)
 //!  * Allows building custom `TimeSystem` (e.g. Julian days)
 //!  * Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)
 //!  * Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
