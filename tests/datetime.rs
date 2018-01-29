@@ -1,4 +1,39 @@
 extern crate hifitime;
+#[test]
+fn datetime_parsing() {
+    use std::str::FromStr;
+    use hifitime::datetime::{Datetime, FixedOffset};
+
+    // Negative offset test
+    let dt =
+        Datetime::with_offset(2017, 1, 14, 0, 31, 55, 0, FixedOffset::east_with_hours(5)).unwrap();
+    assert_eq!(format!("{}", dt), "2017-01-14T00:31:55-05:00");
+    assert_eq!(
+        dt,
+        Datetime::from_str(&format!("{}", dt)).expect("could not parse date"),
+        "Reciprocity error"
+    );
+    assert_eq!(
+        dt,
+        Datetime::from_str("2017-01-14T00:31:55-05:00").expect("could not parse date"),
+        "Could not parse date from &str"
+    );
+
+    // Positive offset test
+    let dt =
+        Datetime::with_offset(2017, 1, 14, 0, 31, 55, 0, FixedOffset::west_with_hours(7)).unwrap();
+    assert_eq!(format!("{}", dt), "2017-01-14T00:31:55+07:00");
+    assert_eq!(
+        dt,
+        Datetime::from_str(&format!("{}", dt)).expect("could not parse date"),
+        "Reciprocity error"
+    );
+    assert_eq!(
+        dt,
+        Datetime::from_str("2017-01-14T00:31:55+07:00").expect("could not parse date"),
+        "Could not parse date from &str"
+    );
+}
 
 #[test]
 fn datetime_extras() {
@@ -59,6 +94,7 @@ fn datetime_extras() {
 
 #[test]
 fn datetime_valid_dates() {
+    use std::str::FromStr;
     use hifitime::datetime::Datetime;
     use hifitime::julian::SECONDS_PER_DAY;
     use hifitime::instant::{Duration, Era, Instant};
@@ -79,6 +115,11 @@ fn datetime_valid_dates() {
         dt,
         "Reciprocity error"
     );
+    assert_eq!(
+        dt,
+        Datetime::from_str(&format!("{}", dt)).expect("could not parse date"),
+        "Reciprocity error"
+    );
 
     let dt = Datetime::new(1900, 1, 1, 12, 0, 0, 0).expect("01 January 1900 invalid?!");
     assert_eq!(
@@ -90,6 +131,11 @@ fn datetime_valid_dates() {
     assert_eq!(
         Datetime::from_instant(dt.into_instant()),
         dt,
+        "Reciprocity error"
+    );
+    assert_eq!(
+        dt,
+        Datetime::from_str(&format!("{}", dt)).expect("could not parse date"),
         "Reciprocity error"
     );
 
@@ -109,6 +155,7 @@ fn datetime_valid_dates() {
         dt,
         "Reciprocity error"
     );
+    // XXX: No FromStr reciprocity test here because datetime include nanoseconds which are not supported yet
 
     // X-Val: 03 January 1938 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=1&d2=03&y2=1938&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Instant::new(1_199_333_568, 0, Era::Present);

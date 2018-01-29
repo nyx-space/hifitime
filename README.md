@@ -21,7 +21,7 @@ day-to-day use of this library.
 
  * [x] Leap seconds (as announced by the IETF on a yearly basis)
  * [x] Julian dates and Modified Julian dates
- * [x] UTC representation with ISO8601 formatting
+ * [x] UTC representation with ISO8601 formatting (and parsing in that format)
  * [x] Allows building custom TimeSystem (e.g. Julian days)
  * [x] Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)
  * [x] Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)

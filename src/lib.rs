@@ -9,7 +9,7 @@
 //!
 //!  * Leap seconds (as announced by the IETF on a yearly basis)
 //!  * Julian dates and Modified Julian dates
-//!  * UTC representation with ISO8601 formatting
+//!  * UTC representation with ISO8601 formatting (and parsing in that format)
 //!  * Allows building custom `TimeSystem` (e.g. Julian days)
 //!  * Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)
 //!  * Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
@@ -77,6 +77,9 @@
 //! ```
 //!
 
+#[macro_use]
+extern crate lazy_static;
+
 /// The `instant` module is built on top of `std::time::Duration`. It is the basis of almost
 /// all computations in this library. It is the only common denominator allowing for conversions
 /// between Time Systems.
@@ -96,6 +99,8 @@ pub mod sim;
 use std::cmp::PartialOrd;
 use instant::Instant;
 use std::fmt;
+use std::convert;
+use std::num::ParseIntError;
 
 /// A `TimeSystem` enables the creation of system for measuring spans of time, such as UTC or Julian
 /// days.
@@ -113,13 +118,23 @@ pub enum Errors {
     /// if a call to `Datetime::new` receives 60 seconds and there are only 59 seconds in the provided
     /// date time then a Carry Error is returned as the Result.
     Carry,
+    /// ParseError is returned when a provided string could not be parsed and converted to the desired
+    /// struct (e.g. Datetime).
+    ParseError(String),
 }
 
 impl fmt::Display for Errors {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Errors::Carry => write!(f, "a carry error (e.g. 61 seconds)"),
+            Errors::ParseError(ref msg) => write!(f, "ParseError: {}", msg),
         }
+    }
+}
+
+impl convert::From<ParseIntError> for Errors {
+    fn from(error: ParseIntError) -> Self {
+        Errors::ParseError(format!("std::num::ParseIntError encountered: {}", error))
     }
 }
 
