@@ -2,12 +2,15 @@ extern crate hifitime;
 #[test]
 fn datetime_parsing() {
     use std::str::FromStr;
-    use hifitime::datetime::{Datetime, FixedOffset};
+    use hifitime::datetime::{Datetime, FixedOffset, Offset};
+    use hifitime::instant::Era;
 
     // Negative offset test
     let dt =
         Datetime::with_offset(2017, 1, 14, 0, 31, 55, 0, FixedOffset::east_with_hours(5)).unwrap();
     assert_eq!(format!("{}", dt), "2017-01-14T00:31:55-05:00");
+    assert_eq!(format!("{:x}", dt), "2017-01-14 00:31:55");
+    assert_eq!(format!("{:X}", dt), "2017-01-14T00:31:55");
     assert_eq!(
         dt,
         Datetime::from_str(&format!("{}", dt)).expect("could not parse date"),
@@ -23,6 +26,8 @@ fn datetime_parsing() {
     let dt =
         Datetime::with_offset(2017, 1, 14, 0, 31, 55, 0, FixedOffset::west_with_hours(7)).unwrap();
     assert_eq!(format!("{}", dt), "2017-01-14T00:31:55+07:00");
+    assert_eq!(format!("{:x}", dt), "2017-01-14 00:31:55");
+    assert_eq!(format!("{:X}", dt), "2017-01-14T00:31:55");
     assert_eq!(
         dt,
         Datetime::from_str(&format!("{}", dt)).expect("could not parse date"),
@@ -33,6 +38,14 @@ fn datetime_parsing() {
         Datetime::from_str("2017-01-14T00:31:55+07:00").expect("could not parse date"),
         "Could not parse date from &str"
     );
+
+    let offset = Offset::new(3600 * 2 + 60 * 15, 0, Era::Past);
+    let dt = Datetime::with_offset(2017, 1, 14, 0, 31, 55, 0, offset).unwrap();
+    assert_eq!(dt, Datetime::from_str("2017-01-14T00:31:55-02:15").unwrap());
+    assert_eq!(dt, Datetime::from_str("2017-01-14 00:31:55-02:15").unwrap());
+    let dt = Datetime::new(2017, 1, 14, 0, 31, 55, 0).unwrap();
+    assert_eq!(dt, Datetime::from_str("2017-01-14T00:31:55").unwrap());
+    assert_eq!(dt, Datetime::from_str("2017-01-14 00:31:55").unwrap());
 }
 
 #[test]
