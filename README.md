@@ -1,4 +1,4 @@
-# hifitime 0.0.1
+# hifitime 0.1.0
 
 Precise date and time handling in Rust built on top of
 [` std::time::Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html).
@@ -13,8 +13,8 @@ day-to-day use of this library.
 
 [cratesio-image]: https://img.shields.io/crates/v/hifitime.svg
 [cratesio]: https://crates.io/crates/hifitime
-[docsrs-image]: https://docs.rs/hifitime/badge.svg?version=0.0.1
-[docsrs]: https://docs.rs/hifitime/0.0.1/
+[docsrs-image]: https://docs.rs/hifitime/badge.svg?version=0.1.0
+[docsrs]: https://docs.rs/hifitime/0.1.0/
 
 
 ## Features
