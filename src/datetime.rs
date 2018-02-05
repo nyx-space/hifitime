@@ -573,6 +573,48 @@ impl fmt::Display for Datetime {
     }
 }
 
+impl fmt::LowerHex for Datetime {
+    /// Formats as human readable with date and time separated by a space and no offset.
+    ///
+    /// # Example
+    /// ```
+    /// use std::str::FromStr;
+    /// use hifitime::datetime::{Datetime, FixedOffset};
+    ///
+    /// let dt =
+    ///     Datetime::with_offset(2017, 1, 14, 0, 31, 55, 0, FixedOffset::east_with_hours(5)).unwrap();
+    /// assert_eq!(format!("{:x}", dt), "2017-01-14 00:31:55");
+    /// ```
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{:04}-{:02}-{:02} {:02}:{:02}:{:02}",
+            self.year, self.month, self.day, self.hour, self.minute, self.second
+        )
+    }
+}
+
+impl fmt::UpperHex for Datetime {
+    /// Formats as ISO8601 but _without_ the offset.
+    ///
+    /// # Example
+    /// ```
+    /// use std::str::FromStr;
+    /// use hifitime::datetime::{Datetime, FixedOffset};
+    ///
+    /// let dt =
+    ///     Datetime::with_offset(2017, 1, 14, 0, 31, 55, 0, FixedOffset::east_with_hours(5)).unwrap();
+    /// assert_eq!(format!("{:X}", dt), "2017-01-14T00:31:55");
+    /// ```
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}",
+            self.year, self.month, self.day, self.hour, self.minute, self.second
+        )
+    }
+}
+
 impl Add<Duration> for Datetime {
     type Output = Datetime;
 
@@ -614,30 +656,61 @@ impl FromStr for Datetime {
     type Err = Errors;
 
     /// Converts an ISO8601 Datetime representation with offset to a `Datetime` object with correct offset.
+    /// The `T` which separates the date from the time can be replaced with a single whitespace character (`\W`).
+    /// The offset is also optional, cf. the examples below.
     ///
     /// # Examples
     /// ```
     /// use std::str::FromStr;
-    /// use hifitime::datetime::{Datetime, FixedOffset};
-    /// let offset = FixedOffset::east_with_hours(5);
+    /// use hifitime::datetime::{Datetime, Offset};
+    /// use hifitime::instant::Era;
+    /// let offset = Offset::new(3600 * 2 + 60 * 15, 0, Era::Past);
     /// let dt = Datetime::with_offset(2017, 1, 14, 0, 31, 55, 0, offset).unwrap();
     /// assert_eq!(
     ///     dt,
-    ///     Datetime::from_str("2017-01-14T00:31:55-05:00").unwrap()
+    ///     Datetime::from_str("2017-01-14T00:31:55-02:15").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     dt,
+    ///     Datetime::from_str("2017-01-14 00:31:55-02:15").unwrap()
+    /// );
+    /// let dt = Datetime::new(2017, 1, 14, 0, 31, 55, 0).unwrap();
+    /// assert_eq!(
+    ///     dt,
+    ///     Datetime::from_str("2017-01-14T00:31:55").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     dt,
+    ///     Datetime::from_str("2017-01-14 00:31:55").unwrap()
     /// );
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use self::regex::Regex;
         lazy_static! {
-            static ref RE: Regex = Regex::new(r"^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})([\+|-]\d{2}):(\d{2})$").unwrap();
+            static ref RE: Regex = Regex::new(r"^(\d{4})-(\d{2})-(\d{2})(?:T|\W)(\d{2}):(\d{2}):(\d{2})(([\+|-]\d{2}):(\d{2}))?$").unwrap();
         }
         match RE.captures(s) {
             Some(cap) => {
-                let offset_hours = cap[7].to_owned().parse::<i32>()?;
-                let offset = if offset_hours < 0 {
-                    Offset::new((-3600 * offset_hours) as u64, 0, Era::Past)
-                } else {
-                    Offset::new(u64::from((3600 * offset_hours) as u64), 0, Era::Present)
+                let offset = match cap.get(7) {
+                    Some(_) => {
+                        let offset_hours = cap.get(8).unwrap().as_str().to_owned().parse::<i32>()?;
+                        let offset_mins = cap.get(9).unwrap().as_str().to_owned().parse::<i32>()?;
+                        // Check if negative, and if so, multiply by negative seconds to get a positive number
+                        if offset_hours < 0 {
+                            Offset::new(
+                                (-3600 * offset_hours + 60 * offset_mins) as u64,
+                                0,
+                                Era::Past,
+                            )
+                        } else {
+                            Offset::new(
+                                u64::from((3600 * offset_hours + 60 * offset_mins) as u64),
+                                0,
+                                Era::Present,
+                            )
+                        }
+                    }
+                    None => Offset::new(0, 0, Era::Present),
                 };
                 Datetime::with_offset(
                     cap[1].to_owned().parse::<i32>()?,
