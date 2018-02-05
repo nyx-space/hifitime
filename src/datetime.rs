@@ -704,7 +704,7 @@ impl FromStr for Datetime {
                             )
                         } else {
                             Offset::new(
-                                u64::from((3600 * offset_hours + 60 * offset_mins) as u64),
+                                (3600 * offset_hours + 60 * offset_mins) as u64,
                                 0,
                                 Era::Present,
                             )
