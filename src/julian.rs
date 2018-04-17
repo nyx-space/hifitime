@@ -1,16 +1,6 @@
 use super::TimeSystem;
 use super::instant::{Era, Instant};
-
-/// `J1900_OFFSET` determines the offset in julian days between 01 Jan 1900 at midnight and the
-/// Modified Julian Day at 17 November 1858.
-/// NOTE: Julian days "start" at noon so that astronomical observations throughout the night
-/// happen at the same Julian day. Note however that the Modified Julian Date (MJD) starts at
-/// midnight, not noon, cf. <http://tycho.usno.navy.mil/mjd.html>.
-const J1900_OFFSET: f64 = 15_020.0;
-/// `DAYS_PER_YEAR` corresponds to the number of days per year in the Julian calendar.
-pub const DAYS_PER_YEAR: f64 = 365.25;
-/// `SECONDS_PER_DAY` defines the number of seconds per day.
-pub const SECONDS_PER_DAY: f64 = 86_400.0;
+use super::{J1900_OFFSET, SECONDS_PER_DAY};
 
 /// `ModifiedJulian` handles the Modified Julian Days as explained
 /// [here](http://tycho.usno.navy.mil/mjd.html).

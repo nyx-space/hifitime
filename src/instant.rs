@@ -80,6 +80,31 @@ impl Instant {
         }
     }
 
+    /// Creates a new `Instant` from the number of seconds compared to `Era`, provided as a floating point value.
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::instant::{Era, Instant};
+    ///
+    /// let example = Instant::new(159, 159, Era::Present);
+    /// let in_secs = example.secs() as f64 + (example.nanos() as f64) * 1e-9;
+    /// let precise = Instant::from_precise_seconds(in_secs, Era::Present);
+    /// assert_eq!(precise, example);
+    ///
+    /// let example = Instant::new(159, 159, Era::Past);
+    /// let in_secs = example.secs() as f64 + (example.nanos() as f64) * 1e-9;
+    /// let precise = Instant::from_precise_seconds(in_secs, Era::Past);
+    /// assert_eq!(precise, example);
+    /// ```
+    pub fn from_precise_seconds(seconds: f64, era: Era) -> Instant {
+        let secs_u = seconds.round();
+        let nanos = (seconds - secs_u) * 1e9;
+        Instant {
+            duration: Duration::new(seconds as u64, nanos.round() as u32),
+            era: era,
+        }
+    }
+
     /// Returns the Duration with respect to Epoch (past OR present), check the `era()`
     pub fn duration(self) -> Duration {
         self.duration

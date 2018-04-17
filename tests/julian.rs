@@ -21,8 +21,8 @@ fn reciprocity() {
 fn epochs() {
     use std;
     use hifitime::instant;
-    use hifitime::TimeSystem;
-    use hifitime::julian::{ModifiedJulian, SECONDS_PER_DAY};
+    use hifitime::{TimeSystem, SECONDS_PER_DAY};
+    use hifitime::julian::ModifiedJulian;
     use hifitime::datetime::Datetime;
 
     // Tests are chronological dates.

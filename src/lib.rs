@@ -1,4 +1,4 @@
-//! # hifitime 0.0.1
+//! # hifitime
 //!
 //! Precise date and time handling in Rust built on top of
 //! [` std::time::Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html).
@@ -40,7 +40,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! hifitime = "0.1.0"
+//! hifitime = "0.1.1"
 //! ```
 //!
 //! And add the following to your crate root:
@@ -79,6 +79,19 @@
 
 #[macro_use]
 extern crate lazy_static;
+
+/// `J1900_OFFSET` determines the offset in julian days between 01 Jan 1900 at midnight and the
+/// Modified Julian Day at 17 November 1858.
+/// NOTE: Julian days "start" at noon so that astronomical observations throughout the night
+/// happen at the same Julian day. Note however that the Modified Julian Date (MJD) starts at
+/// midnight, not noon, cf. <http://tycho.usno.navy.mil/mjd.html>.
+pub const J1900_OFFSET: f64 = 15_020.0;
+/// `DAYS_PER_YEAR` corresponds to the number of days per year in the Julian calendar.
+pub const DAYS_PER_YEAR: f64 = 365.25;
+/// `SECONDS_PER_DAY` defines the number of seconds per day.
+pub const SECONDS_PER_DAY: f64 = 86_400.0;
+/// `SECONDS_PER_TROPICAL_YEAR` corresponds to the number of seconds per tropical year, as defined in `tyear_c.c` in [NAIF SPICE](https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/tyear_c.html).
+pub const SECONDS_PER_TROPICAL_YEAR: f64 = 315_56_925.9747;
 
 /// The `instant` module is built on top of `std::time::Duration`. It is the basis of almost
 /// all computations in this library. It is the only common denominator allowing for conversions
