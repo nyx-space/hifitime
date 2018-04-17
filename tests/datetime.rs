@@ -109,7 +109,7 @@ fn datetime_extras() {
 fn datetime_valid_dates() {
     use std::str::FromStr;
     use hifitime::datetime::Datetime;
-    use hifitime::julian::SECONDS_PER_DAY;
+    use hifitime::SECONDS_PER_DAY;
     use hifitime::instant::{Duration, Era, Instant};
     use hifitime::TimeSystem;
 

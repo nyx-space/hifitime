@@ -1,9 +1,8 @@
 extern crate regex;
 
 pub use super::TimeSystem;
-use super::Errors;
 use super::instant::{Duration, Era, Instant};
-use super::julian::SECONDS_PER_DAY;
+use super::{Errors, SECONDS_PER_DAY};
 use std::fmt;
 use std::ops::{Add, Neg, Sub};
 use std::str::FromStr;
