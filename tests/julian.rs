@@ -42,6 +42,7 @@ fn epochs() {
         ).days - 15_020.0)
             .abs() < std::f64::EPSILON
     );
+    assert_eq!(format!("{}", mjd), "15020.00000");
 
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=1900-01-01+12%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     let j1900 = instant::Instant::new((SECONDS_PER_DAY * 0.5) as u64, 0, instant::Era::Present);
@@ -56,6 +57,7 @@ fn epochs() {
         ).days - 15_020.5)
             .abs() < std::f64::EPSILON
     );
+    assert_eq!(format!("{}", mjd), "15020.50000");
 
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=1900-01-08+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     let mjd = ModifiedJulian::from_instant(
@@ -65,6 +67,7 @@ fn epochs() {
     );
     assert!((mjd.days - 15_027.0).abs() < std::f64::EPSILON);
     assert!((mjd.julian_days() - 2_415_027.5).abs() < std::f64::EPSILON);
+    assert_eq!(format!("{}", mjd), "15027.00000");
 
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=1980-01-06+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     let gps_std_epoch = ModifiedJulian::from_instant(
@@ -74,6 +77,7 @@ fn epochs() {
     );
     assert!((gps_std_epoch.days - 44244.0).abs() < std::f64::EPSILON);
     assert!((gps_std_epoch.julian_days() - 2_444_244.5).abs() < std::f64::EPSILON);
+    assert_eq!(format!("{}", gps_std_epoch), "44244.00000");
 
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2000-01-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     let j2000 = Datetime::new(2000, 1, 1, 0, 0, 0, 0)
@@ -82,6 +86,7 @@ fn epochs() {
     let mjd = ModifiedJulian::from_instant(j2000);
     assert!((mjd.days - 51_544.0).abs() < std::f64::EPSILON);
     assert!((mjd.julian_days() - 2_451_544.5).abs() < std::f64::EPSILON);
+    assert_eq!(format!("{}", mjd), "51544.00000");
 
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2002-02-07+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     let jd020207 = ModifiedJulian::from_instant(
@@ -91,6 +96,7 @@ fn epochs() {
     );
     assert!((jd020207.days - 52_312.0).abs() < std::f64::EPSILON);
     assert!((jd020207.julian_days() - 2_452_312.5).abs() < std::f64::EPSILON);
+    assert_eq!(format!("{}", jd020207), "52312.00000");
 
     // Test leap seconds and Julian at the same time
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A59&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes

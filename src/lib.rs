@@ -117,7 +117,7 @@ use std::num::ParseIntError;
 
 /// A `TimeSystem` enables the creation of system for measuring spans of time, such as UTC or Julian
 /// days.
-pub trait TimeSystem: PartialOrd {
+pub trait TimeSystem: Clone + Copy + fmt::Display + PartialOrd {
     /// Use this method to convert between different `TimeSystem` implementors.
     fn from_instant(Instant) -> Self;
     /// Also use this method to convert between different `TimeSystem` implementors
