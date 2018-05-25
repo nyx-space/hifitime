@@ -1,6 +1,7 @@
 use super::TimeSystem;
 use super::instant::{Era, Instant};
 use super::{J1900_OFFSET, SECONDS_PER_DAY};
+use std::fmt;
 
 /// `ModifiedJulian` handles the Modified Julian Days as explained
 /// [here](http://tycho.usno.navy.mil/mjd.html).
@@ -65,5 +66,12 @@ impl TimeSystem for ModifiedJulian {
         let seconds = secs_frac.round();
         let nanos = (secs_frac - seconds) * 1e9 / (SECONDS_PER_DAY * modifier);
         Instant::new(seconds as u64, nanos.round() as u32, era)
+    }
+}
+
+/// The formatter will show six digits of precision. This allows for a resolution of about 0.864 seconds.
+impl fmt::Display for ModifiedJulian {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:.5}", self.days)
     }
 }
