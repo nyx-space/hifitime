@@ -1,12 +1,13 @@
 // Disclaimer: this is heavily inspired by std::time::Duration, but it supports longer
 // time spans and leap seconds. Moreover, an Instant is defined with respect to
 // 01 Jan 1900, as per NTP and TAI specifications.
+use std::time::SystemTime;
 
 pub use std::time::Duration;
 
 use std::cmp::PartialEq;
 use std::ops::{Add, Sub};
-use std::time::SystemTime;
+
 use std::fmt;
 
 /// An `Era` represents whether the associated `Instant` is before the TAI Epoch
@@ -121,23 +122,26 @@ impl Instant {
     pub fn unix_epoch() -> Instant {
         Instant::new(2_208_988_800, 0, Era::Present)
     }
-    /*
+
+    /// Creates a new `Instant` from the system time. **WARNING:** This assumes the system
+    /// time is in UTC. This is likely not the case! This function will **panic** if time is before
+    /// the UNIX epoch.
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::TimeSystem;
+    /// use hifitime::instant::Instant;
+    /// use hifitime::datetime::Datetime;
+    ///
+    /// let now_dt = Datetime::from_instant(Instant::now());
+    /// assert!(now_dt.year() >= 2018, "Feature added in 2018");
     pub fn now() -> Instant {
-        let (sec, nsec) = match t.duration_since(UNIX_EPOCH) {
-            Ok(dur) => (dur.as_secs() as i64, dur.subsec_nanos()),
-            Err(e) => {
-                // unlikely but should be handled
-                let dur = e.duration();
-                let (sec, nsec) = (dur.as_secs() as i64, dur.subsec_nanos());
-                if nsec == 0 {
-                    (-sec, 0)
-                } else {
-                    (-sec - 1, 1_000_000_000 - nsec)
-                }
-            }
-        };
+        Instant::unix_epoch()
+            + SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .expect("SystemTime before UNIX EPOCH!")
     }
-*/
+
     /// Returns the Duration with respect to Epoch (past OR present), check the `era()`
     pub fn duration(self) -> Duration {
         self.duration
