@@ -2,9 +2,11 @@
 // time spans and leap seconds. Moreover, an Instant is defined with respect to
 // 01 Jan 1900, as per NTP and TAI specifications.
 
+pub use std::time::Duration;
+
 use std::cmp::PartialEq;
 use std::ops::{Add, Sub};
-pub use std::time::Duration;
+use std::time::SystemTime;
 use std::fmt;
 
 /// An `Era` represents whether the associated `Instant` is before the TAI Epoch
@@ -105,6 +107,37 @@ impl Instant {
         }
     }
 
+    /// Creates a new `Instant` corresponding to the UNIX epoch of 1970 Jan 01, midnight.
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::TimeSystem;
+    /// use hifitime::instant::Instant;
+    /// use hifitime::datetime::Datetime;
+    ///
+    /// let epoch_dt = Datetime::new(1970, 1, 1, 0, 0, 0, 0).expect("epoch");
+    /// assert_eq!(Datetime::from_instant(Instant::unix_epoch()), epoch_dt);
+    /// ```
+    pub fn unix_epoch() -> Instant {
+        Instant::new(2_208_988_800, 0, Era::Present)
+    }
+    /*
+    pub fn now() -> Instant {
+        let (sec, nsec) = match t.duration_since(UNIX_EPOCH) {
+            Ok(dur) => (dur.as_secs() as i64, dur.subsec_nanos()),
+            Err(e) => {
+                // unlikely but should be handled
+                let dur = e.duration();
+                let (sec, nsec) = (dur.as_secs() as i64, dur.subsec_nanos());
+                if nsec == 0 {
+                    (-sec, 0)
+                } else {
+                    (-sec - 1, 1_000_000_000 - nsec)
+                }
+            }
+        };
+    }
+*/
     /// Returns the Duration with respect to Epoch (past OR present), check the `era()`
     pub fn duration(self) -> Duration {
         self.duration
