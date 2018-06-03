@@ -72,6 +72,11 @@ impl Instant {
     /// assert_ne!(Instant::new(0, 1, Era::Past), Instant::new(0, 1, Era::Present));
     /// assert_ne!(Instant::new(1, 1, Era::Past), Instant::new(1, 1, Era::Present));
     /// assert_ne!(Instant::new(1, 0, Era::Past), Instant::new(1, 0, Era::Present));
+    /// // Sub in the Present era.
+    /// let unix = Instant::new(2_208_988_800, 0, Era::Present);
+    /// let unix_p1h = Instant::new(2_208_988_800 + 3_600, 0, Era::Present);
+    /// assert_eq!(unix_p1h - unix, 3600.0);
+    /// assert_eq!(unix - unix_p1h, -3600.0);
     /// ```
     pub fn new(seconds: u64, nanos: u32, era: Era) -> Instant {
         Instant {
@@ -313,12 +318,6 @@ impl Sub<Instant> for Instant {
                 } else {
                     delta_secs
                 }
-            // match self.era {
-            //     Era::Past => {}
-            //     Era::Present => {
-            //
-            //     }
-            // }
             } else {
                 let delta = self.duration + other.duration;
                 let delta_secs = delta.as_secs() as f64 + (delta.subsec_nanos() as f64) * 1e-9;

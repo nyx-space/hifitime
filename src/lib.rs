@@ -13,6 +13,7 @@
 //!  * Allows building custom `TimeSystem` (e.g. Julian days)
 //!  * Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)
 //!  * Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
+//!  * A canonical time struct (`Instant`) defined as the NTP specifications. Supports arithmetic operations between `Instant` and `std::time::Duration`
 //!
 //! Almost all examples are validated with external references, as detailed on a test-by-test
 //! basis.
@@ -40,7 +41,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! hifitime = "0.1.1"
+//! hifitime = "0.1.3"
 //! ```
 //!
 //! And add the following to your crate root:
@@ -93,6 +94,10 @@ pub const SECONDS_PER_DAY: f64 = 86_400.0;
 /// `SECONDS_PER_TROPICAL_YEAR` corresponds to the number of seconds per tropical year, as defined in `tyear_c.c` in [NAIF SPICE](https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/tyear_c.html).
 pub const SECONDS_PER_TROPICAL_YEAR: f64 = 315_56_925.9747;
 
+/// The `datetime` module supports conversions between seconds past TAI epoch and a Datetime struct.
+/// The main advantage (and challenge) is the inherent support for leap seconds. Refer to module
+/// documentation for leap second implementation details.
+pub mod datetime;
 /// The `instant` module is built on top of `std::time::Duration`. It is the basis of almost
 /// all computations in this library. It is the only common denominator allowing for conversions
 /// between Time Systems.
@@ -100,19 +105,15 @@ pub mod instant;
 /// The `julian` module supports (Modified) Julian Days, which are heavily used in astronomy
 /// and its engineering friends.
 pub mod julian;
-/// The `datetime` module supports conversions between seconds past TAI epoch and a Datetime struct.
-/// The main advantage (and challenge) is the inherent support for leap seconds. Refer to module
-/// documentation for leap second implementation details.
-pub mod datetime;
 
 #[cfg(feature = "simulation")]
 /// The `sim` module include high fidelity simulation tools related to date and time handling.
 pub mod sim;
 
-use std::cmp::PartialOrd;
 use instant::Instant;
-use std::fmt;
+use std::cmp::PartialOrd;
 use std::convert;
+use std::fmt;
 use std::num::ParseIntError;
 
 /// A `TimeSystem` enables the creation of system for measuring spans of time, such as UTC or Julian
