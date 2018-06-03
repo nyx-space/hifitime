@@ -3,9 +3,9 @@
 // 01 Jan 1900, as per NTP and TAI specifications.
 
 use std::cmp::PartialEq;
+use std::fmt;
 use std::ops::{Add, Sub};
 pub use std::time::Duration;
-use std::fmt;
 
 /// An `Era` represents whether the associated `Instant` is before the TAI Epoch
 /// (01 Jan 1900, midnight) or afterwards. If it is before, than it's refered to as "Past",
@@ -72,6 +72,11 @@ impl Instant {
     /// assert_ne!(Instant::new(0, 1, Era::Past), Instant::new(0, 1, Era::Present));
     /// assert_ne!(Instant::new(1, 1, Era::Past), Instant::new(1, 1, Era::Present));
     /// assert_ne!(Instant::new(1, 0, Era::Past), Instant::new(1, 0, Era::Present));
+    /// // Sub in the Present era.
+    /// let unix = Instant::new(2_208_988_800, 0, Era::Present);
+    /// let unix_p1h = Instant::new(2_208_988_800 + 3_600, 0, Era::Present);
+    /// assert_eq!(unix_p1h - unix, 3600.0);
+    /// assert_eq!(unix - unix_p1h, -3600.0);
     /// ```
     pub fn new(seconds: u64, nanos: u32, era: Era) -> Instant {
         Instant {
@@ -178,7 +183,8 @@ impl Add<Duration> for Instant {
             match self.era {
                 Era::Past => {
                     if (delta.as_secs() >= self.duration.as_secs())
-                        || (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0
+                        || (delta.as_secs() >= self.duration.as_secs()
+                            && delta.as_secs() == 0
                             && delta.subsec_nanos() >= self.duration.subsec_nanos())
                     {
                         Instant::new(
@@ -248,7 +254,8 @@ impl Sub<Duration> for Instant {
                 }
                 Era::Present => {
                     if (delta.as_secs() >= self.duration.as_secs())
-                        || (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0
+                        || (delta.as_secs() >= self.duration.as_secs()
+                            && delta.as_secs() == 0
                             && delta.subsec_nanos() >= self.duration.subsec_nanos())
                     {
                         Instant::new(
@@ -261,6 +268,64 @@ impl Sub<Duration> for Instant {
                         cln.duration -= delta;
                         cln
                     }
+                }
+            }
+        }
+    }
+}
+
+impl Sub<Instant> for Instant {
+    type Output = f64;
+
+    /// Subtracts a given `Instant` from another `Instant`. Returns the number of seconds as a positive or negative number.
+    /// # Examples
+    ///
+    /// ```
+    /// use hifitime::instant::{Era, Instant};
+    /// // Sub in the Present era.
+    /// let unix = Instant::new(2_208_988_800, 0, Era::Present);
+    /// let unix_p1h = Instant::new(2_208_988_800 + 3_600, 0, Era::Present);
+    /// assert_eq!(unix_p1h - unix, 3600.0);
+    /// assert_eq!(unix - unix_p1h, -3600.0);
+
+    /// // Sub in the Past era.
+    /// let tick = Instant::new(159, 10, Era::Past);
+    /// let tock = Instant::new(150, 15, Era::Past);
+    /// assert_eq!(tick - tock, -8.999999995);
+    /// assert_eq!(tock - tick, 8.999999995);
+
+    /// // Sub across Epoch
+    /// let tick = Instant::new(159, 10, Era::Past);
+    /// let tock = Instant::new(159, 10, Era::Present);
+    /// assert_eq!(tock - tick, 318.00000002);
+    /// assert_eq!(tick - tock, -318.00000002);
+    /// ```
+    fn sub(self, other: Instant) -> f64 {
+        if self == other {
+            0.0
+        } else {
+            if self.era == other.era {
+                let delta_secs = if self > other {
+                    let delta = self.duration - other.duration;
+                    delta.as_secs() as f64 + (delta.subsec_nanos() as f64) * 1e-9
+                } else {
+                    // Sub on Duration fails if duration will be less than zero.
+                    let delta = other.duration - self.duration;
+                    -1.0 * (delta.as_secs() as f64 + (delta.subsec_nanos() as f64) * 1e-9)
+                };
+                if self.era == Era::Past {
+                    -1.0 * delta_secs
+                } else {
+                    delta_secs
+                }
+            } else {
+                let delta = self.duration + other.duration;
+                let delta_secs = delta.as_secs() as f64 + (delta.subsec_nanos() as f64) * 1e-9;
+                if other.era == Era::Present {
+                    // This means we are in the past, and past minus present is a negative number.
+                    -1.0 * delta_secs
+                } else {
+                    delta_secs
                 }
             }
         }

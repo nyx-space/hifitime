@@ -1,4 +1,4 @@
-# hifitime 0.1.1
+# hifitime 0.1.3
 
 Precise date and time handling in Rust built on top of
 [` std::time::Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html).
@@ -13,8 +13,8 @@ day-to-day use of this library.
 
 [cratesio-image]: https://img.shields.io/crates/v/hifitime.svg
 [cratesio]: https://crates.io/crates/hifitime
-[docsrs-image]: https://docs.rs/hifitime/badge.svg?version=0.1.1
-[docsrs]: https://docs.rs/hifitime/0.1.1/
+[docsrs-image]: https://docs.rs/hifitime/badge.svg?version=0.1.3
+[docsrs]: https://docs.rs/hifitime/0.1.3/
 
 
 ## Features
@@ -25,6 +25,7 @@ day-to-day use of this library.
  * [x] Allows building custom TimeSystem (e.g. Julian days)
  * [x] Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)
  * [x] Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
+ * [x] A canonical time struct (`Instant`) defined as the NTP specifications. Supports arithmetic operations between `Instant` and `std::time::Duration`
 
 Almost all examples are validated with external references, as detailed on a test-by-test
 basis.
