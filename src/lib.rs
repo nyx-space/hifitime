@@ -41,7 +41,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! hifitime = "0.1.3"
+//! hifitime = "0.1.4"
 //! ```
 //!
 //! And add the following to your crate root:
@@ -87,10 +87,17 @@ extern crate lazy_static;
 /// happen at the same Julian day. Note however that the Modified Julian Date (MJD) starts at
 /// midnight, not noon, cf. <http://tycho.usno.navy.mil/mjd.html>.
 pub const J1900_OFFSET: f64 = 15_020.0;
+/// `J2000_OFFSET` determines the offset in julian days between 01 Jan 2000 at **noon** and the
+/// Modified Julian Day at 17 November 1858.
+pub const J2000_OFFSET: f64 = 51_544.5;
 /// `DAYS_PER_YEAR` corresponds to the number of days per year in the Julian calendar.
 pub const DAYS_PER_YEAR: f64 = 365.25;
 /// `SECONDS_PER_DAY` defines the number of seconds per day.
 pub const SECONDS_PER_DAY: f64 = 86_400.0;
+/// `SECONDS_PER_HOUR` defines the number of seconds per hour.
+pub const SECONDS_PER_HOUR: f64 = 3_600.0;
+/// `SECONDS_PER_MINUTE` defines the number of seconds per minute.
+pub const SECONDS_PER_MINUTE: f64 = 60.0;
 /// `SECONDS_PER_TROPICAL_YEAR` corresponds to the number of seconds per tropical year, as defined in `tyear_c.c` in [NAIF SPICE](https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/tyear_c.html).
 pub const SECONDS_PER_TROPICAL_YEAR: f64 = 315_56_925.9747;
 

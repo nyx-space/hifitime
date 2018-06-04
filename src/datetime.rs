@@ -1,7 +1,7 @@
 extern crate regex;
 
+pub use super::instant::{Duration, Era, Instant};
 pub use super::TimeSystem;
-use super::instant::{Duration, Era, Instant};
 use super::{Errors, SECONDS_PER_DAY};
 use std::fmt;
 use std::ops::{Add, Neg, Sub};
@@ -16,7 +16,7 @@ const JANUARY_YEARS: [i32; 17] = [
 ];
 
 const JULY_YEARS: [i32; 11] = [
-    1972, 1981, 1982, 1983, 1985, 1992, 1993, 1994, 1997, 2012, 2015
+    1972, 1981, 1982, 1983, 1985, 1992, 1993, 1994, 1997, 2012, 2015,
 ];
 
 const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
@@ -314,7 +314,8 @@ impl Datetime {
     ) -> Result<Datetime, Errors> {
         let max_seconds = if (month == 12 || month == 6)
             && day == USUAL_DAYS_PER_MONTH[month as usize - 1]
-            && hour == 23 && minute == 59
+            && hour == 23
+            && minute == 59
             && ((month == 6 && JULY_YEARS.contains(&year))
                 || (month == 12 && JANUARY_YEARS.contains(&(year + 1))))
         {
@@ -323,8 +324,14 @@ impl Datetime {
             59
         };
         // General incorrect date times
-        if month == 0 || month > 12 || day == 0 || day > 31 || hour > 24 || minute > 59
-            || second > max_seconds || f64::from(nanos) > 1e9
+        if month == 0
+            || month > 12
+            || day == 0
+            || day > 31
+            || hour > 24
+            || minute > 59
+            || second > max_seconds
+            || f64::from(nanos) > 1e9
         {
             return Err(Errors::Carry);
         }
@@ -543,7 +550,8 @@ impl TimeSystem for Datetime {
         }
         seconds_wrt_1900 += f64::from(self.day - 1) * SECONDS_PER_DAY
             + f64::from(self.hour) * 3600.0
-            + f64::from(self.minute) * 60.0 + f64::from(self.second);
+            + f64::from(self.minute) * 60.0
+            + f64::from(self.second);
         if self.second == 60 {
             // Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
             // same number of second afters J1900.0.
@@ -686,7 +694,9 @@ impl FromStr for Datetime {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         use self::regex::Regex;
         lazy_static! {
-            static ref RE: Regex = Regex::new(r"^(\d{4})-(\d{2})-(\d{2})(?:T|\W)(\d{2}):(\d{2}):(\d{2})(([\+|-]\d{2}):(\d{2}))?$").unwrap();
+            static ref RE: Regex = Regex::new(
+                r"^(\d{4})-(\d{2})-(\d{2})(?:T|\W)(\d{2}):(\d{2}):(\d{2})(([\+|-]\d{2}):(\d{2}))?$"
+            ).unwrap();
         }
         match RE.captures(s) {
             Some(cap) => {

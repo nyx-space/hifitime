@@ -1,6 +1,6 @@
-use super::TimeSystem;
-use super::instant::{Era, Instant};
-use super::{J1900_OFFSET, SECONDS_PER_DAY};
+pub use super::instant::{Era, Instant};
+pub use super::TimeSystem;
+use super::{J1900_OFFSET, J2000_OFFSET, SECONDS_PER_DAY};
 use std::fmt;
 
 /// `ModifiedJulian` handles the Modified Julian Days as explained
@@ -11,11 +11,20 @@ pub struct ModifiedJulian {
 }
 
 impl ModifiedJulian {
+    pub fn j2000() -> ModifiedJulian {
+        ModifiedJulian { days: 51_544.5 }
+    }
+
     /// `julian_days` returns the true Julian days from epoch 01 Jan -4713, 12:00
     /// as explained in "Fundamentals of astrodynamics and applications", Vallado et al.
     /// 4th edition, page 182, and on [Wikipedia](https://en.wikipedia.org/wiki/Julian_day).
     pub fn julian_days(self) -> f64 {
         self.days + 2_400_000.5
+    }
+
+    /// Returns the centuries since J2000. This number is often referred to as JD_tt.
+    pub fn centuries_since_j2000(self) -> f64 {
+        (self.days - J2000_OFFSET) / 36_525.0
     }
 }
 
@@ -47,7 +56,8 @@ impl TimeSystem for ModifiedJulian {
             -1.0
         };
         ModifiedJulian {
-            days: J1900_OFFSET + modifier * (instant.secs() as f64) / SECONDS_PER_DAY
+            days: J1900_OFFSET
+                + modifier * (instant.secs() as f64) / SECONDS_PER_DAY
                 + f64::from(instant.nanos()) * 1e-9,
         }
     }

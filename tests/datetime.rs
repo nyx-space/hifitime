@@ -1,9 +1,8 @@
 extern crate hifitime;
 #[test]
 fn datetime_parsing() {
+    use hifitime::datetime::*;
     use std::str::FromStr;
-    use hifitime::datetime::{Datetime, FixedOffset, Offset};
-    use hifitime::instant::Era;
 
     // Negative offset test
     let dt =
@@ -50,8 +49,7 @@ fn datetime_parsing() {
 
 #[test]
 fn datetime_extras() {
-    use hifitime::datetime::{Datetime, TimeSystem};
-    use hifitime::instant::{Duration, Era, Instant};
+    use hifitime::datetime::*;
 
     let epoch = Datetime::at_midnight(1900, 1, 1).expect("epoch failed");
     assert_eq!(
@@ -107,11 +105,9 @@ fn datetime_extras() {
 
 #[test]
 fn datetime_valid_dates() {
-    use std::str::FromStr;
-    use hifitime::datetime::Datetime;
+    use hifitime::datetime::*;
     use hifitime::SECONDS_PER_DAY;
-    use hifitime::instant::{Duration, Era, Instant};
-    use hifitime::TimeSystem;
+    use std::str::FromStr;
 
     // Tests arbitrary dates in chronological order.
     // Cross validated via timeanddate.com (tool validation: https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=1&d2=1&y2=1970&h1=0&i1=0&s1=0&h2=0&i2=0&s2=0)
@@ -388,13 +384,9 @@ fn datetime_valid_dates() {
                         );
                         let unix_ref_from_inst = Datetime::from_instant(this_epoch);
                         assert_eq!(
-                            unix_ref,
-                            unix_ref_from_inst,
+                            unix_ref, unix_ref_from_inst,
                             "Conversion from instant failed + {:} {:} {:} {:}",
-                            dmonth,
-                            dhour,
-                            dmin,
-                            dsec
+                            dmonth, dhour, dmin, dsec
                         );
                     }
                 }
@@ -418,7 +410,9 @@ fn datetime_valid_dates() {
                         1590,
                     ).expect("epoch plus a day failed");
                     let inst = Instant::new(
-                        3600 * dhour + 60 * dminute + u64::from(dsecond)
+                        3600 * dhour
+                            + 60 * dminute
+                            + u64::from(dsecond)
                             + (SECONDS_PER_DAY as u64) * 365 * (dyear.abs() as u64),
                         1590,
                         Era::Past,
@@ -631,8 +625,7 @@ fn datetime_invalid_dates() {
 fn datetime_time_varying_offset() {
     // This test shows the possibility of implementing time varying datetime offsets.
     // It's very rudimentary and there must be better ways to implement this, but it works.
-    use hifitime::datetime::{Datetime, Offset, TimeSystem};
-    use hifitime::instant::{Era, Instant};
+    use hifitime::datetime::*;
 
     struct TimeVaryingOffset {}
     impl TimeVaryingOffset {
