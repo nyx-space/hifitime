@@ -3,8 +3,8 @@ extern crate hifitime;
 #[test]
 fn reciprocity() {
     use hifitime::instant;
-    use hifitime::TimeSystem;
     use hifitime::julian::ModifiedJulian;
+    use hifitime::TimeSystem;
 
     // Check reciprocity in the Present
     let tick = instant::Instant::new(159, 10, instant::Era::Present);
@@ -18,12 +18,23 @@ fn reciprocity() {
 }
 
 #[test]
+fn jd_tt() {
+    // Test case from Vallado, 4th Ed., Example 3-5 page 188.
+    use hifitime::datetime::*;
+    use hifitime::julian::*;
+    use std::f64::EPSILON;
+    let dt = Datetime::new(1992, 8, 20, 12, 14, 0, 0).expect("wut?");
+    let mjd = ModifiedJulian::from_instant(dt.into_instant());
+    assert!((mjd.centuries_since_j2000() + 0.07364791999391582).abs() < EPSILON);
+}
+
+#[test]
 fn epochs() {
-    use std;
+    use hifitime::datetime::*;
     use hifitime::instant;
-    use hifitime::{TimeSystem, SECONDS_PER_DAY};
-    use hifitime::julian::ModifiedJulian;
-    use hifitime::datetime::Datetime;
+    use hifitime::julian::*;
+    use hifitime::SECONDS_PER_DAY;
+    use std;
 
     // Tests are chronological dates.
     // All of the following examples are cross validated against NASA HEASARC,
