@@ -1,11 +1,14 @@
 // Disclaimer: this is heavily inspired by std::time::Duration, but it supports longer
 // time spans and leap seconds. Moreover, an Instant is defined with respect to
 // 01 Jan 1900, as per NTP and TAI specifications.
+use std::time::SystemTime;
+
+pub use std::time::Duration;
 
 use std::cmp::PartialEq;
 use std::fmt;
 use std::ops::{Add, Sub};
-pub use std::time::Duration;
+
 
 /// An `Era` represents whether the associated `Instant` is before the TAI Epoch
 /// (01 Jan 1900, midnight) or afterwards. If it is before, than it's refered to as "Past",
@@ -108,6 +111,40 @@ impl Instant {
             duration: Duration::new(seconds as u64, nanos.round() as u32),
             era: era,
         }
+    }
+
+    /// Creates a new `Instant` corresponding to the UNIX epoch of 1970 Jan 01, midnight.
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::TimeSystem;
+    /// use hifitime::instant::Instant;
+    /// use hifitime::datetime::Datetime;
+    ///
+    /// let epoch_dt = Datetime::new(1970, 1, 1, 0, 0, 0, 0).expect("epoch");
+    /// assert_eq!(Datetime::from_instant(Instant::unix_epoch()), epoch_dt);
+    /// ```
+    pub fn unix_epoch() -> Instant {
+        Instant::new(2_208_988_800, 0, Era::Present)
+    }
+
+    /// Creates a new `Instant` from the system time. **WARNING:** This assumes the system
+    /// time is in UTC. This is likely not the case! This function will **panic** if time is before
+    /// the UNIX epoch.
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::TimeSystem;
+    /// use hifitime::instant::Instant;
+    /// use hifitime::datetime::Datetime;
+    ///
+    /// let now_dt = Datetime::from_instant(Instant::now());
+    /// assert!(now_dt.year() >= &2018, "Feature added in 2018");
+    pub fn now() -> Instant {
+        Instant::unix_epoch()
+            + SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)
+                .expect("SystemTime before UNIX EPOCH!")
     }
 
     /// Returns the Duration with respect to Epoch (past OR present), check the `era()`
