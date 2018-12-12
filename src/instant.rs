@@ -134,7 +134,7 @@ impl Instant {
     /// use hifitime::datetime::Datetime;
     ///
     /// let now_dt = Datetime::from_instant(Instant::now());
-    /// assert!(now_dt.year() >= 2018, "Feature added in 2018");
+    /// assert!(now_dt.year() >= &2018, "Feature added in 2018");
     pub fn now() -> Instant {
         Instant::unix_epoch()
             + SystemTime::now()
@@ -215,7 +215,8 @@ impl Add<Duration> for Instant {
             match self.era {
                 Era::Past => {
                     if (delta.as_secs() >= self.duration.as_secs())
-                        || (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0
+                        || (delta.as_secs() >= self.duration.as_secs()
+                            && delta.as_secs() == 0
                             && delta.subsec_nanos() >= self.duration.subsec_nanos())
                     {
                         Instant::new(
@@ -285,7 +286,8 @@ impl Sub<Duration> for Instant {
                 }
                 Era::Present => {
                     if (delta.as_secs() >= self.duration.as_secs())
-                        || (delta.as_secs() >= self.duration.as_secs() && delta.as_secs() == 0
+                        || (delta.as_secs() >= self.duration.as_secs()
+                            && delta.as_secs() == 0
                             && delta.subsec_nanos() >= self.duration.subsec_nanos())
                     {
                         Instant::new(
