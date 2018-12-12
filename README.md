@@ -26,6 +26,7 @@ day-to-day use of this library.
  * [x] Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)
  * [x] Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
  * [x] A canonical time struct (`Instant`) defined as the NTP specifications. Supports arithmetic operations between `Instant` and `std::time::Duration`
+ * [x] An initializer from machine time
 
 Almost all examples are validated with external references, as detailed on a test-by-test
 basis.
@@ -43,4 +44,3 @@ day computations for [2015-06-30 23:59:59](https://heasarc.gsfc.nasa.gov/cgi-bin
 
 * [ ] Dates only, or times only (i.e. handles only the combination of both), but the `Datetime::at_midnight` or `Datetime::at_noon` help
 * [ ] Custom formatting of date time objects (cf. [issue \#4](https://github.com/ChristopherRabotin/hifitime/issues/4))
-* [ ] An initializer from machine time (cf. [issue \#8](https://github.com/ChristopherRabotin/hifitime/issues/8))
