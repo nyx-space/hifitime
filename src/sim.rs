@@ -1,7 +1,7 @@
 extern crate rand;
 
-use self::rand::thread_rng;
 use self::rand::distributions::{IndependentSample, Normal};
+use self::rand::thread_rng;
 use std::time::Duration;
 
 /// ClockNoise adds true clock drift to a given Duration measurement. For example, if a vehicle is

@@ -312,6 +312,8 @@ impl Datetime {
         nanos: u32,
         offset: Offset,
     ) -> Result<Datetime, Errors> {
+        // XXX: Do something here. Maybe have a way to know whether to add a second based on the
+        // month or something (but that may break for representations which do not have months)
         let max_seconds = if (month == 12 || month == 6)
             && day == USUAL_DAYS_PER_MONTH[month as usize - 1]
             && hour == 23
@@ -519,7 +521,8 @@ impl TimeSystem for Datetime {
             mins as u8,
             secs as u8,
             instant.nanos(),
-        ).expect("date computed from instant is invalid (past)")
+        )
+        .expect("date computed from instant is invalid (past)")
     }
 
     /// `into_instant` returns an Instant from the Datetime while correcting for the offset.
@@ -696,13 +699,15 @@ impl FromStr for Datetime {
         lazy_static! {
             static ref RE: Regex = Regex::new(
                 r"^(\d{4})-(\d{2})-(\d{2})(?:T|\W)(\d{2}):(\d{2}):(\d{2})(([\+|-]\d{2}):(\d{2}))?$"
-            ).unwrap();
+            )
+            .unwrap();
         }
         match RE.captures(s) {
             Some(cap) => {
                 let offset = match cap.get(7) {
                     Some(_) => {
-                        let offset_hours = cap.get(8).unwrap().as_str().to_owned().parse::<i32>()?;
+                        let offset_hours =
+                            cap.get(8).unwrap().as_str().to_owned().parse::<i32>()?;
                         let offset_mins = cap.get(9).unwrap().as_str().to_owned().parse::<i32>()?;
                         // Check if negative, and if so, multiply by negative seconds to get a positive number
                         if offset_hours < 0 {

@@ -50,8 +50,11 @@ fn epochs() {
             Datetime::new(1900, 1, 1, 0, 0, 0, 0)
                 .expect("01 January 1900 invalid?!")
                 .into_instant(),
-        ).days - 15_020.0)
-            .abs() < std::f64::EPSILON
+        )
+        .days
+            - 15_020.0)
+            .abs()
+            < std::f64::EPSILON
     );
     assert_eq!(format!("{}", mjd), "15020.00000");
 
@@ -65,8 +68,11 @@ fn epochs() {
             Datetime::new(1900, 1, 1, 12, 0, 0, 0)
                 .expect("01 January 1900 invalid?!")
                 .into_instant(),
-        ).days - 15_020.5)
-            .abs() < std::f64::EPSILON
+        )
+        .days
+            - 15_020.5)
+            .abs()
+            < std::f64::EPSILON
     );
     assert_eq!(format!("{}", mjd), "15020.50000");
 
@@ -119,8 +125,11 @@ fn epochs() {
             Datetime::new(2015, 6, 30, 23, 59, 59, 0)
                 .expect("July leap second failed")
                 .into_instant(),
-        ).days - 57_203.99998842592)
-            .abs() < std::f64::EPSILON,
+        )
+        .days
+            - 57_203.99998842592)
+            .abs()
+            < std::f64::EPSILON,
         "Incorrect July 2015 leap second MJD computed"
     );
 
@@ -130,8 +139,11 @@ fn epochs() {
             Datetime::new(2015, 6, 30, 23, 59, 60, 0)
                 .expect("July leap second failed")
                 .into_instant(),
-        ).days - 57_203.99998842592)
-            .abs() < std::f64::EPSILON,
+        )
+        .days
+            - 57_203.99998842592)
+            .abs()
+            < std::f64::EPSILON,
         "Incorrect July 2015 leap second MJD computed"
     );
 
@@ -141,8 +153,11 @@ fn epochs() {
             Datetime::new(2015, 7, 1, 0, 0, 0, 0)
                 .expect("Post July leap second failed")
                 .into_instant(),
-        ).days - 57_204.0)
-            .abs() < std::f64::EPSILON,
+        )
+        .days
+            - 57_204.0)
+            .abs()
+            < std::f64::EPSILON,
         "Incorrect Post July 2015 leap second MJD computed"
     );
 }

@@ -9,7 +9,6 @@ use std::cmp::PartialEq;
 use std::fmt;
 use std::ops::{Add, Sub};
 
-
 /// An `Era` represents whether the associated `Instant` is before the TAI Epoch
 /// (01 Jan 1900, midnight) or afterwards. If it is before, than it's refered to as "Past",
 /// otherwise is in the "Present" era.

@@ -1,6 +1,6 @@
 extern crate hifitime;
 
-mod julian;
 mod datetime;
+mod julian;
 #[cfg(feature = "simulation")]
 mod sim;

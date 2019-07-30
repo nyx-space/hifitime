@@ -117,6 +117,8 @@ pub mod julian;
 /// The `sim` module include high fidelity simulation tools related to date and time handling.
 pub mod sim;
 
+pub mod epoch;
+
 use instant::Instant;
 use std::cmp::PartialOrd;
 use std::convert;

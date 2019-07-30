@@ -371,7 +371,8 @@ fn datetime_valid_dates() {
                             dmin as u8,
                             dsec as u8,
                             0,
-                        ).expect("init unix epoch");
+                        )
+                        .expect("init unix epoch");
                         assert_eq!(
                             unix_ref.into_instant(),
                             this_epoch,
@@ -408,7 +409,8 @@ fn datetime_valid_dates() {
                         dminute as u8,
                         dsecond,
                         1590,
-                    ).expect("epoch plus a day failed");
+                    )
+                    .expect("epoch plus a day failed");
                     let inst = Instant::new(
                         3600 * dhour
                             + 60 * dminute
@@ -648,7 +650,8 @@ fn datetime_time_varying_offset() {
         55,
         0,
         TimeVaryingOffset::current_offset(before),
-    ).expect("huh");
+    )
+    .expect("huh");
     let after = Datetime::new(2019, 1, 14, 0, 31, 55, 0)
         .expect("huh")
         .into_instant();
@@ -661,7 +664,8 @@ fn datetime_time_varying_offset() {
         55,
         0,
         TimeVaryingOffset::current_offset(after),
-    ).expect("huh");
+    )
+    .expect("huh");
     // Since we've introduced an offset strictly equal to one hour, we have the following property
     assert_eq!(before_dt.to_utc(), after_dt.to_utc());
 }
