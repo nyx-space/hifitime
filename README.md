@@ -1,7 +1,6 @@
-# hifitime 0.1.5
+# hifitime 1.0
 
-Precise date and time handling in Rust built on top of
-[` std::time::Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html).
+Precise date and time handling in Rust built on top of `std::f64`.
 The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in
 day-to-day use of this library.
 
@@ -13,20 +12,18 @@ day-to-day use of this library.
 
 [cratesio-image]: https://img.shields.io/crates/v/hifitime.svg
 [cratesio]: https://crates.io/crates/hifitime
-[docsrs-image]: https://docs.rs/hifitime/badge.svg?version=0.1.5
-[docsrs]: https://docs.rs/hifitime/0.1.5/
+[docsrs-image]: https://docs.rs/hifitime/badge.svg?version=1.0
+[docsrs]: https://docs.rs/hifitime/1.0/
 
 
 ## Features
 
  * [x] Leap seconds (as announced by the IETF on a yearly basis)
  * [x] Julian dates and Modified Julian dates
- * [x] UTC representation with ISO8601 formatting (and parsing in that format)
- * [x] Allows building custom TimeSystem (e.g. Julian days)
- * [x] Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)
  * [x] Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
- * [x] A canonical time struct (`Instant`) defined as the NTP specifications. Supports arithmetic operations between `Instant` and `std::time::Duration`
- * [x] An initializer from machine time
+ * [ ] **TODO**: UTC representation with ISO8601 formatting (and parsing in that format)
+ * [ ] Support for custom representations of time (e.g. NASA GMAT Modified Julian Date)
+ * [ ] Trivial support of other time representations, such as TDT
 
 Almost all examples are validated with external references, as detailed on a test-by-test
 basis.
@@ -44,3 +41,14 @@ day computations for [2015-06-30 23:59:59](https://heasarc.gsfc.nasa.gov/cgi-bin
 
 * [ ] Dates only, or times only (i.e. handles only the combination of both), but the `Datetime::at_midnight` or `Datetime::at_noon` help
 * [ ] Custom formatting of date time objects (cf. [issue \#4](https://github.com/ChristopherRabotin/hifitime/issues/4))
+
+# Changelog
+## version 1.0 - COMPLETE rewrite
+The previous API is **totally incompatible** with version 1.0.
+
+### In this new version:
++ Correct and explicit support for TAI versus UTC (previously, UTC was _implied_ in the `Datetime` struct and TAI was _implied_ in the `Instant` struct)
++ Removed annoyingly high precision which prevented simple day-to-day operations on seconds (as needed in most time simulation software)
+ 
+### Motivation
+After using this extensively for a few months, I've come to realize that it was highly ambiguous, and frankly a pain in the neck to use because of the complexity of the `Instant` struct. It made common operations complicated for no good reason. And at least one major bug existed (the difference between two `Instant` of MJD was different from the actual difference of MJDs converted to seconds).

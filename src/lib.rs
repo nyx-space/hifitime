@@ -1,19 +1,16 @@
 //! # hifitime
 //!
-//! Precise date and time handling in Rust built on top of
-//! [` std::time::Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html).
-//! The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in
-//! day-to-day use of this library.
+//! Precise date and time handling in Rust built on top of a simple f64.
+//! The Epoch used is TAI Epoch of 01 Jan 1900 at midnight.
 //!
 //! ## Features
 //!
 //!  * Leap seconds (as announced by the IETF on a yearly basis)
 //!  * Julian dates and Modified Julian dates
-//!  * UTC representation with ISO8601 formatting (and parsing in that format)
-//!  * Allows building custom `TimeSystem` (e.g. Julian days)
-//!  * Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)
 //!  * Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
-//!  * A canonical time struct (`Instant`) defined as the NTP specifications. Supports arithmetic operations between `Instant` and `std::time::Duration`
+//!
+//! ## TODO
+//!  * UTC representation with ISO8601 formatting (and parsing in that format)
 //!
 //! Almost all examples are validated with external references, as detailed on a test-by-test
 //! basis.
@@ -41,7 +38,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! hifitime = "0.1.5"
+//! hifitime = "0.2"
 //! ```
 //!
 //! And add the following to your crate root:
@@ -53,33 +50,20 @@
 //! ### Examples:
 //!
 //! ```rust
-//! use hifitime::datetime::{Datetime, TimeSystem};
-//! use hifitime::instant::Duration;
-//! use hifitime::julian::ModifiedJulian;
+//! use hifitime::Epoch;
 //!
-//! let santa = Datetime::new(2017, 12, 25, 01, 02, 14, 0).expect("Xmas failed");
+//! let mut santa = Epoch::from_gregorian_utc(2017, 12, 25, 01, 02, 14, 0);
+//! assert_eq!(santa.as_mjd_utc_days(), 58112.043217592596);
+//! assert_eq!(santa.as_jde_utc_days(), 2458112.5432175924);
 //!
+//! santa.mut_add_secs(3600.0);
 //! assert_eq!(
-//!     santa.into_instant() + Duration::new(3600, 0),
-//!     Datetime::new(2017, 12, 25, 02, 02, 14, 0)
-//!         .expect("Xmas failed")
-//!         .into_instant(),
+//!     santa,
+//!     Epoch::from_gregorian_utc(2017, 12, 25, 02, 02, 14, 0),
 //!     "Could not add one hour to Christmas"
-//! );
-//! assert_eq!(format!("{}", santa), "2017-12-25T01:02:14+00:00");
-//! assert_eq!(
-//!     ModifiedJulian::from_instant(santa.into_instant()).days,
-//!     58112.043217592596
-//! );
-//! assert_eq!(
-//!     ModifiedJulian::from_instant(santa.into_instant()).julian_days(),
-//!     2458112.5432175924
 //! );
 //! ```
 //!
-
-#[macro_use]
-extern crate lazy_static;
 
 /// `J1900_OFFSET` determines the offset in julian days between 01 Jan 1900 at midnight and the
 /// Modified Julian Day at 17 November 1858.
@@ -90,6 +74,8 @@ pub const J1900_OFFSET: f64 = 15_020.0;
 /// `J2000_OFFSET` determines the offset in julian days between 01 Jan 2000 at **noon** and the
 /// Modified Julian Day at 17 November 1858.
 pub const J2000_OFFSET: f64 = 51_544.5;
+/// Modified Julian Date in seconds as defined [here](http://tycho.usno.navy.mil/mjd.html). MJD epoch is Modified Julian Day at 17 November 1858 at midnight.
+pub const MJD_OFFSET: f64 = 2_400_000.5;
 /// `DAYS_PER_YEAR` corresponds to the number of days per year in the Julian calendar.
 pub const DAYS_PER_YEAR: f64 = 365.25;
 /// `SECONDS_PER_DAY` defines the number of seconds per day.
@@ -99,38 +85,19 @@ pub const SECONDS_PER_HOUR: f64 = 3_600.0;
 /// `SECONDS_PER_MINUTE` defines the number of seconds per minute.
 pub const SECONDS_PER_MINUTE: f64 = 60.0;
 /// `SECONDS_PER_TROPICAL_YEAR` corresponds to the number of seconds per tropical year, as defined in `tyear_c.c` in [NAIF SPICE](https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/tyear_c.html).
-pub const SECONDS_PER_TROPICAL_YEAR: f64 = 315_56_925.9747;
-
-/// The `datetime` module supports conversions between seconds past TAI epoch and a Datetime struct.
-/// The main advantage (and challenge) is the inherent support for leap seconds. Refer to module
-/// documentation for leap second implementation details.
-pub mod datetime;
-/// The `instant` module is built on top of `std::time::Duration`. It is the basis of almost
-/// all computations in this library. It is the only common denominator allowing for conversions
-/// between Time Systems.
-pub mod instant;
-/// The `julian` module supports (Modified) Julian Days, which are heavily used in astronomy
-/// and its engineering friends.
-pub mod julian;
+pub const SECONDS_PER_TROPICAL_YEAR: f64 = 31_556_925.974_7;
 
 #[cfg(feature = "simulation")]
 /// The `sim` module include high fidelity simulation tools related to date and time handling.
 pub mod sim;
 
-use instant::Instant;
-use std::cmp::PartialOrd;
+mod epoch;
+
+pub use epoch::*;
+
 use std::convert;
 use std::fmt;
 use std::num::ParseIntError;
-
-/// A `TimeSystem` enables the creation of system for measuring spans of time, such as UTC or Julian
-/// days.
-pub trait TimeSystem: Clone + Copy + fmt::Display + PartialOrd {
-    /// Use this method to convert between different `TimeSystem` implementors.
-    fn from_instant(Instant) -> Self;
-    /// Also use this method to convert between different `TimeSystem` implementors
-    fn into_instant(self) -> Instant;
-}
 
 /// Errors handles all oddities which may occur in this library.
 #[derive(Debug)]
