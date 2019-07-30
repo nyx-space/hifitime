@@ -1,7 +1,6 @@
-# hifitime 0.1.5
+# hifitime 0.2
 
-Precise date and time handling in Rust built on top of
-[` std::time::Duration`](https://doc.rust-lang.org/std/time/struct.Duration.html).
+Precise date and time handling in Rust built on top of `std::f64`.
 The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in
 day-to-day use of this library.
 
@@ -13,20 +12,16 @@ day-to-day use of this library.
 
 [cratesio-image]: https://img.shields.io/crates/v/hifitime.svg
 [cratesio]: https://crates.io/crates/hifitime
-[docsrs-image]: https://docs.rs/hifitime/badge.svg?version=0.1.5
-[docsrs]: https://docs.rs/hifitime/0.1.5/
+[docsrs-image]: https://docs.rs/hifitime/badge.svg?version=0.2.0
+[docsrs]: https://docs.rs/hifitime/0.2.0/
 
 
 ## Features
 
  * [x] Leap seconds (as announced by the IETF on a yearly basis)
  * [x] Julian dates and Modified Julian dates
- * [x] UTC representation with ISO8601 formatting (and parsing in that format)
- * [x] Allows building custom TimeSystem (e.g. Julian days)
- * [x] Simple to use `Offset`s to represent fixed or time-varying UTC offsets (e.g. for very high speed reference frames)
  * [x] Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
- * [x] A canonical time struct (`Instant`) defined as the NTP specifications. Supports arithmetic operations between `Instant` and `std::time::Duration`
- * [x] An initializer from machine time
+ * [ ] **TODO**: UTC representation with ISO8601 formatting (and parsing in that format)
 
 Almost all examples are validated with external references, as detailed on a test-by-test
 basis.
