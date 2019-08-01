@@ -38,7 +38,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! hifitime = "0.2"
+//! hifitime = "1"
 //! ```
 //!
 //! And add the following to your crate root:

@@ -1,4 +1,5 @@
 use crate::{Errors, J1900_OFFSET, MJD_OFFSET, SECONDS_PER_DAY};
+use std::ops::Sub;
 
 /// From https://www.ietf.org/timezones/data/leap-seconds.list .
 const LEAP_SECONDS: [f64; 28] = [
@@ -50,8 +51,16 @@ const USUAL_DAYS_PER_YEAR: f64 = 365.0;
 // pub struct Epoch {
 //     pub secs_past_1900: f64,
 // }
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
 pub struct Epoch(f64);
+
+impl Sub for Epoch {
+    type Output = f64;
+
+    fn sub(self, other: Self) -> f64 {
+        self.0 - other.0
+    }
+}
 
 impl Epoch {
     /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
@@ -471,6 +480,41 @@ fn utc_epochs() {
     );
     this_epoch.mut_sub_secs(3600.0);
     assert_eq!(epoch_utc, this_epoch, "Incorrect epoch after sub");
+}
+
+#[test]
+fn utc_tai() {
+    use std::f64::EPSILON;
+    let this_epoch = Epoch::from_tai_seconds(2_272_060_800.0);
+    let epoch_utc = Epoch::from_gregorian_utc_hms(1972, 1, 1, 0, 0, 10);
+    let epoch_tai = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 10);
+    assert_eq!(epoch_utc, this_epoch, "Incorrect epoch");
+    assert!(epoch_tai > epoch_utc, "TAI is not ahead of UTC");
+    assert!(
+        (epoch_tai - epoch_utc - 10.0) < EPSILON,
+        "TAI is not ahead of UTC"
+    );
+
+    // Check that all of the TAI/UTC time differences are of 37.0 as of today.
+    let epoch_utc = Epoch::from_gregorian_utc_hms(2019, 8, 1, 20, 10, 23);
+    let epoch_tai = Epoch::from_gregorian_tai_hms(2019, 8, 1, 20, 10, 23);
+    assert!(epoch_tai > epoch_utc, "TAI is not ahead of UTC");
+    assert!(
+        (epoch_tai - epoch_utc - 37.0) < EPSILON,
+        "TAI is not ahead of UTC"
+    );
+    assert!(
+        (epoch_tai.as_tai_seconds() - epoch_utc.as_tai_seconds() - 37.0) < EPSILON,
+        "TAI is not ahead of UTC"
+    );
+    assert!(
+        (epoch_tai.as_utc_seconds() - epoch_utc.as_utc_seconds() - 37.0) < EPSILON,
+        "TAI is not ahead of UTC"
+    );
+    assert!(
+        (epoch_tai.as_tai_days() - epoch_utc.as_tai_days() - 37.0 / 86_400.0) < EPSILON,
+        "TAI is not ahead of UTC"
+    );
 }
 
 #[test]

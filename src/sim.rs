@@ -1,6 +1,7 @@
 extern crate rand;
+extern crate rand_distr;
 
-use self::rand::distributions::{IndependentSample, Normal};
+use self::rand_distr::{Normal, Distribution};
 use self::rand::thread_rng;
 use std::time::Duration;
 
@@ -41,14 +42,14 @@ use std::time::Duration;
 ///
 /// ```
 pub struct ClockNoise {
-    dist: Normal, // Stores the initialized Normal distribution generator
+    dist: Normal<f64>, // Stores the initialized Normal distribution generator
     span: f64,    // Stores the time span of the drift in seconds
 }
 
 impl ClockNoise {
     fn with_ppm_over(ppm: f64, span: f64) -> ClockNoise {
         ClockNoise {
-            dist: Normal::new(span, ppm * 1e-6),
+            dist: Normal::new(span, ppm * 1e-6).unwrap(),
             span: span,
         }
     }
@@ -70,10 +71,10 @@ impl ClockNoise {
     /// Returns a noisy Duration of the provided noiseless `Duration`
     pub fn noise_up(&self, noiseless: Duration) -> Duration {
         let mut nl_secs = noiseless.as_secs() as f64 + noiseless.subsec_nanos() as f64 * 1e-9;
-        let mut drift = 0.0;
+        let mut drift: f64 = 0.0;
         while nl_secs > 0.0 {
             // Change this condition for a loop + break
-            drift += self.dist.ind_sample(&mut thread_rng());
+            drift += self.dist.sample(&mut thread_rng());
             nl_secs -= self.span
         }
         // Re-create a Duration
