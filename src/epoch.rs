@@ -192,9 +192,14 @@ impl Epoch {
                 } else {
                     cnt += 1;
                 }
+            } else {
+                break; // No more leap seconds to process
             }
         }
-        if_tai.0 -= f64::from(cnt);
+        // We have the time in TAI. But we were given UTC.
+        // Hence, we need to _add_ the leap seconds to get the actual TAI time.
+        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
+        if_tai.0 += f64::from(cnt);
         Ok(if_tai)
     }
 
@@ -253,9 +258,12 @@ impl Epoch {
                 } else {
                     cnt += 1;
                 }
+            } else {
+                break; // No more leap seconds to process
             }
         }
-        self.0 + f64::from(cnt)
+        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
+        self.0 - f64::from(cnt)
     }
 
     pub fn as_utc_days(self) -> f64 {
@@ -283,7 +291,7 @@ impl Epoch {
         self.as_mjd_utc_days() * SECONDS_PER_DAY
     }
 
-    /// `as_jde_days` returns the Julian days from epoch 01 Jan -4713, 12:00 (noon)
+    /// Returns the Julian days from epoch 01 Jan -4713, 12:00 (noon)
     /// as explained in "Fundamentals of astrodynamics and applications", Vallado et al.
     /// 4th edition, page 182, and on [Wikipedia](https://en.wikipedia.org/wiki/Julian_day).
     pub fn as_jde_tai_days(self) -> f64 {
@@ -303,6 +311,31 @@ impl Epoch {
     /// Returns the Julian seconds in UTC.
     pub fn as_jde_utc_seconds(self) -> f64 {
         self.as_jde_utc_days() * SECONDS_PER_DAY
+    }
+
+    /// Returns seconds past TAI epoch in Terrestrial Dynamical Time (TDT) (also called Terrestrial Time (TT))
+    pub fn as_tdt_seconds(self) -> f64 {
+        self.as_tai_seconds() + 32.184
+    }
+
+    /// Returns days past Julian epoch in Terrestrial Dynamical Time (TDT) (also called Terrestrial Time (TT))
+    pub fn as_jde_tdt_days(self) -> f64 {
+        self.as_jde_tai_days() + 32.184 / SECONDS_PER_DAY
+    }
+
+    /// Returns days past Modified Julian epoch in Terrestrial Dynamical Time (TDT) (also called Terrestrial Time (TT))
+    pub fn as_mjd_tdt_days(self) -> f64 {
+        self.as_mjd_tai_days() + 32.184 / SECONDS_PER_DAY
+    }
+
+    /// Returns seconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
+    pub fn as_gpst_seconds(self) -> f64 {
+        self.as_tai_seconds() - 19.0
+    }
+
+    /// Returns days past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
+    pub fn as_gpst_days(self) -> f64 {
+        self.as_gpst_seconds() / SECONDS_PER_DAY
     }
 
     /// Increment this epoch by the number of days provided.
@@ -456,106 +489,151 @@ fn utc_epochs() {
     assert_eq!(epoch_utc, this_epoch, "Incorrect epoch");
 
     // Test the specific leap second times
-    let this_epoch = Epoch::from_tai_seconds(2_272_060_790.0);
-    let epoch_utc = Epoch::from_gregorian_utc_at_midnight(1972, 1, 1);
-    assert_eq!(epoch_utc, this_epoch, "Incorrect epoch");
+    let epoch_from_tai_secs = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
+    assert!((epoch_from_tai_secs.as_tai_seconds() - 2_272_060_800.0) < EPSILON);
+    let epoch_from_tai_greg = Epoch::from_tai_seconds(2_272_060_800.0);
+    assert_eq!(epoch_from_tai_greg, epoch_from_tai_secs, "Incorrect epoch");
 
-    let this_epoch = Epoch::from_tai_seconds(2_272_060_800.0);
-    let epoch_utc = Epoch::from_gregorian_utc_hms(1972, 1, 1, 0, 0, 10);
-    assert_eq!(epoch_utc, this_epoch, "Incorrect epoch");
+    // Check that second leap second happens
+    let epoch_from_utc_greg = Epoch::from_gregorian_utc_hms(1972, 6, 30, 23, 59, 59);
+    let epoch_from_utc_greg1 = Epoch::from_gregorian_utc_hms(1972, 7, 1, 0, 0, 0);
+    assert!(
+        (epoch_from_utc_greg1.as_tai_seconds() - epoch_from_utc_greg.as_tai_seconds() - 2.0).abs()
+            < EPSILON
+    );
 
     // Just prior to the 2017 leap second, there should be an offset of 36 seconds between UTC and TAI
     let this_epoch = Epoch::from_tai_seconds(3_692_217_599.0);
-    let epoch_utc = Epoch::from_gregorian_utc_hms(2017, 1, 1, 0, 0, 36);
+    let epoch_utc = Epoch::from_gregorian_utc_hms(2016, 12, 31, 23, 59, 23);
     assert_eq!(epoch_utc, this_epoch, "Incorrect epoch");
+    assert!((this_epoch.as_tai_seconds() - epoch_utc.as_utc_seconds()) - 36.0 < EPSILON);
+
+    // Just after to the 2017 leap second, there should be an offset of 37 seconds between UTC and TAI
+    let this_epoch = Epoch::from_tai_seconds(3_692_217_600.0);
+    let epoch_utc = Epoch::from_gregorian_utc_hms(2016, 12, 31, 23, 59, 24);
+    assert_eq!(epoch_utc, this_epoch, "Incorrect epoch");
+    assert!((this_epoch.as_tai_seconds() - epoch_utc.as_utc_seconds()) - 37.0 < EPSILON);
 
     let mut this_epoch = Epoch::from_tai_seconds(3_692_217_600.0);
-    let epoch_utc = Epoch::from_gregorian_utc_hms(2017, 1, 1, 0, 0, 37);
+    let epoch_utc = Epoch::from_gregorian_utc_hms(2016, 12, 31, 23, 59, 24);
     assert_eq!(epoch_utc, this_epoch, "Incorrect epoch");
     this_epoch.mut_add_secs(3600.0);
     assert_eq!(
         this_epoch,
-        Epoch::from_gregorian_utc_hms(2017, 1, 1, 1, 0, 37),
-        "Incorrect epoch after add"
+        Epoch::from_gregorian_utc_hms(2017, 1, 1, 0, 59, 23),
+        "Incorrect epoch when adding an hour across leap second"
     );
     this_epoch.mut_sub_secs(3600.0);
     assert_eq!(epoch_utc, this_epoch, "Incorrect epoch after sub");
+
+    let this_epoch = Epoch::from_gregorian_tai_at_midnight(2020, 1, 1);
+    assert!((this_epoch.as_jde_tai_days() - 2_458_849.5).abs() < std::f64::EPSILON)
 }
 
 #[test]
 fn utc_tai() {
+    // General note: TAI "ahead" of UTC means that there are _less_ TAI seconds since epoch for a given date
+    // than there are seconds for that UTC epoch: the same TAI time happens _before_ that UTC time.
     use std::f64::EPSILON;
-    let this_epoch = Epoch::from_tai_seconds(2_272_060_800.0);
-    let epoch_utc = Epoch::from_gregorian_utc_hms(1972, 1, 1, 0, 0, 10);
-    let epoch_tai = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 10);
-    assert_eq!(epoch_utc, this_epoch, "Incorrect epoch");
-    assert!(epoch_tai > epoch_utc, "TAI is not ahead of UTC");
+    // flp = first leap second
+    let flp_from_secs_tai = Epoch::from_tai_seconds(2_272_060_800.0);
+    let flp_from_greg_tai = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
+    assert_eq!(flp_from_secs_tai, flp_from_greg_tai);
+    // Right after the discontinuity, UTC time should be ten seconds behind TAI, i.e. TAI is ten second ahead of UTC
+    // In other words, the following date times are equal:
+    assert_eq!(
+        Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 10),
+        Epoch::from_gregorian_utc_at_midnight(1972, 1, 1),
+        "UTC discontinuity failed"
+    );
+    // Noon UTC after the first leap second is in fact ten seconds _after_ noon TAI.
+    // Hence, there are as many TAI seconds since Epoch between UTC Noon and TAI Noon + 10s.
     assert!(
-        (epoch_tai - epoch_utc - 10.0) < EPSILON,
+        Epoch::from_gregorian_utc_at_noon(1972, 1, 1)
+            > Epoch::from_gregorian_tai_at_noon(1972, 1, 1),
+        "TAI is not ahead of UTC (via PartialEq) at noon after first leap second"
+    );
+    assert!(
+        flp_from_secs_tai.as_tai_seconds() > flp_from_secs_tai.as_utc_seconds(),
+        "TAI is not ahead of UTC (via function call)"
+    );
+    assert!(
+        (flp_from_secs_tai.as_tai_seconds() - flp_from_secs_tai.as_utc_seconds() - 10.0) < EPSILON,
         "TAI is not ahead of UTC"
     );
 
     // Check that all of the TAI/UTC time differences are of 37.0 as of today.
     let epoch_utc = Epoch::from_gregorian_utc_hms(2019, 8, 1, 20, 10, 23);
     let epoch_tai = Epoch::from_gregorian_tai_hms(2019, 8, 1, 20, 10, 23);
-    assert!(epoch_tai > epoch_utc, "TAI is not ahead of UTC");
+    assert!(epoch_tai < epoch_utc, "TAI is not ahead of UTC");
     assert!(
-        (epoch_tai - epoch_utc - 37.0) < EPSILON,
+        (epoch_utc - epoch_tai - 37.0) < EPSILON,
         "TAI is not ahead of UTC"
     );
     assert!(
-        (epoch_tai.as_tai_seconds() - epoch_utc.as_tai_seconds() - 37.0) < EPSILON,
+        (epoch_utc.as_tai_seconds() - epoch_tai.as_tai_seconds() - 37.0).abs() < EPSILON,
         "TAI is not ahead of UTC"
     );
     assert!(
-        (epoch_tai.as_utc_seconds() - epoch_utc.as_utc_seconds() - 37.0) < EPSILON,
-        "TAI is not ahead of UTC"
-    );
-    assert!(
-        (epoch_tai.as_tai_days() - epoch_utc.as_tai_days() - 37.0 / 86_400.0) < EPSILON,
+        (epoch_utc.as_utc_seconds() - epoch_tai.as_utc_seconds() - 37.0).abs() < EPSILON,
         "TAI is not ahead of UTC"
     );
 }
 
 #[test]
 fn julian_epoch() {
+    use std::f64::EPSILON;
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=1900-01-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=1900-01-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     let nist_j1900 = Epoch::from_tai_days(0.0);
-    assert!((nist_j1900.as_mjd_tai_days() - 15_020.0).abs() < std::f64::EPSILON);
-    assert!((nist_j1900.as_jde_tai_days() - 2_415_020.5).abs() < std::f64::EPSILON);
+    assert!((nist_j1900.as_mjd_tai_days() - 15_020.0).abs() < EPSILON);
+    assert!((nist_j1900.as_jde_tai_days() - 2_415_020.5).abs() < EPSILON);
     let mjd = Epoch::from_gregorian_utc_at_midnight(1900, 1, 1);
-    assert!((mjd.as_mjd_tai_days() - 15_020.0).abs() < std::f64::EPSILON);
+    assert!((mjd.as_mjd_tai_days() - 15_020.0).abs() < EPSILON);
 
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=1900-01-01+12%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     let j1900 = Epoch::from_tai_days(0.5);
-    assert!((j1900.as_mjd_tai_days() - 15_020.5).abs() < std::f64::EPSILON);
-    assert!((j1900.as_jde_tai_days() - 2_415_021.0).abs() < std::f64::EPSILON);
+    assert!((j1900.as_mjd_tai_days() - 15_020.5).abs() < EPSILON);
+    assert!((j1900.as_jde_tai_days() - 2_415_021.0).abs() < EPSILON);
     let mjd = Epoch::from_gregorian_utc_at_noon(1900, 1, 1);
-    assert!((mjd.as_mjd_tai_days() - 15_020.5).abs() < std::f64::EPSILON);
+    assert!((mjd.as_mjd_tai_days() - 15_020.5).abs() < EPSILON);
 
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=1900-01-08+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     let mjd = Epoch::from_gregorian_utc_at_midnight(1900, 1, 8);
-    assert!((mjd.as_mjd_tai_days() - 15_027.0).abs() < std::f64::EPSILON);
-    assert!((mjd.as_jde_tai_days() - 2_415_027.5).abs() < std::f64::EPSILON);
+    assert!((mjd.as_mjd_tai_days() - 15_027.0).abs() < EPSILON);
+    assert!((mjd.as_jde_tai_days() - 2_415_027.5).abs() < EPSILON);
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=1980-01-06+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     let gps_std_epoch = Epoch::from_gregorian_tai_at_midnight(1980, 1, 6);
-    assert!((gps_std_epoch.as_mjd_tai_days() - 44_244.0).abs() < std::f64::EPSILON);
-    assert!((gps_std_epoch.as_jde_tai_days() - 2_444_244.5).abs() < std::f64::EPSILON);
+    assert!((gps_std_epoch.as_mjd_tai_days() - 44_244.0).abs() < EPSILON);
+    assert!((gps_std_epoch.as_jde_tai_days() - 2_444_244.5).abs() < EPSILON);
 
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2000-01-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     let j2000 = Epoch::from_gregorian_tai_at_midnight(2000, 1, 1);
-    assert!((j2000.as_mjd_tai_days() - 51_544.0).abs() < std::f64::EPSILON);
-    assert!((j2000.as_jde_tai_days() - 2_451_544.5).abs() < std::f64::EPSILON);
+    assert!((j2000.as_mjd_tai_days() - 51_544.0).abs() < EPSILON);
+    assert!((j2000.as_jde_tai_days() - 2_451_544.5).abs() < EPSILON);
+
+    assert!(
+        Epoch::from_gregorian_tai_at_midnight(2000, 1, 1)
+            < Epoch::from_gregorian_utc_at_midnight(2000, 1, 1),
+        "TAI not ahead of UTC on J2k"
+    );
+
+    assert!(
+        (Epoch::from_gregorian_utc_at_midnight(2000, 1, 1)
+            - Epoch::from_gregorian_tai_at_midnight(2000, 1, 1)
+            - 32.0)
+            .abs()
+            < EPSILON
+    );
 
     let j2000 = Epoch::from_gregorian_utc_at_midnight(2000, 1, 1);
-    assert!((j2000.as_mjd_utc_days() - 51_544.0).abs() < std::f64::EPSILON);
-    assert!((j2000.as_jde_utc_days() - 2_451_544.5).abs() < std::f64::EPSILON);
+    assert!((j2000.as_mjd_utc_days() - 51_544.0).abs() < EPSILON);
+    assert!((j2000.as_jde_utc_days() - 2_451_544.5).abs() < EPSILON);
 
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2002-02-07+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     let jd020207 = Epoch::from_gregorian_tai_at_midnight(2002, 2, 7);
-    assert!((jd020207.as_mjd_tai_days() - 52_312.0).abs() < std::f64::EPSILON);
-    assert!((jd020207.as_jde_tai_days() - 2_452_312.5).abs() < std::f64::EPSILON);
+    assert!((jd020207.as_mjd_tai_days() - 52_312.0).abs() < EPSILON);
+    assert!((jd020207.as_jde_tai_days() - 2_452_312.5).abs() < EPSILON);
 
     // Test leap seconds and Julian at the same time
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A59&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
@@ -566,7 +644,7 @@ fn julian_epoch() {
         (Epoch::from_gregorian_tai_hms(2015, 6, 30, 23, 59, 59).as_mjd_tai_days()
             - 57_203.999_988_425_92)
             .abs()
-            < std::f64::EPSILON,
+            < EPSILON,
         "Incorrect July 2015 leap second MJD computed"
     );
 
@@ -575,14 +653,14 @@ fn julian_epoch() {
         (Epoch::from_gregorian_tai_hms(2015, 6, 30, 23, 59, 60).as_mjd_tai_days()
             - 57_203.999_988_425_92)
             .abs()
-            < std::f64::EPSILON,
+            < EPSILON,
         "Incorrect July 2015 leap second MJD computed"
     );
 
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-07-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     assert!(
         (Epoch::from_gregorian_tai_at_midnight(2015, 7, 1).as_mjd_tai_days() - 57_204.0).abs()
-            < std::f64::EPSILON,
+            < EPSILON,
         "Incorrect Post July 2015 leap second MJD computed"
     );
 }
@@ -615,4 +693,27 @@ fn datetime_invalid_dates() {
     assert!(!is_gregorian_valid(2001, 2, 29, 22, 8, 47, 0));
     assert!(!is_gregorian_valid(2016, 12, 31, 23, 59, 61, 0));
     assert!(!is_gregorian_valid(2015, 6, 30, 23, 59, 61, 0));
+}
+
+#[test]
+fn gpst() {
+    use std::f64::EPSILON;
+    // let now = Epoch::from_gregorian_utc_hms(2019, 8, 24, 3, 49, 9);
+    let now = Epoch::from_gregorian_tai_hms(2019, 8, 24, 3, 49, 9);
+    dbg!(now.as_tai_seconds() - now.as_utc_seconds());
+    assert!(
+        now.as_tai_seconds() > now.as_utc_seconds(),
+        "TAI is not ahead of UTC"
+    );
+    assert!((now.as_tai_seconds() - now.as_utc_seconds() - 37.0).abs() < EPSILON);
+    assert!(
+        now.as_tai_seconds() > now.as_gpst_seconds(),
+        "TAI is not head of GPS Time"
+    );
+    assert!((now.as_tai_seconds() - now.as_gpst_seconds() - 19.0).abs() < EPSILON);
+    assert!(
+        now.as_gpst_seconds() > now.as_utc_seconds(),
+        "GPS Time is not head of UTC"
+    );
+    assert!((now.as_gpst_seconds() - now.as_utc_seconds() - 18.0).abs() < EPSILON);
 }
