@@ -338,41 +338,10 @@ impl Epoch {
         self.as_gpst_seconds() / SECONDS_PER_DAY
     }
 
-    pub fn as_tcb_seconds(self) -> f64 {
-        let epoch = 2_429_913_600.0; // Before then, TAI = TCB
-        let tick = 1.550_505e-8;
-        if self.0 <= epoch {
-            self.0
-        } else {
-            self.0 + (self.0 - epoch) * tick
-        }
-    }
-
-    pub fn as_jde_tcb_days(self) -> f64 {
-        self.as_tcb_seconds() / SECONDS_PER_DAY + J1900_OFFSET + MJD_OFFSET
-    }
-
-    // Returns seconds past TAI Epoch in Barycentric Dynamical Time (TDB)
-    pub fn as_tdb_seconds(self) -> f64 {
-        let epoch_jde = 2_443_144.500_372_5; // 1977-01-01 midnight TAI in TT (i.e. + 32.184s).
-        let tdb0 = -6.55e-5; // in seconds
-        let lb = 1.550_519_768e-8; // in seconds
-        self.0 - lb * (self.as_jde_tcb_days() - epoch_jde) * SECONDS_PER_DAY + tdb0
-    }
-
-    // Returns days past TAI Epoch in Barycentric Dynamical Time (TDB)
-    pub fn as_tdb_days(self) -> f64 {
-        self.as_tdb_seconds() / SECONDS_PER_DAY
-    }
-
-    // Returns Modified Julian Days in Barycentric Dynamical Time (TDB)
-    pub fn as_mjd_tdb_days(self) -> f64 {
-        self.as_tdb_days() + J1900_OFFSET
-    }
-
-    // Returns Julian Days in Barycentric Dynamical Time (TDB)
-    pub fn as_jde_tdb_days(self) -> f64 {
-        self.as_mjd_tdb_days() + MJD_OFFSET
+    // Returns the SPICE ephemeris time whose epoch is 2000 JAN 01 noon TAI within 1e-5 seconds or less (with some manually added offset)
+    pub fn as_et_seconds(self) -> f64 {
+        let et_epoch_s = 3_155_716_800.0;
+        self.as_tt_seconds() - et_epoch_s + 0.000_935
     }
 
     /// Increment this epoch by the number of days provided.
@@ -756,27 +725,21 @@ fn gpst() {
 }
 
 #[test]
-fn tt_tdb_tcb() {
-    use std::f64::EPSILON;
-    let tdb_ref = Epoch::from_gregorian_tai_at_midnight(1977, 1, 1);
-    dbg!(tdb_ref);
-    // Quick TAI to JDE test from https://www.iers.org/IERS/EN/Science/Recommendations/recommendation3.html
-    assert!((tdb_ref.as_jde_tai_days() - 2_443_144.5).abs() < EPSILON);
-    assert!((tdb_ref.as_jde_tt_days() - 2_443_144.500_372_5).abs() < EPSILON);
-    // Delta should be about 16.6 in 2011
-    dbg!(tdb_ref.as_jde_tcb_days());
-    dbg!(tdb_ref.as_jde_tai_days());
-
-    let example = Epoch::from_gregorian_tai_at_midnight(2011, 6, 15);
-    dbg!(example.as_tdb_seconds() - example.as_tcb_seconds());
-}
-
-#[test]
 fn spice_et() {
-    // 2002 02 06 23 02 59.9990600124000000
-    // let et = Epoch::from_gregorian_tai(2002, 2, 6, 23, 2, 59, 999060012);
-    let et = Epoch::from_gregorian_tai(2002, 2, 7, 1, 1, 1, 0);
-    let et_ep = Epoch::from_gregorian_tai_at_midnight(1958, 1, 1);
-    dbg!(et.as_tt_seconds() - et_ep.as_tt_seconds());
-    dbg!(et.as_tai_seconds());
+    /*
+    >>> sp.str2et("2012-02-07 11:22:33 UTC")
+    381885819.18493587
+    >>> sp.et2utc(381885819.18493587, 'C', 9)
+    '2012 FEB 07 11:22:33.000000000'
+    >>>
+    */
+    let sp_ex = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33);
+    let expect_et = 381_885_819.184_935_87;
+    assert!((sp_ex.as_et_seconds() - expect_et).abs() < 1e-5);
+    // Second example
+    let sp_ex = Epoch::from_gregorian_utc_at_midnight(2002, 2, 7);
+    assert!((sp_ex.as_et_seconds() - 66_312_064.184_938_76).abs() < 1e-5);
+    // Third example
+    let sp_ex = Epoch::from_gregorian_utc_hms(1996, 2, 7, 11, 22, 33);
+    assert!((sp_ex.as_et_seconds() - -123_035_784.815_060_48).abs() < 1e-5);
 }
