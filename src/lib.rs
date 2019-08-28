@@ -8,6 +8,7 @@
 //!  * Leap seconds (as announced by the IETF on a yearly basis)
 //!  * Julian dates and Modified Julian dates
 //!  * Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
+//!  * Ephemeris Time (SPICE ET) / Barycentric Dynamical Time (IERS TDB) computations correct at least to 1e-5 seconds
 //!
 //! ## TODO
 //!  * UTC representation with ISO8601 formatting (and parsing in that format)
@@ -63,6 +64,13 @@
 //!     "Could not add one hour to Christmas"
 //! );
 //! ```
+//!
+//! ### Limitations
+//! Barycentric Dynamical Time is computed using the [ESA Navipedia reference](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems).
+//! In three separate examples, the error with SPICE Ephemeris Time is the following:
+//!     * -9.536743e-07 seconds for 2012-Feb-7 11:22:33 UTC
+//!     * -3.814697e-06 seconds for 2002-Feb-7 midnight UTC
+//!     * -4.291534e-06 seconds for 1996-Feb-7 11:22:33 UTC
 //!
 
 /// `J1900_OFFSET` determines the offset in julian days between 01 Jan 1900 at midnight and the
