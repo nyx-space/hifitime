@@ -1,8 +1,8 @@
 extern crate rand;
 extern crate rand_distr;
 
-use self::rand_distr::{Normal, Distribution};
 use self::rand::thread_rng;
+use self::rand_distr::{Distribution, Normal};
 use std::time::Duration;
 
 /// ClockNoise adds true clock drift to a given Duration measurement. For example, if a vehicle is
@@ -43,7 +43,7 @@ use std::time::Duration;
 /// ```
 pub struct ClockNoise {
     dist: Normal<f64>, // Stores the initialized Normal distribution generator
-    span: f64,    // Stores the time span of the drift in seconds
+    span: f64,         // Stores the time span of the drift in seconds
 }
 
 impl ClockNoise {

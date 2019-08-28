@@ -313,18 +313,18 @@ impl Epoch {
         self.as_jde_utc_days() * SECONDS_PER_DAY
     }
 
-    /// Returns seconds past TAI epoch in Terrestrial Dynamical Time (TDT) (also called Terrestrial Time (TT))
-    pub fn as_tdt_seconds(self) -> f64 {
+    /// Returns seconds past TAI epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
+    pub fn as_tt_seconds(self) -> f64 {
         self.as_tai_seconds() + 32.184
     }
 
-    /// Returns days past Julian epoch in Terrestrial Dynamical Time (TDT) (also called Terrestrial Time (TT))
-    pub fn as_jde_tdt_days(self) -> f64 {
+    /// Returns days past Julian epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
+    pub fn as_jde_tt_days(self) -> f64 {
         self.as_jde_tai_days() + 32.184 / SECONDS_PER_DAY
     }
 
-    /// Returns days past Modified Julian epoch in Terrestrial Dynamical Time (TDT) (also called Terrestrial Time (TT))
-    pub fn as_mjd_tdt_days(self) -> f64 {
+    /// Returns days past Modified Julian epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
+    pub fn as_mjd_tt_days(self) -> f64 {
         self.as_mjd_tai_days() + 32.184 / SECONDS_PER_DAY
     }
 
@@ -336,6 +336,12 @@ impl Epoch {
     /// Returns days past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
     pub fn as_gpst_days(self) -> f64 {
         self.as_gpst_seconds() / SECONDS_PER_DAY
+    }
+
+    // Returns the SPICE ephemeris time whose epoch is 2000 JAN 01 noon TAI within 1e-5 seconds or less (with some manually added offset)
+    pub fn as_et_seconds(self) -> f64 {
+        let et_epoch_s = 3_155_716_800.0;
+        self.as_tt_seconds() - et_epoch_s + 0.000_935
     }
 
     /// Increment this epoch by the number of days provided.
@@ -716,4 +722,24 @@ fn gpst() {
         "GPS Time is not head of UTC"
     );
     assert!((now.as_gpst_seconds() - now.as_utc_seconds() - 18.0).abs() < EPSILON);
+}
+
+#[test]
+fn spice_et() {
+    /*
+    >>> sp.str2et("2012-02-07 11:22:33 UTC")
+    381885819.18493587
+    >>> sp.et2utc(381885819.18493587, 'C', 9)
+    '2012 FEB 07 11:22:33.000000000'
+    >>>
+    */
+    let sp_ex = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33);
+    let expect_et = 381_885_819.184_935_87;
+    assert!((sp_ex.as_et_seconds() - expect_et).abs() < 1e-5);
+    // Second example
+    let sp_ex = Epoch::from_gregorian_utc_at_midnight(2002, 2, 7);
+    assert!((sp_ex.as_et_seconds() - 66_312_064.184_938_76).abs() < 1e-5);
+    // Third example
+    let sp_ex = Epoch::from_gregorian_utc_hms(1996, 2, 7, 11, 22, 33);
+    assert!((sp_ex.as_et_seconds() - -123_035_784.815_060_48).abs() < 1e-5);
 }
