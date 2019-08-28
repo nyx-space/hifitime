@@ -87,6 +87,28 @@ impl Epoch {
         }
     }
 
+    /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
+    pub fn from_tt_seconds(seconds: f64) -> Self {
+        Self {
+            0: seconds - 32.184,
+        }
+    }
+
+    /// Initialize from SPICE ephemeris time whose epoch is 2000 JAN 01 noon TAI
+    pub fn from_et_seconds(seconds: f64) -> Epoch {
+        let et_epoch_s = 3_155_716_800.0;
+        Self {
+            0: seconds - 32.184 + et_epoch_s - 0.000_935,
+        }
+    }
+
+    /// Initialize from SPICE ephemeris time in JD days
+    pub fn from_jde_et(days: f64) -> Self {
+        let mut rtn = Self::from_jde_tai(days);
+        rtn.0 -= 32.184_935;
+        rtn
+    }
+
     /// Attempts to build an Epoch from the provided Gregorian date and time in TAI.
     pub fn maybe_from_gregorian_tai(
         year: i32,
@@ -342,6 +364,11 @@ impl Epoch {
     pub fn as_et_seconds(self) -> f64 {
         let et_epoch_s = 3_155_716_800.0;
         self.as_tt_seconds() - et_epoch_s + 0.000_935
+    }
+
+    // Returns the SPICE ephemeris time in JDE since JD Epoch
+    pub fn as_jde_et_days(self) -> f64 {
+        self.as_jde_tt_days() + 0.000_935 / SECONDS_PER_DAY
     }
 
     /// Increment this epoch by the number of days provided.
@@ -736,10 +763,38 @@ fn spice_et() {
     let sp_ex = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33);
     let expect_et = 381_885_819.184_935_87;
     assert!((sp_ex.as_et_seconds() - expect_et).abs() < 1e-5);
+    assert!(
+        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expect_et).as_tai_seconds()).abs() < 1e-5
+    );
     // Second example
     let sp_ex = Epoch::from_gregorian_utc_at_midnight(2002, 2, 7);
-    assert!((sp_ex.as_et_seconds() - 66_312_064.184_938_76).abs() < 1e-5);
+    let expect_et = 66_312_064.184_938_76;
+    assert!((sp_ex.as_et_seconds() - expect_et).abs() < 1e-5);
+    assert!(
+        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expect_et).as_tai_seconds()).abs() < 1e-5
+    );
     // Third example
     let sp_ex = Epoch::from_gregorian_utc_hms(1996, 2, 7, 11, 22, 33);
-    assert!((sp_ex.as_et_seconds() - -123_035_784.815_060_48).abs() < 1e-5);
+    let expect_et = -123_035_784.815_060_48;
+    assert!((sp_ex.as_et_seconds() - expect_et).abs() < 1e-5);
+    assert!(
+        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expect_et).as_tai_seconds()).abs() < 1e-5
+    );
+
+    // SPICE computation reciprocity (from 2002-02-07)
+    /* Initial JDE from sp.et2utc:
+    >>> nyx_et
+    66312032.18493502
+    >>> sp.et2utc(nyx_et, 'J', 9)
+    'JD 2452312.4996296'
+    */
+    // Remove the 32 leap seconds from that date (cf. https://www.ietf.org/timezones/data/leap-seconds.list)
+    // And the 32.184 for the TT/TAI offset
+    let sp_ex = Epoch::from_et_seconds(66_312_032.184_935_02);
+    let sp_jde_days = 2_452_312.499_629_6 + (32.0 + 32.184) / 86400.0;
+    let err_days = sp_ex.as_jde_et_days() - sp_jde_days;
+    // Check that there is less than 10ms difference.
+    assert!((err_days * SECONDS_PER_DAY).abs() < 1e-2);
+    let sp_ex_jde = Epoch::from_jde_et(sp_jde_days);
+    assert!((sp_ex_jde.as_et_seconds() - sp_ex.as_et_seconds()).abs() < 1e-2);
 }
