@@ -94,7 +94,7 @@ impl Epoch {
         }
     }
 
-    /// Initialize from SPICE ephemeris time whose epoch is 2000 JAN 01 noon TAI
+    /// Initialize from SPICE ephemeris time (same as Dynamic Barycentric Time (TBD)) whose epoch is 2000 JAN 01 noon TAI
     pub fn from_et_seconds(seconds: f64) -> Epoch {
         let et_epoch_s = 3_155_716_800.0;
         Self {
@@ -360,7 +360,7 @@ impl Epoch {
         self.as_gpst_seconds() / SECONDS_PER_DAY
     }
 
-    // Returns the SPICE ephemeris time whose epoch is 2000 JAN 01 noon TAI within 1e-5 seconds or less (with some manually added offset)
+    // Returns the SPICE ephemeris time (same as Dynamic Barycentric Time (TBD)) whose epoch is 2000 JAN 01 noon TAI
     pub fn as_et_seconds(self) -> f64 {
         use std::f64::consts::PI;
         let et_epoch_s = 3_155_716_800.0;
