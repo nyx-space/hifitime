@@ -372,7 +372,12 @@ impl Epoch {
 
     // Returns the SPICE ephemeris time in JDE since JD Epoch
     pub fn as_jde_et_days(self) -> f64 {
-        self.as_jde_tt_days() + 0.000_935 / SECONDS_PER_DAY
+        use std::f64::consts::PI;
+        let et_epoch_s = 3_155_716_800.0;
+        let centuries_since_j2ktt =
+            (self.as_tt_seconds() - et_epoch_s) / (SECONDS_PER_DAY * 36525.0);
+        let g_rad = 2.0 * PI * (357.528 + 35_999.050 * centuries_since_j2ktt) / 360.0;
+        self.as_jde_tt_days() + (0.001_658 * (g_rad + 0.0167 * g_rad.sin()).sin()) / SECONDS_PER_DAY
     }
 
     /// Increment this epoch by the number of days provided.
