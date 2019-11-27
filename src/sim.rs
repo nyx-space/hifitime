@@ -3,7 +3,6 @@ extern crate rand_distr;
 
 use self::rand::thread_rng;
 use self::rand_distr::{Distribution, Normal};
-use std::time::Duration;
 
 /// ClockNoise adds true clock drift to a given Duration measurement. For example, if a vehicle is
 /// measuring the time of flight of a signal with high precision oscillator, the engineering
@@ -20,25 +19,15 @@ use std::time::Duration;
 /// # Example
 /// ```
 /// use hifitime::sim::ClockNoise;
-/// use std::time::Duration;
 ///
 /// // The IRIS clock is 1 part per billion over one second
 /// let nasa_iris = ClockNoise::with_ppm_over_1sec(1e-3);
-/// let ddoor = Duration::new(8 * 60, 0);
+/// let ddoor = 8.0 * 60.0;
 /// let noisy = nasa_iris.noise_up(ddoor);
-/// if noisy > ddoor {
-///     assert_eq!(
-///         (noisy - ddoor).as_secs(),
-///         0,
-///         "Expected a zero deviation for IRIS"
-///     );
-/// } else {
-///     assert_eq!(
-///         (ddoor - noisy).as_secs(),
-///         0,
-///         "Expected a zero deviation for IRIS"
-///     );
-/// }
+/// assert!(
+///     (noisy - ddoor).abs() < 1e-3,
+///     "Expected a zero deviation for IRIS"
+/// );
 ///
 /// ```
 pub struct ClockNoise {
@@ -69,32 +58,22 @@ impl ClockNoise {
         ClockNoise::with_ppm_over(ppm, 900.0)
     }
     /// Returns a noisy Duration of the provided noiseless `Duration`
-    pub fn noise_up(&self, noiseless: Duration) -> Duration {
-        let mut nl_secs = noiseless.as_secs() as f64 + noiseless.subsec_nanos() as f64 * 1e-9;
+    pub fn noise_up(&self, noiseless: f64) -> f64 {
+        let mut nl_secs = noiseless;
         let mut drift: f64 = 0.0;
         while nl_secs > 0.0 {
-            // Change this condition for a loop + break
             drift += self.dist.sample(&mut thread_rng());
-            nl_secs -= self.span
+            nl_secs -= self.span;
         }
-        // Re-create a Duration
-        let secs = drift.floor();
-        let nanos = (drift - secs) * 1e9;
-        Duration::new(secs as u64, nanos as u32)
+        drift
     }
 }
 
-#[cfg(feature = "simulation")]
 #[test]
 fn clock_noise() {
-    use std::time::Duration;
-
     let clock_1ppm_1s = ClockNoise::with_ppm_over_1sec(1.0);
     let clock_1ppm_1m = ClockNoise::with_ppm_over_1min(1.0);
     let clock_1ppm_15m = ClockNoise::with_ppm_over_15min(1.0);
-    let truth_1s = Duration::new(1, 0);
-    let truth_1m = Duration::new(60, 0);
-    let truth_15m = Duration::new(900, 0);
 
     let mut err_1s = 0;
     let mut err_1m = 0;
@@ -104,13 +83,13 @@ fn clock_noise() {
     // deviation greater than the expected time span.
 
     for _ in 0..100 {
-        if clock_1ppm_1s.noise_up(truth_1s).as_secs() > 1 {
+        if (clock_1ppm_1s.noise_up(1.0) - 1.0).abs() > 1.0 {
             err_1s += 1;
         }
-        if clock_1ppm_1m.noise_up(truth_1m).as_secs() > 60 {
+        if (clock_1ppm_1m.noise_up(60.0) - 60.0).abs() > 60.0 {
             err_1m += 1;
         }
-        if clock_1ppm_15m.noise_up(truth_15m).as_secs() > 900 {
+        if (clock_1ppm_15m.noise_up(900.0) - 900.0).abs() > 900.0 {
             err_15m += 1;
         }
     }

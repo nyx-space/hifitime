@@ -95,7 +95,6 @@ pub const SECONDS_PER_MINUTE: f64 = 60.0;
 /// `SECONDS_PER_TROPICAL_YEAR` corresponds to the number of seconds per tropical year, as defined in `tyear_c.c` in [NAIF SPICE](https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/tyear_c.html).
 pub const SECONDS_PER_TROPICAL_YEAR: f64 = 31_556_925.974_7;
 
-#[cfg(feature = "simulation")]
 /// The `sim` module include high fidelity simulation tools related to date and time handling.
 pub mod sim;
 
