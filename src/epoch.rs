@@ -1,5 +1,5 @@
 use crate::{Errors, J1900_OFFSET, MJD_OFFSET, SECONDS_PER_DAY};
-use std::ops::Sub;
+use std::ops::{Add, Sub};
 
 /// From https://www.ietf.org/timezones/data/leap-seconds.list .
 const LEAP_SECONDS: [f64; 28] = [
@@ -59,6 +59,26 @@ impl Sub for Epoch {
 
     fn sub(self, other: Self) -> f64 {
         self.0 - other.0
+    }
+}
+
+impl Add<f64> for Epoch {
+    type Output = Self;
+
+    fn add(self, seconds: f64) -> Self {
+        Self {
+            0: self.0 + seconds,
+        }
+    }
+}
+
+impl Sub<f64> for Epoch {
+    type Output = Self;
+
+    fn sub(self, seconds: f64) -> Self {
+        Self {
+            0: self.0 - seconds,
+        }
     }
 }
 
@@ -742,7 +762,6 @@ fn gpst() {
     use std::f64::EPSILON;
     // let now = Epoch::from_gregorian_utc_hms(2019, 8, 24, 3, 49, 9);
     let now = Epoch::from_gregorian_tai_hms(2019, 8, 24, 3, 49, 9);
-    dbg!(now.as_tai_seconds() - now.as_utc_seconds());
     assert!(
         now.as_tai_seconds() > now.as_utc_seconds(),
         "TAI is not ahead of UTC"
@@ -806,4 +825,14 @@ fn spice_et() {
     assert!((err_days * SECONDS_PER_DAY).abs() < 1e-2);
     let sp_ex_jde = Epoch::from_jde_et(sp_jde_days);
     assert!((sp_ex_jde.as_et_seconds() - sp_ex.as_et_seconds()).abs() < 1e-2);
+}
+
+#[test]
+fn ops() {
+    // Test adding a second
+    let sp_ex = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33) + 1.0;
+    let expect_et = 381_885_819.184_935_87;
+    assert!((sp_ex.as_et_seconds() - expect_et - 1.0).abs() < 1e-5);
+    let sp_ex = sp_ex - 1.0;
+    assert!((sp_ex.as_et_seconds() - expect_et).abs() < 1e-5);
 }
