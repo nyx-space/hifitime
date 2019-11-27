@@ -18,7 +18,7 @@ use self::rand_distr::{Distribution, Normal};
 ///
 /// # Example
 /// ```
-/// use hifitime::sim::ClockNoise;
+/// use hifitime::ClockNoise;
 ///
 /// // The IRIS clock is 1 part per billion over one second
 /// let nasa_iris = ClockNoise::with_ppm_over_1sec(1e-3);
@@ -38,7 +38,7 @@ pub struct ClockNoise {
 impl ClockNoise {
     fn with_ppm_over(ppm: f64, span: f64) -> ClockNoise {
         ClockNoise {
-            dist: Normal::new(span, ppm * 1e-6).unwrap(),
+            dist: Normal::new(0.0, ppm / span * 1e-6).unwrap(),
             span: span,
         }
     }
@@ -57,7 +57,7 @@ impl ClockNoise {
     pub fn with_ppm_over_15min(ppm: f64) -> ClockNoise {
         ClockNoise::with_ppm_over(ppm, 900.0)
     }
-    /// Returns a noisy Duration of the provided noiseless `Duration`
+    /// From an input set of seconds, returns a random walk number of seconds corresponding to the value plus/minus a drift
     pub fn noise_up(&self, noiseless: f64) -> f64 {
         let mut nl_secs = noiseless;
         let mut drift: f64 = 0.0;
@@ -65,7 +65,7 @@ impl ClockNoise {
             drift += self.dist.sample(&mut thread_rng());
             nl_secs -= self.span;
         }
-        drift
+        noiseless + drift
     }
 }
 
