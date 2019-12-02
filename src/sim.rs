@@ -31,16 +31,18 @@ use self::rand_distr::{Distribution, Normal};
 ///
 /// ```
 pub struct ClockNoise {
-    dist: Normal<f64>, // Stores the initialized Normal distribution generator
-    span: f64,         // Stores the time span of the drift in seconds
+    ppm: f64,  // Stores the parts per million of this clock
+    span: f64, // Stores the time span of the drift in seconds
 }
 
 impl ClockNoise {
     fn with_ppm_over(ppm: f64, span: f64) -> ClockNoise {
-        ClockNoise {
-            dist: Normal::new(0.0, ppm / span * 1e-6).unwrap(),
-            span: span,
-        }
+        ClockNoise { ppm, span }
+    }
+    /// Creates a new ClockNoise generator from the stability characteristics in absolute parts per million
+    /// The ppm value is assumed to be the 7-sigma deviation.
+    pub fn with_ppm(ppm: f64) -> ClockNoise {
+        ClockNoise::with_ppm_over(ppm, 1.0)
     }
     /// Creates a new ClockNoise generator from the stability characteristics in parts per million
     /// over **one** second.
@@ -58,19 +60,26 @@ impl ClockNoise {
         ClockNoise::with_ppm_over(ppm, 900.0)
     }
     /// From an input set of seconds, returns a random walk number of seconds corresponding to the value plus/minus a drift
-    pub fn noise_up(&self, noiseless: f64) -> f64 {
-        let mut nl_secs = noiseless;
+    pub fn noise_up(&self, duration_in_secs: f64) -> f64 {
+        let dist = Normal::new(0.0, self.ppm / self.span * 1e-6).unwrap();
+        let mut nl_secs = duration_in_secs;
         let mut drift: f64 = 0.0;
         while nl_secs > 0.0 {
-            drift += self.dist.sample(&mut thread_rng());
+            drift += dist.sample(&mut thread_rng());
             nl_secs -= self.span;
         }
-        noiseless + drift
+        duration_in_secs + drift
+    }
+    /// Sample the clock for a specific value.
+    /// Can be used to determined a sampled frequency from an input frequency in Hertz
+    pub fn sample(&self, value: f64) -> f64 {
+        let dist = Normal::new(0.0, value * self.ppm * 1e-6).unwrap();
+        value + dist.sample(&mut thread_rng())
     }
 }
 
 #[test]
-fn clock_noise() {
+fn clock_noise_up() {
     let clock_1ppm_1s = ClockNoise::with_ppm_over_1sec(1.0);
     let clock_1ppm_1m = ClockNoise::with_ppm_over_1min(1.0);
     let clock_1ppm_15m = ClockNoise::with_ppm_over_15min(1.0);
@@ -108,4 +117,20 @@ fn clock_noise() {
         "Clock drift greater than span {:} times over 100 draws (15m)",
         err_15m
     );
+}
+
+#[test]
+fn clock_sample() {
+    let sc_clk = ClockNoise::with_ppm(2.0);
+    let mut sum = 0.0;
+    let cnt = 100000;
+    let freq = 2.3e9;
+    for _ in 0..cnt {
+        sum += sc_clk.sample(freq);
+    }
+    // We're doing a 7-sigma initialization, so we're probalistically guaranteed to have a mean below this.
+    let variation = freq * 2.0e-6;
+    let mean = sum / cnt as f64;
+    println!("mean: {}", mean);
+    assert!((mean - freq).abs() < variation);
 }

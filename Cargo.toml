@@ -1,6 +1,6 @@
 [package]
 name = "hifitime"
-version = "1.0.7"
+version = "1.0.8"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
 description = "Precise date and time handling in Rust built on top of std::f64 with leap second support"
 homepage = "https://github.com/ChristopherRabotin/hifitime"
