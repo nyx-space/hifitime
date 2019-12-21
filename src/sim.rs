@@ -31,13 +31,16 @@ use self::rand_distr::{Distribution, Normal};
 ///
 /// ```
 pub struct ClockNoise {
-    ppm: f64,  // Stores the parts per million of this clock
-    span: f64, // Stores the time span of the drift in seconds
+    dist: Normal<f64>,
+    span: f64,
 }
 
 impl ClockNoise {
     fn with_ppm_over(ppm: f64, span: f64) -> ClockNoise {
-        ClockNoise { ppm, span }
+        ClockNoise {
+            dist: Normal::new(0.0, ppm / span * 1e-6).unwrap(),
+            span,
+        }
     }
     /// Creates a new ClockNoise generator from the stability characteristics in absolute parts per million
     /// The ppm value is assumed to be the 7-sigma deviation.
@@ -60,12 +63,12 @@ impl ClockNoise {
         ClockNoise::with_ppm_over(ppm, 900.0)
     }
     /// From an input set of seconds, returns a random walk number of seconds corresponding to the value plus/minus a drift
+    /// This is the most accurate method to generate a noisy signal, but it's extremely slow.
     pub fn noise_up(&self, duration_in_secs: f64) -> f64 {
-        let dist = Normal::new(0.0, self.ppm / self.span * 1e-6).unwrap();
         let mut nl_secs = duration_in_secs;
         let mut drift: f64 = 0.0;
         while nl_secs > 0.0 {
-            drift += dist.sample(&mut thread_rng());
+            drift += self.dist.sample(&mut thread_rng());
             nl_secs -= self.span;
         }
         duration_in_secs + drift
@@ -73,8 +76,7 @@ impl ClockNoise {
     /// Sample the clock for a specific value.
     /// Can be used to determined a sampled frequency from an input frequency in Hertz
     pub fn sample(&self, value: f64) -> f64 {
-        let dist = Normal::new(0.0, value * self.ppm * 1e-6).unwrap();
-        value + dist.sample(&mut thread_rng())
+        value + self.dist.sample(&mut thread_rng())
     }
 }
 
