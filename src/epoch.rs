@@ -1,3 +1,8 @@
+extern crate chrono;
+extern crate lazy_static;
+extern crate regex;
+
+use self::lazy_static::lazy_static;
 use crate::{Errors, J1900_OFFSET, MJD_OFFSET, SECONDS_PER_DAY};
 use std::ops::{Add, Sub};
 
@@ -418,6 +423,41 @@ impl Epoch {
     /// Decrement this epoch by the number of days provided.
     pub fn mut_sub_secs(&mut self, seconds: f64) {
         self.0 -= seconds
+    }
+
+    /// Converts an ISO8601 Datetime representation without timezone offset to an Epoch.
+    /// The `T` which separates the date from the time can be replaced with a single whitespace character (`\W`).
+    /// The offset is also optional, cf. the examples below.
+    ///
+    /// # Examples
+    /// ```
+    /// use hifitime::Epoch;
+    /// let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
+    /// assert_eq!(
+    ///     dt,
+    ///     Epoch::from_gregorian_utc_str("2017-01-14T00:31:55").unwrap()
+    /// );
+    /// ```
+    pub fn from_gregorian_utc_str(s: &str) -> Result<Self, Errors> {
+        use self::regex::Regex;
+        lazy_static! {
+            static ref RE: Regex =
+                Regex::new(r"^(\d{4})-(\d{2})-(\d{2})(?:T|\W)(\d{2}):(\d{2}):(\d{2})$").unwrap();
+        }
+        match RE.captures(s) {
+            Some(cap) => Self::maybe_from_gregorian_utc(
+                cap[1].to_owned().parse::<i32>()?,
+                cap[2].to_owned().parse::<u8>()?,
+                cap[3].to_owned().parse::<u8>()?,
+                cap[4].to_owned().parse::<u8>()?,
+                cap[5].to_owned().parse::<u8>()?,
+                cap[6].to_owned().parse::<u8>()?,
+                0,
+            ),
+            None => Err(Errors::ParseError(
+                "Input not in ISO8601 format without offset (e.g. 2018-01-27T00:41:55)".to_owned(),
+            )),
+        }
     }
 }
 
