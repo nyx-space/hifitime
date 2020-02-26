@@ -1,4 +1,3 @@
-extern crate chrono;
 extern crate lazy_static;
 extern crate regex;
 
@@ -429,7 +428,7 @@ impl Epoch {
     /// The `T` which separates the date from the time can be replaced with a single whitespace character (`\W`).
     /// The offset is also optional, cf. the examples below.
     ///
-    /// # Examples
+    /// # Example
     /// ```
     /// use hifitime::Epoch;
     /// let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
@@ -458,6 +457,128 @@ impl Epoch {
                 "Input not in ISO8601 format without offset (e.g. 2018-01-27T00:41:55)".to_owned(),
             )),
         }
+    }
+
+    /// Converts the Epoch to the Gregorian UTC equivalent as (year, month, day, hour, minute, second).
+    /// WARNING: Nanoseconds are lost in this conversion!
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::Epoch;
+    /// let dt_str = "2017-01-14T00:31:55";
+    /// let dt = Epoch::from_gregorian_utc_str(dt_str).unwrap();
+    /// let (y, m, d, h, min, s) = dt.as_gregorian_utc();
+    /// assert_eq!(y, 2017);
+    /// assert_eq!(m, 1);
+    /// assert_eq!(d, 14);
+    /// assert_eq!(h, 0);
+    /// assert_eq!(min, 31);
+    /// assert_eq!(s, 55);
+    /// assert_eq!(dt_str, dt.as_gregorian_utc_str().to_owned());
+    /// ```
+    pub fn as_gregorian_utc(&self) -> (i32, u8, u8, u8, u8, u8) {
+        Self::as_gregorian(self.as_utc_seconds())
+    }
+
+    /// Converts the Epoch to UTC Gregorian in the ISO8601 format.
+    pub fn as_gregorian_utc_str(&self) -> String {
+        let (y, m, d, h, min, s) = Self::as_gregorian(self.as_utc_seconds());
+        format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}", y, m, d, h, min, s)
+    }
+
+    /// Converts the Epoch to the Gregorian TAI equivalent as (year, month, day, hour, minute, second).
+    /// WARNING: Nanoseconds are lost in this conversion!
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::Epoch;
+    /// let dt = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
+    /// let (y, m, d, h, min, s) = dt.as_gregorian_tai();
+    /// assert_eq!(y, 1972);
+    /// assert_eq!(m, 1);
+    /// assert_eq!(d, 1);
+    /// assert_eq!(h, 0);
+    /// assert_eq!(min, 0);
+    /// assert_eq!(s, 0);
+    /// ```
+    pub fn as_gregorian_tai(&self) -> (i32, u8, u8, u8, u8, u8) {
+        Self::as_gregorian(self.as_tai_seconds())
+    }
+
+    /// Converts the Epoch to TAI Gregorian in the ISO8601 format with " TAI" appended to the string
+    pub fn as_gregorian_utc_tai(&self) -> String {
+        let (y, m, d, h, min, s) = Self::as_gregorian(self.as_utc_seconds());
+        format!(
+            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} TAI",
+            y, m, d, h, min, s
+        )
+    }
+
+    fn as_gregorian(absolute_seconds: f64) -> (i32, u8, u8, u8, u8, u8) {
+        let (mut year, mut year_fraction) = quorem(absolute_seconds, 365.0 * SECONDS_PER_DAY);
+        // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
+        year += 1900;
+        // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
+        // between 1900 and `year`
+        for year in 1900..year {
+            if is_leap_year(year) {
+                year_fraction -= SECONDS_PER_DAY;
+            }
+        }
+
+        // Get the month from the exact number of seconds between the start of the year and now
+        let mut seconds_til_this_month = 0.0;
+        let mut month = 1;
+        if year_fraction < 0.0 {
+            month = 12;
+            year -= 1;
+        } else {
+            loop {
+                seconds_til_this_month +=
+                    SECONDS_PER_DAY * f64::from(USUAL_DAYS_PER_MONTH[(month - 1) as usize]);
+                if is_leap_year(year) && month == 2 {
+                    seconds_til_this_month += SECONDS_PER_DAY;
+                }
+                if seconds_til_this_month > year_fraction {
+                    break;
+                }
+                month += 1;
+            }
+        }
+        let mut days_this_month = USUAL_DAYS_PER_MONTH[(month - 1) as usize];
+        if month == 2 && is_leap_year(year) {
+            days_this_month += 1;
+        }
+        // Get the month fraction by the number of seconds in this month from the number of
+        // seconds since the start of this month.
+        let (_, month_fraction) = quorem(
+            year_fraction - seconds_til_this_month,
+            f64::from(days_this_month) * SECONDS_PER_DAY,
+        );
+        // Get the day by the exact number of seconds in a day
+        let (mut day, day_fraction) = quorem(month_fraction, SECONDS_PER_DAY);
+        if day < 0 {
+            // Overflow backwards (this happens for end of year calculations)
+            month -= 1;
+            if month == 0 {
+                month = 12;
+                year -= 1;
+            }
+            day = i32::from(USUAL_DAYS_PER_MONTH[(month - 1) as usize]);
+        }
+        day += 1; // Otherwise the day count starts at 0
+                  // Get the hours by the exact number of seconds in an hour
+        let (hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
+        // Get the minutes and seconds by the exact number of seconds in a minute
+        let (mins, secs) = quorem(hours_fraction, 60.0);
+        (
+            year,
+            month as u8,
+            day as u8,
+            hours as u8,
+            mins as u8,
+            secs as u8,
+        )
     }
 }
 
@@ -875,4 +996,37 @@ fn ops() {
     assert!((sp_ex.as_et_seconds() - expect_et - 1.0).abs() < 1e-5);
     let sp_ex = sp_ex - 1.0;
     assert!((sp_ex.as_et_seconds() - expect_et).abs() < 1e-5);
+}
+
+/// `quorem` returns a tuple of the quotient and the remainder a numerator and a denominator.
+fn quorem(numerator: f64, denominator: f64) -> (i32, f64) {
+    if denominator == 0.0 {
+        panic!("cannot divide by zero");
+    }
+    let quotient = (numerator / denominator).floor() as i32;
+    let remainder = numerator % denominator;
+    if remainder >= 0.0 {
+        (quotient, remainder)
+    } else {
+        (quotient - 1, remainder + denominator)
+    }
+}
+
+#[test]
+fn quorem_nominal_test() {
+    assert_eq!(quorem(24.0, 6.0), (4, 0.0));
+    assert_eq!(quorem(25.0, 6.0), (4, 1.0));
+    assert_eq!(quorem(6.0, 6.0), (1, 0.0));
+    assert_eq!(quorem(5.0, 6.0), (0, 5.0));
+    assert_eq!(quorem(3540.0, 3600.0), (0, 3540.0));
+    assert_eq!(quorem(3540.0, 60.0), (59, 0.0));
+    assert_eq!(quorem(24.0, -6.0), (-4, 0.0));
+    assert_eq!(quorem(-24.0, 6.0), (-4, 0.0));
+    assert_eq!(quorem(-24.0, -6.0), (4, 0.0));
+}
+
+#[test]
+#[should_panic]
+fn quorem_nil_den_test() {
+    assert_eq!(quorem(24.0, 0.0), (4, 0.0));
 }
