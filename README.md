@@ -20,7 +20,7 @@ day-to-day use of this library.
  * [x] Leap seconds (as announced by the IETF on a yearly basis)
  * [x] Julian dates and Modified Julian dates
  * [x] Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
- * [ ] **TODO**: UTC representation with ISO8601 formatting (and parsing in that format #45)
+ * [x] UTC representation with ISO8601 formatting (and parsing in that format #45)
  * [ ] Support for custom representations of time (e.g. NASA GMAT Modified Julian Date)
  * [ ] Trivial support of other time representations, such as TDT (cf #44)
 
