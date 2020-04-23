@@ -2,7 +2,7 @@ extern crate lazy_static;
 extern crate regex;
 
 use self::lazy_static::lazy_static;
-use crate::{Errors, ET_EPOCH_S, J1900_OFFSET, MJD_OFFSET, SECONDS_PER_DAY};
+use crate::{Errors, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET, MJD_OFFSET, SECONDS_PER_DAY};
 use std::ops::{Add, Sub};
 
 /// From https://www.ietf.org/timezones/data/leap-seconds.list .
@@ -118,16 +118,21 @@ impl Epoch {
         }
     }
 
-    #[deprecated(since = "1.0.11", note = "Use Epoch::from_tdb_seconds instead")]
     pub fn from_et_seconds(seconds: f64) -> Epoch {
-        Self::from_tdb_seconds(seconds)
+        Self {
+            0: seconds - 32.184_935 + ET_EPOCH_S,
+        }
     }
 
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI
     pub fn from_tdb_seconds(seconds: f64) -> Epoch {
-        let et_epoch_s = 3_155_716_800.0;
+        use std::f64::consts::PI;
+        let tt_seconds = seconds - 32.184;
+        let tt_centuries_j2k = (tt_seconds - ET_EPOCH_S) / (SECONDS_PER_DAY * DAYS_PER_CENTURY);
+        let g_rad = 2.0 * PI * (357.528 + 35_999.050 * tt_centuries_j2k) / 360.0;
+
         Self {
-            0: seconds - 32.184 + et_epoch_s - 0.000_935,
+            0: tt_seconds + ET_EPOCH_S - 0.001_658 * (g_rad + 0.0167 * g_rad.sin()).sin(),
         }
     }
 
@@ -381,7 +386,7 @@ impl Epoch {
 
     /// Returns the centuries pased J2000 TT
     pub fn as_tt_centuries_j2k(self) -> f64 {
-        (self.as_tt_seconds() - ET_EPOCH_S) / (SECONDS_PER_DAY * 36525.0)
+        (self.as_tt_seconds() - ET_EPOCH_S) / (SECONDS_PER_DAY * DAYS_PER_CENTURY)
     }
 
     /// Returns days past Julian epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
@@ -404,24 +409,25 @@ impl Epoch {
         self.as_gpst_seconds() / SECONDS_PER_DAY
     }
 
-    #[deprecated(since = "1.0.11", note = "Use as_tdb_seconds() instead")]
+    /// Returns the Ephemeris Time seconds past epoch
     pub fn as_et_seconds(self) -> f64 {
-        self.as_tdb_seconds()
+        self.as_tt_seconds() - ET_EPOCH_S + 0.000_935
     }
 
-    /// Returns the Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
+    /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
     pub fn as_tdb_seconds(self) -> f64 {
         use std::f64::consts::PI;
         let g_rad = 2.0 * PI * (357.528 + 35_999.050 * self.as_tt_centuries_j2k()) / 360.0;
         self.as_tt_seconds() - ET_EPOCH_S + 0.001_658 * (g_rad + 0.0167 * g_rad.sin()).sin()
     }
 
-    #[deprecated(since = "1.0.11", note = "Use as_jde_tdb_days() instead")]
+    /// Returns the Ephemeris Time JDE past epoch
     pub fn as_jde_et_days(self) -> f64 {
-        self.as_tdb_seconds()
+        // self.as_jde_tdb_days()
+        self.as_jde_tt_days() + 0.000_935 / SECONDS_PER_DAY
     }
 
-    /// Returns the Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
+    /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
     pub fn as_jde_tdb_days(self) -> f64 {
         use std::f64::consts::PI;
         let g_rad = 2.0 * PI * (357.528 + 35_999.050 * self.as_tt_centuries_j2k()) / 360.0;
@@ -459,6 +465,10 @@ impl Epoch {
     /// assert_eq!(
     ///     dt,
     ///     Epoch::from_gregorian_utc_str("2017-01-14T00:31:55").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     dt,
+    ///     Epoch::from_gregorian_utc_str("2017-01-14 00:31:55").unwrap()
     /// );
     /// ```
     pub fn from_gregorian_utc_str(s: &str) -> Result<Self, Errors> {
@@ -988,7 +998,7 @@ fn spice_et_tdb() {
     assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
     assert!((sp_ex.as_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
     assert!(
-        (sp_ex.as_tai_seconds() - Epoch::from_tdb_seconds(expected_et_s).as_tai_seconds()).abs()
+        dbg!(sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expected_et_s).as_tai_seconds()).abs()
             < 1e-6
     );
     // Second example
@@ -996,7 +1006,7 @@ fn spice_et_tdb() {
     let expected_et_s = 66_312_064.184_938_76;
     assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
     assert!(
-        (sp_ex.as_tai_seconds() - Epoch::from_tdb_seconds(expected_et_s).as_tai_seconds()).abs()
+        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expected_et_s).as_tai_seconds()).abs()
             < 1e-5
     );
     // Third example
@@ -1004,7 +1014,7 @@ fn spice_et_tdb() {
     let expected_et_s = -123_035_784.815_060_48;
     assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
     assert!(
-        (sp_ex.as_tai_seconds() - Epoch::from_tdb_seconds(expected_et_s).as_tai_seconds()).abs()
+        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expected_et_s).as_tai_seconds()).abs()
             < 1e-5
     );
     // Fourth example
@@ -1027,14 +1037,20 @@ fn spice_et_tdb() {
     >>> sp.str2et("JD 2452312.500372511 TDB")
     66312032.18493909
     */
-    let sp_ex = Epoch::from_tdb_seconds(66_312_032.184_939_09);
-    assert!((2452312.500372511 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
+    let sp_ex = Epoch::from_et_seconds(66_312_032.184_939_09);
+    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
+    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
 
-    let sp_ex = Epoch::from_tdb_seconds(381_885_753.003_859_5);
+    let sp_ex = Epoch::from_et_seconds(381_885_753.003_859_5);
     assert!((2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
 
-    let sp_ex = Epoch::from_tdb_seconds(0.0);
+    let sp_ex = Epoch::from_et_seconds(0.0);
     assert!(dbg!(J2000_NAIF - sp_ex.as_jde_tdb_days()).abs() < 1e-7);
+    assert!(dbg!(J2000_NAIF - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
+
+    // This shows, I think, some approximation error.
+    dbg!(Epoch::from_et_seconds(0.0).as_et_seconds());
+    dbg!(Epoch::from_tdb_seconds(0.0).as_tdb_seconds());
 }
 
 #[test]
