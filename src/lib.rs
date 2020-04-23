@@ -90,16 +90,18 @@ pub const ET_EPOCH_S: f64 = 3_155_716_800.0;
 pub const MJD_OFFSET: f64 = 2_400_000.5;
 /// `DAYS_PER_YEAR` corresponds to the number of days per year in the Julian calendar.
 pub const DAYS_PER_YEAR: f64 = 365.25;
-/// `SECONDS_PER_DAY` defines the number of seconds per day.
-pub const SECONDS_PER_DAY: f64 = 86_400.0;
-/// `SECONDS_PER_HOUR` defines the number of seconds per hour.
-pub const SECONDS_PER_HOUR: f64 = 3_600.0;
+/// `DAYS_PER_CENTURY` corresponds to the number of days per centuy in the Julian calendar.
+pub const DAYS_PER_CENTURY: f64 = 36525.0;
 /// `SECONDS_PER_MINUTE` defines the number of seconds per minute.
 pub const SECONDS_PER_MINUTE: f64 = 60.0;
+/// `SECONDS_PER_HOUR` defines the number of seconds per hour.
+pub const SECONDS_PER_HOUR: f64 = 3_600.0;
+/// `SECONDS_PER_DAY` defines the number of seconds per day.
+pub const SECONDS_PER_DAY: f64 = 86_400.0;
+/// `SECONDS_PER_YEAR` corresponds to the number of seconds per julian year from [NAIF SPICE](https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/jyear_c.html).
+pub const SECONDS_PER_YEAR: f64 = 31_557_600.0;
 /// `SECONDS_PER_TROPICAL_YEAR` corresponds to the number of seconds per tropical year from [NAIF SPICE](https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/tyear_c.html).
 pub const SECONDS_PER_TROPICAL_YEAR: f64 = 31_556_925.974_7;
-/// `SECONDS_PER_JULIAN_YEAR` corresponds to the number of seconds per julian year from [NAIF SPICE](https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/jyear_c.html).
-pub const SECONDS_PER_JULIAN_YEAR: f64 = 31_557_600.0;
 /// `SECONDS_PER_SIDERAL_YEAR` corresponds to the number of seconds per sideral year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
 pub const SECONDS_PER_SIDERAL_YEAR: f64 = 31_558_150.0;
 

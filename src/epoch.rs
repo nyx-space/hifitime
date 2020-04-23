@@ -966,6 +966,7 @@ fn gpst() {
 
 #[test]
 fn spice_et_tdb() {
+    use crate::J2000_NAIF;
     /*
     >>> sp.str2et("2012-02-07 11:22:33 UTC")
     381885819.18493587
@@ -1023,6 +1024,9 @@ fn spice_et_tdb() {
 
     let sp_ex = Epoch::from_tdb_seconds(381_885_753.003_859_5);
     assert!((2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
+
+    let sp_ex = Epoch::from_tdb_seconds(0.0);
+    assert!(dbg!(J2000_NAIF - sp_ex.as_jde_tdb_days()).abs() < 1e-7);
 }
 
 #[test]
