@@ -529,8 +529,16 @@ impl Epoch {
         Self::compute_gregorian(self.as_tai_seconds())
     }
 
-    /// Converts the Epoch to TAI Gregorian in the ISO8601 format with " TAI" appended to the string
+    #[deprecated(
+        since = "1.0.11",
+        note = "Use as_gregorian_tai_str() instead; this function was a typo"
+    )]
     pub fn as_gregorian_utc_tai(self) -> String {
+        self.as_gregorian_tai_str()
+    }
+
+    /// Converts the Epoch to TAI Gregorian in the ISO8601 format with " TAI" appended to the string
+    pub fn as_gregorian_tai_str(self) -> String {
         let (y, m, d, h, min, s) = Self::compute_gregorian(self.as_utc_seconds());
         format!(
             "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} TAI",
