@@ -2,8 +2,12 @@ extern crate lazy_static;
 extern crate regex;
 
 use self::lazy_static::lazy_static;
-use crate::{Errors, J1900_OFFSET, MJD_OFFSET, SECONDS_PER_DAY};
+use self::regex::Regex;
+use crate::{
+    Errors, TimeSystem, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET, MJD_OFFSET, SECONDS_PER_DAY,
+};
 use std::ops::{Add, Sub};
+use std::str::FromStr;
 
 /// From https://www.ietf.org/timezones/data/leap-seconds.list .
 const LEAP_SECONDS: [f64; 28] = [
@@ -118,16 +122,30 @@ impl Epoch {
         }
     }
 
-    /// Initialize from SPICE ephemeris time (same as Dynamic Barycentric Time (TBD)) whose epoch is 2000 JAN 01 noon TAI
     pub fn from_et_seconds(seconds: f64) -> Epoch {
-        let et_epoch_s = 3_155_716_800.0;
         Self {
-            0: seconds - 32.184 + et_epoch_s - 0.000_935,
+            0: seconds - 32.184_935 + ET_EPOCH_S,
         }
     }
 
-    /// Initialize from SPICE ephemeris time in JD days
+    /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI
+    pub fn from_tdb_seconds(seconds: f64) -> Epoch {
+        use std::f64::consts::PI;
+        let tt_seconds = seconds - 32.184;
+        let tt_centuries_j2k = (tt_seconds - ET_EPOCH_S) / (SECONDS_PER_DAY * DAYS_PER_CENTURY);
+        let g_rad = 2.0 * PI * (357.528 + 35_999.050 * tt_centuries_j2k) / 360.0;
+
+        Self {
+            0: tt_seconds + ET_EPOCH_S - 0.001_658 * (g_rad + 0.0167 * g_rad.sin()).sin(),
+        }
+    }
+
     pub fn from_jde_et(days: f64) -> Self {
+        Self::from_jde_tdb(days)
+    }
+
+    /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days
+    pub fn from_jde_tdb(days: f64) -> Self {
         let mut rtn = Self::from_jde_tai(days);
         rtn.0 -= 32.184_935;
         rtn
@@ -142,6 +160,29 @@ impl Epoch {
         minute: u8,
         second: u8,
         nanos: u32,
+    ) -> Result<Self, Errors> {
+        Self::maybe_from_gregorian(
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+            nanos,
+            TimeSystem::TAI,
+        )
+    }
+
+    /// Attempts to build an Epoch from the provided Gregorian date and time in the provided time system.
+    pub fn maybe_from_gregorian(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        nanos: u32,
+        ts: TimeSystem,
     ) -> Result<Self, Errors> {
         if !is_gregorian_valid(year, month, day, hour, minute, second, nanos) {
             return Err(Errors::Carry);
@@ -175,8 +216,12 @@ impl Epoch {
             seconds_wrt_1900 -= 1.0;
         }
 
-        Ok(Self {
-            0: seconds_wrt_1900,
+        Ok(match ts {
+            TimeSystem::TAI => Epoch::from_tai_seconds(seconds_wrt_1900),
+            TimeSystem::TT => Epoch::from_tt_seconds(seconds_wrt_1900),
+            TimeSystem::ET => Epoch::from_et_seconds(seconds_wrt_1900),
+            TimeSystem::TDB => Epoch::from_tdb_seconds(seconds_wrt_1900),
+            TimeSystem::UTC => panic!("use maybe_from_gregorian_utc for UTC time system"),
         })
     }
 
@@ -364,6 +409,16 @@ impl Epoch {
         self.as_tai_seconds() + 32.184
     }
 
+    /// Returns days past TAI epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
+    pub fn as_tt_days(self) -> f64 {
+        self.as_tai_days() + 32.184 / SECONDS_PER_DAY
+    }
+
+    /// Returns the centuries pased J2000 TT
+    pub fn as_tt_centuries_j2k(self) -> f64 {
+        (self.as_tt_seconds() - ET_EPOCH_S) / (SECONDS_PER_DAY * DAYS_PER_CENTURY)
+    }
+
     /// Returns days past Julian epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
     pub fn as_jde_tt_days(self) -> f64 {
         self.as_jde_tai_days() + 32.184 / SECONDS_PER_DAY
@@ -384,23 +439,28 @@ impl Epoch {
         self.as_gpst_seconds() / SECONDS_PER_DAY
     }
 
-    // Returns the SPICE ephemeris time (same as Dynamic Barycentric Time (TBD)) whose epoch is 2000 JAN 01 noon TAI
+    /// Returns the Ephemeris Time seconds past epoch
     pub fn as_et_seconds(self) -> f64 {
-        use std::f64::consts::PI;
-        let et_epoch_s = 3_155_716_800.0;
-        let centuries_since_j2ktt =
-            (self.as_tt_seconds() - et_epoch_s) / (SECONDS_PER_DAY * 36525.0);
-        let g_rad = 2.0 * PI * (357.528 + 35_999.050 * centuries_since_j2ktt) / 360.0;
-        self.as_tt_seconds() - et_epoch_s + 0.001_658 * (g_rad + 0.0167 * g_rad.sin()).sin()
+        self.as_tt_seconds() - ET_EPOCH_S + 0.000_935
     }
 
-    // Returns the SPICE ephemeris time in JDE since JD Epoch
-    pub fn as_jde_et_days(self) -> f64 {
+    /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
+    pub fn as_tdb_seconds(self) -> f64 {
         use std::f64::consts::PI;
-        let et_epoch_s = 3_155_716_800.0;
-        let centuries_since_j2ktt =
-            (self.as_tt_seconds() - et_epoch_s) / (SECONDS_PER_DAY * 36525.0);
-        let g_rad = 2.0 * PI * (357.528 + 35_999.050 * centuries_since_j2ktt) / 360.0;
+        let g_rad = 2.0 * PI * (357.528 + 35_999.050 * self.as_tt_centuries_j2k()) / 360.0;
+        self.as_tt_seconds() - ET_EPOCH_S + 0.001_658 * (g_rad + 0.0167 * g_rad.sin()).sin()
+    }
+
+    /// Returns the Ephemeris Time JDE past epoch
+    pub fn as_jde_et_days(self) -> f64 {
+        // self.as_jde_tdb_days()
+        self.as_jde_tt_days() + 0.000_935 / SECONDS_PER_DAY
+    }
+
+    /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
+    pub fn as_jde_tdb_days(self) -> f64 {
+        use std::f64::consts::PI;
+        let g_rad = 2.0 * PI * (357.528 + 35_999.050 * self.as_tt_centuries_j2k()) / 360.0;
         self.as_jde_tt_days() + (0.001_658 * (g_rad + 0.0167 * g_rad.sin()).sin()) / SECONDS_PER_DAY
     }
 
@@ -425,6 +485,7 @@ impl Epoch {
     }
 
     /// Converts an ISO8601 Datetime representation without timezone offset to an Epoch.
+    /// If no time system is specified, than UTC is assumed.
     /// The `T` which separates the date from the time can be replaced with a single whitespace character (`\W`).
     /// The offset is also optional, cf. the examples below.
     ///
@@ -434,25 +495,75 @@ impl Epoch {
     /// let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
     /// assert_eq!(
     ///     dt,
-    ///     Epoch::from_gregorian_utc_str("2017-01-14T00:31:55").unwrap()
+    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55 UTC").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     dt,
+    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55.0000 UTC").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     dt,
+    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     dt,
+    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55").unwrap()
     /// );
     /// ```
-    pub fn from_gregorian_utc_str(s: &str) -> Result<Self, Errors> {
-        use self::regex::Regex;
+    pub fn from_gregorian_str(s: &str) -> Result<Self, Errors> {
         lazy_static! {
-            static ref RE: Regex =
-                Regex::new(r"^(\d{4})-(\d{2})-(\d{2})(?:T|\W)(\d{2}):(\d{2}):(\d{2})$").unwrap();
+            static ref RE_GREG: Regex = Regex::new(
+                r"^(\d{4})-(\d{2})-(\d{2})(?:T|\W)(\d{2}):(\d{2}):(\d{2})\.?(\d+)?\W?(\w{2,3})?$"
+            )
+            .unwrap();
         }
-        match RE.captures(s) {
-            Some(cap) => Self::maybe_from_gregorian_utc(
-                cap[1].to_owned().parse::<i32>()?,
-                cap[2].to_owned().parse::<u8>()?,
-                cap[3].to_owned().parse::<u8>()?,
-                cap[4].to_owned().parse::<u8>()?,
-                cap[5].to_owned().parse::<u8>()?,
-                cap[6].to_owned().parse::<u8>()?,
-                0,
-            ),
+        match RE_GREG.captures(s) {
+            Some(cap) => {
+                let nanos = match cap.get(7) {
+                    Some(val) => val.as_str().parse::<u32>().unwrap(),
+                    None => 0,
+                };
+
+                match cap.get(8) {
+                    Some(ts_str) => {
+                        let ts = TimeSystem::map(ts_str.as_str().to_owned());
+                        if ts == TimeSystem::UTC {
+                            Self::maybe_from_gregorian_utc(
+                                cap[1].to_owned().parse::<i32>()?,
+                                cap[2].to_owned().parse::<u8>()?,
+                                cap[3].to_owned().parse::<u8>()?,
+                                cap[4].to_owned().parse::<u8>()?,
+                                cap[5].to_owned().parse::<u8>()?,
+                                cap[6].to_owned().parse::<u8>()?,
+                                nanos,
+                            )
+                        } else {
+                            Self::maybe_from_gregorian(
+                                cap[1].to_owned().parse::<i32>()?,
+                                cap[2].to_owned().parse::<u8>()?,
+                                cap[3].to_owned().parse::<u8>()?,
+                                cap[4].to_owned().parse::<u8>()?,
+                                cap[5].to_owned().parse::<u8>()?,
+                                cap[6].to_owned().parse::<u8>()?,
+                                nanos,
+                                ts,
+                            )
+                        }
+                    }
+                    None => {
+                        // Asumme UTC
+                        Self::maybe_from_gregorian_utc(
+                            cap[1].to_owned().parse::<i32>()?,
+                            cap[2].to_owned().parse::<u8>()?,
+                            cap[3].to_owned().parse::<u8>()?,
+                            cap[4].to_owned().parse::<u8>()?,
+                            cap[5].to_owned().parse::<u8>()?,
+                            cap[6].to_owned().parse::<u8>()?,
+                            nanos,
+                        )
+                    }
+                }
+            }
             None => Err(Errors::ParseError(
                 "Input not in ISO8601 format without offset (e.g. 2018-01-27T00:41:55)".to_owned(),
             )),
@@ -465,9 +576,9 @@ impl Epoch {
     /// # Example
     /// ```
     /// use hifitime::Epoch;
-    /// let dt_str = "2017-01-14T00:31:55";
-    /// let dt = Epoch::from_gregorian_utc_str(dt_str).unwrap();
-    /// let (y, m, d, h, min, s) = dt.as_gregorian_utc();
+    /// let dt_str = "2017-01-14T00:31:55 UTC";
+    /// let dt = Epoch::from_gregorian_str(dt_str).unwrap();
+    /// let (y, m, d, h, min, s, _) = dt.as_gregorian_utc();
     /// assert_eq!(y, 2017);
     /// assert_eq!(m, 1);
     /// assert_eq!(d, 14);
@@ -476,14 +587,13 @@ impl Epoch {
     /// assert_eq!(s, 55);
     /// assert_eq!(dt_str, dt.as_gregorian_utc_str().to_owned());
     /// ```
-    pub fn as_gregorian_utc(&self) -> (i32, u8, u8, u8, u8, u8) {
-        Self::as_gregorian(self.as_utc_seconds())
+    pub fn as_gregorian_utc(self) -> (i32, u8, u8, u8, u8, u8, u32) {
+        Self::compute_gregorian(self.as_utc_seconds())
     }
 
     /// Converts the Epoch to UTC Gregorian in the ISO8601 format.
-    pub fn as_gregorian_utc_str(&self) -> String {
-        let (y, m, d, h, min, s) = Self::as_gregorian(self.as_utc_seconds());
-        format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}", y, m, d, h, min, s)
+    pub fn as_gregorian_utc_str(self) -> String {
+        self.as_gregorian_str(TimeSystem::UTC)
     }
 
     /// Converts the Epoch to the Gregorian TAI equivalent as (year, month, day, hour, minute, second).
@@ -493,7 +603,7 @@ impl Epoch {
     /// ```
     /// use hifitime::Epoch;
     /// let dt = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
-    /// let (y, m, d, h, min, s) = dt.as_gregorian_tai();
+    /// let (y, m, d, h, min, s, _) = dt.as_gregorian_tai();
     /// assert_eq!(y, 1972);
     /// assert_eq!(m, 1);
     /// assert_eq!(d, 1);
@@ -501,20 +611,46 @@ impl Epoch {
     /// assert_eq!(min, 0);
     /// assert_eq!(s, 0);
     /// ```
-    pub fn as_gregorian_tai(&self) -> (i32, u8, u8, u8, u8, u8) {
-        Self::as_gregorian(self.as_tai_seconds())
+    pub fn as_gregorian_tai(self) -> (i32, u8, u8, u8, u8, u8, u32) {
+        Self::compute_gregorian(self.as_tai_seconds())
+    }
+
+    #[deprecated(
+        since = "1.0.11",
+        note = "Use as_gregorian_tai_str() instead; this function was a typo"
+    )]
+    pub fn as_gregorian_utc_tai(self) -> String {
+        self.as_gregorian_tai_str()
     }
 
     /// Converts the Epoch to TAI Gregorian in the ISO8601 format with " TAI" appended to the string
-    pub fn as_gregorian_utc_tai(&self) -> String {
-        let (y, m, d, h, min, s) = Self::as_gregorian(self.as_utc_seconds());
-        format!(
-            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} TAI",
-            y, m, d, h, min, s
-        )
+    pub fn as_gregorian_tai_str(self) -> String {
+        self.as_gregorian_str(TimeSystem::TAI)
     }
 
-    fn as_gregorian(absolute_seconds: f64) -> (i32, u8, u8, u8, u8, u8) {
+    /// Converts the Epoch to Gregorian in the provided time system and in the ISO8601 format with the time system appended to the string
+    pub fn as_gregorian_str(self, ts: TimeSystem) -> String {
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(match ts {
+            TimeSystem::ET => self.as_et_seconds(),
+            TimeSystem::TT => self.as_tt_seconds(),
+            TimeSystem::TAI => self.as_tai_seconds(),
+            TimeSystem::TDB => self.as_tdb_seconds(),
+            TimeSystem::UTC => self.as_utc_seconds(),
+        });
+        if nanos == 0 {
+            format!(
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {:?}",
+                y, mm, dd, hh, min, s, ts
+            )
+        } else {
+            format!(
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
+                y, mm, dd, hh, min, s, nanos, ts
+            )
+        }
+    }
+
+    fn compute_gregorian(absolute_seconds: f64) -> (i32, u8, u8, u8, u8, u8, u32) {
         let (mut year, mut year_fraction) = quorem(absolute_seconds, 365.0 * SECONDS_PER_DAY);
         // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
         year += 1900;
@@ -571,6 +707,7 @@ impl Epoch {
         let (hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
         // Get the minutes and seconds by the exact number of seconds in a minute
         let (mins, secs) = quorem(hours_fraction, 60.0);
+        let nanos = (quorem(secs, 1.0).1 * 1e9) as u32;
         (
             year,
             month as u8,
@@ -578,7 +715,79 @@ impl Epoch {
             hours as u8,
             mins as u8,
             secs as u8,
+            nanos,
         )
+    }
+}
+
+impl FromStr for Epoch {
+    type Err = Errors;
+
+    /// Attempts to convert a string to an Epoch.
+    ///
+    /// Format identifiers:
+    ///  + JD: Julian days
+    ///  + MJD: Modified Julian days
+    ///  + SEC: Seconds past a given epoch (e.g. SEC 17.2 TAI is 17.2 seconds past TAI Epoch)
+    /// # Example
+    /// ```
+    /// use hifitime::Epoch;
+    /// use std::str::FromStr;
+    ///
+    /// assert!(Epoch::from_str("JD 2452312.500372511 TDB").is_ok());
+    /// assert!(Epoch::from_str("JD 2452312.500372511 ET").is_ok());
+    /// assert!(Epoch::from_str("JD 2452312.500372511 TAI").is_ok());
+    /// assert!(Epoch::from_str("MJD 51544.5 TAI").is_ok());
+    /// assert!(Epoch::from_str("SEC 0.5 TAI").is_ok());
+    /// assert!(Epoch::from_str("SEC 66312032.18493909 TDB").is_ok());
+    /// ```
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        lazy_static! {
+            static ref RE_GENERIC: Regex =
+                Regex::new(r"^(\w{2,3})\W?(\d+\.?\d+)\W?(\w{2,3})?$").unwrap();
+        }
+        // Try to match Gregorian date
+        match Self::from_gregorian_str(s) {
+            Ok(e) => Ok(e),
+            Err(_) => match RE_GENERIC.captures(s) {
+                Some(cap) => {
+                    let format = cap[1].to_owned().parse::<String>().unwrap();
+                    let value = cap[2].to_owned().parse::<f64>().unwrap();
+                    let ts = TimeSystem::map(cap[3].to_owned().parse::<String>().unwrap());
+
+                    match format.as_str() {
+                        "JD" => match ts {
+                            TimeSystem::ET => Ok(Epoch::from_jde_et(value)),
+                            TimeSystem::TAI => Ok(Epoch::from_jde_tai(value)),
+                            TimeSystem::TDB => Ok(Epoch::from_jde_tdb(value)),
+                            _ => Err(Errors::ParseError(format!(
+                                "Cannot initialize JD in {:?}",
+                                ts
+                            ))),
+                        },
+                        "MJD" => match ts {
+                            TimeSystem::TAI => Ok(Epoch::from_mjd_tai(value)),
+                            _ => Err(Errors::ParseError(format!(
+                                "Cannot initialize MJD in {:?}",
+                                ts
+                            ))),
+                        },
+                        "SEC" => match ts {
+                            TimeSystem::TAI => Ok(Epoch::from_tai_seconds(value)),
+                            TimeSystem::ET => Ok(Epoch::from_et_seconds(value)),
+                            TimeSystem::TDB => Ok(Epoch::from_tdb_seconds(value)),
+                            TimeSystem::TT => Ok(Epoch::from_tt_seconds(value)),
+                            _ => Err(Errors::ParseError(format!(
+                                "Cannot initialize SEC in {:?}",
+                                ts
+                            ))),
+                        },
+                        _ => Err(Errors::ParseError(format!("Unknown format  {}", format))),
+                    }
+                }
+                None => Err(Errors::ParseError("Input not understood".to_owned())),
+            },
+        }
     }
 }
 
@@ -941,61 +1150,160 @@ fn gpst() {
 }
 
 #[test]
-fn spice_et() {
+fn spice_et_tdb() {
+    use crate::J2000_NAIF;
     /*
     >>> sp.str2et("2012-02-07 11:22:33 UTC")
     381885819.18493587
     >>> sp.et2utc(381885819.18493587, 'C', 9)
     '2012 FEB 07 11:22:33.000000000'
-    >>>
+    >>> sp.et2utc(381885819.18493587, 'J', 9)
+    'JD 2455964.9739931'
     */
     let sp_ex = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33);
-    let expect_et = 381_885_819.184_935_87;
-    assert!((sp_ex.as_et_seconds() - expect_et).abs() < 1e-5);
+    let expected_et_s = 381_885_819.184_935_87;
+    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
+    assert!((sp_ex.as_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
     assert!(
-        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expect_et).as_tai_seconds()).abs() < 1e-5
+        dbg!(sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expected_et_s).as_tai_seconds()).abs()
+            < 1e-6
     );
     // Second example
     let sp_ex = Epoch::from_gregorian_utc_at_midnight(2002, 2, 7);
-    let expect_et = 66_312_064.184_938_76;
-    assert!((sp_ex.as_et_seconds() - expect_et).abs() < 1e-5);
+    let expected_et_s = 66_312_064.184_938_76;
+    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
     assert!(
-        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expect_et).as_tai_seconds()).abs() < 1e-5
+        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expected_et_s).as_tai_seconds()).abs()
+            < 1e-5
     );
     // Third example
     let sp_ex = Epoch::from_gregorian_utc_hms(1996, 2, 7, 11, 22, 33);
-    let expect_et = -123_035_784.815_060_48;
-    assert!((sp_ex.as_et_seconds() - expect_et).abs() < 1e-5);
+    let expected_et_s = -123_035_784.815_060_48;
+    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
     assert!(
-        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expect_et).as_tai_seconds()).abs() < 1e-5
+        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expected_et_s).as_tai_seconds()).abs()
+            < 1e-5
+    );
+    // Fourth example
+    /*
+    >>> sp.str2et("2015-02-07 11:22:33 UTC")
+    476580220.1849411
+    >>> sp.et2utc(476580220.1849411, 'C', 9)
+    '2015 FEB 07 11:22:33.000000000'
+    >>> sp.et2utc(476580220.1849411, 'J', 9)
+    'JD 2457060.9739931'
+    >>>
+    */
+    let sp_ex = Epoch::from_gregorian_utc_hms(2015, 2, 7, 11, 22, 33);
+    let expected_et_s = 476580220.1849411;
+    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
+    assert!((sp_ex.as_jde_utc_days() - 2457060.9739931).abs() < 1e-7);
+
+    // JDE TDB tests
+    /* Initial JDE from sp.et2utc:
+    >>> sp.str2et("JD 2452312.500372511 TDB")
+    66312032.18493909
+    */
+    let sp_ex = Epoch::from_et_seconds(66_312_032.184_939_09);
+    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
+    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
+
+    let sp_ex = Epoch::from_et_seconds(381_885_753.003_859_5);
+    assert!((2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
+
+    let sp_ex = Epoch::from_et_seconds(0.0);
+    assert!(dbg!(J2000_NAIF - sp_ex.as_jde_tdb_days()).abs() < 1e-7);
+    assert!(dbg!(J2000_NAIF - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
+
+    // This shows, I think, some approximation error.
+    dbg!(Epoch::from_et_seconds(0.0).as_et_seconds());
+    dbg!(Epoch::from_tdb_seconds(0.0).as_tdb_seconds());
+}
+
+#[test]
+fn test_from_str() {
+    use std::f64::EPSILON;
+    use std::str::FromStr;
+
+    let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
+    assert_eq!(dt, Epoch::from_str("2017-01-14T00:31:55 UTC").unwrap());
+    assert_eq!(dt, Epoch::from_str("2017-01-14T00:31:55").unwrap());
+    assert_eq!(dt, Epoch::from_str("2017-01-14 00:31:55").unwrap());
+    assert!(Epoch::from_str("2017-01-14 00:31:55 TAI").is_ok());
+    assert!(Epoch::from_str("2017-01-14 00:31:55 TT").is_ok());
+    assert!(Epoch::from_str("2017-01-14 00:31:55 ET").is_ok());
+    assert!(Epoch::from_str("2017-01-14 00:31:55 TDB").is_ok());
+
+    let jde = 2_452_312.500_372_511;
+    assert!(
+        (Epoch::from_str("JD 2452312.500372511 TDB")
+            .unwrap()
+            .as_jde_tdb_days()
+            - jde)
+            .abs()
+            < EPSILON
+    );
+    assert!(
+        (Epoch::from_str("JD 2452312.500372511 ET")
+            .unwrap()
+            .as_jde_et_days()
+            - jde)
+            .abs()
+            < EPSILON
+    );
+    assert!(
+        (Epoch::from_str("JD 2452312.500372511 TAI")
+            .unwrap()
+            .as_jde_tai_days()
+            - jde)
+            .abs()
+            < EPSILON
+    );
+    assert!(
+        (Epoch::from_str("MJD 51544.5 TAI")
+            .unwrap()
+            .as_mjd_tai_days()
+            - 51544.5)
+            .abs()
+            < EPSILON
+    );
+    assert!((Epoch::from_str("SEC 0.5 TAI").unwrap().as_tai_seconds() - 0.5).abs() < EPSILON);
+
+    // Must account for the precision error
+    assert!(
+        dbg!(
+            Epoch::from_str("SEC 66312032.18493909 TDB")
+                .unwrap()
+                .as_tdb_seconds()
+                - 66312032.18493909
+        )
+        .abs()
+            < 1e-4
     );
 
-    // SPICE computation reciprocity (from 2002-02-07)
-    /* Initial JDE from sp.et2utc:
-    >>> nyx_et
-    66312032.18493502
-    >>> sp.et2utc(nyx_et, 'J', 9)
-    'JD 2452312.4996296'
-    */
-    // Remove the 32 leap seconds from that date (cf. https://www.ietf.org/timezones/data/leap-seconds.list)
-    // And the 32.184 for the TT/TAI offset
-    let sp_ex = Epoch::from_et_seconds(66_312_032.184_935_02);
-    let sp_jde_days = 2_452_312.499_629_6 + (32.0 + 32.184) / 86400.0;
-    let err_days = sp_ex.as_jde_et_days() - sp_jde_days;
-    // Check that there is less than 10ms difference.
-    assert!((err_days * SECONDS_PER_DAY).abs() < 1e-2);
-    let sp_ex_jde = Epoch::from_jde_et(sp_jde_days);
-    assert!((sp_ex_jde.as_et_seconds() - sp_ex.as_et_seconds()).abs() < 1e-2);
+    // Check reciprocity of string
+    let greg = "2020-01-31T00:00:00 UTC";
+    assert_eq!(greg, Epoch::from_str(greg).unwrap().as_gregorian_utc_str());
+    let greg = "2020-01-31T00:00:00 TAI";
+    assert_eq!(greg, Epoch::from_str(greg).unwrap().as_gregorian_tai_str());
+    // Note that due to the precision of TDB, there is some conversion error
+    let greg = "2020-01-31T00:00:00 TDB";
+    assert_eq!(
+        "2020-01-30T23:59:59.999961853 TDB",
+        Epoch::from_str(greg)
+            .unwrap()
+            .as_gregorian_str(TimeSystem::TDB)
+    );
 }
 
 #[test]
 fn ops() {
     // Test adding a second
     let sp_ex = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33) + 1.0;
-    let expect_et = 381_885_819.184_935_87;
-    assert!((sp_ex.as_et_seconds() - expect_et - 1.0).abs() < 1e-5);
+    let expected_et_s = 381_885_819.184_935_87;
+    assert!((sp_ex.as_tdb_seconds() - expected_et_s - 1.0).abs() < 1e-5);
     let sp_ex = sp_ex - 1.0;
-    assert!((sp_ex.as_et_seconds() - expect_et).abs() < 1e-5);
+    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-5);
 }
 
 /// `quorem` returns a tuple of the quotient and the remainder a numerator and a denominator.
