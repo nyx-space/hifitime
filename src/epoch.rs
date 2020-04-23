@@ -2,10 +2,12 @@ extern crate lazy_static;
 extern crate regex;
 
 use self::lazy_static::lazy_static;
+use self::regex::Regex;
 use crate::{
     Errors, TimeSystem, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET, MJD_OFFSET, SECONDS_PER_DAY,
 };
 use std::ops::{Add, Sub};
+use std::str::FromStr;
 
 /// From https://www.ietf.org/timezones/data/leap-seconds.list .
 const LEAP_SECONDS: [f64; 28] = [
@@ -138,7 +140,6 @@ impl Epoch {
         }
     }
 
-    #[deprecated(since = "1.0.11", note = "Use Epoch::from_tdb_seconds instead")]
     pub fn from_jde_et(days: f64) -> Self {
         Self::from_jde_tdb(days)
     }
@@ -510,14 +511,13 @@ impl Epoch {
     /// );
     /// ```
     pub fn from_gregorian_str(s: &str) -> Result<Self, Errors> {
-        use self::regex::Regex;
         lazy_static! {
-            static ref RE: Regex = Regex::new(
+            static ref RE_GREG: Regex = Regex::new(
                 r"^(\d{4})-(\d{2})-(\d{2})(?:T|\W)(\d{2}):(\d{2}):(\d{2})\.?(\d+)?\W?(\w{2,3})?$"
             )
             .unwrap();
         }
-        match RE.captures(s) {
+        match RE_GREG.captures(s) {
             Some(cap) => {
                 let nanos = match cap.get(7) {
                     Some(val) => val.as_str().parse::<u32>().unwrap(),
@@ -593,8 +593,8 @@ impl Epoch {
 
     /// Converts the Epoch to UTC Gregorian in the ISO8601 format.
     pub fn as_gregorian_utc_str(self) -> String {
-        let (y, m, d, h, min, s) = Self::compute_gregorian(self.as_utc_seconds());
-        format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}", y, m, d, h, min, s)
+        let (y, mm, dd, hh, min, s) = Self::compute_gregorian(self.as_utc_seconds());
+        format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}", y, mm, dd, hh, min, s)
     }
 
     /// Converts the Epoch to the Gregorian TAI equivalent as (year, month, day, hour, minute, second).
@@ -626,10 +626,10 @@ impl Epoch {
 
     /// Converts the Epoch to TAI Gregorian in the ISO8601 format with " TAI" appended to the string
     pub fn as_gregorian_tai_str(self) -> String {
-        let (y, m, d, h, min, s) = Self::compute_gregorian(self.as_utc_seconds());
+        let (y, mm, dd, hh, min, s) = Self::compute_gregorian(self.as_utc_seconds());
         format!(
             "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} TAI",
-            y, m, d, h, min, s
+            y, mm, dd, hh, min, s
         )
     }
 
@@ -698,6 +698,77 @@ impl Epoch {
             mins as u8,
             secs as u8,
         )
+    }
+}
+
+impl FromStr for Epoch {
+    type Err = Errors;
+
+    /// Attempts to convert a string to an Epoch.
+    ///
+    /// Format identifiers:
+    ///  + JD: Julian days
+    ///  + MJD: Modified Julian days
+    ///  + SEC: Seconds past a given epoch (e.g. SEC 17.2 TAI is 17.2 seconds past TAI Epoch)
+    /// # Example
+    /// ```
+    /// use hifitime::Epoch;
+    /// use std::str::FromStr;
+    ///
+    /// assert!(Epoch::from_str("JD 2452312.500372511 TDB").is_ok());
+    /// assert!(Epoch::from_str("JD 2452312.500372511 ET").is_ok());
+    /// assert!(Epoch::from_str("JD 2452312.500372511 TAI").is_ok());
+    /// assert!(Epoch::from_str("MJD 51544.5 TAI").is_ok());
+    /// assert!(Epoch::from_str("SEC 0.5 TAI").is_ok());
+    /// assert!(Epoch::from_str("SEC 66312032.18493909 TDB").is_ok());
+    /// ```
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        lazy_static! {
+            static ref RE_GENERIC: Regex =
+                Regex::new(r"^(\w{2,3})\W?(\d+\.?\d+)\W?(\w{2,3})?$").unwrap();
+        }
+        // Try to match Gregorian date
+        match Self::from_gregorian_str(s) {
+            Ok(e) => Ok(e),
+            Err(_) => match RE_GENERIC.captures(s) {
+                Some(cap) => {
+                    let format = cap[1].to_owned().parse::<String>().unwrap();
+                    let value = cap[2].to_owned().parse::<f64>().unwrap();
+                    let ts = TimeSystem::map(cap[3].to_owned().parse::<String>().unwrap());
+
+                    match format.as_str() {
+                        "JD" => match ts {
+                            TimeSystem::ET => Ok(Epoch::from_jde_et(value)),
+                            TimeSystem::TAI => Ok(Epoch::from_jde_tai(value)),
+                            TimeSystem::TDB => Ok(Epoch::from_jde_tdb(value)),
+                            _ => Err(Errors::ParseError(format!(
+                                "Cannot initialize JD in {:?}",
+                                ts
+                            ))),
+                        },
+                        "MJD" => match ts {
+                            TimeSystem::TAI => Ok(Epoch::from_mjd_tai(value)),
+                            _ => Err(Errors::ParseError(format!(
+                                "Cannot initialize MJD in {:?}",
+                                ts
+                            ))),
+                        },
+                        "SEC" => match ts {
+                            TimeSystem::TAI => Ok(Epoch::from_tai_seconds(value)),
+                            TimeSystem::ET => Ok(Epoch::from_et_seconds(value)),
+                            TimeSystem::TDB => Ok(Epoch::from_tdb_seconds(value)),
+                            TimeSystem::TT => Ok(Epoch::from_tt_seconds(value)),
+                            _ => Err(Errors::ParseError(format!(
+                                "Cannot initialize SEC in {:?}",
+                                ts
+                            ))),
+                        },
+                        _ => Err(Errors::ParseError(format!("Unknown format  {}", format))),
+                    }
+                }
+                None => Err(Errors::ParseError("Input not understood".to_owned())),
+            },
+        }
     }
 }
 
@@ -1132,18 +1203,63 @@ fn spice_et_tdb() {
 
 #[test]
 fn test_from_str() {
+    use std::f64::EPSILON;
+    use std::str::FromStr;
+
     let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
-    assert_eq!(
-        dt,
-        Epoch::from_gregorian_str("2017-01-14T00:31:55 UTC").unwrap()
+    assert_eq!(dt, Epoch::from_str("2017-01-14T00:31:55 UTC").unwrap());
+    assert_eq!(dt, Epoch::from_str("2017-01-14T00:31:55").unwrap());
+    assert_eq!(dt, Epoch::from_str("2017-01-14 00:31:55").unwrap());
+    assert!(Epoch::from_str("2017-01-14 00:31:55 TAI").is_ok());
+    assert!(Epoch::from_str("2017-01-14 00:31:55 TT").is_ok());
+    assert!(Epoch::from_str("2017-01-14 00:31:55 ET").is_ok());
+    assert!(Epoch::from_str("2017-01-14 00:31:55 TDB").is_ok());
+
+    let jde = 2_452_312.500_372_511;
+    assert!(
+        (Epoch::from_str("JD 2452312.500372511 TDB")
+            .unwrap()
+            .as_jde_tdb_days()
+            - jde)
+            .abs()
+            < EPSILON
     );
-    assert_eq!(
-        dt,
-        Epoch::from_gregorian_str("2017-01-14T00:31:55").unwrap()
+    assert!(
+        (Epoch::from_str("JD 2452312.500372511 ET")
+            .unwrap()
+            .as_jde_et_days()
+            - jde)
+            .abs()
+            < EPSILON
     );
-    assert_eq!(
-        dt,
-        Epoch::from_gregorian_str("2017-01-14 00:31:55").unwrap()
+    assert!(
+        (Epoch::from_str("JD 2452312.500372511 TAI")
+            .unwrap()
+            .as_jde_tai_days()
+            - jde)
+            .abs()
+            < EPSILON
+    );
+    assert!(
+        (Epoch::from_str("MJD 51544.5 TAI")
+            .unwrap()
+            .as_mjd_tai_days()
+            - 51544.5)
+            .abs()
+            < EPSILON
+    );
+    assert!((Epoch::from_str("SEC 0.5 TAI").unwrap().as_tai_seconds() - 0.5).abs() < EPSILON);
+
+    // Must account for the precision error
+    assert!(
+        dbg!(
+            Epoch::from_str("SEC 66312032.18493909 TDB")
+                .unwrap()
+                .as_tdb_seconds()
+                - 66312032.18493909
+        )
+        .abs()
+            < 1e-4
     );
 }
 
