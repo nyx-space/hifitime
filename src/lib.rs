@@ -143,6 +143,38 @@ impl convert::From<ParseIntError> for Errors {
     }
 }
 
+/// Enum of the different time systems available
+#[derive(Debug, PartialEq)]
+pub enum TimeSystem {
+    /// Ephemeris Time as defined by SPICE (slightly different from true TDB)
+    ET,
+    /// TAI is the representation of an Epoch internally
+    TAI,
+    /// Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
+    TT,
+    /// Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time)
+    TDB,
+    UTC,
+}
+
+impl TimeSystem {
+    pub fn map(val: String) -> Self {
+        if val == "UTC" {
+            TimeSystem::UTC
+        } else if val == "TT" {
+            TimeSystem::TT
+        } else if val == "TAI" {
+            TimeSystem::TAI
+        } else if val == "TDB" {
+            TimeSystem::TDB
+        } else if val == "ET" {
+            TimeSystem::ET
+        } else {
+            panic!("unknown time system `{}`", val);
+        }
+    }
+}
+
 #[test]
 fn error_unittest() {
     assert_eq!(
