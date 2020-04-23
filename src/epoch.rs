@@ -576,7 +576,7 @@ impl Epoch {
     /// # Example
     /// ```
     /// use hifitime::Epoch;
-    /// let dt_str = "2017-01-14T00:31:55";
+    /// let dt_str = "2017-01-14T00:31:55 UTC";
     /// let dt = Epoch::from_gregorian_str(dt_str).unwrap();
     /// let (y, m, d, h, min, s, _) = dt.as_gregorian_utc();
     /// assert_eq!(y, 2017);
