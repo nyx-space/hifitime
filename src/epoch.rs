@@ -578,7 +578,7 @@ impl Epoch {
     /// use hifitime::Epoch;
     /// let dt_str = "2017-01-14T00:31:55";
     /// let dt = Epoch::from_gregorian_str(dt_str).unwrap();
-    /// let (y, m, d, h, min, s) = dt.as_gregorian_utc();
+    /// let (y, m, d, h, min, s, _) = dt.as_gregorian_utc();
     /// assert_eq!(y, 2017);
     /// assert_eq!(m, 1);
     /// assert_eq!(d, 14);
@@ -587,14 +587,13 @@ impl Epoch {
     /// assert_eq!(s, 55);
     /// assert_eq!(dt_str, dt.as_gregorian_utc_str().to_owned());
     /// ```
-    pub fn as_gregorian_utc(self) -> (i32, u8, u8, u8, u8, u8) {
+    pub fn as_gregorian_utc(self) -> (i32, u8, u8, u8, u8, u8, u32) {
         Self::compute_gregorian(self.as_utc_seconds())
     }
 
     /// Converts the Epoch to UTC Gregorian in the ISO8601 format.
     pub fn as_gregorian_utc_str(self) -> String {
-        let (y, mm, dd, hh, min, s) = Self::compute_gregorian(self.as_utc_seconds());
-        format!("{:04}-{:02}-{:02}T{:02}:{:02}:{:02}", y, mm, dd, hh, min, s)
+        self.as_gregorian_str(TimeSystem::UTC)
     }
 
     /// Converts the Epoch to the Gregorian TAI equivalent as (year, month, day, hour, minute, second).
@@ -604,7 +603,7 @@ impl Epoch {
     /// ```
     /// use hifitime::Epoch;
     /// let dt = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
-    /// let (y, m, d, h, min, s) = dt.as_gregorian_tai();
+    /// let (y, m, d, h, min, s, _) = dt.as_gregorian_tai();
     /// assert_eq!(y, 1972);
     /// assert_eq!(m, 1);
     /// assert_eq!(d, 1);
@@ -612,7 +611,7 @@ impl Epoch {
     /// assert_eq!(min, 0);
     /// assert_eq!(s, 0);
     /// ```
-    pub fn as_gregorian_tai(self) -> (i32, u8, u8, u8, u8, u8) {
+    pub fn as_gregorian_tai(self) -> (i32, u8, u8, u8, u8, u8, u32) {
         Self::compute_gregorian(self.as_tai_seconds())
     }
 
@@ -626,14 +625,32 @@ impl Epoch {
 
     /// Converts the Epoch to TAI Gregorian in the ISO8601 format with " TAI" appended to the string
     pub fn as_gregorian_tai_str(self) -> String {
-        let (y, mm, dd, hh, min, s) = Self::compute_gregorian(self.as_utc_seconds());
-        format!(
-            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} TAI",
-            y, mm, dd, hh, min, s
-        )
+        self.as_gregorian_str(TimeSystem::TAI)
     }
 
-    fn compute_gregorian(absolute_seconds: f64) -> (i32, u8, u8, u8, u8, u8) {
+    /// Converts the Epoch to Gregorian in the provided time system and in the ISO8601 format with the time system appended to the string
+    pub fn as_gregorian_str(self, ts: TimeSystem) -> String {
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(match ts {
+            TimeSystem::ET => self.as_et_seconds(),
+            TimeSystem::TT => self.as_tt_seconds(),
+            TimeSystem::TAI => self.as_tai_seconds(),
+            TimeSystem::TDB => self.as_tdb_seconds(),
+            TimeSystem::UTC => self.as_utc_seconds(),
+        });
+        if nanos == 0 {
+            format!(
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {:?}",
+                y, mm, dd, hh, min, s, ts
+            )
+        } else {
+            format!(
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
+                y, mm, dd, hh, min, s, nanos, ts
+            )
+        }
+    }
+
+    fn compute_gregorian(absolute_seconds: f64) -> (i32, u8, u8, u8, u8, u8, u32) {
         let (mut year, mut year_fraction) = quorem(absolute_seconds, 365.0 * SECONDS_PER_DAY);
         // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
         year += 1900;
@@ -690,6 +707,7 @@ impl Epoch {
         let (hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
         // Get the minutes and seconds by the exact number of seconds in a minute
         let (mins, secs) = quorem(hours_fraction, 60.0);
+        let nanos = (quorem(secs, 1.0).1 * 1e9) as u32;
         (
             year,
             month as u8,
@@ -697,6 +715,7 @@ impl Epoch {
             hours as u8,
             mins as u8,
             secs as u8,
+            nanos,
         )
     }
 }
@@ -1260,6 +1279,20 @@ fn test_from_str() {
         )
         .abs()
             < 1e-4
+    );
+
+    // Check reciprocity of string
+    let greg = "2020-01-31T00:00:00 UTC";
+    assert_eq!(greg, Epoch::from_str(greg).unwrap().as_gregorian_utc_str());
+    let greg = "2020-01-31T00:00:00 TAI";
+    assert_eq!(greg, Epoch::from_str(greg).unwrap().as_gregorian_tai_str());
+    // Note that due to the precision of TDB, there is some conversion error
+    let greg = "2020-01-31T00:00:00 TDB";
+    assert_eq!(
+        "2020-01-30T23:59:59.999961853 TDB",
+        Epoch::from_str(greg)
+            .unwrap()
+            .as_gregorian_str(TimeSystem::TDB)
     );
 }
 
