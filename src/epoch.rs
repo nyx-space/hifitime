@@ -165,7 +165,7 @@ impl Epoch {
         let tt_seconds = seconds - *TT_OFFSET;
         let tt_centuries_j2k =
             (tt_seconds - *ET_EPOCH_S_D) / (*SECONDS_PER_DAY_D * *DAYS_PER_CENTURY_D);
-        let g_rad = dbg!(Decimal::from(TAU))
+        let g_rad = Decimal::from(TAU)
             * (Decimal::from(357.528) + Decimal::from(35_999.050) * tt_centuries_j2k)
             / Decimal::from(360.0);
 
@@ -380,12 +380,25 @@ impl Epoch {
         self.0.to_f64().unwrap()
     }
 
+    pub fn as_tai_seconds_d(self) -> Decimal {
+        self.0
+    }
+
     pub fn as_tai_days(self) -> f64 {
         self.0.to_f64().unwrap() / SECONDS_PER_DAY
     }
 
+    pub fn as_tai_days_d(self) -> Decimal {
+        self.0 / *SECONDS_PER_DAY_D
+    }
+
     /// Returns the number of UTC seconds since the TAI epoch
     pub fn as_utc_seconds(self) -> f64 {
+        self.as_utc_seconds_d().to_f64().unwrap()
+    }
+
+    /// Returns the number of UTC seconds since the TAI epoch
+    pub fn as_utc_seconds_d(self) -> Decimal {
         let mut cnt = 0;
         for tai_ts in LEAP_SECONDS.iter() {
             if self.0 >= Decimal::from(*tai_ts) {
@@ -399,79 +412,141 @@ impl Epoch {
             }
         }
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        self.0.to_f64().unwrap() - f64::from(cnt)
+        self.0 - Decimal::from(cnt)
     }
 
+    /// Returns the number of UTC days since the TAI epoch
+    pub fn as_utc_days_d(self) -> Decimal {
+        self.as_utc_seconds_d() / *SECONDS_PER_DAY_D
+    }
+
+    /// Returns the number of UTC days since the TAI epoch
     pub fn as_utc_days(self) -> f64 {
-        self.as_utc_seconds() / SECONDS_PER_DAY
+        self.as_utc_days_d().to_f64().unwrap()
     }
 
     /// `as_mjd_days` creates an Epoch from the provided Modified Julian Date in days as explained
     /// [here](http://tycho.usno.navy.mil/mjd.html). MJD epoch is Modified Julian Day at 17 November 1858 at midnight.
     pub fn as_mjd_tai_days(self) -> f64 {
-        self.as_tai_days() + J1900_OFFSET
+        self.as_mjd_tai_days_d().to_f64().unwrap()
+    }
+
+    pub fn as_mjd_tai_days_d(self) -> Decimal {
+        self.as_tai_days_d() + Decimal::from(J1900_OFFSET)
     }
 
     /// Returns the Modified Julian Date in days UTC.
     pub fn as_mjd_utc_days(self) -> f64 {
-        self.as_utc_days() + J1900_OFFSET
+        self.as_mjd_utc_days_d().to_f64().unwrap()
     }
+
+    /// Returns the Modified Julian Date in days UTC.
+    pub fn as_mjd_utc_days_d(self) -> Decimal {
+        self.as_utc_days_d() + Decimal::from(J1900_OFFSET)
+    }
+
+    // HERE: Plan add a `_d` to all of the `self.as_...` and do as many computations as possible with Decimal
+    // TODO: Add a unit system based on llunit but separate with limited operations, get rid of adding f64: that's super confusing
 
     /// Returns the Modified Julian Date in seconds TAI.
     pub fn as_mjd_tai_seconds(self) -> f64 {
-        self.as_mjd_tai_days() * SECONDS_PER_DAY
+        self.as_mjd_tai_seconds_d().to_f64().unwrap()
+    }
+
+    pub fn as_mjd_tai_seconds_d(self) -> Decimal {
+        self.as_mjd_tai_days_d() * *SECONDS_PER_DAY_D
     }
 
     /// Returns the Modified Julian Date in seconds UTC.
     pub fn as_mjd_utc_seconds(self) -> f64 {
-        self.as_mjd_utc_days() * SECONDS_PER_DAY
+        self.as_mjd_utc_seconds_d().to_f64().unwrap()
+    }
+
+    pub fn as_mjd_utc_seconds_d(self) -> Decimal {
+        self.as_mjd_utc_days_d() * *SECONDS_PER_DAY_D
     }
 
     /// Returns the Julian days from epoch 01 Jan -4713, 12:00 (noon)
     /// as explained in "Fundamentals of astrodynamics and applications", Vallado et al.
     /// 4th edition, page 182, and on [Wikipedia](https://en.wikipedia.org/wiki/Julian_day).
     pub fn as_jde_tai_days(self) -> f64 {
-        self.as_mjd_tai_days() + MJD_OFFSET
+        self.as_jde_tai_days_d().to_f64().unwrap()
+    }
+
+    pub fn as_jde_tai_days_d(self) -> Decimal {
+        self.as_mjd_tai_days_d() + Decimal::from(MJD_OFFSET)
     }
 
     /// Returns the Julian seconds in TAI.
     pub fn as_jde_tai_seconds(self) -> f64 {
-        self.as_jde_tai_days() * SECONDS_PER_DAY
+        self.as_jde_tai_seconds_d().to_f64().unwrap()
+    }
+
+    pub fn as_jde_tai_seconds_d(self) -> Decimal {
+        self.as_jde_tai_days_d() * *SECONDS_PER_DAY_D
     }
 
     /// Returns the Julian days in UTC.
     pub fn as_jde_utc_days(self) -> f64 {
-        self.as_mjd_utc_days() + MJD_OFFSET
+        self.as_jde_utc_days_d().to_f64().unwrap()
+    }
+
+    pub fn as_jde_utc_days_d(self) -> Decimal {
+        self.as_mjd_utc_days_d() + Decimal::from(MJD_OFFSET)
     }
 
     /// Returns the Julian seconds in UTC.
     pub fn as_jde_utc_seconds(self) -> f64 {
-        self.as_jde_utc_days() * SECONDS_PER_DAY
+        self.as_jde_utc_days_d().to_f64().unwrap()
+    }
+
+    pub fn as_jde_utc_seconds_d(self) -> Decimal {
+        self.as_jde_utc_days_d() * *SECONDS_PER_DAY_D
     }
 
     /// Returns seconds past TAI epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
     pub fn as_tt_seconds(self) -> f64 {
-        self.as_tai_seconds() + 32.184
+        self.as_tt_seconds_d().to_f64().unwrap()
+    }
+
+    pub fn as_tt_seconds_d(self) -> Decimal {
+        self.as_tai_seconds_d() + *TT_OFFSET
     }
 
     /// Returns days past TAI epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
     pub fn as_tt_days(self) -> f64 {
-        self.as_tai_days() + 32.184 / SECONDS_PER_DAY
+        self.as_tt_days_d().to_f64().unwrap()
+    }
+
+    pub fn as_tt_days_d(self) -> Decimal {
+        self.as_tai_days_d() + *TT_OFFSET / *SECONDS_PER_DAY_D
     }
 
     /// Returns the centuries pased J2000 TT
     pub fn as_tt_centuries_j2k(self) -> f64 {
-        (self.as_tt_seconds() - ET_EPOCH_S) / (SECONDS_PER_DAY * DAYS_PER_CENTURY)
+        self.as_tt_centuries_j2k_d().to_f64().unwrap()
+    }
+
+    pub fn as_tt_centuries_j2k_d(self) -> Decimal {
+        (self.as_tt_seconds_d() - *ET_EPOCH_S_D) / (*SECONDS_PER_DAY_D * *DAYS_PER_CENTURY_D)
     }
 
     /// Returns days past Julian epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
     pub fn as_jde_tt_days(self) -> f64 {
-        self.as_jde_tai_days() + 32.184 / SECONDS_PER_DAY
+        self.as_jde_tt_days_d().to_f64().unwrap()
+    }
+
+    pub fn as_jde_tt_days_d(self) -> Decimal {
+        self.as_jde_tai_days_d() + *TT_OFFSET / *SECONDS_PER_DAY_D
     }
 
     /// Returns days past Modified Julian epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
     pub fn as_mjd_tt_days(self) -> f64 {
-        self.as_mjd_tai_days() + 32.184 / SECONDS_PER_DAY
+        self.as_mjd_tt_days_d().to_f64().unwrap()
+    }
+
+    pub fn as_mjd_tt_days_d(self) -> Decimal {
+        self.as_mjd_tai_days_d() + *TT_OFFSET / *SECONDS_PER_DAY_D
     }
 
     /// Returns seconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
@@ -479,14 +554,26 @@ impl Epoch {
         self.as_tai_seconds() - 19.0
     }
 
+    pub fn as_gpst_seconds_d(self) -> Decimal {
+        self.as_tai_seconds_d() - Decimal::from(19.0)
+    }
+
     /// Returns days past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
     pub fn as_gpst_days(self) -> f64 {
-        self.as_gpst_seconds() / SECONDS_PER_DAY
+        self.as_gpst_days_d().to_f64().unwrap()
+    }
+
+    pub fn as_gpst_days_d(self) -> Decimal {
+        self.as_gpst_seconds_d() / *SECONDS_PER_DAY_D
     }
 
     /// Returns the Ephemeris Time seconds past epoch
     pub fn as_et_seconds(self) -> f64 {
-        self.as_tt_seconds() - ET_EPOCH_S + 0.000_935
+        self.as_tt_seconds_d().to_f64().unwrap()
+    }
+
+    pub fn as_et_seconds_d(self) -> Decimal {
+        self.as_tt_seconds_d() - *ET_EPOCH_S_D + Decimal::from(0.000_935)
     }
 
     /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
@@ -496,17 +583,42 @@ impl Epoch {
         self.as_tt_seconds() - ET_EPOCH_S + 0.001_658 * (g_rad + 0.0167 * g_rad.sin()).sin()
     }
 
+    pub fn as_tdb_seconds_d(self) -> Decimal {
+        use std::f64::consts::TAU;
+        let g_rad = (Decimal::from(TAU)
+            * (Decimal::from(357.528) + Decimal::from(35_999.050) * self.as_tt_centuries_j2k_d())
+            / Decimal::from(360.0))
+        .to_f64()
+        .unwrap();
+
+        self.as_tt_seconds_d() - *ET_EPOCH_S_D
+            + Decimal::from(0.001_658) * Decimal::from((g_rad + 0.0167 * g_rad.sin()).sin())
+    }
+
     /// Returns the Ephemeris Time JDE past epoch
     pub fn as_jde_et_days(self) -> f64 {
-        // self.as_jde_tdb_days()
-        self.as_jde_tt_days() + 0.000_935 / SECONDS_PER_DAY
+        self.as_jde_et_days_d().to_f64().unwrap()
+    }
+
+    pub fn as_jde_et_days_d(self) -> Decimal {
+        self.as_jde_tt_days_d() + Decimal::from(0.000_935) / *SECONDS_PER_DAY_D
     }
 
     /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
     pub fn as_jde_tdb_days(self) -> f64 {
+        self.as_jde_tdb_days_d().to_f64().unwrap()
+    }
+
+    pub fn as_jde_tdb_days_d(self) -> Decimal {
         use std::f64::consts::TAU;
-        let g_rad = TAU * (357.528 + 35_999.050 * self.as_tt_centuries_j2k()) / 360.0;
-        self.as_jde_tt_days() + (0.001_658 * (g_rad + 0.0167 * g_rad.sin()).sin()) / SECONDS_PER_DAY
+        let g_rad = (Decimal::from(TAU)
+            * (Decimal::from(357.528) + Decimal::from(35_999.050) * self.as_tt_centuries_j2k_d())
+            / Decimal::from(360.0))
+        .to_f64()
+        .unwrap();
+        self.as_jde_tt_days_d()
+            + (Decimal::from(0.001_658) * Decimal::from((g_rad + 0.0167 * g_rad.sin()).sin()))
+                / *SECONDS_PER_DAY_D
     }
 
     /// Converts an ISO8601 Datetime representation without timezone offset to an Epoch.
@@ -1314,7 +1426,7 @@ fn test_from_str() {
     // Note that due to the precision of TDB, there is some conversion error
     let greg = "2020-01-31T00:00:00 TDB";
     assert_eq!(
-        "2020-01-30T23:59:59.999962806 TDB",
+        "2020-01-30T23:59:59.999961853 TDB",
         Epoch::from_str(greg)
             .unwrap()
             .as_gregorian_str(TimeSystem::TDB)
