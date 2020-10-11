@@ -57,7 +57,7 @@
 //! assert_eq!(santa.as_mjd_utc_days(), 58112.043217592596);
 //! assert_eq!(santa.as_jde_utc_days(), 2458112.5432175924);
 //!
-//! santa.mut_add_secs(3600.0);
+//! santa += 3600.0;
 //! assert_eq!(
 //!     santa,
 //!     Epoch::from_gregorian_utc(2017, 12, 25, 02, 02, 14, 0),
