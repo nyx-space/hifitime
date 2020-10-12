@@ -1,18 +1,17 @@
-extern crate fraction;
 extern crate lazy_static;
 extern crate regex;
 
-use self::fraction::{GenericDecimal, ToPrimitive};
 use self::lazy_static::lazy_static;
 use self::regex::Regex;
+use crate::fraction::ToPrimitive;
+use crate::Decimal;
 use crate::{
     Errors, TimeSystem, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET, MJD_OFFSET, SECONDS_PER_DAY,
     SECONDS_PER_HOUR, SECONDS_PER_MINUTE,
 };
+use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::str::FromStr;
-
-type Decimal = GenericDecimal<u128, u16>;
 
 lazy_static! {
     static ref SECONDS_PER_DAY_D: Decimal = Decimal::from(SECONDS_PER_DAY);
@@ -928,6 +927,13 @@ impl FromStr for Epoch {
     }
 }
 
+impl fmt::Display for Epoch {
+    /// The default format of an epoch is in TAI
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_gregorian_tai_str())
+    }
+}
+
 /// Returns true if the provided Gregorian date is valid. Leap second days may have 60 seconds.
 pub fn is_gregorian_valid(
     year: i32,
@@ -1086,13 +1092,13 @@ fn utc_epochs() {
     let mut this_epoch = Epoch::from_tai_seconds(3_692_217_600.0);
     let epoch_utc = Epoch::from_gregorian_utc_hms(2016, 12, 31, 23, 59, 24);
     assert_eq!(epoch_utc, this_epoch, "Incorrect epoch");
-    this_epoch = this_epoch + 3600.0;
+    this_epoch += 3600.0;
     assert_eq!(
         this_epoch,
         Epoch::from_gregorian_utc_hms(2017, 1, 1, 0, 59, 23),
         "Incorrect epoch when adding an hour across leap second"
     );
-    this_epoch = this_epoch - 3600.0;
+    this_epoch -= 3600.0;
     assert_eq!(epoch_utc, this_epoch, "Incorrect epoch after sub");
 
     let this_epoch = Epoch::from_gregorian_tai_at_midnight(2020, 1, 1);
