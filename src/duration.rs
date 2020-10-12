@@ -84,28 +84,59 @@ impl Duration {
 }
 
 impl fmt::Display for Duration {
-    // Prints the duration with appropriate units
+    // Prints the detail of this duration down to the nanometers
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let seconds_f64 = self.0.to_f64().unwrap();
-        let seconds_f64_abs = seconds_f64.abs();
-        if seconds_f64_abs < 1e-5 {
-            fmt::Display::fmt(&(seconds_f64 * 1e9), f)?;
-            write!(f, " ns")
-        } else if seconds_f64_abs < 1e-2 {
-            fmt::Display::fmt(&(seconds_f64 * 1e3), f)?;
-            write!(f, " ms")
-        } else if seconds_f64_abs < 3.0 * SECONDS_PER_MINUTE {
-            fmt::Display::fmt(&(seconds_f64), f)?;
+        // We should print all of the fields
+        let days = self.in_unit(TimeUnit::Day).floor();
+        let hours = self.in_unit(TimeUnit::Hour).floor() - days * Decimal::from(24.0);
+        let minutes = self.in_unit(TimeUnit::Minute).floor()
+            - self.in_unit(TimeUnit::Hour).floor() * Decimal::from(60.0);
+        let seconds = self.in_unit(TimeUnit::Second).floor()
+            - self.in_unit(TimeUnit::Minute).floor() * Decimal::from(60.0);
+        let milli = self.in_unit(TimeUnit::Millisecond).floor()
+            - self.in_unit(TimeUnit::Second).floor() * Decimal::from(1000.0);
+        let nano = self.in_unit(TimeUnit::Nanosecond)
+            - self.in_unit(TimeUnit::Millisecond).floor() * Decimal::from(1e6);
+
+        let mut print_all = false;
+        let nil = Decimal::from(0);
+        if days > nil {
+            fmt::Display::fmt(&days, f)?;
+            write!(f, " days ")?;
+            print_all = true;
+        }
+        if hours > nil || print_all {
+            fmt::Display::fmt(&hours, f)?;
+            write!(f, " h ")?;
+            print_all = true;
+        }
+        if minutes > nil || print_all {
+            fmt::Display::fmt(&minutes, f)?;
+            write!(f, " min ")?;
+            print_all = true;
+        }
+        // If the milliseconds and nanoseconds are nil, then we stop at the second level
+        if milli == nil && nano == nil {
+            fmt::Display::fmt(&seconds, f)?;
             write!(f, " s")
-        } else if seconds_f64_abs < SECONDS_PER_HOUR {
-            fmt::Display::fmt(&(seconds_f64 / SECONDS_PER_MINUTE), f)?;
-            write!(f, " min")
-        } else if seconds_f64_abs < SECONDS_PER_DAY {
-            fmt::Display::fmt(&(seconds_f64 / SECONDS_PER_HOUR), f)?;
-            write!(f, " h")
         } else {
-            fmt::Display::fmt(&(seconds_f64 / SECONDS_PER_DAY), f)?;
-            write!(f, " days")
+            if seconds > nil || print_all {
+                fmt::Display::fmt(&seconds, f)?;
+                write!(f, " s ")?;
+                print_all = true;
+            }
+            if nano == nil {
+                // Only stop at the millisecond level
+                fmt::Display::fmt(&milli, f)?;
+                write!(f, " ms")
+            } else {
+                if milli > nil || print_all {
+                    fmt::Display::fmt(&milli, f)?;
+                    write!(f, " ms ")?;
+                }
+                fmt::Display::fmt(&nano, f)?;
+                write!(f, " ns")
+            }
         }
     }
 }
@@ -215,9 +246,6 @@ fn time_unit() {
     assert_eq!(TimeUnit::Second * 3.0, TimeUnit::Second * 3);
     assert_eq!(TimeUnit::Millisecond * 4.0, TimeUnit::Millisecond * 4);
     assert_eq!(TimeUnit::Nanosecond * 5.0, TimeUnit::Nanosecond * 5);
-    // Check that we support nanoseconds pas GPS time
-    let now = TimeUnit::Nanosecond * 1286495254000000000_u128;
-    assert_eq!(format!("{}", now), "14889.991365740741 days");
 
     // Test operations
     let seven_hours = TimeUnit::Hour * 7;
@@ -229,6 +257,39 @@ fn time_unit() {
     let sub: Duration = seven_hours - six_minutes - five_seconds;
     assert!((sub.in_unit_f64(TimeUnit::Second) - 24835.0).abs() < EPSILON);
 
+    // Check printing adds precision
+    assert_eq!(
+        format!("{}", TimeUnit::Day * 10.0 + TimeUnit::Hour * 5),
+        "10 days 5 h 0 min 0 s"
+    );
+
+    assert_eq!(
+        format!("{}", TimeUnit::Hour * 5 + TimeUnit::Millisecond * 256),
+        "5 h 0 min 0 s 256 ms"
+    );
+
+    assert_eq!(
+        format!(
+            "{}",
+            TimeUnit::Hour * 5 + TimeUnit::Millisecond * 256 + TimeUnit::Nanosecond * 1
+        ),
+        "5 h 0 min 0 s 256 ms 1 ns"
+    );
+
+    assert_eq!(
+        format!(
+            "{}",
+            TimeUnit::Hour * 5 + TimeUnit::Millisecond * 256 + TimeUnit::Nanosecond * 3.5
+        ),
+        "5 h 0 min 0 s 256 ms 3.5 ns"
+    );
+    // Check that we support nanoseconds pas GPS time
+    let now = TimeUnit::Nanosecond * 1286495254000000123_u128;
+    assert_eq!(
+        format!("{}", now),
+        "14889 days 23 h 47 min 34 s 0 ms 123 ns"
+    );
+
     // Test fractional
     let quarter_hour = Duration::from_fraction(1, 4, TimeUnit::Hour);
     let third_hour = Duration::from_fraction(1, 3, TimeUnit::Hour);
@@ -239,7 +300,7 @@ fn time_unit() {
         sum.in_unit_f64(TimeUnit::Minute),
         (1.0 / 4.0 + 1.0 / 3.0) * 60.0
     );
-    assert_eq!(format!("{}", sum), "35 min"); // Note the automatic unit selection
+    assert_eq!(format!("{}", sum), "35 min 0 s"); // Note the automatic unit selection
 
     let quarter_hour = Duration::from_fraction(-1, 4, TimeUnit::Hour);
     let third_hour = Duration::from_fraction(1, -3, TimeUnit::Hour);
