@@ -168,34 +168,6 @@ impl fmt::LowerExp for Duration {
     }
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum TimeUnit {
-    Day,
-    Hour,
-    Minute,
-    Second,
-    Millisecond,
-    Nanosecond,
-}
-
-impl TimeUnit {
-    pub fn in_seconds(self) -> Decimal {
-        match self {
-            TimeUnit::Day => Decimal::from(SECONDS_PER_DAY),
-            TimeUnit::Hour => Decimal::from(SECONDS_PER_HOUR),
-            TimeUnit::Minute => Decimal::from(SECONDS_PER_MINUTE),
-            TimeUnit::Second => Decimal::from(1.0),
-            TimeUnit::Millisecond => Decimal::from(1e-3),
-            TimeUnit::Nanosecond => Decimal::from(1e-9),
-        }
-    }
-
-    #[allow(clippy::wrong_self_convention)]
-    pub fn from_seconds(self) -> Decimal {
-        Decimal::from(1) / self.in_seconds()
-    }
-}
-
 impl Add for Duration {
     type Output = Duration;
 
@@ -221,6 +193,85 @@ impl Sub for Duration {
 impl SubAssign for Duration {
     fn sub_assign(&mut self, rhs: Duration) {
         *self = *self - rhs;
+    }
+}
+
+// Allow adding with a TimeUnit directly
+impl Add<TimeUnit> for Duration {
+    type Output = Duration;
+
+    #[allow(clippy::identity_op)]
+    fn add(self, rhs: TimeUnit) -> Duration {
+        self + rhs * 1
+    }
+}
+
+impl AddAssign<TimeUnit> for Duration {
+    #[allow(clippy::identity_op)]
+    fn add_assign(&mut self, rhs: TimeUnit) {
+        *self = *self + rhs * 1;
+    }
+}
+
+impl Sub<TimeUnit> for Duration {
+    type Output = Duration;
+
+    #[allow(clippy::identity_op)]
+    fn sub(self, rhs: TimeUnit) -> Duration {
+        self - rhs * 1
+    }
+}
+
+impl SubAssign<TimeUnit> for Duration {
+    #[allow(clippy::identity_op)]
+    fn sub_assign(&mut self, rhs: TimeUnit) {
+        *self = *self - rhs * 1;
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum TimeUnit {
+    Day,
+    Hour,
+    Minute,
+    Second,
+    Millisecond,
+    Nanosecond,
+}
+
+impl Add for TimeUnit {
+    type Output = Duration;
+
+    #[allow(clippy::identity_op)]
+    fn add(self, rhs: Self) -> Duration {
+        self * 1 + rhs * 1
+    }
+}
+
+impl Sub for TimeUnit {
+    type Output = Duration;
+
+    #[allow(clippy::identity_op)]
+    fn sub(self, rhs: Self) -> Duration {
+        self * 1 - rhs * 1
+    }
+}
+
+impl TimeUnit {
+    pub fn in_seconds(self) -> Decimal {
+        match self {
+            TimeUnit::Day => Decimal::from(SECONDS_PER_DAY),
+            TimeUnit::Hour => Decimal::from(SECONDS_PER_HOUR),
+            TimeUnit::Minute => Decimal::from(SECONDS_PER_MINUTE),
+            TimeUnit::Second => Decimal::from(1.0),
+            TimeUnit::Millisecond => Decimal::from(1e-3),
+            TimeUnit::Nanosecond => Decimal::from(1e-9),
+        }
+    }
+
+    #[allow(clippy::wrong_self_convention)]
+    pub fn from_seconds(self) -> Decimal {
+        Decimal::from(1) / self.in_seconds()
     }
 }
 
@@ -271,9 +322,14 @@ fn time_unit() {
     assert_eq!(
         format!(
             "{}",
-            TimeUnit::Hour * 5 + TimeUnit::Millisecond * 256 + TimeUnit::Nanosecond * 1
+            TimeUnit::Hour * 5 + TimeUnit::Millisecond * 256 + TimeUnit::Nanosecond
         ),
         "5 h 0 min 0 s 256 ms 1 ns"
+    );
+
+    assert_eq!(
+        format!("{}", TimeUnit::Hour + TimeUnit::Second),
+        "1 h 0 min 1 s"
     );
 
     assert_eq!(
