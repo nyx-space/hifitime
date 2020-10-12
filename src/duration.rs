@@ -62,8 +62,8 @@ impl Duration {
 
     /// Creates a new duration from the provided fraction and unit
     pub fn from_fraction(num: i64, denom: i64, unit: TimeUnit) -> Self {
-        let num_u = num as u128;
-        let denom_u = denom as u128;
+        let num_u = num.abs() as u128;
+        let denom_u = denom.abs() as u128;
         if (num < 0 && denom < 0) || (num > 0 && denom > 0) {
             Self(Decimal::from_fraction(Fraction::new(num_u, denom_u)) * unit.in_seconds())
         } else {
@@ -86,20 +86,21 @@ impl Duration {
 impl fmt::Display for Duration {
     // Prints the duration with appropriate units
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let seconds_f64 = self.0.to_f64().unwrap().abs();
-        if seconds_f64 < 1e-5 {
+        let seconds_f64 = self.0.to_f64().unwrap();
+        let seconds_f64_abs = seconds_f64.abs();
+        if seconds_f64_abs < 1e-5 {
             fmt::Display::fmt(&(seconds_f64 * 1e9), f)?;
             write!(f, " ns")
-        } else if seconds_f64 < 1e-2 {
+        } else if seconds_f64_abs < 1e-2 {
             fmt::Display::fmt(&(seconds_f64 * 1e3), f)?;
             write!(f, " ms")
-        } else if seconds_f64 < 3.0 * SECONDS_PER_MINUTE {
+        } else if seconds_f64_abs < 3.0 * SECONDS_PER_MINUTE {
             fmt::Display::fmt(&(seconds_f64), f)?;
             write!(f, " s")
-        } else if seconds_f64 < SECONDS_PER_HOUR {
+        } else if seconds_f64_abs < SECONDS_PER_HOUR {
             fmt::Display::fmt(&(seconds_f64 / SECONDS_PER_MINUTE), f)?;
             write!(f, " min")
-        } else if seconds_f64 < SECONDS_PER_DAY {
+        } else if seconds_f64_abs < SECONDS_PER_DAY {
             fmt::Display::fmt(&(seconds_f64 / SECONDS_PER_HOUR), f)?;
             write!(f, " h")
         } else {
@@ -112,20 +113,21 @@ impl fmt::Display for Duration {
 impl fmt::LowerExp for Duration {
     // Prints the duration with appropriate units
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let seconds_f64 = self.0.to_f64().unwrap().abs();
-        if seconds_f64 < 1e-5 {
+        let seconds_f64 = self.0.to_f64().unwrap();
+        let seconds_f64_abs = seconds_f64.abs();
+        if seconds_f64_abs < 1e-5 {
             fmt::Display::fmt(&(seconds_f64 * 1e9), f)?;
             write!(f, " ns")
-        } else if seconds_f64 < 1e-2 {
+        } else if seconds_f64_abs < 1e-2 {
             fmt::Display::fmt(&(seconds_f64 * 1e3), f)?;
             write!(f, " ms")
-        } else if seconds_f64 < 3.0 * SECONDS_PER_MINUTE {
+        } else if seconds_f64_abs < 3.0 * SECONDS_PER_MINUTE {
             fmt::Display::fmt(&(seconds_f64), f)?;
             write!(f, " s")
-        } else if seconds_f64 < SECONDS_PER_HOUR {
+        } else if seconds_f64_abs < SECONDS_PER_HOUR {
             fmt::Display::fmt(&(seconds_f64 / SECONDS_PER_MINUTE), f)?;
             write!(f, " min")
-        } else if seconds_f64 < SECONDS_PER_DAY {
+        } else if seconds_f64_abs < SECONDS_PER_DAY {
             fmt::Display::fmt(&(seconds_f64 / SECONDS_PER_HOUR), f)?;
             write!(f, " h")
         } else {
@@ -238,4 +240,18 @@ fn time_unit() {
         (1.0 / 4.0 + 1.0 / 3.0) * 60.0
     );
     assert_eq!(format!("{}", sum), "35 min"); // Note the automatic unit selection
+
+    let quarter_hour = Duration::from_fraction(-1, 4, TimeUnit::Hour);
+    let third_hour = Duration::from_fraction(1, -3, TimeUnit::Hour);
+    let sum = quarter_hour + third_hour;
+    assert!((sum.in_unit_f64(TimeUnit::Minute) + 35.0).abs() < EPSILON);
+    assert_eq!(format!("{}", sum), "-35 min"); // Note the automatic unit selection
+    assert_eq!(format!("{:.2}", sum), "-35.00 min"); // Note the automatic unit selection
 }
+
+// TODO:
+// 0. Display should print 15 days 5 h 9 min 59 s 159789 ns , but LowerExp and the floating point should remain as now
+// 1. Epoch should only be add-able with Durations
+// 2. Epoch sub should also return Durations
+// 3. Initialize an Epoch from a "duration past J1900" etc.
+// 4. MAYBE: Support the same kind of unit stuff here for time systems. Might be possible with an enum which calls itself recursively, although this might be complicated for TDB
