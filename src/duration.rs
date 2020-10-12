@@ -84,7 +84,7 @@ impl Duration {
 }
 
 impl fmt::Display for Duration {
-    // Prints the detail of this duration down to the nanometers
+    // Prints this duration with automatic selection of the highest and sub-second unit
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // We should print all of the fields
         let days = self.in_unit(TimeUnit::Day).floor();
@@ -100,41 +100,74 @@ impl fmt::Display for Duration {
 
         let mut print_all = false;
         let nil = Decimal::from(0);
-        if days > nil {
+        let is_neg = self.0 < nil;
+        let neg_one = Decimal::from(-1);
+
+        if days.abs() > nil {
             fmt::Display::fmt(&days, f)?;
             write!(f, " days ")?;
             print_all = true;
         }
-        if hours > nil || print_all {
-            fmt::Display::fmt(&hours, f)?;
+        if hours.abs() > nil || print_all {
+            if is_neg && print_all {
+                // We have already printed the negative sign
+                // So let's oppose this number
+                fmt::Display::fmt(&(hours * neg_one), f)?;
+            } else {
+                fmt::Display::fmt(&hours, f)?;
+            }
             write!(f, " h ")?;
             print_all = true;
         }
-        if minutes > nil || print_all {
-            fmt::Display::fmt(&minutes, f)?;
+        if minutes.abs() > nil || print_all {
+            if is_neg && print_all {
+                fmt::Display::fmt(&(minutes * neg_one), f)?;
+            } else {
+                fmt::Display::fmt(&minutes, f)?;
+            }
             write!(f, " min ")?;
             print_all = true;
         }
         // If the milliseconds and nanoseconds are nil, then we stop at the second level
-        if milli == nil && nano == nil {
-            fmt::Display::fmt(&seconds, f)?;
+        if milli.abs() == nil && nano.abs() == nil {
+            if is_neg && print_all {
+                fmt::Display::fmt(&(seconds * neg_one), f)?;
+            } else {
+                fmt::Display::fmt(&seconds, f)?;
+            }
             write!(f, " s")
         } else {
-            if seconds > nil || print_all {
-                fmt::Display::fmt(&seconds, f)?;
+            if seconds.abs() > nil || print_all {
+                if is_neg && print_all {
+                    fmt::Display::fmt(&(seconds * neg_one), f)?;
+                } else {
+                    fmt::Display::fmt(&seconds, f)?;
+                }
                 write!(f, " s ")?;
                 print_all = true;
             }
-            if nano == nil {
+            if nano == nil || (is_neg && nano * neg_one <= nil) {
                 // Only stop at the millisecond level
-                fmt::Display::fmt(&milli, f)?;
+                if is_neg && print_all {
+                    fmt::Display::fmt(&(milli * neg_one), f)?;
+                } else {
+                    fmt::Display::fmt(&milli, f)?;
+                }
                 write!(f, " ms")
             } else {
-                if milli > nil || print_all {
-                    fmt::Display::fmt(&milli, f)?;
+                if milli.abs() > nil || print_all {
+                    if is_neg && print_all {
+                        fmt::Display::fmt(&(milli * neg_one), f)?;
+                    } else {
+                        fmt::Display::fmt(&milli, f)?;
+                    }
                     write!(f, " ms ")?;
                 }
-                fmt::Display::fmt(&nano, f)?;
+                if is_neg && print_all {
+                    fmt::Display::fmt(&(nano * neg_one), f)?;
+                } else {
+                    fmt::Display::fmt(&nano, f)?;
+                }
                 write!(f, " ns")
             }
         }
@@ -339,6 +372,21 @@ fn time_unit() {
         ),
         "5 h 0 min 0 s 256 ms 3.5 ns"
     );
+
+    // Check printing negative durations only shows one negative sign
+    assert_eq!(
+        format!("{}", TimeUnit::Hour * -5 + TimeUnit::Millisecond * -256),
+        "-5 h 0 min 0 s 256 ms"
+    );
+
+    assert_eq!(
+        format!(
+            "{}",
+            TimeUnit::Hour * -5 + TimeUnit::Millisecond * -256 + TimeUnit::Nanosecond * -3.5
+        ),
+        "-5 h 0 min 0 s 256 ms 3.5 ns"
+    );
+
     // Check that we support nanoseconds pas GPS time
     let now = TimeUnit::Nanosecond * 1286495254000000123_u128;
     assert_eq!(
@@ -361,13 +409,14 @@ fn time_unit() {
     let quarter_hour = Duration::from_fraction(-1, 4, TimeUnit::Hour);
     let third_hour = Duration::from_fraction(1, -3, TimeUnit::Hour);
     let sum = quarter_hour + third_hour;
+    let delta = sum.in_unit(TimeUnit::Millisecond).floor()
+        - sum.in_unit(TimeUnit::Second).floor() * Decimal::from(1000.0);
+    println!("{:?}", delta * Decimal::from(-1) == Decimal::from(0));
     assert!((sum.in_unit_f64(TimeUnit::Minute) + 35.0).abs() < EPSILON);
-    assert_eq!(format!("{}", sum), "-35 min"); // Note the automatic unit selection
-    assert_eq!(format!("{:.2}", sum), "-35.00 min"); // Note the automatic unit selection
+    assert_eq!(format!("{}", sum), "-35 min 0 s"); // Note the automatic unit selection
 }
 
 // TODO:
-// 0. Display should print 15 days 5 h 9 min 59 s 159789 ns , but LowerExp and the floating point should remain as now
 // 1. Epoch should only be add-able with Durations
 // 2. Epoch sub should also return Durations
 // 3. Initialize an Epoch from a "duration past J1900" etc.
