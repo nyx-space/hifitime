@@ -1,10 +1,12 @@
 use crate::fraction::ToPrimitive;
-use crate::{Decimal, Fraction, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
+use crate::{
+    Decimal, Fraction, DAYS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE,
+};
 use std::fmt;
 use std::ops::{Add, AddAssign, Mul, Sub, SubAssign};
 
 /// Defines generally usable durations for high precision math with Epoch (all data is stored in seconds)
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Duration(Decimal);
 
 macro_rules! impl_ops_for_type {
@@ -13,6 +15,7 @@ macro_rules! impl_ops_for_type {
             type Output = Duration;
             fn mul(self, q: $type) -> Duration {
                 match self {
+                    TimeUnit::Century => Duration::from_days(Decimal::from(DAYS_PER_CENTURY)),
                     TimeUnit::Day => Duration::from_days(Decimal::from(q)),
                     TimeUnit::Hour => Duration::from_hours(Decimal::from(q)),
                     TimeUnit::Minute => Duration::from_minutes(Decimal::from(q)),
@@ -264,6 +267,8 @@ impl SubAssign<TimeUnit> for Duration {
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TimeUnit {
+    /// 36525 days, it the number of days per century in the Julian calendar
+    Century,
     Day,
     Hour,
     Minute,
@@ -293,6 +298,7 @@ impl Sub for TimeUnit {
 impl TimeUnit {
     pub fn in_seconds(self) -> Decimal {
         match self {
+            TimeUnit::Century => Decimal::from(DAYS_PER_CENTURY * SECONDS_PER_DAY),
             TimeUnit::Day => Decimal::from(SECONDS_PER_DAY),
             TimeUnit::Hour => Decimal::from(SECONDS_PER_HOUR),
             TimeUnit::Minute => Decimal::from(SECONDS_PER_MINUTE),

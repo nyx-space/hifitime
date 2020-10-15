@@ -1,6 +1,6 @@
-# hifitime 1.0
+# hifitime 2.0
 
-Precise date and time handling in Rust built on top of `std::f64`.
+Precise date and time handling in Rust built on top of lossless fractions (with 128 bits on the numerator and 16 bits on the denominator).
 The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in
 day-to-day use of this library.
 
@@ -22,11 +22,32 @@ day-to-day use of this library.
  * [x] Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
  * [x] UTC representation with ISO8601 formatting (and parsing in that format #45)
  * [x] High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) (caveat: up to 10ms difference with SPICE near 01 Jan 2000)
+ * [x] Trivial support of time arithmetic (e.g. `TimeUnit::Hour * 2 + TimeUnit::Second * 3`)
  * [ ] Support for custom representations of time (e.g. NASA GMAT Modified Julian Date)
  * [ ] Trivial support of other time representations, such as TDT (cf #44)
 
 Almost all examples are validated with external references, as detailed on a test-by-test
 basis.
+
+# Validation example
+Validation is done using NASA's SPICE toolkit, and specifically the [spiceypy](https://spiceypy.readthedocs.io/) Python wrapper.
+
+The most challenging validation is the definition of Ephemeris Time, which is very nearly the same as the Dynamic Barycentric Time (TDB).
+These calculations in hifitime are from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB).
+
+The following examples are executed as part of the standard test suite (cf. the function called `spice_et_tdb`).
+
+## Validation case 1: UTC input
+In SPICE, we chose to convert the UTC date `2012-02-07 11:22:33 UTC` into Ephemeris Time. SPICE responds with `381885819.18493587`.
+Initializing the same UTC date in hifitime and requesting the Ephemeris Time leads to `381885819.184935`, which is an error of 870 nanoseconds.
+
+|Column1  | Case 1  | Case 2  | Case 3  |
+|---------|---------|---------|---------|
+|SPICE Input |  `sp.str2et("2012-02-07 11:22:33 UTC")`       |         |         |
+|SPICE Output | `381885819.18493587` |         |         |
+|Hifitime |         |         |         |
+|Difference |    |    |    |
+
 
 ## Notes
 
