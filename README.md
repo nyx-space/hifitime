@@ -36,19 +36,31 @@ Validation is done using NASA's SPICE toolkit, and specifically the [spiceypy](h
 The most challenging validation is the definition of Ephemeris Time, which is very nearly the same as the Dynamic Barycentric Time (TDB).
 These calculations in hifitime are from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB).
 
+Hifitime uses a fixed offset for the computation of Ephemeris Time, as is recommended in Navipedia. For TDB however, the offset is based on the centuries since J2000 TT and therefore time varying.
+I believe that SPICE uses TDB for all dates after J2000 TT. Hence, in the following validation, we will be comparing the SPICE ET with the Hifitime TDB.
+
 The following examples are executed as part of the standard test suite (cf. the function called `spice_et_tdb`).
 
-## Validation case 1: UTC input
+## Case 1
 In SPICE, we chose to convert the UTC date `2012-02-07 11:22:33 UTC` into Ephemeris Time. SPICE responds with `381885819.18493587`.
-Initializing the same UTC date in hifitime and requesting the Ephemeris Time leads to `381885819.184935`, which is an error of 870 nanoseconds.
+Initializing the same UTC date in hifitime and requesting the TDB leads to `381885819.18493646`, which is an error of **592.17 microseconds**.
 
-|Column1  | Case 1  | Case 2  | Case 3  |
-|---------|---------|---------|---------|
-|SPICE Input |  `sp.str2et("2012-02-07 11:22:33 UTC")`       |         |         |
-|SPICE Output | `381885819.18493587` |         |         |
-|Hifitime |         |         |         |
-|Difference |    |    |    |
+## Case 2
+In SPICE, we chose to convert the UTC date `2002-02-07 00:00:00.000 UTC` into Ephemeris Time. SPICE responds with `66312064.18493876`.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **620.09 microseconds**.
 
+## Case 3
+This tests that we can correctly compute TDB time which will have a negative number of days because the UTC input is prior to J2000 TT.
+In SPICE, we chose to convert the UTC date `1996-02-07 11:22:33 UTC` into Ephemeris Time. SPICE responds with `-123035784.81506048`.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **617.71 microseconds**.
+
+## Case 4
+In SPICE, we chose to convert the UTC date `2015-02-07 00:00:00.000 UTC` into Ephemeris Time. SPICE responds with `476580220.1849411`.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **630.96 microseconds**.
+
+## Case 5
+In SPICE, we chose to convert the TDB Julian Date in days `2452312.500372511` into Ephemeris Time, and initialize a Hifitime Epoch with that result (`66312032.18493909`).
+We then convert that epoch back into **days** of Julian Date TDB and Julian Date ET, both of which lead a difference **below machine precision** on a f64 (the equivalent of a double in C/C++).
 
 ## Notes
 

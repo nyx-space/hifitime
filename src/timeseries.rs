@@ -48,7 +48,10 @@ impl ExactSizeIterator for TimeSeries where TimeSeries: Iterator {}
 
 /// Return an iterator of evenly spaced Epochs, inclusive on start and _exclusive_ on end.
 /// ```
-/// use hifitime::{Epoch, TimeUnit};
+/// use hifitime::{Epoch, TimeUnit, epoch_iter};
+/// let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
+/// let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
+/// let step = TimeUnit::Hour * 2;
 /// let time_series = epoch_iter(start, end, step);
 /// for epoch in time_series {
 ///     println!("{}", epoch);

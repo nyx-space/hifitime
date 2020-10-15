@@ -21,7 +21,8 @@ macro_rules! impl_ops_for_type {
                     TimeUnit::Hour => Duration::from_hours(Decimal::from(q)),
                     TimeUnit::Minute => Duration::from_minutes(Decimal::from(q)),
                     TimeUnit::Second => Duration::from_seconds(Decimal::from(q)),
-                    TimeUnit::Millisecond => Duration::from_millseconds(Decimal::from(q)),
+                    TimeUnit::Millisecond => Duration::from_milliseconds(Decimal::from(q)),
+                    TimeUnit::Microsecond => Duration::from_microseconds(Decimal::from(q)),
                     TimeUnit::Nanosecond => Duration::from_nanoseconds(Decimal::from(q)),
                 }
             }
@@ -48,9 +49,14 @@ impl Duration {
     pub fn from_seconds(seconds: Decimal) -> Self {
         Self { 0: seconds }
     }
-    pub fn from_millseconds(ms: Decimal) -> Self {
+    pub fn from_milliseconds(ms: Decimal) -> Self {
         Self {
             0: ms * Decimal::from(1e-3),
+        }
+    }
+    pub fn from_microseconds(ms: Decimal) -> Self {
+        Self {
+            0: ms * Decimal::from(1e-6),
         }
     }
     pub fn from_nanoseconds(ns: Decimal) -> Self {
@@ -98,7 +104,7 @@ impl fmt::Display for Duration {
         let seconds = self.in_unit(TimeUnit::Second).floor()
             - self.in_unit(TimeUnit::Minute).floor() * Decimal::from(60.0);
         let milli = self.in_unit(TimeUnit::Millisecond).floor()
-            - self.in_unit(TimeUnit::Second).floor() * Decimal::from(1000.0);
+            - self.in_unit(TimeUnit::Second).floor() * Decimal::from(1e3);
         let nano = self.in_unit(TimeUnit::Nanosecond)
             - self.in_unit(TimeUnit::Millisecond).floor() * Decimal::from(1e6);
 
@@ -297,6 +303,7 @@ pub enum TimeUnit {
     Minute,
     Second,
     Millisecond,
+    Microsecond,
     Nanosecond,
 }
 
@@ -327,6 +334,7 @@ impl TimeUnit {
             TimeUnit::Minute => Decimal::from(SECONDS_PER_MINUTE),
             TimeUnit::Second => Decimal::from(1.0),
             TimeUnit::Millisecond => Decimal::from(1e-3),
+            TimeUnit::Microsecond => Decimal::from(1e-6),
             TimeUnit::Nanosecond => Decimal::from(1e-9),
         }
     }
@@ -397,9 +405,12 @@ fn time_unit() {
     assert_eq!(
         format!(
             "{}",
-            TimeUnit::Hour * 5 + TimeUnit::Millisecond * 256 + TimeUnit::Nanosecond * 3.5
+            TimeUnit::Hour * 5
+                + TimeUnit::Millisecond * 256
+                + TimeUnit::Microsecond
+                + TimeUnit::Nanosecond * 3.5
         ),
-        "5 h 0 min 0 s 256 ms 3.5 ns"
+        "5 h 0 min 0 s 256 ms 1003.5 ns"
     );
 
     // Check printing negative durations only shows one negative sign
@@ -414,6 +425,20 @@ fn time_unit() {
             TimeUnit::Hour * -5 + TimeUnit::Millisecond * -256 + TimeUnit::Nanosecond * -3.5
         ),
         "-5 h 0 min 0 s 256 ms 3.5 ns"
+    );
+
+    assert_eq!(
+        format!(
+            "{}",
+            (TimeUnit::Hour * -5 + TimeUnit::Millisecond * -256)
+                - (TimeUnit::Hour * -5 + TimeUnit::Millisecond * -256 + TimeUnit::Nanosecond * 2)
+        ),
+        "-2 ns"
+    );
+
+    assert_eq!(
+        format!("{}", Duration::from_nanoseconds(Decimal::from(2))),
+        "2 ns"
     );
 
     // Check that we support nanoseconds pas GPS time
@@ -444,9 +469,3 @@ fn time_unit() {
     assert!((sum.in_unit_f64(TimeUnit::Minute) + 35.0).abs() < EPSILON);
     assert_eq!(format!("{}", sum), "-35 min 0 s"); // Note the automatic unit selection
 }
-
-// TODO:
-// 1. Epoch should only be add-able with Durations
-// 2. Epoch sub should also return Durations
-// 3. Initialize an Epoch from a "duration past J1900" etc.
-// 4. MAYBE: Support the same kind of unit stuff here for time systems. Might be possible with an enum which calls itself recursively, although this might be complicated for TDB
