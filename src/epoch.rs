@@ -77,31 +77,6 @@ const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
 pub struct Epoch(Duration);
 
-/*
-
-let e = Epoch::from_str("2017-01-14T00:31:55 UTC").unwrap();
-let e_tai = e.in_timesystem<TAI>(); // This would return an Epoch _typed_ with TAI (it must!)
-let e_tai_s = e_tai.in_unit(TimeUnit:Second);
-
-^^^ This is too complicated and frankly not usable
-For example, in nyx, I would need the Cosm to change from
-
-self.raw_celestial_state(body.exb_id(), state.dt.as_jde_tdb_days())?;
-
-to
-
-self.raw_celestial_state(body.exb_id(), state.dt.in_timesystem<TDB>().in_unit(TimeUnit::Day))?;
-
-^^^ Unusable!!!
-
-Instead, I think that the `_d` function should be changed to `as_jde_tdb(TimeUnit::Second)`.
-This would give flexibility and keep most of the current structure
-
-self.raw_celestial_state(body.exb_id(), state.dt.as_jde_tdb(TimeUnit::Second))?;
-self.raw_celestial_state(body.exb_id(), state.dt.as_jde_tdb(TimeUnit::Days))?;
-
-*/
-
 impl Sub for Epoch {
     type Output = Duration;
 
@@ -132,6 +107,42 @@ impl Add<Duration> for Epoch {
     fn add(self, duration: Duration) -> Self {
         Self {
             0: self.0 + duration,
+        }
+    }
+}
+
+impl AddAssign<TimeUnit> for Epoch {
+    #[allow(clippy::identity_op)]
+    fn add_assign(&mut self, unit: TimeUnit) {
+        *self = *self + unit * 1;
+    }
+}
+
+impl SubAssign<TimeUnit> for Epoch {
+    #[allow(clippy::identity_op)]
+    fn sub_assign(&mut self, unit: TimeUnit) {
+        *self = *self - unit * 1;
+    }
+}
+
+impl Sub<TimeUnit> for Epoch {
+    type Output = Self;
+
+    #[allow(clippy::identity_op)]
+    fn sub(self, unit: TimeUnit) -> Self {
+        Self {
+            0: self.0 - unit * 1,
+        }
+    }
+}
+
+impl Add<TimeUnit> for Epoch {
+    type Output = Self;
+
+    #[allow(clippy::identity_op)]
+    fn add(self, unit: TimeUnit) -> Self {
+        Self {
+            0: self.0 + unit * 1,
         }
     }
 }
@@ -175,12 +186,7 @@ impl Epoch {
     }
 
     pub fn from_et_seconds(seconds: f64) -> Epoch {
-        // AS ET: self.as_tt_duration() - TimeUnit::Second * (ET_EPOCH_S + 0.000_935)
         Self::from_tai_seconds(seconds) + TimeUnit::Second * (ET_EPOCH_S - ET_OFFSET_S)
-        // Self::from_tt_seconds(seconds) + TimeUnit::Second * (ET_EPOCH_S + 0.000_935)
-        // Self {
-        //     0: Decimal::from(seconds) - *ET_OFFSET + Decimal::from(ET_EPOCH_S),
-        // }
     }
 
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI
@@ -196,18 +202,17 @@ impl Epoch {
         let tt_centuries_j2k =
             (tt_duration - TimeUnit::Second * ET_EPOCH_S).in_unit_f64(TimeUnit::Century);
 
-        let g_rad =
-            Decimal::from(TAU / 360.0) * Decimal::from(357.528 + 35_999.050 * tt_centuries_j2k);
+        let g_rad = (Decimal::from(TAU) / Decimal::from(360.0))
+            * (Decimal::from(357.528) + Decimal::from(35_999.050 * tt_centuries_j2k));
 
         // Decimal does not provide trig functions, so let's define the parts of the trig separately.
-        let inner = g_rad + Decimal::from(0.0167) * Decimal::from(g_rad.to_f64().unwrap().sin());
+        let inner = g_rad + Decimal::from(0.0167 * g_rad.to_f64().unwrap().sin());
 
         Self {
             0: tt_duration + TimeUnit::Second * ET_EPOCH_S
                 - TimeUnit::Second * (0.001_658 * inner.to_f64().unwrap().sin()),
         }
     }
-    // TODO: Line space for durations!
     // TODO: Divide TimeUnit, e.g. TimeUnit::Hour / 3 == TimeUnit::Minute * 20
 
     pub fn from_jde_et(days: f64) -> Self {
@@ -258,22 +263,14 @@ impl Epoch {
         }
 
         let mut seconds_wrt_1900 = TimeUnit::Day * (365 * (year - 1900).abs());
-        // Decimal::from() * *SECONDS_PER_DAY_D * *USUAL_DAYS_PER_YEAR;
-
-        // let mut seconds_wrt_1900 =
-        //     Decimal::from((year - 1900).abs()) * *SECONDS_PER_DAY_D * *USUAL_DAYS_PER_YEAR;
-
         // Now add the seconds for all the years prior to the current year
         for year in 1900..year {
             if is_leap_year(year) {
-                // seconds_wrt_1900 += *SECONDS_PER_DAY_D;
                 seconds_wrt_1900 += TimeUnit::Day;
             }
         }
         // Add the seconds for the months prior to the current month
         for month in 0..month - 1 {
-            // seconds_wrt_1900 +=
-            //     *SECONDS_PER_DAY_D * Decimal::from(USUAL_DAYS_PER_MONTH[(month) as usize]);
             seconds_wrt_1900 += TimeUnit::Day * USUAL_DAYS_PER_MONTH[(month) as usize];
         }
         if is_leap_year(year) && month > 2 {
@@ -372,7 +369,6 @@ impl Epoch {
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        // if_tai.0 += Decimal::from(f64::from(cnt));
         if_tai.0 += TimeUnit::Second * cnt;
         Ok(if_tai)
     }
@@ -604,28 +600,14 @@ impl Epoch {
 
     pub fn as_tdb_duration(self) -> Duration {
         use std::f64::consts::TAU;
-        let g_rad = Decimal::from(TAU / 360.0)
-            * Decimal::from(357.528 + 35_999.050 * self.as_tt_centuries_j2k());
+        let g_rad = (Decimal::from(TAU) / Decimal::from(360.0))
+            * (Decimal::from(357.528) + Decimal::from(35_999.050 * self.as_tt_centuries_j2k()));
 
-        let inner = g_rad + Decimal::from(0.0167) * Decimal::from(g_rad.to_f64().unwrap().sin());
+        let inner = g_rad + Decimal::from(0.0167 * g_rad.to_f64().unwrap().sin());
 
         self.as_tt_duration() - TimeUnit::Second * ET_EPOCH_S
             + TimeUnit::Second * (0.001_658 * (inner.to_f64().unwrap()).sin())
     }
-
-    // pub fn as_tdb_seconds_d(self) -> Decimal {
-    //     use std::f64::consts::TAU;
-
-    //     let g_rad = TAU * (357.528 + 35_999.050 * self.as_tt_centuries_j2k()) / 360.0;
-    //     // let g_rad = (Decimal::from(TAU)
-    //     //     * (Decimal::from(357.528) + Decimal::from(35_999.050) * self.as_tt_centuries_j2k_d())
-    //     //     / Decimal::from(360.0))
-    //     // .to_f64()
-    //     // .unwrap();
-
-    //     self.as_tt_seconds() - ET_EPOCH_S
-    //         + Decimal::from(0.001_658) * Decimal::from((g_rad + 0.0167 * g_rad.sin()).sin())
-    // }
 
     /// Returns the Ephemeris Time JDE past epoch
     pub fn as_jde_et_days(self) -> f64 {
@@ -650,27 +632,10 @@ impl Epoch {
     /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
     pub fn as_jde_tdb_days(self) -> f64 {
         // TDB is tricky so we're repeating the computation here and _not_ providing a `as_jde_tdb_duration` function.
-        // use std::f64::consts::TAU;
-        // let g_rad = TAU * (357.528 + 35_999.050 * self.as_tt_centuries_j2k()) / 360.0;
-        // (self.as_jde_tt_duration()
-        //     + TimeUnit::Second * (0.001_658 * (g_rad + 0.0167 * g_rad.sin()).sin()))
-        // .in_unit_f64(TimeUnit::Day)
         use std::f64::consts::TAU;
         let g_rad = TAU * (357.528 + 35_999.050 * self.as_tt_centuries_j2k()) / 360.0;
         self.as_jde_tt_days() + (0.001_658 * (g_rad + 0.0167 * g_rad.sin()).sin()) / SECONDS_PER_DAY
     }
-
-    // pub fn as_jde_tdb_days_d(self) -> Decimal {
-    //     use std::f64::consts::TAU;
-    //     let g_rad = (Decimal::from(TAU)
-    //         * (Decimal::from(357.528) + Decimal::from(35_999.050) * self.as_tt_centuries_j2k_d())
-    //         / Decimal::from(360.0))
-    //     .to_f64()
-    //     .unwrap();
-    //     self.as_jde_tt_days_d()
-    //         + (Decimal::from(0.001_658) * Decimal::from((g_rad + 0.0167 * g_rad.sin()).sin()))
-    //             / *SECONDS_PER_DAY_D
-    // }
 
     /// Converts an ISO8601 Datetime representation without timezone offset to an Epoch.
     /// If no time system is specified, than UTC is assumed.
@@ -801,14 +766,6 @@ impl Epoch {
     /// ```
     pub fn as_gregorian_tai(self) -> (i32, u8, u8, u8, u8, u8, u32) {
         Self::compute_gregorian(self.as_tai_seconds())
-    }
-
-    #[deprecated(
-        since = "1.0.11",
-        note = "Use as_gregorian_tai_str() instead; this function was a typo"
-    )]
-    pub fn as_gregorian_utc_tai(self) -> String {
-        self.as_gregorian_tai_str()
     }
 
     /// Converts the Epoch to TAI Gregorian in the ISO8601 format with " TAI" appended to the string
@@ -1150,7 +1107,7 @@ fn utc_epochs() {
         Epoch::from_gregorian_utc_hms(2017, 1, 1, 0, 59, 23),
         "Incorrect epoch when adding an hour across leap second"
     );
-    this_epoch -= TimeUnit::Hour * 1;
+    this_epoch -= TimeUnit::Hour;
     assert_eq!(epoch_utc, this_epoch, "Incorrect epoch after sub");
 
     let this_epoch = Epoch::from_gregorian_tai_at_midnight(2020, 1, 1);
@@ -1194,7 +1151,7 @@ fn utc_tai() {
     let epoch_tai = Epoch::from_gregorian_tai_hms(2019, 8, 1, 20, 10, 23);
     assert!(epoch_tai < epoch_utc, "TAI is not ahead of UTC");
     let delta: Duration = epoch_utc - epoch_tai - TimeUnit::Second * 37.0;
-    assert!(delta < TimeUnit::Nanosecond * 1, "TAI is not ahead of UTC");
+    assert!(delta < TimeUnit::Nanosecond, "TAI is not ahead of UTC");
     assert!(
         (epoch_utc.as_tai_seconds() - epoch_tai.as_tai_seconds() - 37.0).abs() < EPSILON,
         "TAI is not ahead of UTC"
@@ -1356,7 +1313,9 @@ fn spice_et_tdb() {
     // Check reciprocity
     let from_et_s = Epoch::from_et_seconds(expected_et_s);
     assert!((from_et_s.as_et_seconds() - expected_et_s).abs() < std::f64::EPSILON);
-    println!("\nUTC===>  {}", from_et_s.as_gregorian_utc_str()); // TODO: Fix this bug. The UTC microseconds is VERY wrong, should be 000 and is 476!
+    let from_tdb_s = Epoch::from_tdb_seconds(expected_et_s);
+    assert!(dbg!(from_tdb_s.as_tdb_seconds() - expected_et_s).abs() < std::f64::EPSILON);
+    println!("\nUTC===>  {}", sp_ex.as_gregorian_utc_str()); // TODO: Fix this bug. The UTC microseconds is VERY wrong, should be 000 and is 476!
 
     assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < 1e-6);
     assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
@@ -1480,7 +1439,8 @@ fn test_from_str() {
 #[test]
 fn ops() {
     // Test adding a second
-    let sp_ex = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33) + TimeUnit::Second * 1.0;
+    let sp_ex: Epoch =
+        Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33) + TimeUnit::Second * 1.0;
     let expected_et_s = 381_885_819.184_935_87;
     assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s - 1.0).abs() < 1e-5);
     let sp_ex: Epoch = sp_ex - TimeUnit::Second * 1.0;
@@ -1518,4 +1478,14 @@ fn quorem_nominal_test() {
 #[should_panic]
 fn quorem_nil_den_test() {
     assert_eq!(quorem(24.0, 0.0), (4, 0.0));
+}
+
+#[test]
+fn test_range() {
+    let start = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33);
+    let middle = Epoch::from_gregorian_utc_hms(2012, 2, 30, 0, 11, 22);
+    let end = Epoch::from_gregorian_utc_hms(2012, 3, 7, 11, 22, 33);
+    let rng = start..end;
+    assert_eq!(rng, std::ops::Range { start, end });
+    assert!(rng.contains(&middle));
 }

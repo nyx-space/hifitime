@@ -2,6 +2,7 @@ use crate::fraction::ToPrimitive;
 use crate::{
     Decimal, Fraction, DAYS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE,
 };
+use std::cmp::Ordering;
 use std::fmt;
 use std::ops::{Add, AddAssign, Mul, Sub, SubAssign};
 
@@ -262,6 +263,28 @@ impl SubAssign<TimeUnit> for Duration {
     #[allow(clippy::identity_op)]
     fn sub_assign(&mut self, rhs: TimeUnit) {
         *self = *self - rhs * 1;
+    }
+}
+
+impl PartialEq<TimeUnit> for Duration {
+    #[allow(clippy::identity_op)]
+    fn eq(&self, unit: &TimeUnit) -> bool {
+        *self == *unit * 1
+    }
+}
+
+impl PartialOrd<TimeUnit> for Duration {
+    #[allow(clippy::identity_op)]
+    fn partial_cmp(&self, unit: &TimeUnit) -> Option<Ordering> {
+        let unit_deref = *unit;
+        let unit_as_duration: Duration = unit_deref * 1;
+        if self < &unit_as_duration {
+            Some(Ordering::Less)
+        } else if self > &unit_as_duration {
+            Some(Ordering::Greater)
+        } else {
+            Some(Ordering::Equal)
+        }
     }
 }
 

@@ -23,6 +23,7 @@ day-to-day use of this library.
  * [x] UTC representation with ISO8601 formatting (and parsing in that format #45)
  * [x] High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) (caveat: up to 10ms difference with SPICE near 01 Jan 2000)
  * [x] Trivial support of time arithmetic (e.g. `TimeUnit::Hour * 2 + TimeUnit::Second * 3`)
+ * [x] Supports ranges of Epochs and TimeSeries (linspace of `Epoch`s and `Duration`s)
  * [ ] Support for custom representations of time (e.g. NASA GMAT Modified Julian Date)
  * [ ] Trivial support of other time representations, such as TDT (cf #44)
 

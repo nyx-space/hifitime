@@ -123,6 +123,9 @@ mod duration;
 
 pub use duration::*;
 
+mod timeseries;
+pub use timeseries::*;
+
 use std::convert;
 use std::fmt;
 use std::num::ParseIntError;
