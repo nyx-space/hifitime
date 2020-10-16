@@ -65,7 +65,9 @@ We then convert that epoch back into **days** of Julian Date TDB and Julian Date
 # Notes
 
 ## Known bug
-When building hifitime in **debug** mode, converting an Epoch at the Ephemeris Time reference time and requesting the TDB or ET days will cause the fraction computation to fail.
+When building hifitime in **debug** mode, converting an Epoch at the Ephemeris Time reference time and requesting the TDB or ET days will cause the fraction computation to fail. Specifically, if the epoch is ]-1.9; +1.6[ around `2000-01-01T11:59:27.815064907 TAI`, and the TDB or ET computation is requested, then the library will crash. It will **not** crash and it will return **correct** results when in release mode (there are tests which check that).
+The [bug has been reported](https://github.com/dnsl48/fraction/issues/33) with the underlying library.
+
 *If* other use cases are found, please open a bug by [clicking here](https://github.com/ChristopherRabotin/hifitime/issues/new).
 
 ### Leap second support

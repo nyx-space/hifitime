@@ -1351,12 +1351,9 @@ fn spice_et_tdb() {
     assert!((2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
 
     let sp_ex = Epoch::from_et_seconds(0.0);
-    assert!(dbg!(J2000_NAIF - sp_ex.as_jde_tdb_days()).abs() < 1e-7);
+    assert!(sp_ex.as_et_seconds() < std::f64::EPSILON);
     assert!(dbg!(J2000_NAIF - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
-
-    // This shows, I think, some approximation error.
-    dbg!(Epoch::from_et_seconds(0.0).as_et_seconds());
-    dbg!(Epoch::from_tdb_seconds(0.0).as_tdb_seconds());
+    assert!(dbg!(J2000_NAIF - sp_ex.as_jde_tdb_days()).abs() < 1e-7);
 }
 
 #[test]
