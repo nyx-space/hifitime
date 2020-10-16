@@ -1298,9 +1298,9 @@ fn spice_et_tdb() {
     // Check reciprocity
     let from_et_s = Epoch::from_et_seconds(expected_et_s);
     assert!((from_et_s.as_et_seconds() - expected_et_s).abs() < std::f64::EPSILON);
-    assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < 1e-6);
+    assert!((sp_ex.as_et_seconds() - expected_et_s).abs() < 1e-6);
     assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
-    assert!(dbg!(sp_ex.as_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
+    assert!((sp_ex.as_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
     assert!(
         dbg!(sp_ex.as_tai_seconds() - from_et_s.as_tai_seconds()).abs() // Broken
             < 1e-6
@@ -1318,7 +1318,7 @@ fn spice_et_tdb() {
     // Third example
     let sp_ex = Epoch::from_gregorian_utc_hms(1996, 2, 7, 11, 22, 33);
     let expected_et_s = -123_035_784.815_060_48;
-    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
+    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
     assert!(
         (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expected_et_s).as_tai_seconds()).abs()
             < 1e-5
@@ -1335,7 +1335,7 @@ fn spice_et_tdb() {
     */
     let sp_ex = Epoch::from_gregorian_utc_hms(2015, 2, 7, 11, 22, 33);
     let expected_et_s = 476580220.1849411;
-    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
+    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
     assert!((sp_ex.as_jde_utc_days() - 2457060.9739931).abs() < 1e-7);
 
     // JDE TDB tests

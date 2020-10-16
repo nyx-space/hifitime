@@ -43,26 +43,30 @@ The following examples are executed as part of the standard test suite (cf. the 
 
 ## Case 1
 In SPICE, we chose to convert the UTC date `2012-02-07 11:22:33 UTC` into Ephemeris Time. SPICE responds with `381885819.18493587`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to `381885819.18493646`, which is an error of **592.17 microseconds**.
+Initializing the same UTC date in hifitime and requesting the TDB leads to `381885819.18493646`, which is an error of **596.05 microseconds**.
 
 ## Case 2
 In SPICE, we chose to convert the UTC date `2002-02-07 00:00:00.000 UTC` into Ephemeris Time. SPICE responds with `66312064.18493876`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **620.09 microseconds**.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **618.39 microseconds**.
 
 ## Case 3
 This tests that we can correctly compute TDB time which will have a negative number of days because the UTC input is prior to J2000 TT.
 In SPICE, we chose to convert the UTC date `1996-02-07 11:22:33 UTC` into Ephemeris Time. SPICE responds with `-123035784.81506048`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **617.71 microseconds**.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **610.94 microseconds**.
 
 ## Case 4
 In SPICE, we chose to convert the UTC date `2015-02-07 00:00:00.000 UTC` into Ephemeris Time. SPICE responds with `476580220.1849411`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **630.96 microseconds**.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **596.05 microseconds**.
 
 ## Case 5
 In SPICE, we chose to convert the TDB Julian Date in days `2452312.500372511` into Ephemeris Time, and initialize a Hifitime Epoch with that result (`66312032.18493909`).
 We then convert that epoch back into **days** of Julian Date TDB and Julian Date ET, both of which lead a difference **below machine precision** on a f64 (the equivalent of a double in C/C++).
 
-## Notes
+# Notes
+
+## Known bug
+When building hifitime in **debug** mode, converting an Epoch at the Ephemeris Time reference time and requesting the TDB or ET days will cause the fraction computation to fail.
+*If* other use cases are found, please open a bug by [clicking here](https://github.com/ChristopherRabotin/hifitime/issues/new).
 
 ### Leap second support
 Each time computing library may decide when the extra leap second exists as explained

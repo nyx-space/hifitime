@@ -8,4 +8,4 @@ matrix:
     - rust: nightly
 cache: cargo
 script:
-  - cargo test --verbose
+  - cargo test --release  # We test only in release mode because of the ET 0.0 seconds bug
