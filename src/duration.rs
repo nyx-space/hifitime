@@ -1,10 +1,15 @@
+extern crate regex;
+
+use self::regex::Regex;
 use crate::fraction::ToPrimitive;
 use crate::{
-    Decimal, Fraction, DAYS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE,
+    Decimal, Errors, Fraction, DAYS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR,
+    SECONDS_PER_MINUTE,
 };
 use std::cmp::Ordering;
 use std::fmt;
 use std::ops::{Add, AddAssign, Mul, Sub, SubAssign};
+use std::str::FromStr;
 
 /// Defines generally usable durations for high precision math with Epoch (all data is stored in seconds)
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
@@ -290,6 +295,59 @@ impl PartialOrd<TimeUnit> for Duration {
             Some(Ordering::Greater)
         } else {
             Some(Ordering::Equal)
+        }
+    }
+}
+
+impl FromStr for Duration {
+    type Err = Errors;
+
+    /// Attempts to convert a simple string to a Duration. Does not yet support complicated durations.
+    ///
+    /// Identifiers:
+    ///  + d, days, day
+    ///  + h, hours, hour
+    ///  + min, mins, minute
+    ///  + s, second, seconds
+    ///  + ms, millisecond, milliseconds
+    ///  + us, microsecond, microseconds
+    ///  + ns, nanosecond, nanoseconds
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Duration, TimeUnit};
+    /// use std::str::FromStr;
+    ///
+    /// assert_eq!(Duration::from_str("1 d").unwrap(), TimeUnit::Day * 1);
+    /// assert_eq!(Duration::from_str("10.598 days").unwrap(), TimeUnit::Day * 10.598);
+    /// assert_eq!(Duration::from_str("10.598 min").unwrap(), TimeUnit::Minute * 10.598);
+    /// assert_eq!(Duration::from_str("10.598 us").unwrap(), TimeUnit::Microsecond * 10.598);
+    /// assert_eq!(Duration::from_str("10.598 seconds").unwrap(), TimeUnit::Second * 10.598);
+    /// assert_eq!(Duration::from_str("10.598 nanosecond").unwrap(), TimeUnit::Nanosecond * 10.598);
+    /// ```
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let reg = Regex::new(r"^(\d+\.?\d*)\W*(\w+)$").unwrap();
+        match reg.captures(s) {
+            Some(cap) => {
+                let value = cap[1].to_owned().parse::<f64>().unwrap();
+                match cap[2].to_owned().to_lowercase().as_str() {
+                    "d" | "days" | "day" => Ok(TimeUnit::Day * value),
+                    "h" | "hours" | "hour" => Ok(TimeUnit::Hour * value),
+                    "min" | "mins" | "minute" | "minutes" => Ok(TimeUnit::Minute * value),
+                    "s" | "second" | "seconds" => Ok(TimeUnit::Second * value),
+                    "ms" | "millisecond" | "milliseconds" => Ok(TimeUnit::Millisecond * value),
+                    "us" | "microsecond" | "microseconds" => Ok(TimeUnit::Microsecond * value),
+                    "ns" | "nanosecond" | "nanoseconds" => Ok(TimeUnit::Nanosecond * value),
+                    _ => Err(Errors::ParseError(format!(
+                        "unknown duration unit in `{}`",
+                        s
+                    ))),
+                }
+            }
+            None => Err(Errors::ParseError(format!(
+                "Could not parse duration: `{}`",
+                s
+            ))),
         }
     }
 }

@@ -1,7 +1,5 @@
-extern crate lazy_static;
 extern crate regex;
 
-use self::lazy_static::lazy_static;
 use self::regex::Regex;
 use crate::duration::{Duration, TimeUnit};
 use crate::fraction::ToPrimitive;
@@ -649,13 +647,11 @@ impl Epoch {
     /// );
     /// ```
     pub fn from_gregorian_str(s: &str) -> Result<Self, Errors> {
-        lazy_static! {
-            static ref RE_GREG: Regex = Regex::new(
-                r"^(\d{4})-(\d{2})-(\d{2})(?:T|\W)(\d{2}):(\d{2}):(\d{2})\.?(\d+)?\W?(\w{2,3})?$"
-            )
-            .unwrap();
-        }
-        match RE_GREG.captures(s) {
+        let reg: Regex = Regex::new(
+            r"^(\d{4})-(\d{2})-(\d{2})(?:T|\W)(\d{2}):(\d{2}):(\d{2})\.?(\d+)?\W?(\w{2,3})?$",
+        )
+        .unwrap();
+        match reg.captures(s) {
             Some(cap) => {
                 let nanos = match cap.get(7) {
                     Some(val) => val.as_str().parse::<u32>().unwrap(),
@@ -872,14 +868,11 @@ impl FromStr for Epoch {
     /// assert!(Epoch::from_str("SEC 66312032.18493909 TDB").is_ok());
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        lazy_static! {
-            static ref RE_GENERIC: Regex =
-                Regex::new(r"^(\w{2,3})\W?(\d+\.?\d+)\W?(\w{2,3})?$").unwrap();
-        }
+        let reg: Regex = Regex::new(r"^(\w{2,3})\W?(\d+\.?\d+)\W?(\w{2,3})?$").unwrap();
         // Try to match Gregorian date
         match Self::from_gregorian_str(s) {
             Ok(e) => Ok(e),
-            Err(_) => match RE_GENERIC.captures(s) {
+            Err(_) => match reg.captures(s) {
                 Some(cap) => {
                     let format = cap[1].to_owned().parse::<String>().unwrap();
                     let value = cap[2].to_owned().parse::<f64>().unwrap();

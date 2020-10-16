@@ -43,20 +43,20 @@ The following examples are executed as part of the standard test suite (cf. the 
 
 ## Case 1
 In SPICE, we chose to convert the UTC date `2012-02-07 11:22:33 UTC` into Ephemeris Time. SPICE responds with `381885819.18493587`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to `381885819.18493646`, which is an error of **596.05 microseconds**.
+Initializing the same UTC date in hifitime and requesting the TDB leads to `381885819.18493646`, which is an error of **596.05 nanoseconds**.
 
 ## Case 2
 In SPICE, we chose to convert the UTC date `2002-02-07 00:00:00.000 UTC` into Ephemeris Time. SPICE responds with `66312064.18493876`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **618.39 microseconds**.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **618.39 nanoseconds**.
 
 ## Case 3
 This tests that we can correctly compute TDB time which will have a negative number of days because the UTC input is prior to J2000 TT.
 In SPICE, we chose to convert the UTC date `1996-02-07 11:22:33 UTC` into Ephemeris Time. SPICE responds with `-123035784.81506048`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **610.94 microseconds**.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **610.94 nanoseconds**.
 
 ## Case 4
 In SPICE, we chose to convert the UTC date `2015-02-07 00:00:00.000 UTC` into Ephemeris Time. SPICE responds with `476580220.1849411`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **596.05 microseconds**.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **596.05 nanoseconds**.
 
 ## Case 5
 In SPICE, we chose to convert the TDB Julian Date in days `2452312.500372511` into Ephemeris Time, and initialize a Hifitime Epoch with that result (`66312032.18493909`).
