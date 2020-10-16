@@ -8,10 +8,10 @@
 //!  * Leap seconds (as announced by the IETF on a yearly basis)
 //!  * Julian dates and Modified Julian dates
 //!  * Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
-//!  * Ephemeris Time (SPICE ET) / Barycentric Dynamical Time (IERS TDB) computations correct at least to 1e-5 seconds
-//!
-//! ## TODO
-//!  * UTC representation with ISO8601 formatting (and parsing in that format)
+//!  * UTC representation with ISO8601 formatting (and parsing in that format #45)
+//!  * High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) (caveat: up to 10ms difference with SPICE near 01 Jan 2000)
+//!  * Trivial support of time arithmetic (e.g. `TimeUnit::Hour * 2 + TimeUnit::Second * 3`)
+//!  * Supports ranges of Epochs and TimeSeries (linspace of `Epoch`s and `Duration`s)
 //!
 //! Almost all examples are validated with external references, as detailed on a test-by-test
 //! basis.
@@ -39,7 +39,7 @@
 //!
 //! ```toml
 //! [dependencies]
-//! hifitime = "1"
+//! hifitime = "2"
 //! ```
 //!
 //! And add the following to your crate root:
@@ -51,13 +51,13 @@
 //! ### Examples:
 //!
 //! ```rust
-//! use hifitime::Epoch;
+//! use hifitime::{Epoch, TimeUnit};
 //!
 //! let mut santa = Epoch::from_gregorian_utc(2017, 12, 25, 01, 02, 14, 0);
 //! assert_eq!(santa.as_mjd_utc_days(), 58112.043217592596);
 //! assert_eq!(santa.as_jde_utc_days(), 2458112.5432175924);
 //!
-//! santa.mut_add_secs(3600.0);
+//! santa += TimeUnit::Second * 3600.0;
 //! assert_eq!(
 //!     santa,
 //!     Epoch::from_gregorian_utc(2017, 12, 25, 02, 02, 14, 0),
@@ -105,12 +105,26 @@ pub const SECONDS_PER_TROPICAL_YEAR: f64 = 31_556_925.974_7;
 /// `SECONDS_PER_SIDERAL_YEAR` corresponds to the number of seconds per sideral year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
 pub const SECONDS_PER_SIDERAL_YEAR: f64 = 31_558_150.0;
 
+extern crate fraction;
+use crate::fraction::{GenericDecimal, GenericFraction};
+/// Decimal defines a lossless fraction and is the basis of all Epoch computations.
+/// It is recommended to use this time for time operations.
+pub type Decimal = GenericDecimal<u128, u16>;
+type Fraction = GenericFraction<u128>;
+
 mod sim;
 pub use sim::ClockNoise;
 
 mod epoch;
 
 pub use epoch::*;
+
+mod duration;
+
+pub use duration::*;
+
+mod timeseries;
+pub use timeseries::*;
 
 use std::convert;
 use std::fmt;

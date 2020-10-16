@@ -8,4 +8,4 @@ matrix:
     - rust: nightly
 cache: cargo
 script:
-  - cargo test --verbose
+  - RUST_BACKTRACE=1 cargo test -- --nocapture

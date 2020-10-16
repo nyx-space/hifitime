@@ -1,6 +1,6 @@
-# hifitime 1.0
+# hifitime 2.0
 
-Precise date and time handling in Rust built on top of `std::f64`.
+Precise date and time handling in Rust built on top of lossless fractions (with 128 bits on the numerator and 16 bits on the denominator).
 The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in
 day-to-day use of this library.
 
@@ -22,13 +22,49 @@ day-to-day use of this library.
  * [x] Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
  * [x] UTC representation with ISO8601 formatting (and parsing in that format #45)
  * [x] High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) (caveat: up to 10ms difference with SPICE near 01 Jan 2000)
+ * [x] Trivial support of time arithmetic (e.g. `TimeUnit::Hour * 2 + TimeUnit::Second * 3`)
+ * [x] Supports ranges of Epochs and TimeSeries (linspace of `Epoch`s and `Duration`s)
  * [ ] Support for custom representations of time (e.g. NASA GMAT Modified Julian Date)
  * [ ] Trivial support of other time representations, such as TDT (cf #44)
 
 Almost all examples are validated with external references, as detailed on a test-by-test
 basis.
 
-## Notes
+# Validation example
+Validation is done using NASA's SPICE toolkit, and specifically the [spiceypy](https://spiceypy.readthedocs.io/) Python wrapper.
+
+The most challenging validation is the definition of Ephemeris Time, which is very nearly the same as the Dynamic Barycentric Time (TDB).
+These calculations in hifitime are from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB).
+
+Hifitime uses a fixed offset for the computation of Ephemeris Time, as is recommended in Navipedia. For TDB however, the offset is based on the centuries since J2000 TT and therefore time varying.
+I believe that SPICE uses TDB for all dates after J2000 TT. Hence, in the following validation, we will be comparing the SPICE ET with the Hifitime TDB.
+
+The following examples are executed as part of the standard test suite (cf. the function called `spice_et_tdb`).
+
+## Case 1
+In SPICE, we chose to convert the UTC date `2012-02-07 11:22:33 UTC` into Ephemeris Time. SPICE responds with `381885819.18493587`.
+Initializing the same UTC date in hifitime and requesting the TDB leads to `381885819.18493646`, which is an error of **596.05 nanoseconds**.
+
+## Case 2
+In SPICE, we chose to convert the UTC date `2002-02-07 00:00:00.000 UTC` into Ephemeris Time. SPICE responds with `66312064.18493876`.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **618.39 nanoseconds**.
+
+## Case 3
+This tests that we can correctly compute TDB time which will have a negative number of days because the UTC input is prior to J2000 TT.
+In SPICE, we chose to convert the UTC date `1996-02-07 11:22:33 UTC` into Ephemeris Time. SPICE responds with `-123035784.81506048`.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **610.94 nanoseconds**.
+
+## Case 4
+In SPICE, we chose to convert the UTC date `2015-02-07 00:00:00.000 UTC` into Ephemeris Time. SPICE responds with `476580220.1849411`.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **596.05 nanoseconds**.
+
+## Case 5
+In SPICE, we chose to convert the TDB Julian Date in days `2452312.500372511` into Ephemeris Time, and initialize a Hifitime Epoch with that result (`66312032.18493909`).
+We then convert that epoch back into **days** of Julian Date TDB and Julian Date ET, both of which lead a difference **below machine precision** on a f64 (the equivalent of a double in C/C++).
+
+# Notes
+
+Please report and bugs by [clicking here](https://github.com/ChristopherRabotin/hifitime/issues/new).
 
 ### Leap second support
 Each time computing library may decide when the extra leap second exists as explained
