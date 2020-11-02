@@ -8,7 +8,7 @@ use crate::{
 };
 use std::cmp::Ordering;
 use std::fmt;
-use std::ops::{Add, AddAssign, Mul, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
 use std::str::FromStr;
 
 /// Defines generally usable durations for high precision math with Epoch (all data is stored in seconds)
@@ -21,7 +21,9 @@ macro_rules! impl_ops_for_type {
             type Output = Duration;
             fn mul(self, q: $type) -> Duration {
                 match self {
-                    TimeUnit::Century => Duration::from_days(Decimal::from(DAYS_PER_CENTURY)),
+                    TimeUnit::Century => {
+                        Duration::from_days(Decimal::from(q) * Decimal::from(DAYS_PER_CENTURY))
+                    }
                     TimeUnit::Day => Duration::from_days(Decimal::from(q)),
                     TimeUnit::Hour => Duration::from_hours(Decimal::from(q)),
                     TimeUnit::Minute => Duration::from_minutes(Decimal::from(q)),
@@ -37,7 +39,9 @@ macro_rules! impl_ops_for_type {
             type Output = Duration;
             fn mul(self, q: TimeUnit) -> Duration {
                 match q {
-                    TimeUnit::Century => Duration::from_days(Decimal::from(DAYS_PER_CENTURY)),
+                    TimeUnit::Century => {
+                        Duration::from_days(Decimal::from(self) * Decimal::from(DAYS_PER_CENTURY))
+                    }
                     TimeUnit::Day => Duration::from_days(Decimal::from(self)),
                     TimeUnit::Hour => Duration::from_hours(Decimal::from(self)),
                     TimeUnit::Minute => Duration::from_minutes(Decimal::from(self)),
@@ -45,6 +49,33 @@ macro_rules! impl_ops_for_type {
                     TimeUnit::Millisecond => Duration::from_milliseconds(Decimal::from(self)),
                     TimeUnit::Microsecond => Duration::from_microseconds(Decimal::from(self)),
                     TimeUnit::Nanosecond => Duration::from_nanoseconds(Decimal::from(self)),
+                }
+            }
+        }
+
+        impl Mul<$type> for Duration {
+            type Output = Duration;
+            fn mul(self, q: $type) -> Duration {
+                Self {
+                    0: self.0 * Decimal::from(q),
+                }
+            }
+        }
+
+        impl Div<$type> for Duration {
+            type Output = Duration;
+            fn div(self, q: $type) -> Duration {
+                Self {
+                    0: self.0 / Decimal::from(q),
+                }
+            }
+        }
+
+        impl Mul<Duration> for $type {
+            type Output = Duration;
+            fn mul(self, q: Duration) -> Duration {
+                Duration {
+                    0: q.0 * Decimal::from(self),
                 }
             }
         }
@@ -450,6 +481,9 @@ fn time_unit() {
     assert_eq!(4.0 * TimeUnit::Millisecond, TimeUnit::Millisecond * 4);
     assert_eq!(5.0 * TimeUnit::Nanosecond, TimeUnit::Nanosecond * 5);
 
+    assert_eq!(1.0 * TimeUnit::Hour / 3, 20 * TimeUnit::Minute);
+    assert_eq!(3 * (20 * TimeUnit::Minute), TimeUnit::Hour);
+
     // Test operations
     let seven_hours = TimeUnit::Hour * 7;
     let six_minutes = TimeUnit::Minute * 6;
@@ -543,7 +577,7 @@ fn time_unit() {
     assert_eq!(format!("{}", sum), "35 min 0 s"); // Note the automatic unit selection
 
     let quarter_hour = Duration::from_fraction(-1, 4, TimeUnit::Hour);
-    let third_hour = Duration::from_fraction(1, -3, TimeUnit::Hour);
+    let third_hour: Duration = -1 * TimeUnit::Hour / 3;
     let sum = quarter_hour + third_hour;
     let delta = sum.in_unit(TimeUnit::Millisecond).floor()
         - sum.in_unit(TimeUnit::Second).floor() * Decimal::from(1000.0);

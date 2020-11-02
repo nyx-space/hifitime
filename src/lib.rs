@@ -50,8 +50,10 @@
 //!
 //! ### Examples:
 //!
+//! #### Time creation
 //! ```rust
 //! use hifitime::{Epoch, TimeUnit};
+//! use std::str::FromStr;
 //!
 //! let mut santa = Epoch::from_gregorian_utc(2017, 12, 25, 01, 02, 14, 0);
 //! assert_eq!(santa.as_mjd_utc_days(), 58112.043217592596);
@@ -63,6 +65,56 @@
 //!     Epoch::from_gregorian_utc(2017, 12, 25, 02, 02, 14, 0),
 //!     "Could not add one hour to Christmas"
 //! );
+//!
+//! let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
+//! assert_eq!(dt, Epoch::from_str("2017-01-14T00:31:55 UTC").unwrap());
+//! // And you can print it too, although by default it will print in TAI
+//! assert_eq!(dt.as_gregorian_utc_str(), "2017-01-14T00:31:55 UTC".to_string());
+//! assert_eq!(format!("{}", dt), "2017-01-14T00:32:32 TAI".to_string());
+//! ```
+//!
+//! #### Time differences, time unit, and duration handling
+//! Comparing times will lead to a Duration type. Printing that will automatically select the unit.
+//! ```rust
+//! use hifitime::{Epoch, TimeUnit, Duration};
+//!
+//! let at_midnight = Epoch::from_gregorian_utc_at_midnight(2020, 11, 2);
+//! let at_noon = Epoch::from_gregorian_utc_at_noon(2020, 11, 2);
+//! assert_eq!(at_noon - at_midnight, 12 * TimeUnit::Hour);
+//! assert_eq!(at_noon - at_midnight, 1 * TimeUnit::Day / 2);
+//! assert_eq!(at_midnight - at_noon, -1 * TimeUnit::Day / 2);
+//!
+//! let delta_time = at_noon - at_midnight;
+//! assert_eq!(format!("{}", delta_time), "12 h 0 min 0 s".to_string());
+//! // And we can multiply durations by a scalar...
+//! let delta2 = 2 * delta_time;
+//! assert_eq!(format!("{}", delta2), "1 days 0 h 0 min 0 s".to_string());
+//! // Or divide them by a scalar.
+//! assert_eq!(format!("{}", delta2 / 2.0), "12 h 0 min 0 s".to_string());
+//!
+//! // And of course, these comparisons account for differences in time systems
+//! let at_midnight_utc = Epoch::from_gregorian_utc_at_midnight(2020, 11, 2);
+//! let at_noon_tai = Epoch::from_gregorian_tai_at_noon(2020, 11, 2);
+//! assert_eq!(format!("{}", at_noon_tai - at_midnight_utc), "11 h 59 min 23 s".to_string());
+//! ```
+//!
+//! #### Iterating over times ("linspace" of epochs)
+//! Finally, something which may come in very handy, line spaces between times with a given step.
+//!
+//! ```rust
+//! use hifitime::{Epoch, TimeUnit, TimeSeries};
+//! let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
+//! let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
+//! let step = 2 * TimeUnit::Hour;
+//! let time_series = TimeSeries::inclusive(start, end, step);
+//! let mut cnt = 0;
+//! for epoch in time_series {
+//!     println!("{}", epoch);
+//!     cnt += 1
+//! }
+//! // Check that there are indeed six two-hour periods in a half a day,
+//! // including start and end times.
+//! assert_eq!(cnt, 6)
 //! ```
 //!
 //! ### Limitations
