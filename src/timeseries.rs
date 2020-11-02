@@ -6,8 +6,6 @@ NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/iter
 */
 
 /// An iterator of a sequence of evenly spaced Epochs.
-///
-/// Iterator element type is `F`.
 #[derive(Clone, Debug)]
 pub struct TimeSeries {
     start: Epoch,
@@ -15,6 +13,58 @@ pub struct TimeSeries {
     step: Duration,
     cur: Epoch,
     incl: bool,
+}
+
+impl TimeSeries {
+    /// Return an iterator of evenly spaced Epochs, **inclusive** on start and **exclusive** on end.
+    /// ```
+    /// use hifitime::{Epoch, TimeUnit, TimeSeries};
+    /// let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
+    /// let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
+    /// let step = TimeUnit::Hour * 2;
+    /// let time_series = TimeSeries::exclusive(start, end, step);
+    /// let mut cnt = 0;
+    /// for epoch in time_series {
+    ///     println!("{}", epoch);
+    ///     cnt += 1
+    /// }
+    /// assert_eq!(cnt, 5)
+    /// ```
+    #[inline]
+    pub fn exclusive(start: Epoch, end: Epoch, step: Duration) -> TimeSeries {
+        Self {
+            start,
+            end,
+            step,
+            cur: start,
+            incl: false,
+        }
+    }
+
+    /// Return an iterator of evenly spaced Epochs, inclusive on start **and** on end.
+    /// ```
+    /// use hifitime::{Epoch, TimeUnit, TimeSeries};
+    /// let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
+    /// let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
+    /// let step = TimeUnit::Hour * 2;
+    /// let time_series = TimeSeries::inclusive(start, end, step);
+    /// let mut cnt = 0;
+    /// for epoch in time_series {
+    ///     println!("{}", epoch);
+    ///     cnt += 1
+    /// }
+    /// assert_eq!(cnt, 6)
+    /// ```
+    #[inline]
+    pub fn inclusive(start: Epoch, end: Epoch, step: Duration) -> TimeSeries {
+        Self {
+            start,
+            end,
+            step,
+            cur: start,
+            incl: true,
+        }
+    }
 }
 
 impl Iterator for TimeSeries {
@@ -46,40 +96,6 @@ impl DoubleEndedIterator for TimeSeries {
 
 impl ExactSizeIterator for TimeSeries where TimeSeries: Iterator {}
 
-/// Return an iterator of evenly spaced Epochs, inclusive on start and _exclusive_ on end.
-/// ```
-/// use hifitime::{Epoch, TimeUnit, epoch_iter};
-/// let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
-/// let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
-/// let step = TimeUnit::Hour * 2;
-/// let time_series = epoch_iter(start, end, step);
-/// for epoch in time_series {
-///     println!("{}", epoch);
-/// }
-/// ```
-#[inline]
-pub fn epoch_iter(start: Epoch, end: Epoch, step: Duration) -> TimeSeries {
-    TimeSeries {
-        start,
-        end,
-        step,
-        cur: start,
-        incl: false,
-    }
-}
-
-/// Return an iterator of evenly spaced Epochs, inclusive on start and inclusive on end.
-#[inline]
-pub fn epoch_iter_incl(start: Epoch, end: Epoch, step: Duration) -> TimeSeries {
-    TimeSeries {
-        start,
-        end,
-        step,
-        cur: start,
-        incl: true,
-    }
-}
-
 #[test]
 fn test_timeseries() {
     use super::TimeUnit;
@@ -88,7 +104,7 @@ fn test_timeseries() {
     let step = TimeUnit::Hour * 2;
     let mut count = 0;
 
-    let time_series = epoch_iter(start, end, step);
+    let time_series = TimeSeries::exclusive(start, end, step);
     for epoch in time_series {
         println!("{}", epoch);
         count += 1;
@@ -97,7 +113,7 @@ fn test_timeseries() {
     assert_eq!(count, 5, "Should have five items in this iterator");
 
     count = 0;
-    let time_series = epoch_iter_incl(start, end, step);
+    let time_series = TimeSeries::inclusive(start, end, step);
     for epoch in time_series {
         println!("{}", epoch);
         count += 1;

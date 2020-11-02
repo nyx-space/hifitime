@@ -10,7 +10,7 @@
 //!  * Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
 //!  * UTC representation with ISO8601 formatting (and parsing in that format #45)
 //!  * High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) (caveat: up to 10ms difference with SPICE near 01 Jan 2000)
-//!  * Trivial support of time arithmetic (e.g. `TimeUnit::Hour * 2 + TimeUnit::Second * 3`)
+//!  * Trivial support of time arithmetic (e.g. `2 * TimeUnit::Hour + TimeUnit::Second * 3`)
 //!  * Supports ranges of Epochs and TimeSeries (linspace of `Epoch`s and `Duration`s)
 //!
 //! Almost all examples are validated with external references, as detailed on a test-by-test
@@ -57,7 +57,7 @@
 //! assert_eq!(santa.as_mjd_utc_days(), 58112.043217592596);
 //! assert_eq!(santa.as_jde_utc_days(), 2458112.5432175924);
 //!
-//! santa += TimeUnit::Second * 3600.0;
+//! santa += 3600 * TimeUnit::Second;
 //! assert_eq!(
 //!     santa,
 //!     Epoch::from_gregorian_utc(2017, 12, 25, 02, 02, 14, 0),

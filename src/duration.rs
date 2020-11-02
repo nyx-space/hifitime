@@ -32,6 +32,22 @@ macro_rules! impl_ops_for_type {
                 }
             }
         }
+
+        impl Mul<TimeUnit> for $type {
+            type Output = Duration;
+            fn mul(self, q: TimeUnit) -> Duration {
+                match q {
+                    TimeUnit::Century => Duration::from_days(Decimal::from(DAYS_PER_CENTURY)),
+                    TimeUnit::Day => Duration::from_days(Decimal::from(self)),
+                    TimeUnit::Hour => Duration::from_hours(Decimal::from(self)),
+                    TimeUnit::Minute => Duration::from_minutes(Decimal::from(self)),
+                    TimeUnit::Second => Duration::from_seconds(Decimal::from(self)),
+                    TimeUnit::Millisecond => Duration::from_milliseconds(Decimal::from(self)),
+                    TimeUnit::Microsecond => Duration::from_microseconds(Decimal::from(self)),
+                    TimeUnit::Nanosecond => Duration::from_nanoseconds(Decimal::from(self)),
+                }
+            }
+        }
     };
 }
 
@@ -425,6 +441,14 @@ fn time_unit() {
     assert_eq!(TimeUnit::Second * 3.0, TimeUnit::Second * 3);
     assert_eq!(TimeUnit::Millisecond * 4.0, TimeUnit::Millisecond * 4);
     assert_eq!(TimeUnit::Nanosecond * 5.0, TimeUnit::Nanosecond * 5);
+
+    // Check the LHS multiplications match the RHS ones
+    assert_eq!(10.0 * TimeUnit::Day, TimeUnit::Day * 10);
+    assert_eq!(-7 * TimeUnit::Hour, TimeUnit::Hour * -7.0);
+    assert_eq!(-2.0 * TimeUnit::Minute, TimeUnit::Minute * -2);
+    assert_eq!(3.0 * TimeUnit::Second, TimeUnit::Second * 3);
+    assert_eq!(4.0 * TimeUnit::Millisecond, TimeUnit::Millisecond * 4);
+    assert_eq!(5.0 * TimeUnit::Nanosecond, TimeUnit::Nanosecond * 5);
 
     // Test operations
     let seven_hours = TimeUnit::Hour * 7;
