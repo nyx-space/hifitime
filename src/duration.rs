@@ -8,7 +8,7 @@ use crate::{
 };
 use std::cmp::Ordering;
 use std::fmt;
-use std::ops::{Add, AddAssign, Div, Mul, Sub, SubAssign};
+use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 use std::str::FromStr;
 
 /// Defines generally usable durations for high precision math with Epoch (all data is stored in seconds)
@@ -142,6 +142,15 @@ impl Duration {
     /// Returns the value of this duration in the requested unit.
     pub fn in_unit(&self, unit: TimeUnit) -> Decimal {
         self.0 * unit.from_seconds()
+    }
+
+    /// Returns the absolute value of this duration
+    pub fn abs(&self) -> Self {
+        if self.0 < Decimal::from(0.0) {
+            Self { 0: -self.0 }
+        } else {
+            *self
+        }
     }
 }
 
@@ -346,6 +355,14 @@ impl PartialOrd<TimeUnit> for Duration {
     }
 }
 
+impl Neg for Duration {
+    type Output = Duration;
+
+    fn neg(self) -> Self::Output {
+        Self { 0: -self.0 }
+    }
+}
+
 impl FromStr for Duration {
     type Err = Errors;
 
@@ -490,6 +507,11 @@ fn time_unit() {
     let five_seconds = TimeUnit::Second * 5.0;
     let sum: Duration = seven_hours + six_minutes + five_seconds;
     assert!((sum.in_unit_f64(TimeUnit::Second) - 25565.0).abs() < EPSILON);
+
+    let neg_sum = -sum;
+    assert!((neg_sum.in_unit_f64(TimeUnit::Second) + 25565.0).abs() < EPSILON);
+
+    assert_eq!(neg_sum.abs(), sum, "abs failed");
 
     let sub: Duration = seven_hours - six_minutes - five_seconds;
     assert!((sub.in_unit_f64(TimeUnit::Second) - 24835.0).abs() < EPSILON);
