@@ -1,6 +1,9 @@
 extern crate regex;
+extern crate serde;
+extern crate serde_derive;
 
 use self::regex::Regex;
+use self::serde::{de, Deserialize, Deserializer};
 use crate::fraction::ToPrimitive;
 use crate::{
     Decimal, Errors, Fraction, DAYS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR,
@@ -14,6 +17,16 @@ use std::str::FromStr;
 /// Defines generally usable durations for high precision math with Epoch (all data is stored in seconds)
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Duration(Decimal);
+
+impl<'de> Deserialize<'de> for Duration {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        FromStr::from_str(&s).map_err(de::Error::custom)
+    }
+}
 
 macro_rules! impl_ops_for_type {
     ($type:ident) => {
@@ -606,4 +619,13 @@ fn time_unit() {
     println!("{:?}", delta * Decimal::from(-1) == Decimal::from(0));
     assert!((sum.in_unit_f64(TimeUnit::Minute) + 35.0).abs() < EPSILON);
     assert_eq!(format!("{}", sum), "-35 min 0 s"); // Note the automatic unit selection
+}
+
+#[test]
+fn deser_test() {
+    use self::serde_derive::Deserialize;
+    #[derive(Deserialize)]
+    struct D {
+        pub d: Duration,
+    }
 }

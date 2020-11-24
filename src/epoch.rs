@@ -1,6 +1,9 @@
 extern crate regex;
+extern crate serde;
+extern crate serde_derive;
 
 use self::regex::Regex;
+use self::serde::{de, Deserialize, Deserializer};
 use crate::duration::{Duration, TimeUnit};
 use crate::fraction::ToPrimitive;
 use crate::Decimal;
@@ -918,6 +921,16 @@ impl FromStr for Epoch {
     }
 }
 
+impl<'de> Deserialize<'de> for Epoch {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        FromStr::from_str(&s).map_err(de::Error::custom)
+    }
+}
+
 impl fmt::Display for Epoch {
     /// The default format of an epoch is in TAI
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -971,6 +984,7 @@ fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
 }
 
+#[allow(clippy::float_equality_without_abs)]
 #[test]
 fn utc_epochs() {
     use std::f64::EPSILON;
@@ -1056,7 +1070,7 @@ fn utc_epochs() {
 
     // Test the specific leap second times
     let epoch_from_tai_secs = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
-    assert!((epoch_from_tai_secs.as_tai_seconds() - 2_272_060_800.0) < EPSILON);
+    assert!(epoch_from_tai_secs.as_tai_seconds() - 2_272_060_800.0 < EPSILON);
     let epoch_from_tai_greg = Epoch::from_tai_seconds(2_272_060_800.0);
     assert_eq!(epoch_from_tai_greg, epoch_from_tai_secs, "Incorrect epoch");
 
@@ -1072,13 +1086,13 @@ fn utc_epochs() {
     let this_epoch = Epoch::from_tai_seconds(3_692_217_599.0);
     let epoch_utc = Epoch::from_gregorian_utc_hms(2016, 12, 31, 23, 59, 23);
     assert_eq!(epoch_utc, this_epoch, "Incorrect epoch");
-    assert!((this_epoch.as_tai_seconds() - epoch_utc.as_utc_seconds()) - 36.0 < EPSILON);
+    assert!(this_epoch.as_tai_seconds() - epoch_utc.as_utc_seconds() - 36.0 < EPSILON);
 
     // Just after to the 2017 leap second, there should be an offset of 37 seconds between UTC and TAI
     let this_epoch = Epoch::from_tai_seconds(3_692_217_600.0);
     let epoch_utc = Epoch::from_gregorian_utc_hms(2016, 12, 31, 23, 59, 24);
     assert_eq!(epoch_utc, this_epoch, "Incorrect epoch");
-    assert!((this_epoch.as_tai_seconds() - epoch_utc.as_utc_seconds()) - 37.0 < EPSILON);
+    assert!(this_epoch.as_tai_seconds() - epoch_utc.as_utc_seconds() - 37.0 < EPSILON);
 
     let mut this_epoch = Epoch::from_tai_seconds(3_692_217_600.0);
     let epoch_utc = Epoch::from_gregorian_utc_hms(2016, 12, 31, 23, 59, 24);
@@ -1096,6 +1110,7 @@ fn utc_epochs() {
     assert!((this_epoch.as_jde_tai_days() - 2_458_849.5).abs() < std::f64::EPSILON)
 }
 
+#[allow(clippy::float_equality_without_abs)]
 #[test]
 fn utc_tai() {
     // General note: TAI "ahead" of UTC means that there are _less_ TAI seconds since epoch for a given date
@@ -1464,4 +1479,13 @@ fn test_range() {
     let rng = start..end;
     assert_eq!(rng, std::ops::Range { start, end });
     assert!(rng.contains(&middle));
+}
+
+#[test]
+fn deser_test() {
+    use self::serde_derive::Deserialize;
+    #[derive(Deserialize)]
+    struct D {
+        pub e: Epoch,
+    }
 }
