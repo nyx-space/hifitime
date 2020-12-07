@@ -140,21 +140,24 @@ impl Duration {
         let num_u = num.abs() as u128;
         let denom_u = denom.abs() as u128;
         if (num < 0 && denom < 0) || (num > 0 && denom > 0) {
-            Self(Decimal::from_fraction(Fraction::new(num_u, denom_u)) * unit.in_seconds())
+            Self(Decimal::from_fraction(Fraction::new(num_u, denom_u)) * unit.in_seconds_decimal())
         } else {
-            Self(Decimal::from_fraction(Fraction::new_neg(num_u, denom_u)) * unit.in_seconds())
+            Self(
+                Decimal::from_fraction(Fraction::new_neg(num_u, denom_u))
+                    * unit.in_seconds_decimal(),
+            )
         }
     }
 
     /// Returns this duration in f64 in the provided unit.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     pub fn in_unit_f64(&self, unit: TimeUnit) -> f64 {
-        self.in_unit(unit).to_f64().unwrap()
+        self.0.to_f64().unwrap() * unit.from_seconds()
     }
 
     /// Returns the value of this duration in the requested unit.
     pub fn in_unit(&self, unit: TimeUnit) -> Decimal {
-        self.0 * unit.from_seconds()
+        self.0 * Decimal::from(unit.from_seconds())
     }
 
     /// Returns the absolute value of this duration
@@ -461,22 +464,26 @@ impl Sub for TimeUnit {
 }
 
 impl TimeUnit {
-    pub fn in_seconds(self) -> Decimal {
+    pub fn in_seconds(self) -> f64 {
         match self {
-            TimeUnit::Century => Decimal::from(DAYS_PER_CENTURY * SECONDS_PER_DAY),
-            TimeUnit::Day => Decimal::from(SECONDS_PER_DAY),
-            TimeUnit::Hour => Decimal::from(SECONDS_PER_HOUR),
-            TimeUnit::Minute => Decimal::from(SECONDS_PER_MINUTE),
-            TimeUnit::Second => Decimal::from(1.0),
-            TimeUnit::Millisecond => Decimal::from(1e-3),
-            TimeUnit::Microsecond => Decimal::from(1e-6),
-            TimeUnit::Nanosecond => Decimal::from(1e-9),
+            TimeUnit::Century => (DAYS_PER_CENTURY * SECONDS_PER_DAY),
+            TimeUnit::Day => (SECONDS_PER_DAY),
+            TimeUnit::Hour => (SECONDS_PER_HOUR),
+            TimeUnit::Minute => (SECONDS_PER_MINUTE),
+            TimeUnit::Second => (1.0),
+            TimeUnit::Millisecond => (1e-3),
+            TimeUnit::Microsecond => (1e-6),
+            TimeUnit::Nanosecond => (1e-9),
         }
     }
 
+    pub fn in_seconds_decimal(self) -> Decimal {
+        Decimal::from(self.in_seconds())
+    }
+
     #[allow(clippy::wrong_self_convention)]
-    pub fn from_seconds(self) -> Decimal {
-        Decimal::from(1) / self.in_seconds()
+    pub fn from_seconds(self) -> f64 {
+        1.0 / self.in_seconds()
     }
 }
 

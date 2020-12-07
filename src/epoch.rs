@@ -582,17 +582,12 @@ impl Epoch {
         self.as_tdb_duration().in_unit_f64(TimeUnit::Second)
     }
 
+    /// For TDB computation, we're using f64 only because BigDecimal is far too slow for Nyx (uses FromStr).
     fn inner_g_rad(&self) -> f64 {
-        // Let's do this computation on a big decimal and downcast later.
-        use crate::fraction::BigDecimal;
-        use std::f64::consts::TAU;
-        let g_rad = (BigDecimal::from(TAU) / BigDecimal::from(360.0))
-            * (BigDecimal::from(357.528)
-                + BigDecimal::from(35_999.050 * self.as_tt_centuries_j2k()));
-        let g_rad_f64 = g_rad.to_f64();
+        use std::f64::consts::PI;
+        let g_rad = (PI / 180.0) * (357.528 + 35_999.050 * self.as_tt_centuries_j2k());
 
-        let inner = g_rad + BigDecimal::from(0.0167 * g_rad_f64.as_ref().unwrap().sin());
-        inner.to_f64().unwrap()
+        g_rad + 0.0167 * g_rad.sin()
     }
 
     pub fn as_tdb_duration(self) -> Duration {
