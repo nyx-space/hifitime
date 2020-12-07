@@ -140,12 +140,9 @@ impl Duration {
         let num_u = num.abs() as u128;
         let denom_u = denom.abs() as u128;
         if (num < 0 && denom < 0) || (num > 0 && denom > 0) {
-            Self(Decimal::from_fraction(Fraction::new(num_u, denom_u)) * unit.in_seconds_decimal())
+            Self(Decimal::from_fraction(Fraction::new(num_u, denom_u)) * unit.in_seconds())
         } else {
-            Self(
-                Decimal::from_fraction(Fraction::new_neg(num_u, denom_u))
-                    * unit.in_seconds_decimal(),
-            )
+            Self(Decimal::from_fraction(Fraction::new_neg(num_u, denom_u)) * unit.in_seconds())
         }
     }
 
@@ -477,8 +474,8 @@ impl TimeUnit {
         }
     }
 
-    pub fn in_seconds_decimal(self) -> Decimal {
-        Decimal::from(self.in_seconds())
+    pub fn in_seconds_f64(self) -> f64 {
+        self.in_seconds().to_f64().unwrap()
     }
 
     #[allow(clippy::wrong_self_convention)]

@@ -514,7 +514,7 @@ impl Epoch {
 
     /// Returns seconds past TAI epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
     pub fn as_tt_seconds(self) -> f64 {
-        self.as_tt_duration().in_unit_f64(TimeUnit::Second)
+        self.as_tai_seconds() + TT_OFFSET_S
     }
 
     pub fn as_tt_duration(self) -> Duration {
@@ -579,7 +579,9 @@ impl Epoch {
 
     /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
     pub fn as_tdb_seconds(self) -> f64 {
-        self.as_tdb_duration().in_unit_f64(TimeUnit::Second)
+        let inner = self.inner_g_rad();
+
+        self.as_tt_seconds() - ET_EPOCH_S + (0.001_658 * inner.sin())
     }
 
     /// For TDB computation, we're using f64 only because BigDecimal is far too slow for Nyx (uses FromStr).
