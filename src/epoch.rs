@@ -89,6 +89,18 @@ impl Sub<Duration> for Epoch {
     }
 }
 
+impl Add<f64> for Epoch {
+    type Output = Self;
+
+    /// WARNING: For speed, there is a possibility to add seconds directly to an Epoch.
+    /// Using this is _discouraged_ and should only be used if you have facing bottlenecks with the units.
+    fn add(self, seconds: f64) -> Self {
+        Self {
+            0: self.0 + seconds,
+        }
+    }
+}
+
 impl Add<Duration> for Epoch {
     type Output = Self;
 
