@@ -63,13 +63,13 @@ const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time systems or representations.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
-pub struct Epoch(f64);
+pub struct Epoch(Duration);
 
 impl Sub for Epoch {
     type Output = Duration;
 
     fn sub(self, other: Self) -> Duration {
-        (self.0 - other.0) * TimeUnit::Second
+        self.0 - other.0
     }
 }
 
@@ -84,7 +84,7 @@ impl Sub<Duration> for Epoch {
 
     fn sub(self, duration: Duration) -> Self {
         Self {
-            0: self.0 - duration.in_seconds(),
+            0: self.0 - duration,
         }
     }
 }
@@ -96,7 +96,7 @@ impl Add<f64> for Epoch {
     /// Using this is _discouraged_ and should only be used if you have facing bottlenecks with the units.
     fn add(self, seconds: f64) -> Self {
         Self {
-            0: self.0 + seconds,
+            0: (self.0.in_seconds() + seconds) * TimeUnit::Second,
         }
     }
 }
@@ -106,7 +106,7 @@ impl Add<Duration> for Epoch {
 
     fn add(self, duration: Duration) -> Self {
         Self {
-            0: self.0 + duration.in_seconds(),
+            0: self.0 + duration,
         }
     }
 }
@@ -131,9 +131,7 @@ impl Sub<TimeUnit> for Epoch {
     #[allow(clippy::identity_op)]
     fn sub(self, unit: TimeUnit) -> Self {
         let u_d: Duration = unit * 1;
-        Self {
-            0: self.0 - u_d.in_seconds(),
-        }
+        Self { 0: self.0 - u_d }
     }
 }
 
@@ -143,9 +141,7 @@ impl Add<TimeUnit> for Epoch {
     #[allow(clippy::identity_op)]
     fn add(self, unit: TimeUnit) -> Self {
         let u_d: Duration = unit * 1;
-        Self {
-            0: self.0 + u_d.in_seconds(),
-        }
+        Self { 0: self.0 + u_d }
     }
 }
 
@@ -158,25 +154,27 @@ impl AddAssign<Duration> for Epoch {
 impl Epoch {
     /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
     pub fn from_tai_seconds(seconds: f64) -> Self {
-        Self { 0: seconds }
+        Self {
+            0: seconds * TimeUnit::Second,
+        }
     }
 
     /// Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight
     pub fn from_tai_days(days: f64) -> Self {
         Self {
-            0: (days * TimeUnit::Day).in_seconds(),
+            0: (days * TimeUnit::Day),
         }
     }
 
     pub fn from_mjd_tai(days: f64) -> Self {
         Self {
-            0: ((days - J1900_OFFSET) * TimeUnit::Day).in_seconds(),
+            0: ((days - J1900_OFFSET) * TimeUnit::Day),
         }
     }
 
     pub fn from_jde_tai(days: f64) -> Self {
         Self {
-            0: (days - J1900_OFFSET - MJD_OFFSET) * SECONDS_PER_DAY,
+            0: (days - J1900_OFFSET - MJD_OFFSET) * TimeUnit::Day,
         }
     }
 
@@ -208,7 +206,7 @@ impl Epoch {
         let inner = g_rad + 0.0167 * g_rad.sin();
 
         Self {
-            0: tt_duration.in_seconds() + ET_EPOCH_S - (0.001_658 * inner.sin()),
+            0: tt_duration + (ET_EPOCH_S - (0.001_658 * inner.sin())) * TimeUnit::Second,
         }
     }
 
@@ -287,13 +285,13 @@ impl Epoch {
 
         Ok(match ts {
             TimeSystem::TAI => Self {
-                0: seconds_wrt_1900.in_seconds(),
+                0: seconds_wrt_1900,
             },
             TimeSystem::TT => Self {
-                0: (seconds_wrt_1900 - TimeUnit::Second * TT_OFFSET_S).in_seconds(),
+                0: (seconds_wrt_1900 - TimeUnit::Second * TT_OFFSET_S),
             },
             TimeSystem::ET => Self {
-                0: (seconds_wrt_1900 + TimeUnit::Second * (ET_EPOCH_S - ET_OFFSET_S)).in_seconds(),
+                0: (seconds_wrt_1900 + TimeUnit::Second * (ET_EPOCH_S - ET_OFFSET_S)),
             },
             TimeSystem::TDB => Self::from_tdb_seconds_d(seconds_wrt_1900),
             TimeSystem::UTC => panic!("use maybe_from_gregorian_utc for UTC time system"),
@@ -352,7 +350,7 @@ impl Epoch {
         // Compute the TAI to UTC offset at this time.
         let mut cnt = 0;
         for tai_ts in LEAP_SECONDS.iter() {
-            if if_tai.0 >= *tai_ts {
+            if if_tai.0.in_seconds() >= *tai_ts {
                 if cnt == 0 {
                     cnt = 10;
                 } else {
@@ -365,7 +363,7 @@ impl Epoch {
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        if_tai.0 += f64::from(cnt);
+        if_tai.0 += cnt * TimeUnit::Second;
         Ok(if_tai)
     }
 
@@ -407,17 +405,17 @@ impl Epoch {
     }
 
     pub fn as_tai_seconds(self) -> f64 {
-        self.0
+        self.0.in_seconds()
     }
 
     /// Returns this time in a Duration past J1900 counted in TAI
     pub fn as_tai_duration(self) -> Duration {
-        self.0 * TimeUnit::Second
+        self.0
     }
 
     /// Returns the epoch as a floating point value in the provided unit
     pub fn as_tai(self, unit: TimeUnit) -> f64 {
-        (self.0 * TimeUnit::Second).in_unit_f64(unit)
+        self.0.in_unit_f64(unit)
     }
 
     pub fn as_tai_days(self) -> f64 {
@@ -433,7 +431,7 @@ impl Epoch {
     fn as_utc_duration(self) -> Duration {
         let mut cnt = 0;
         for tai_ts in LEAP_SECONDS.iter() {
-            if self.0 >= *tai_ts {
+            if self.0.in_seconds() >= *tai_ts {
                 if cnt == 0 {
                     cnt = 10;
                 } else {
@@ -444,7 +442,7 @@ impl Epoch {
             }
         }
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        (self.0 + f64::from(-cnt)) * TimeUnit::Second
+        self.0 + (-cnt) * TimeUnit::Second
     }
 
     /// Returns the number of UTC seconds since the TAI epoch
@@ -469,7 +467,7 @@ impl Epoch {
     }
 
     pub fn as_mjd_tai(self, unit: TimeUnit) -> f64 {
-        (self.0 * TimeUnit::Second + TimeUnit::Day * J1900_OFFSET).in_unit_f64(unit)
+        (self.0 + TimeUnit::Day * J1900_OFFSET).in_unit_f64(unit)
     }
 
     /// Returns the Modified Julian Date in days UTC.
@@ -499,7 +497,7 @@ impl Epoch {
     }
 
     pub fn as_jde_tai_duration(self) -> Duration {
-        self.0 * TimeUnit::Second + TimeUnit::Day * J1900_OFFSET + TimeUnit::Day * MJD_OFFSET
+        self.0 + TimeUnit::Day * J1900_OFFSET + TimeUnit::Day * MJD_OFFSET
     }
 
     /// Returns the Julian seconds in TAI.
@@ -527,7 +525,7 @@ impl Epoch {
     }
 
     pub fn as_tt_duration(self) -> Duration {
-        self.0 * TimeUnit::Second + TimeUnit::Second * TT_OFFSET_S
+        self.0 + TimeUnit::Second * TT_OFFSET_S
     }
 
     /// Returns days past TAI epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
@@ -630,7 +628,8 @@ impl Epoch {
         let inner = self.inner_g_rad();
 
         let tdb_delta = 0.001_658 * inner.sin();
-        (self.0 + TT_OFFSET_S + tdb_delta) / SECONDS_PER_DAY + JDE_OFFSET_DAYS
+        (self.0 + (TT_OFFSET_S + tdb_delta) * TimeUnit::Second + JDE_OFFSET_DAYS * TimeUnit::Day)
+            .in_unit_f64(TimeUnit::Day)
     }
 
     /// Converts an ISO8601 Datetime representation without timezone offset to an Epoch.

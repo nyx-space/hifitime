@@ -160,7 +160,7 @@ impl Duration {
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     pub fn in_seconds(&self) -> f64 {
-        self.in_unit(TimeUnit::Second).to_f64().unwrap()
+        self.0.to_f64().unwrap()
     }
 
     /// Returns the value of this duration in the requested unit.
