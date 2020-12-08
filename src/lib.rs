@@ -140,6 +140,10 @@ pub const J2000_OFFSET: f64 = 51_544.5;
 pub const ET_EPOCH_S: f64 = 3_155_716_800.0;
 /// Modified Julian Date in seconds as defined [here](http://tycho.usno.navy.mil/mjd.html). MJD epoch is Modified Julian Day at 17 November 1858 at midnight.
 pub const MJD_OFFSET: f64 = 2_400_000.5;
+/// The JDE offset in days
+pub const JDE_OFFSET_DAYS: f64 = J1900_OFFSET + MJD_OFFSET;
+/// The JDE offset in seconds
+pub const JDE_OFFSET_SECONDS: f64 = JDE_OFFSET_DAYS * SECONDS_PER_DAY;
 /// `DAYS_PER_YEAR` corresponds to the number of days per year in the Julian calendar.
 pub const DAYS_PER_YEAR: f64 = 365.25;
 /// `DAYS_PER_CENTURY` corresponds to the number of days per centuy in the Julian calendar.

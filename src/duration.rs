@@ -152,6 +152,12 @@ impl Duration {
         self.in_unit(unit).to_f64().unwrap()
     }
 
+    /// Returns this duration in seconds f64.
+    /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
+    pub fn in_seconds(&self) -> f64 {
+        self.in_unit(TimeUnit::Second).to_f64().unwrap()
+    }
+
     /// Returns the value of this duration in the requested unit.
     pub fn in_unit(&self, unit: TimeUnit) -> Decimal {
         self.0 * unit.from_seconds()
@@ -523,15 +529,15 @@ fn time_unit() {
     let six_minutes = TimeUnit::Minute * 6;
     let five_seconds = TimeUnit::Second * 5.0;
     let sum: Duration = seven_hours + six_minutes + five_seconds;
-    assert!((sum.in_unit_f64(TimeUnit::Second) - 25565.0).abs() < EPSILON);
+    assert!((sum.in_seconds() - 25565.0).abs() < EPSILON);
 
     let neg_sum = -sum;
-    assert!((neg_sum.in_unit_f64(TimeUnit::Second) + 25565.0).abs() < EPSILON);
+    assert!((neg_sum.in_seconds() + 25565.0).abs() < EPSILON);
 
     assert_eq!(neg_sum.abs(), sum, "abs failed");
 
     let sub: Duration = seven_hours - six_minutes - five_seconds;
-    assert!((sub.in_unit_f64(TimeUnit::Second) - 24835.0).abs() < EPSILON);
+    assert!((sub.in_seconds() - 24835.0).abs() < EPSILON);
 
     // Check printing adds precision
     assert_eq!(
