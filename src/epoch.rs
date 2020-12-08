@@ -270,7 +270,6 @@ impl Epoch {
         if second == 60 {
             // Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
             // same number of second afters J1900.0.
-            // seconds_wrt_1900 -= Decimal::from(1.0);
             seconds_wrt_1900 -= TimeUnit::Second;
         }
 

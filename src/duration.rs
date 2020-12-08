@@ -5,14 +5,17 @@ extern crate serde_derive;
 use self::regex::Regex;
 use self::serde::{de, Deserialize, Deserializer};
 use crate::fraction::ToPrimitive;
-use crate::{
-    Decimal, Errors, Fraction, DAYS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR,
-    SECONDS_PER_MINUTE,
-};
+use crate::{Decimal, Errors, Fraction, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 use std::cmp::Ordering;
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 use std::str::FromStr;
+
+const DAYS_PER_CENTURY_U: u128 = 36_525;
+const SECONDS_PER_MINUTE_U: u128 = 60;
+const SECONDS_PER_HOUR_U: u128 = 3_600;
+const SECONDS_PER_DAY_U: u128 = 86_400;
+const ONE: u128 = 1_u128;
 
 /// Defines generally usable durations for high precision math with Epoch (all data is stored in seconds)
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
@@ -34,9 +37,10 @@ macro_rules! impl_ops_for_type {
             type Output = Duration;
             fn mul(self, q: $type) -> Duration {
                 match self {
-                    TimeUnit::Century => {
-                        Duration::from_days(Decimal::from(q) * Decimal::from(DAYS_PER_CENTURY))
-                    }
+                    TimeUnit::Century => Duration::from_days(
+                        Decimal::from(q)
+                            * Decimal::from_fraction(Fraction::new(DAYS_PER_CENTURY_U, ONE)),
+                    ),
                     TimeUnit::Day => Duration::from_days(Decimal::from(q)),
                     TimeUnit::Hour => Duration::from_hours(Decimal::from(q)),
                     TimeUnit::Minute => Duration::from_minutes(Decimal::from(q)),
@@ -52,9 +56,10 @@ macro_rules! impl_ops_for_type {
             type Output = Duration;
             fn mul(self, q: TimeUnit) -> Duration {
                 match q {
-                    TimeUnit::Century => {
-                        Duration::from_days(Decimal::from(self) * Decimal::from(DAYS_PER_CENTURY))
-                    }
+                    TimeUnit::Century => Duration::from_days(
+                        Decimal::from(self)
+                            * Decimal::from_fraction(Fraction::new(DAYS_PER_CENTURY_U, ONE)),
+                    ),
                     TimeUnit::Day => Duration::from_days(Decimal::from(self)),
                     TimeUnit::Hour => Duration::from_hours(Decimal::from(self)),
                     TimeUnit::Minute => Duration::from_minutes(Decimal::from(self)),
@@ -98,17 +103,17 @@ macro_rules! impl_ops_for_type {
 impl Duration {
     pub fn from_days(days: Decimal) -> Self {
         Self {
-            0: days * Decimal::from(SECONDS_PER_DAY),
+            0: days * Decimal::from_fraction(Fraction::new(SECONDS_PER_DAY_U, ONE)),
         }
     }
     pub fn from_hours(hours: Decimal) -> Self {
         Self {
-            0: hours * Decimal::from(SECONDS_PER_HOUR),
+            0: hours * Decimal::from_fraction(Fraction::new(SECONDS_PER_HOUR_U, ONE)),
         }
     }
     pub fn from_minutes(minutes: Decimal) -> Self {
         Self {
-            0: minutes * Decimal::from(SECONDS_PER_MINUTE),
+            0: minutes * Decimal::from_fraction(Fraction::new(SECONDS_PER_MINUTE_U, ONE)),
         }
     }
     pub fn from_seconds(seconds: Decimal) -> Self {
@@ -116,17 +121,17 @@ impl Duration {
     }
     pub fn from_milliseconds(ms: Decimal) -> Self {
         Self {
-            0: ms * Decimal::from(1e-3),
+            0: ms * Decimal::from_fraction(Fraction::new(ONE, 1_000u128)),
         }
     }
-    pub fn from_microseconds(ms: Decimal) -> Self {
+    pub fn from_microseconds(us: Decimal) -> Self {
         Self {
-            0: ms * Decimal::from(1e-6),
+            0: us * Decimal::from_fraction(Fraction::new(ONE, 1_000_000u128)),
         }
     }
     pub fn from_nanoseconds(ns: Decimal) -> Self {
         Self {
-            0: ns * Decimal::from(1e-9),
+            0: ns * Decimal::from_fraction(Fraction::new(ONE, 1_000_000_000u128)),
         }
     }
 
@@ -165,7 +170,7 @@ impl Duration {
 
     /// Returns the absolute value of this duration
     pub fn abs(&self) -> Self {
-        if self.0 < Decimal::from(0.0) {
+        if self.0 < Decimal::from_fraction(Fraction::new(0_u128, ONE)) {
             Self { 0: -self.0 }
         } else {
             *self
@@ -469,14 +474,16 @@ impl Sub for TimeUnit {
 impl TimeUnit {
     pub fn in_seconds(self) -> Decimal {
         match self {
-            TimeUnit::Century => Decimal::from(DAYS_PER_CENTURY * SECONDS_PER_DAY),
-            TimeUnit::Day => Decimal::from(SECONDS_PER_DAY),
-            TimeUnit::Hour => Decimal::from(SECONDS_PER_HOUR),
-            TimeUnit::Minute => Decimal::from(SECONDS_PER_MINUTE),
-            TimeUnit::Second => Decimal::from(1.0),
-            TimeUnit::Millisecond => Decimal::from(1e-3),
-            TimeUnit::Microsecond => Decimal::from(1e-6),
-            TimeUnit::Nanosecond => Decimal::from(1e-9),
+            TimeUnit::Century => {
+                Decimal::from_fraction(Fraction::new(DAYS_PER_CENTURY_U * SECONDS_PER_DAY_U, ONE))
+            }
+            TimeUnit::Day => Decimal::from_fraction(Fraction::new(SECONDS_PER_DAY_U, ONE)),
+            TimeUnit::Hour => Decimal::from_fraction(Fraction::new(SECONDS_PER_HOUR_U, ONE)),
+            TimeUnit::Minute => Decimal::from_fraction(Fraction::new(SECONDS_PER_MINUTE_U, ONE)),
+            TimeUnit::Second => Decimal::from_fraction(Fraction::new(ONE, ONE)),
+            TimeUnit::Millisecond => Decimal::from_fraction(Fraction::new(ONE, 1_000u128)),
+            TimeUnit::Microsecond => Decimal::from_fraction(Fraction::new(ONE, 1_000_000u128)),
+            TimeUnit::Nanosecond => Decimal::from_fraction(Fraction::new(ONE, 1_000_000_000u128)),
         }
     }
 
@@ -486,7 +493,7 @@ impl TimeUnit {
 
     #[allow(clippy::wrong_self_convention)]
     pub fn from_seconds(self) -> Decimal {
-        Decimal::from(1.0) / self.in_seconds()
+        Decimal::from_fraction(Fraction::new(ONE, ONE)) / self.in_seconds()
     }
 }
 
