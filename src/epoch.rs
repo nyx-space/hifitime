@@ -130,8 +130,9 @@ impl Sub<TimeUnit> for Epoch {
 
     #[allow(clippy::identity_op)]
     fn sub(self, unit: TimeUnit) -> Self {
-        let u_d: Duration = unit * 1;
-        Self { 0: self.0 - u_d }
+        Self {
+            0: self.0 - unit * 1,
+        }
     }
 }
 
@@ -140,8 +141,9 @@ impl Add<TimeUnit> for Epoch {
 
     #[allow(clippy::identity_op)]
     fn add(self, unit: TimeUnit) -> Self {
-        let u_d: Duration = unit * 1;
-        Self { 0: self.0 + u_d }
+        Self {
+            0: self.0 + unit * 1,
+        }
     }
 }
 
@@ -162,13 +164,13 @@ impl Epoch {
     /// Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight
     pub fn from_tai_days(days: f64) -> Self {
         Self {
-            0: (days * TimeUnit::Day),
+            0: days * TimeUnit::Day,
         }
     }
 
     pub fn from_mjd_tai(days: f64) -> Self {
         Self {
-            0: ((days - J1900_OFFSET) * TimeUnit::Day),
+            0: (days - J1900_OFFSET) * TimeUnit::Day,
         }
     }
 
@@ -602,8 +604,7 @@ impl Epoch {
     pub fn as_tdb_duration(self) -> Duration {
         let inner = self.inner_g_rad();
 
-        self.as_tt_duration() - TimeUnit::Second * ET_EPOCH_S
-            + TimeUnit::Second * (0.001_658 * inner.sin())
+        self.as_tt_duration() - TimeUnit::Second * (ET_EPOCH_S + (0.001_658 * inner.sin()))
     }
 
     /// Returns the Ephemeris Time JDE past epoch
@@ -628,8 +629,7 @@ impl Epoch {
         let inner = self.inner_g_rad();
 
         let tdb_delta = 0.001_658 * inner.sin();
-        (self.0 + (TT_OFFSET_S + tdb_delta) * TimeUnit::Second + JDE_OFFSET_DAYS * TimeUnit::Day)
-            .in_unit_f64(TimeUnit::Day)
+        (self.0.in_seconds() + TT_OFFSET_S + tdb_delta) / SECONDS_PER_DAY + JDE_OFFSET_DAYS
     }
 
     /// Converts an ISO8601 Datetime representation without timezone offset to an Epoch.
@@ -1425,7 +1425,7 @@ fn test_from_str() {
     // This imprecision is driving me nuts... I just cannot seem to represent TDB better than before with f64...
     let greg = "2020-01-31T00:00:00 TDB";
     assert_eq!(
-        "2020-01-30T23:59:59.999962329 TDB",
+        "2020-01-30T23:59:59.999961853 TDB",
         Epoch::from_str(greg)
             .unwrap()
             .as_gregorian_str(TimeSystem::TDB)
