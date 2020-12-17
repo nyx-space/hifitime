@@ -156,6 +156,10 @@ impl AddAssign<Duration> for Epoch {
 impl Epoch {
     /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
     pub fn from_tai_seconds(seconds: f64) -> Self {
+        assert!(
+            seconds.is_finite(),
+            "Attempted to initialize Epoch with non finite number"
+        );
         Self {
             0: seconds * TimeUnit::Second,
         }
@@ -163,18 +167,30 @@ impl Epoch {
 
     /// Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight
     pub fn from_tai_days(days: f64) -> Self {
+        assert!(
+            days.is_finite(),
+            "Attempted to initialize Epoch with non finite number"
+        );
         Self {
             0: days * TimeUnit::Day,
         }
     }
 
     pub fn from_mjd_tai(days: f64) -> Self {
+        assert!(
+            days.is_finite(),
+            "Attempted to initialize Epoch with non finite number"
+        );
         Self {
             0: (days - J1900_OFFSET) * TimeUnit::Day,
         }
     }
 
     pub fn from_jde_tai(days: f64) -> Self {
+        assert!(
+            days.is_finite(),
+            "Attempted to initialize Epoch with non finite number"
+        );
         Self {
             0: (days - J1900_OFFSET - MJD_OFFSET) * TimeUnit::Day,
         }
@@ -182,15 +198,27 @@ impl Epoch {
 
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
     pub fn from_tt_seconds(seconds: f64) -> Self {
+        assert!(
+            seconds.is_finite(),
+            "Attempted to initialize Epoch with non finite number"
+        );
         Self::from_tai_seconds(seconds) - TimeUnit::Second * TT_OFFSET_S
     }
 
     pub fn from_et_seconds(seconds: f64) -> Epoch {
+        assert!(
+            seconds.is_finite(),
+            "Attempted to initialize Epoch with non finite number"
+        );
         Self::from_tai_seconds(seconds) + TimeUnit::Second * (ET_EPOCH_S - ET_OFFSET_S)
     }
 
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI
     pub fn from_tdb_seconds(seconds: f64) -> Epoch {
+        assert!(
+            seconds.is_finite(),
+            "Attempted to initialize Epoch with non finite number"
+        );
         Self::from_tdb_seconds_d(seconds * TimeUnit::Second)
     }
 
@@ -213,11 +241,19 @@ impl Epoch {
     }
 
     pub fn from_jde_et(days: f64) -> Self {
+        assert!(
+            days.is_finite(),
+            "Attempted to initialize Epoch with non finite number"
+        );
         Self::from_jde_tdb(days)
     }
 
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days
     pub fn from_jde_tdb(days: f64) -> Self {
+        assert!(
+            days.is_finite(),
+            "Attempted to initialize Epoch with non finite number"
+        );
         Self::from_jde_tai(days) - TimeUnit::Second * ET_OFFSET_S
     }
 
