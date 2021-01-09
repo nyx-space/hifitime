@@ -314,7 +314,8 @@ impl Epoch {
         seconds_wrt_1900 += TimeUnit::Day * (day - 1)
             + TimeUnit::Hour * hour
             + TimeUnit::Minute * minute
-            + TimeUnit::Second * second;
+            + TimeUnit::Second * second
+            + TimeUnit::Nanosecond * nanos;
         if second == 60 {
             // Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
             // same number of second afters J1900.0.
@@ -1529,4 +1530,17 @@ fn deser_test() {
     struct D {
         pub e: Epoch,
     }
+}
+
+#[test]
+fn regression_test_gh_85() {
+    let earlier_epoch =
+        Epoch::maybe_from_gregorian(2020, 1, 8, 16, 1, 17, 100, TimeSystem::TAI).unwrap();
+    let later_epoch =
+        Epoch::maybe_from_gregorian(2020, 1, 8, 16, 1, 17, 200, TimeSystem::TAI).unwrap();
+
+    assert!(
+        later_epoch > earlier_epoch,
+        "later_epoch should be 100ns after earlier_epoch"
+    );
 }
