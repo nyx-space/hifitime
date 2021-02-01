@@ -28,15 +28,16 @@ impl TimeSeries {
     ///     println!("{}", epoch);
     ///     cnt += 1
     /// }
-    /// assert_eq!(cnt, 5)
+    /// assert_eq!(cnt, 6)
     /// ```
     #[inline]
     pub fn exclusive(start: Epoch, end: Epoch, step: Duration) -> TimeSeries {
+        // Start one step prior to start because next() just moves forward
         Self {
             start,
             end,
             step,
-            cur: start,
+            cur: start - step,
             incl: false,
         }
     }
@@ -53,15 +54,16 @@ impl TimeSeries {
     ///     println!("{}", epoch);
     ///     cnt += 1
     /// }
-    /// assert_eq!(cnt, 6)
+    /// assert_eq!(cnt, 7)
     /// ```
     #[inline]
     pub fn inclusive(start: Epoch, end: Epoch, step: Duration) -> TimeSeries {
+        // Start one step prior to start because next() just moves forward
         Self {
             start,
             end,
             step,
-            cur: start,
+            cur: start - step,
             incl: true,
         }
     }
@@ -102,15 +104,15 @@ fn test_timeseries() {
     let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
     let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
     let step = TimeUnit::Hour * 2;
-    let mut count = 0;
 
+    let mut count = 0;
     let time_series = TimeSeries::exclusive(start, end, step);
     for epoch in time_series {
         println!("{}", epoch);
         count += 1;
     }
 
-    assert_eq!(count, 5, "Should have five items in this iterator");
+    assert_eq!(count, 6, "Should have five items in this iterator");
 
     count = 0;
     let time_series = TimeSeries::inclusive(start, end, step);
@@ -119,5 +121,5 @@ fn test_timeseries() {
         count += 1;
     }
 
-    assert_eq!(count, 6, "Should have six items in this iterator");
+    assert_eq!(count, 7, "Should have six items in this iterator");
 }
