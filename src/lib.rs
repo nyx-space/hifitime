@@ -114,7 +114,7 @@
 //! }
 //! // Check that there are indeed six two-hour periods in a half a day,
 //! // including start and end times.
-//! assert_eq!(cnt, 6)
+//! assert_eq!(cnt, 7)
 //! ```
 //!
 //! ### Limitations
