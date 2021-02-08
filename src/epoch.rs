@@ -6,8 +6,7 @@ use self::regex::Regex;
 use self::serde::{de, Deserialize, Deserializer};
 use crate::duration::{Duration, TimeUnit};
 use crate::{
-    Errors, TimeSystem, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET, JDE_OFFSET_DAYS, MJD_OFFSET,
-    SECONDS_PER_DAY,
+    Errors, TimeSystem, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET, MJD_OFFSET, SECONDS_PER_DAY,
 };
 use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
@@ -1403,7 +1402,7 @@ fn spice_et_tdb() {
     assert!(dbg!(2452312.500372511 - sp_ex.as_jde_tdb_days()).abs() < 4.7e-10);
 
     let sp_ex = Epoch::from_et_seconds(381_885_753.003_859_5);
-    assert!(dbg!(2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
+    assert!(dbg!(2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < 4.7e-10);
     assert!((2455964.9739931 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
 
     let sp_ex = Epoch::from_et_seconds(0.0);
