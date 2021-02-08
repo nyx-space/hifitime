@@ -664,9 +664,8 @@ impl Epoch {
     /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
     pub fn as_jde_tdb_days(self) -> f64 {
         let inner = self.inner_g_rad();
-
         let tdb_delta = 0.001_658 * inner.sin();
-        (self.0.in_seconds() + TT_OFFSET_S + tdb_delta) / SECONDS_PER_DAY + JDE_OFFSET_DAYS
+        self.as_jde_tt_days() + tdb_delta / SECONDS_PER_DAY
     }
 
     /// Converts an ISO8601 Datetime representation without timezone offset to an Epoch.
@@ -1398,11 +1397,14 @@ fn spice_et_tdb() {
     66312032.18493909
     */
     let sp_ex = Epoch::from_et_seconds(66_312_032.184_939_09);
-    assert!((2452312.500372511 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
-    assert!((2452312.500372511 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
+    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
+    // 4.7e-10 is the exact difference hifitime computes between ET and TDB.
+    // That corresponds to 4.02e-5 seconds, or 4.02 nanoseconds
+    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_tdb_days()).abs() < 4.7e-10);
 
     let sp_ex = Epoch::from_et_seconds(381_885_753.003_859_5);
-    assert!((2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
+    assert!(dbg!(2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
+    assert!((2455964.9739931 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
 
     let sp_ex = Epoch::from_et_seconds(0.0);
     assert!(sp_ex.as_et_seconds() < std::f64::EPSILON);

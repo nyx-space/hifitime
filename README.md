@@ -1,4 +1,4 @@
-# hifitime 2.0
+# hifitime 2
 
 Precise date and time handling in Rust built on top of lossless fractions (with 128 bits on the numerator and 16 bits on the denominator).
 The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in
@@ -11,8 +11,8 @@ day-to-day use of this library.
 
 [cratesio-image]: https://img.shields.io/crates/v/hifitime.svg
 [cratesio]: https://crates.io/crates/hifitime
-[docsrs-image]: https://docs.rs/hifitime/badge.svg?version=1.0
-[docsrs]: https://docs.rs/hifitime/1.0/
+[docsrs-image]: https://docs.rs/hifitime/badge.svg
+[docsrs]: https://docs.rs/hifitime/
 
 
 # Features
@@ -77,3 +77,8 @@ day computations for [2015-06-30 23:59:59](https://heasarc.gsfc.nasa.gov/cgi-bin
 
 ### Ephemeris Time vs Dynamic Barycentric Time (TDB)
 ET and TDB should now be identical. However, hifitime uses the European Space Agency's definition of TDB, detailed [here](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB). It seems that SPICE uses the older definition which has a fixed offset from TDT of 0.000935 seconds. This difference is more prominent around the TDB epoch of 01 January 2000.
+
+# Changelog
+
+## 2.2.2
++ More deterministic `as_jde_tdb_days()` in `Epoch`. In version 2.2.1, the ephemeris time and TDB _days_ were identical down to machine precision. After a number of validation cases in the rotation equations of the IAU Earth to Earth Mean Equator J2000 frame, the new formulation was shown to lead to less rounding errors when requesting the days. These rounding errors prevented otherwise trivial test cases. However, it adds an error of **40.2 nanoseconds** when initializing an Epoch with the days in ET and requesting the TDB days.
