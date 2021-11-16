@@ -1,6 +1,6 @@
 # hifitime 2
 
-Precise date and time handling in Rust built on top of lossless fractions (with 128 bits on the numerator and 16 bits on the denominator).
+Precise date and time handling in Rust built on top of a tuple of two floats.
 The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in
 day-to-day use of this library.
 

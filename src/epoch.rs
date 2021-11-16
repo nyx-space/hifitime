@@ -692,6 +692,15 @@ impl Epoch {
     ///     dt,
     ///     Epoch::from_gregorian_str("2017-01-14 00:31:55").unwrap()
     /// );
+    /// // Regression test for #90
+    /// assert_eq!(
+    ///     Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811000000),
+    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55.811 UTC").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811200000),
+    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55.8112 UTC").unwrap()
+    /// );
     /// ```
     pub fn from_gregorian_str(s: &str) -> Result<Self, Errors> {
         let reg: Regex = Regex::new(
@@ -701,13 +710,21 @@ impl Epoch {
         match reg.captures(s) {
             Some(cap) => {
                 let nanos = match cap.get(7) {
-                    Some(val) => val.as_str().parse::<u32>().unwrap(),
+                    Some(val) => {
+                        let val_str = val.as_str();
+                        let val = val_str.parse::<u32>().unwrap();
+                        if val_str.len() != 9 {
+                            val * 10_u32.pow((9 - val_str.len()) as u32)
+                        } else {
+                            val
+                        }
+                    }
                     None => 0,
                 };
 
                 match cap.get(8) {
                     Some(ts_str) => {
-                        let ts = TimeSystem::map(ts_str.as_str().to_owned());
+                        let ts = TimeSystem::from_str(ts_str.as_str())?;
                         if ts == TimeSystem::UTC {
                             Self::maybe_from_gregorian_utc(
                                 cap[1].to_owned().parse::<i32>()?,
@@ -923,7 +940,7 @@ impl FromStr for Epoch {
                 Some(cap) => {
                     let format = cap[1].to_owned().parse::<String>().unwrap();
                     let value = cap[2].to_owned().parse::<f64>().unwrap();
-                    let ts = TimeSystem::map(cap[3].to_owned().parse::<String>().unwrap());
+                    let ts = TimeSystem::from_str(&cap[3])?;
 
                     match format.as_str() {
                         "JD" => match ts {
@@ -1430,9 +1447,11 @@ fn test_from_str() {
     let as_et = Epoch::from_str("JD 2452312.500372511 ET").unwrap();
     let as_tai = Epoch::from_str("JD 2452312.500372511 TAI").unwrap();
 
-    assert!((as_tdb.as_jde_tdb_days() - jde).abs() < EPSILON);
-    assert!((as_et.as_jde_et_days() - jde).abs() < EPSILON);
-    assert!((as_tai.as_jde_tai_days() - jde).abs() < EPSILON);
+    // The JDE only has a precision of 1e-9 days, so we can only compare down to that
+    const SPICE_EPSILON: f64 = 1e-9;
+    assert!(dbg!(as_tdb.as_jde_tdb_days() - jde).abs() < SPICE_EPSILON);
+    assert!(dbg!(as_et.as_jde_et_days() - jde).abs() < SPICE_EPSILON);
+    assert!(dbg!(as_tai.as_jde_tai_days() - jde).abs() < SPICE_EPSILON);
     assert!(
         (Epoch::from_str("MJD 51544.5 TAI")
             .unwrap()
@@ -1528,8 +1547,8 @@ fn test_range() {
 fn deser_test() {
     use self::serde_derive::Deserialize;
     #[derive(Deserialize)]
-    struct D {
-        pub e: Epoch,
+    struct _D {
+        pub _e: Epoch,
     }
 }
 

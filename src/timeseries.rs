@@ -108,6 +108,14 @@ fn test_timeseries() {
     let mut count = 0;
     let time_series = TimeSeries::exclusive(start, end, step);
     for epoch in time_series {
+        if count == 0 {
+            assert_eq!(
+                epoch, start,
+                "Starting epoch of exclusive time series is wrong"
+            );
+        } else if count == 5 {
+            assert_ne!(epoch, end, "Ending epoch of exclusive time series is wrong");
+        }
         println!("{}", epoch);
         count += 1;
     }
@@ -117,6 +125,14 @@ fn test_timeseries() {
     count = 0;
     let time_series = TimeSeries::inclusive(start, end, step);
     for epoch in time_series {
+        if count == 0 {
+            assert_eq!(
+                epoch, start,
+                "Starting epoch of inclusive time series is wrong"
+            );
+        } else if count == 6 {
+            assert_eq!(epoch, end, "Ending epoch of inclusive time series is wrong");
+        }
         println!("{}", epoch);
         count += 1;
     }
