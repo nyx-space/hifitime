@@ -692,6 +692,15 @@ impl Epoch {
     ///     dt,
     ///     Epoch::from_gregorian_str("2017-01-14 00:31:55").unwrap()
     /// );
+    /// // Regression test for #90
+    /// assert_eq!(
+    ///     Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811000000),
+    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55.811 UTC").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811200000),
+    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55.8112 UTC").unwrap()
+    /// );
     /// ```
     pub fn from_gregorian_str(s: &str) -> Result<Self, Errors> {
         let reg: Regex = Regex::new(
@@ -701,7 +710,15 @@ impl Epoch {
         match reg.captures(s) {
             Some(cap) => {
                 let nanos = match cap.get(7) {
-                    Some(val) => val.as_str().parse::<u32>().unwrap(),
+                    Some(val) => {
+                        let val_str = val.as_str();
+                        let val = val_str.parse::<u32>().unwrap();
+                        if val_str.len() != 9 {
+                            val * 10_u32.pow((9 - val_str.len()) as u32)
+                        } else {
+                            val
+                        }
+                    }
                     None => 0,
                 };
 
