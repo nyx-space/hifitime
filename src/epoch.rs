@@ -707,7 +707,7 @@ impl Epoch {
 
                 match cap.get(8) {
                     Some(ts_str) => {
-                        let ts = TimeSystem::map(ts_str.as_str().to_owned());
+                        let ts = TimeSystem::from_str(ts_str.as_str())?;
                         if ts == TimeSystem::UTC {
                             Self::maybe_from_gregorian_utc(
                                 cap[1].to_owned().parse::<i32>()?,
@@ -923,7 +923,7 @@ impl FromStr for Epoch {
                 Some(cap) => {
                     let format = cap[1].to_owned().parse::<String>().unwrap();
                     let value = cap[2].to_owned().parse::<f64>().unwrap();
-                    let ts = TimeSystem::map(cap[3].to_owned().parse::<String>().unwrap());
+                    let ts = TimeSystem::from_str(&cap[3])?;
 
                     match format.as_str() {
                         "JD" => match ts {

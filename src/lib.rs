@@ -178,6 +178,7 @@ pub use timeseries::*;
 use std::convert;
 use std::fmt;
 use std::num::ParseIntError;
+use std::str::FromStr;
 
 /// Errors handles all oddities which may occur in this library.
 #[derive(Debug)]
@@ -220,20 +221,22 @@ pub enum TimeSystem {
     UTC,
 }
 
-impl TimeSystem {
-    pub fn map(val: String) -> Self {
+impl FromStr for TimeSystem {
+    type Err = Errors;
+
+    fn from_str(val: &str) -> Result<Self, Self::Err> {
         if val == "UTC" {
-            TimeSystem::UTC
+            Ok(TimeSystem::UTC)
         } else if val == "TT" {
-            TimeSystem::TT
+            Ok(TimeSystem::TT)
         } else if val == "TAI" {
-            TimeSystem::TAI
+            Ok(TimeSystem::TAI)
         } else if val == "TDB" {
-            TimeSystem::TDB
+            Ok(TimeSystem::TDB)
         } else if val == "ET" {
-            TimeSystem::ET
+            Ok(TimeSystem::ET)
         } else {
-            panic!("unknown time system `{}`", val);
+            Err(Errors::ParseError(format!("unknown time system `{}`", val)))
         }
     }
 }
