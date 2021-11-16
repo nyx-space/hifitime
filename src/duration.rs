@@ -97,6 +97,8 @@ macro_rules! impl_ops_for_type {
                 }
             }
         }
+
+        impl TimeUnitHelper for $type {}
     };
 }
 
@@ -429,6 +431,46 @@ impl FromStr for Duration {
     }
 }
 
+/// A trait to automatically convert some primitives to a duration
+///
+/// ```
+/// use hifitime::prelude::*;
+/// use std::str::FromStr;
+///
+/// assert_eq!(Duration::from_str("1 d").unwrap(), 1.days());
+/// assert_eq!(Duration::from_str("10.598 days").unwrap(), 10.598_f64.days());
+/// assert_eq!(Duration::from_str("10.598 min").unwrap(), 10.598_f64.minutes());
+/// assert_eq!(Duration::from_str("10.598 us").unwrap(), 10.598_f64.microseconds());
+/// assert_eq!(Duration::from_str("10.598 seconds").unwrap(), 10.598_f64.seconds());
+/// assert_eq!(Duration::from_str("10.598 nanosecond").unwrap(), 10.598_f64.nanoseconds());
+/// ```
+pub trait TimeUnitHelper: Copy + Mul<TimeUnit, Output = Duration> {
+    fn centuries(self) -> Duration {
+        self * TimeUnit::Century
+    }
+    fn days(self) -> Duration {
+        self * TimeUnit::Day
+    }
+    fn hours(self) -> Duration {
+        self * TimeUnit::Hour
+    }
+    fn minutes(self) -> Duration {
+        self * TimeUnit::Minute
+    }
+    fn seconds(self) -> Duration {
+        self * TimeUnit::Second
+    }
+    fn milliseconds(self) -> Duration {
+        self * TimeUnit::Millisecond
+    }
+    fn microseconds(self) -> Duration {
+        self * TimeUnit::Microsecond
+    }
+    fn nanoseconds(self) -> Duration {
+        self * TimeUnit::Nanosecond
+    }
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum TimeUnit {
     /// 36525 days, it the number of days per century in the Julian calendar
@@ -522,7 +564,8 @@ fn time_unit() {
     // Test operations
     let seven_hours = TimeUnit::Hour * 7;
     let six_minutes = TimeUnit::Minute * 6;
-    let five_seconds = TimeUnit::Second * 5.0;
+    // let five_seconds = TimeUnit::Second * 5.0;
+    let five_seconds = 5.0.seconds();
     let sum: Duration = seven_hours + six_minutes + five_seconds;
     assert!((sum.in_seconds() - 25565.0).abs() < EPSILON);
 

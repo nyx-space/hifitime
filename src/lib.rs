@@ -175,6 +175,10 @@ pub use duration::*;
 mod timeseries;
 pub use timeseries::*;
 
+pub mod prelude {
+    pub use {Duration, Epoch, TimeSeries, TimeUnit, TimeUnitHelper};
+}
+
 use std::convert;
 use std::fmt;
 use std::num::ParseIntError;
