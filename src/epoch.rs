@@ -1430,9 +1430,11 @@ fn test_from_str() {
     let as_et = Epoch::from_str("JD 2452312.500372511 ET").unwrap();
     let as_tai = Epoch::from_str("JD 2452312.500372511 TAI").unwrap();
 
-    assert!((as_tdb.as_jde_tdb_days() - jde).abs() < EPSILON);
-    assert!((as_et.as_jde_et_days() - jde).abs() < EPSILON);
-    assert!((as_tai.as_jde_tai_days() - jde).abs() < EPSILON);
+    // The JDE only has a precision of 1e-9 days, so we can only compare down to that
+    const SPICE_EPSILON: f64 = 1e-9;
+    assert!(dbg!(as_tdb.as_jde_tdb_days() - jde).abs() < SPICE_EPSILON);
+    assert!(dbg!(as_et.as_jde_et_days() - jde).abs() < SPICE_EPSILON);
+    assert!(dbg!(as_tai.as_jde_tai_days() - jde).abs() < SPICE_EPSILON);
     assert!(
         (Epoch::from_str("MJD 51544.5 TAI")
             .unwrap()
@@ -1528,8 +1530,8 @@ fn test_range() {
 fn deser_test() {
     use self::serde_derive::Deserialize;
     #[derive(Deserialize)]
-    struct D {
-        pub e: Epoch,
+    struct _D {
+        pub _e: Epoch,
     }
 }
 

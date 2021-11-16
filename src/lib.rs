@@ -161,13 +161,6 @@ pub const SECONDS_PER_TROPICAL_YEAR: f64 = 31_556_925.974_7;
 /// `SECONDS_PER_SIDERAL_YEAR` corresponds to the number of seconds per sideral year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
 pub const SECONDS_PER_SIDERAL_YEAR: f64 = 31_558_150.0;
 
-extern crate fraction;
-use crate::fraction::{GenericDecimal, GenericFraction};
-/// Decimal defines a lossless fraction and is the basis of all Epoch computations.
-/// It is recommended to use this time for time operations.
-pub type Decimal = GenericDecimal<u128, u16>;
-type Fraction = GenericFraction<u128>;
-
 mod sim;
 pub use sim::ClockNoise;
 

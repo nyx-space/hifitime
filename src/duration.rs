@@ -1,11 +1,13 @@
 extern crate regex;
 extern crate serde;
 extern crate serde_derive;
+extern crate twofloat;
 
+// use self::qd::Quad;
 use self::regex::Regex;
 use self::serde::{de, Deserialize, Deserializer};
-use crate::fraction::ToPrimitive;
-use crate::{Decimal, Errors, Fraction, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
+use self::twofloat::TwoFloat;
+use crate::{Errors, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 use std::cmp::Ordering;
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
@@ -19,7 +21,7 @@ const ONE: u128 = 1_u128;
 
 /// Defines generally usable durations for high precision math with Epoch (all data is stored in seconds)
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
-pub struct Duration(Decimal);
+pub struct Duration(TwoFloat);
 
 impl<'de> Deserialize<'de> for Duration {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -37,17 +39,16 @@ macro_rules! impl_ops_for_type {
             type Output = Duration;
             fn mul(self, q: $type) -> Duration {
                 match self {
-                    TimeUnit::Century => Duration::from_days(
-                        Decimal::from(q)
-                            * Decimal::from_fraction(Fraction::new(DAYS_PER_CENTURY_U, ONE)),
-                    ),
-                    TimeUnit::Day => Duration::from_days(Decimal::from(q)),
-                    TimeUnit::Hour => Duration::from_hours(Decimal::from(q)),
-                    TimeUnit::Minute => Duration::from_minutes(Decimal::from(q)),
-                    TimeUnit::Second => Duration::from_seconds(Decimal::from(q)),
-                    TimeUnit::Millisecond => Duration::from_milliseconds(Decimal::from(q)),
-                    TimeUnit::Microsecond => Duration::from_microseconds(Decimal::from(q)),
-                    TimeUnit::Nanosecond => Duration::from_nanoseconds(Decimal::from(q)),
+                    TimeUnit::Century => {
+                        Duration::from_days(TwoFloat::from(q) * TwoFloat::from(DAYS_PER_CENTURY_U))
+                    }
+                    TimeUnit::Day => Duration::from_days(TwoFloat::from(q)),
+                    TimeUnit::Hour => Duration::from_hours(TwoFloat::from(q)),
+                    TimeUnit::Minute => Duration::from_minutes(TwoFloat::from(q)),
+                    TimeUnit::Second => Duration::from_seconds(TwoFloat::from(q)),
+                    TimeUnit::Millisecond => Duration::from_milliseconds(TwoFloat::from(q)),
+                    TimeUnit::Microsecond => Duration::from_microseconds(TwoFloat::from(q)),
+                    TimeUnit::Nanosecond => Duration::from_nanoseconds(TwoFloat::from(q)),
                 }
             }
         }
@@ -57,16 +58,15 @@ macro_rules! impl_ops_for_type {
             fn mul(self, q: TimeUnit) -> Duration {
                 match q {
                     TimeUnit::Century => Duration::from_days(
-                        Decimal::from(self)
-                            * Decimal::from_fraction(Fraction::new(DAYS_PER_CENTURY_U, ONE)),
+                        TwoFloat::from(self) * TwoFloat::from(DAYS_PER_CENTURY_U),
                     ),
-                    TimeUnit::Day => Duration::from_days(Decimal::from(self)),
-                    TimeUnit::Hour => Duration::from_hours(Decimal::from(self)),
-                    TimeUnit::Minute => Duration::from_minutes(Decimal::from(self)),
-                    TimeUnit::Second => Duration::from_seconds(Decimal::from(self)),
-                    TimeUnit::Millisecond => Duration::from_milliseconds(Decimal::from(self)),
-                    TimeUnit::Microsecond => Duration::from_microseconds(Decimal::from(self)),
-                    TimeUnit::Nanosecond => Duration::from_nanoseconds(Decimal::from(self)),
+                    TimeUnit::Day => Duration::from_days(TwoFloat::from(self)),
+                    TimeUnit::Hour => Duration::from_hours(TwoFloat::from(self)),
+                    TimeUnit::Minute => Duration::from_minutes(TwoFloat::from(self)),
+                    TimeUnit::Second => Duration::from_seconds(TwoFloat::from(self)),
+                    TimeUnit::Millisecond => Duration::from_milliseconds(TwoFloat::from(self)),
+                    TimeUnit::Microsecond => Duration::from_microseconds(TwoFloat::from(self)),
+                    TimeUnit::Nanosecond => Duration::from_nanoseconds(TwoFloat::from(self)),
                 }
             }
         }
@@ -75,7 +75,7 @@ macro_rules! impl_ops_for_type {
             type Output = Duration;
             fn mul(self, q: $type) -> Duration {
                 Self {
-                    0: self.0 * Decimal::from(q),
+                    0: self.0 * TwoFloat::from(q),
                 }
             }
         }
@@ -84,7 +84,7 @@ macro_rules! impl_ops_for_type {
             type Output = Duration;
             fn div(self, q: $type) -> Duration {
                 Self {
-                    0: self.0 / Decimal::from(q),
+                    0: self.0 / TwoFloat::from(q),
                 }
             }
         }
@@ -93,7 +93,7 @@ macro_rules! impl_ops_for_type {
             type Output = Duration;
             fn mul(self, q: Duration) -> Duration {
                 Duration {
-                    0: q.0 * Decimal::from(self),
+                    0: q.0 * TwoFloat::from(self),
                 }
             }
         }
@@ -101,37 +101,37 @@ macro_rules! impl_ops_for_type {
 }
 
 impl Duration {
-    pub fn from_days(days: Decimal) -> Self {
+    pub fn from_days(days: TwoFloat) -> Self {
         Self {
-            0: days * Decimal::from_fraction(Fraction::new(SECONDS_PER_DAY_U, ONE)),
+            0: days * TwoFloat::from(SECONDS_PER_DAY_U),
         }
     }
-    pub fn from_hours(hours: Decimal) -> Self {
+    pub fn from_hours(hours: TwoFloat) -> Self {
         Self {
-            0: hours * Decimal::from_fraction(Fraction::new(SECONDS_PER_HOUR_U, ONE)),
+            0: hours * TwoFloat::from(SECONDS_PER_HOUR_U),
         }
     }
-    pub fn from_minutes(minutes: Decimal) -> Self {
+    pub fn from_minutes(minutes: TwoFloat) -> Self {
         Self {
-            0: minutes * Decimal::from_fraction(Fraction::new(SECONDS_PER_MINUTE_U, ONE)),
+            0: minutes * TwoFloat::from(SECONDS_PER_MINUTE_U),
         }
     }
-    pub fn from_seconds(seconds: Decimal) -> Self {
+    pub fn from_seconds(seconds: TwoFloat) -> Self {
         Self { 0: seconds }
     }
-    pub fn from_milliseconds(ms: Decimal) -> Self {
+    pub fn from_milliseconds(ms: TwoFloat) -> Self {
         Self {
-            0: ms * Decimal::from_fraction(Fraction::new(ONE, 1_000u128)),
+            0: ms * TwoFloat::from(1e-3),
         }
     }
-    pub fn from_microseconds(us: Decimal) -> Self {
+    pub fn from_microseconds(us: TwoFloat) -> Self {
         Self {
-            0: us * Decimal::from_fraction(Fraction::new(ONE, 1_000_000u128)),
+            0: us * TwoFloat::from(1e-6),
         }
     }
-    pub fn from_nanoseconds(ns: Decimal) -> Self {
+    pub fn from_nanoseconds(ns: TwoFloat) -> Self {
         Self {
-            0: ns * Decimal::from_fraction(Fraction::new(ONE, 1_000_000_000u128)),
+            0: ns * TwoFloat::from(1e-9),
         }
     }
 
@@ -140,37 +140,26 @@ impl Duration {
         unit * value
     }
 
-    /// Creates a new duration from the provided fraction and unit
-    pub fn from_fraction(num: i64, denom: i64, unit: TimeUnit) -> Self {
-        let num_u = num.abs() as u128;
-        let denom_u = denom.abs() as u128;
-        if (num < 0 && denom < 0) || (num > 0 && denom > 0) {
-            Self(Decimal::from_fraction(Fraction::new(num_u, denom_u)) * unit.in_seconds())
-        } else {
-            Self(Decimal::from_fraction(Fraction::new_neg(num_u, denom_u)) * unit.in_seconds())
-        }
-    }
-
     /// Returns this duration in f64 in the provided unit.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     pub fn in_unit_f64(&self, unit: TimeUnit) -> f64 {
-        self.in_unit(unit).to_f64().unwrap()
+        f64::from(self.in_unit(unit))
     }
 
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     pub fn in_seconds(&self) -> f64 {
-        self.0.to_f64().unwrap()
+        f64::from(self.0)
     }
 
     /// Returns the value of this duration in the requested unit.
-    pub fn in_unit(&self, unit: TimeUnit) -> Decimal {
+    pub fn in_unit(&self, unit: TimeUnit) -> TwoFloat {
         self.0 * unit.from_seconds()
     }
 
     /// Returns the absolute value of this duration
     pub fn abs(&self) -> Self {
-        if self.0 < Decimal::from_fraction(Fraction::new(0_u128, ONE)) {
+        if self.0 < TwoFloat::from(0) {
             Self { 0: -self.0 }
         } else {
             *self
@@ -183,20 +172,20 @@ impl fmt::Display for Duration {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // We should print all of the fields
         let days = self.in_unit(TimeUnit::Day).floor();
-        let hours = self.in_unit(TimeUnit::Hour).floor() - days * Decimal::from(24.0);
+        let hours = self.in_unit(TimeUnit::Hour).floor() - days * TwoFloat::from(24.0);
         let minutes = self.in_unit(TimeUnit::Minute).floor()
-            - self.in_unit(TimeUnit::Hour).floor() * Decimal::from(60.0);
+            - self.in_unit(TimeUnit::Hour).floor() * TwoFloat::from(60.0);
         let seconds = self.in_unit(TimeUnit::Second).floor()
-            - self.in_unit(TimeUnit::Minute).floor() * Decimal::from(60.0);
+            - self.in_unit(TimeUnit::Minute).floor() * TwoFloat::from(60.0);
         let milli = self.in_unit(TimeUnit::Millisecond).floor()
-            - self.in_unit(TimeUnit::Second).floor() * Decimal::from(1e3);
+            - self.in_unit(TimeUnit::Second).floor() * TwoFloat::from(1e3);
         let nano = self.in_unit(TimeUnit::Nanosecond)
-            - self.in_unit(TimeUnit::Millisecond).floor() * Decimal::from(1e6);
+            - self.in_unit(TimeUnit::Millisecond).floor() * TwoFloat::from(1e6);
 
         let mut print_all = false;
-        let nil = Decimal::from(0);
+        let nil = TwoFloat::from(0);
         let is_neg = self.0 < nil;
-        let neg_one = Decimal::from(-1);
+        let neg_one = TwoFloat::from(-1);
 
         if days.abs() > nil {
             fmt::Display::fmt(&days, f)?;
@@ -272,7 +261,7 @@ impl fmt::Display for Duration {
 impl fmt::LowerExp for Duration {
     // Prints the duration with appropriate units
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let seconds_f64 = self.0.to_f64().unwrap();
+        let seconds_f64 = f64::from(self.0);
         let seconds_f64_abs = seconds_f64.abs();
         if seconds_f64_abs < 1e-5 {
             fmt::Display::fmt(&(seconds_f64 * 1e9), f)?;
@@ -472,28 +461,26 @@ impl Sub for TimeUnit {
 }
 
 impl TimeUnit {
-    pub fn in_seconds(self) -> Decimal {
+    pub fn in_seconds(self) -> TwoFloat {
         match self {
-            TimeUnit::Century => {
-                Decimal::from_fraction(Fraction::new(DAYS_PER_CENTURY_U * SECONDS_PER_DAY_U, ONE))
-            }
-            TimeUnit::Day => Decimal::from_fraction(Fraction::new(SECONDS_PER_DAY_U, ONE)),
-            TimeUnit::Hour => Decimal::from_fraction(Fraction::new(SECONDS_PER_HOUR_U, ONE)),
-            TimeUnit::Minute => Decimal::from_fraction(Fraction::new(SECONDS_PER_MINUTE_U, ONE)),
-            TimeUnit::Second => Decimal::from_fraction(Fraction::new(ONE, ONE)),
-            TimeUnit::Millisecond => Decimal::from_fraction(Fraction::new(ONE, 1_000u128)),
-            TimeUnit::Microsecond => Decimal::from_fraction(Fraction::new(ONE, 1_000_000u128)),
-            TimeUnit::Nanosecond => Decimal::from_fraction(Fraction::new(ONE, 1_000_000_000u128)),
+            TimeUnit::Century => TwoFloat::from(DAYS_PER_CENTURY_U * SECONDS_PER_DAY_U),
+            TimeUnit::Day => TwoFloat::from(SECONDS_PER_DAY_U),
+            TimeUnit::Hour => TwoFloat::from(SECONDS_PER_HOUR_U),
+            TimeUnit::Minute => TwoFloat::from(SECONDS_PER_MINUTE_U),
+            TimeUnit::Second => TwoFloat::from(ONE),
+            TimeUnit::Millisecond => TwoFloat::from(1e-3),
+            TimeUnit::Microsecond => TwoFloat::from(1e-6),
+            TimeUnit::Nanosecond => TwoFloat::from(1e-9),
         }
     }
 
     pub fn in_seconds_f64(self) -> f64 {
-        self.in_seconds().to_f64().unwrap()
+        f64::from(self.in_seconds())
     }
 
     #[allow(clippy::wrong_self_convention)]
-    pub fn from_seconds(self) -> Decimal {
-        Decimal::from_fraction(Fraction::new(ONE, ONE)) / self.in_seconds()
+    pub fn from_seconds(self) -> TwoFloat {
+        TwoFloat::from(1) / self.in_seconds()
     }
 }
 
@@ -528,7 +515,8 @@ fn time_unit() {
     assert_eq!(4.0 * TimeUnit::Millisecond, TimeUnit::Millisecond * 4);
     assert_eq!(5.0 * TimeUnit::Nanosecond, TimeUnit::Nanosecond * 5);
 
-    assert_eq!(1.0 * TimeUnit::Hour / 3, 20 * TimeUnit::Minute);
+    let d: Duration = 1.0 * TimeUnit::Hour / 3 - 20 * TimeUnit::Minute;
+    assert!(d.abs() < TimeUnit::Nanosecond);
     assert_eq!(3 * (20 * TimeUnit::Minute), TimeUnit::Hour);
 
     // Test operations
@@ -605,7 +593,7 @@ fn time_unit() {
     );
 
     assert_eq!(
-        format!("{}", Duration::from_nanoseconds(Decimal::from(2))),
+        format!("{}", Duration::from_nanoseconds(TwoFloat::from(2))),
         "2 ns"
     );
 
@@ -617,9 +605,9 @@ fn time_unit() {
     );
 
     // Test fractional
-    let quarter_hour = Duration::from_fraction(1, 4, TimeUnit::Hour);
-    let third_hour = Duration::from_fraction(1, 3, TimeUnit::Hour);
-    let sum = quarter_hour + third_hour;
+    let quarter_hour = 0.25 * TimeUnit::Hour;
+    let third_hour = (1.0 / 3.0) * TimeUnit::Hour;
+    let sum: Duration = quarter_hour + third_hour;
     assert!((sum.in_unit_f64(TimeUnit::Minute) - 35.0).abs() < EPSILON);
     println!(
         "Duration: {}\nFloating: {}",
@@ -628,12 +616,12 @@ fn time_unit() {
     );
     assert_eq!(format!("{}", sum), "35 min 0 s"); // Note the automatic unit selection
 
-    let quarter_hour = Duration::from_fraction(-1, 4, TimeUnit::Hour);
+    let quarter_hour = -0.25 * TimeUnit::Hour;
     let third_hour: Duration = -1 * TimeUnit::Hour / 3;
-    let sum = quarter_hour + third_hour;
+    let sum: Duration = quarter_hour + third_hour;
     let delta = sum.in_unit(TimeUnit::Millisecond).floor()
-        - sum.in_unit(TimeUnit::Second).floor() * Decimal::from(1000.0);
-    println!("{:?}", delta * Decimal::from(-1) == Decimal::from(0));
+        - sum.in_unit(TimeUnit::Second).floor() * TwoFloat::from(1000.0);
+    println!("{:?}", delta * TwoFloat::from(-1) == TwoFloat::from(0));
     assert!((sum.in_unit_f64(TimeUnit::Minute) + 35.0).abs() < EPSILON);
     assert_eq!(format!("{}", sum), "-35 min 0 s"); // Note the automatic unit selection
 }
@@ -642,7 +630,7 @@ fn time_unit() {
 fn deser_test() {
     use self::serde_derive::Deserialize;
     #[derive(Deserialize)]
-    struct D {
-        pub d: Duration,
+    struct _D {
+        pub _d: Duration,
     }
 }

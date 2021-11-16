@@ -1,8 +1,8 @@
 [package]
 name = "hifitime"
-version = "2.2.3"
+version = "2.3.0"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
-description = "Precise date and time handling in Rust built on top of std::f64 with leap second support"
+description = "Precise date and time handling in Rust built on top of TwoFloat with leap second support"
 homepage = "https://github.com/ChristopherRabotin/hifitime"
 documentation = "https://docs.rs/hifitime/"
 repository = "https://github.com/ChristopherRabotin/hifitime"
@@ -15,9 +15,9 @@ license = "Apache-2.0"
 rand = "0.8"
 rand_distr = "0.4"
 regex = "1.3"
-fraction = "0.8"
 serde = "1.0"
 serde_derive = "1.0"
+twofloat = "0.4.1"
 
 [dev-dependencies]
 serde_derive = "1.0"
