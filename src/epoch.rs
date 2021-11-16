@@ -6,7 +6,8 @@ use self::regex::Regex;
 use self::serde::{de, Deserialize, Deserializer};
 use crate::duration::{Duration, TimeUnit};
 use crate::{
-    Errors, TimeSystem, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET, MJD_OFFSET, SECONDS_PER_DAY,
+    Errors, TimeSystem, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
+    SECONDS_PER_DAY,
 };
 use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
@@ -665,6 +666,17 @@ impl Epoch {
         let inner = self.inner_g_rad();
         let tdb_delta = 0.001_658 * inner.sin();
         self.as_jde_tt_days() + tdb_delta / SECONDS_PER_DAY
+    }
+
+    /// Returns the number of days since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
+    pub fn as_tdb_days_since_j2000(self) -> f64 {
+        let jde_tdb_days = self.as_jde_tdb_days();
+        jde_tdb_days - MJD_OFFSET - J2000_OFFSET
+    }
+
+    /// Returns the number of centuries since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
+    pub fn as_tdb_centuries_since_j2000(self) -> f64 {
+        self.as_tdb_days_since_j2000() / DAYS_PER_CENTURY
     }
 
     /// Converts an ISO8601 Datetime representation without timezone offset to an Epoch.
