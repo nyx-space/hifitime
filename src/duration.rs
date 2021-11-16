@@ -188,7 +188,7 @@ impl fmt::Display for Duration {
         let neg_one = TwoFloat::from(-1);
 
         if days.abs() > nil {
-            fmt::Display::fmt(&days, f)?;
+            fmt::Display::fmt(&(days.hi() + days.lo()), f)?;
             write!(f, " days ")?;
             print_all = true;
         }
@@ -534,6 +534,29 @@ fn time_unit() {
     let sub: Duration = seven_hours - six_minutes - five_seconds;
     assert!((sub.in_seconds() - 24835.0).abs() < EPSILON);
 
+    // Test fractional
+    let quarter_hour = 0.25 * TimeUnit::Hour;
+    let third_hour = (1.0 / 3.0) * TimeUnit::Hour;
+    let sum: Duration = quarter_hour + third_hour;
+    assert!((sum.in_unit_f64(TimeUnit::Minute) - 35.0).abs() < EPSILON);
+    println!(
+        "Duration: {}\nFloating: {}",
+        sum.in_unit_f64(TimeUnit::Minute),
+        (1.0 / 4.0 + 1.0 / 3.0) * 60.0
+    );
+
+    let quarter_hour = -0.25 * TimeUnit::Hour;
+    let third_hour: Duration = -1 * TimeUnit::Hour / 3;
+    let sum: Duration = quarter_hour + third_hour;
+    let delta = sum.in_unit(TimeUnit::Millisecond).floor()
+        - sum.in_unit(TimeUnit::Second).floor() * TwoFloat::from(1000.0);
+    println!("{:?}", delta * TwoFloat::from(-1) == TwoFloat::from(0));
+    assert!((sum.in_unit_f64(TimeUnit::Minute) + 35.0).abs() < EPSILON);
+}
+
+#[ignore]
+#[test]
+fn duration_print() {
     // Check printing adds precision
     assert_eq!(
         format!("{}", TimeUnit::Day * 10.0 + TimeUnit::Hour * 5),
@@ -608,7 +631,6 @@ fn time_unit() {
     let quarter_hour = 0.25 * TimeUnit::Hour;
     let third_hour = (1.0 / 3.0) * TimeUnit::Hour;
     let sum: Duration = quarter_hour + third_hour;
-    assert!((sum.in_unit_f64(TimeUnit::Minute) - 35.0).abs() < EPSILON);
     println!(
         "Duration: {}\nFloating: {}",
         sum.in_unit_f64(TimeUnit::Minute),
@@ -622,7 +644,6 @@ fn time_unit() {
     let delta = sum.in_unit(TimeUnit::Millisecond).floor()
         - sum.in_unit(TimeUnit::Second).floor() * TwoFloat::from(1000.0);
     println!("{:?}", delta * TwoFloat::from(-1) == TwoFloat::from(0));
-    assert!((sum.in_unit_f64(TimeUnit::Minute) + 35.0).abs() < EPSILON);
     assert_eq!(format!("{}", sum), "-35 min 0 s"); // Note the automatic unit selection
 }
 
