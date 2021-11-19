@@ -68,9 +68,9 @@
 //!
 //! let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
 //! assert_eq!(dt, Epoch::from_str("2017-01-14T00:31:55 UTC").unwrap());
-//! // And you can print it too, although by default it will print in TAI
+//! // And you can print it too, although by default it will print in UTC
 //! assert_eq!(dt.as_gregorian_utc_str(), "2017-01-14T00:31:55 UTC".to_string());
-//! assert_eq!(format!("{}", dt), "2017-01-14T00:32:32 TAI".to_string());
+//! assert_eq!(format!("{}", dt), "2017-01-14T00:31:55 UTC".to_string());
 //! ```
 //!
 //! #### Time differences, time unit, and duration handling
