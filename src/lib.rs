@@ -180,12 +180,13 @@ pub mod prelude {
 }
 
 use std::convert;
+use std::error::Error;
 use std::fmt;
 use std::num::ParseIntError;
 use std::str::FromStr;
 
 /// Errors handles all oddities which may occur in this library.
-#[derive(Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Errors {
     /// Carry is returned when a provided function does not support time carry. For example,
     /// if a call to `Datetime::new` receives 60 seconds and there are only 59 seconds in the provided
@@ -210,6 +211,8 @@ impl convert::From<ParseIntError> for Errors {
         Errors::ParseError(format!("std::num::ParseIntError encountered: {}", error))
     }
 }
+
+impl Error for Errors {}
 
 /// Enum of the different time systems available
 #[derive(Debug, PartialEq)]
