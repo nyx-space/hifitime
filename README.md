@@ -5,7 +5,7 @@ The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matt
 day-to-day use of this library.
 
 
-[![Build Status](https://travis-ci.org/ChristopherRabotin/hifitime.svg?branch=master)](https://travis-ci.org/ChristopherRabotin/hifitime)
+[![Build Status](https://app.travis-ci.com/nyx-space/hifitime.svg?branch=master)](https://app.travis-ci.com/nyx-space/hifitime)
 [![hifitime on crates.io][cratesio-image]][cratesio]
 [![hifitime on docs.rs][docsrs-image]][docsrs]
 
