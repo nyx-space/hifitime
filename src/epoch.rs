@@ -1001,9 +1001,9 @@ impl<'de> Deserialize<'de> for Epoch {
 }
 
 impl fmt::Display for Epoch {
-    /// The default format of an epoch is in TAI
+    /// The default format of an epoch is in UTC
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.as_gregorian_tai_str())
+        write!(f, "{}", self.as_gregorian_utc_str())
     }
 }
 
