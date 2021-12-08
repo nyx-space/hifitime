@@ -686,7 +686,6 @@ fn time_unit() {
     assert!((sum.in_unit_f64(TimeUnit::Minute) + 35.0).abs() < EPSILON);
 }
 
-// #[ignore]
 #[test]
 fn duration_print() {
     // Check printing adds precision
