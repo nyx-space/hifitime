@@ -189,27 +189,81 @@ impl TryFrom<(f64, f64)> for Duration {
 impl fmt::Display for Duration {
     // Prints this duration with automatic selection of the highest and sub-second unit
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // We should print all of the fields
-        let days = self.in_unit(TimeUnit::Day).round();
-        let hours = (self.in_unit(TimeUnit::Hour).hi() - days.hi() * TwoFloat::from(24.0)).round();
-        let minutes = (self.in_unit(TimeUnit::Minute).hi()
-            - self.in_unit(TimeUnit::Hour).hi() * TwoFloat::from(60.0))
-        .round();
-        let seconds = (self.in_unit(TimeUnit::Second).hi()
-            - self.in_unit(TimeUnit::Minute).hi().round() * TwoFloat::from(60.0))
-        .round();
-        let milli = self.in_unit(TimeUnit::Millisecond).hi().round()
-            - self.in_unit(TimeUnit::Second).hi().round() * TwoFloat::from(1e3);
-        let nano = self.in_unit(TimeUnit::Nanosecond).hi()
-            - self.in_unit(TimeUnit::Millisecond).hi().round() * TwoFloat::from(1e6);
+        let eps = 1e-1;
+        let is_neg = self.0.is_sign_negative();
+
+        let days_tf = self.in_unit(TimeUnit::Day);
+        let days = (days_tf.hi() + days_tf.lo()).floor();
+        let hours_tf = self.in_unit(TimeUnit::Hour) - days * TwoFloat::from(24.0);
+        let mut hours = hours_tf.hi() + hours_tf.lo();
+        if hours.abs() < eps {
+            hours = 0.0
+        } else if is_neg {
+            hours = hours.ceil()
+        } else {
+            hours = hours.floor()
+        };
+
+        let minutes_tf = self.in_unit(TimeUnit::Minute)
+            - hours * TwoFloat::from(60.0)
+            - days * TwoFloat::from(24.0 * 60.0);
+        let mut minutes = minutes_tf.hi() + minutes_tf.lo();
+        if minutes.abs() < eps {
+            minutes = 0.0
+        } else if is_neg {
+            minutes = minutes.ceil()
+        } else {
+            minutes = minutes.floor()
+        };
+
+        let seconds_tf = self.in_unit(TimeUnit::Second)
+            - minutes * TwoFloat::from(60.0)
+            - hours * TwoFloat::from(3600.0)
+            - days * TwoFloat::from(24.0 * 3600.0);
+        let mut seconds = (seconds_tf.hi() + seconds_tf.lo()).floor();
+        if seconds.abs() < eps {
+            seconds = 0.0
+        } else if is_neg {
+            seconds = seconds.ceil()
+        } else {
+            seconds = seconds.floor()
+        };
+
+        let milli_tf = self.in_unit(TimeUnit::Millisecond)
+            - seconds * TwoFloat::from(1e3)
+            - minutes * TwoFloat::from(60.0 * 1e3)
+            - hours * TwoFloat::from(3600.0 * 1e3)
+            - days * TwoFloat::from(24.0 * 3600.0 * 1e3);
+        let mut milli = milli_tf.hi() + milli_tf.lo();
+        if milli.abs() < eps {
+            milli = 0.0
+        } else if is_neg {
+            milli = milli.ceil()
+        } else {
+            milli = milli.floor()
+        };
+
+        let nano_tf = self.in_unit(TimeUnit::Nanosecond)
+            - milli * TwoFloat::from(1e6)
+            - seconds * TwoFloat::from(1e9)
+            - minutes * TwoFloat::from(60.0 * 1e9)
+            - hours * TwoFloat::from(3600.0 * 1e9)
+            - days * TwoFloat::from(24.0 * 3600.0 * 1e9);
+        let mut nano = nano_tf.hi() + nano_tf.lo();
+
+        if nano.abs() < eps || nano < 0.0 {
+            nano = 0.0
+        } else {
+            nano = format!("{:.3}", nano).parse().unwrap();
+        }
 
         let mut print_all = false;
         let nil = TwoFloat::from(0);
-        let is_neg = self.0.is_sign_negative();
+
         let neg_one = TwoFloat::from(-1);
 
         if days.abs() > nil {
-            fmt::Display::fmt(&(days.hi() + days.lo()), f)?;
+            fmt::Display::fmt(&days, f)?;
             write!(f, " days ")?;
             print_all = true;
         }
@@ -217,19 +271,19 @@ impl fmt::Display for Duration {
             if is_neg && print_all {
                 // We have already printed the negative sign
                 // So let's oppose this number
-                fmt::Display::fmt(&((hours.hi() + hours.lo()) * neg_one), f)?;
+                fmt::Display::fmt(&(hours * neg_one), f)?;
             } else {
-                fmt::Display::fmt(&(hours.hi() + hours.lo()), f)?;
+                fmt::Display::fmt(&hours, f)?;
             }
             write!(f, " h ")?;
             print_all = true;
         }
         if minutes.abs() > nil || print_all {
             if is_neg && print_all {
-                let neg_minutes = (minutes.hi() + minutes.lo()) * neg_one;
+                let neg_minutes = minutes * neg_one;
                 fmt::Display::fmt(&(neg_minutes.hi() + neg_minutes.lo()), f)?;
             } else {
-                fmt::Display::fmt(&(minutes.hi() + minutes.lo()), f)?;
+                fmt::Display::fmt(&minutes, f)?;
             }
             write!(f, " min ")?;
             print_all = true;
@@ -237,19 +291,19 @@ impl fmt::Display for Duration {
         // If the milliseconds and nanoseconds are nil, then we stop at the second level
         if milli.abs() == nil && nano.abs() == nil {
             if is_neg && print_all {
-                let neg_seconds = (seconds.hi() + seconds.lo()) * neg_one;
+                let neg_seconds = seconds * neg_one;
                 fmt::Display::fmt(&(neg_seconds.hi() + neg_seconds.lo()), f)?;
             } else {
-                fmt::Display::fmt(&(seconds.hi() + seconds.lo()), f)?;
+                fmt::Display::fmt(&seconds, f)?;
             }
             write!(f, " s")
         } else {
             if seconds.abs() > nil || print_all {
                 if is_neg && print_all {
-                    let neg_seconds = (seconds.hi() + seconds.lo()) * neg_one;
+                    let neg_seconds = seconds * neg_one;
                     fmt::Display::fmt(&(neg_seconds.hi() + neg_seconds.lo()), f)?;
                 } else {
-                    fmt::Display::fmt(&(seconds.hi() + seconds.lo()), f)?;
+                    fmt::Display::fmt(&seconds, f)?;
                 }
                 write!(f, " s ")?;
                 print_all = true;
@@ -257,27 +311,27 @@ impl fmt::Display for Duration {
             if nano == nil || (is_neg && nano * neg_one <= nil) {
                 // Only stop at the millisecond level
                 if is_neg && print_all {
-                    let neg_milli = (milli.hi() + milli.lo()) * neg_one;
+                    let neg_milli = milli * neg_one;
                     fmt::Display::fmt(&(neg_milli.hi() + neg_milli.lo()), f)?;
                 } else {
-                    fmt::Display::fmt(&(milli.hi() + milli.lo()), f)?;
+                    fmt::Display::fmt(&milli, f)?;
                 }
                 write!(f, " ms")
             } else {
                 if milli.abs() > nil || print_all {
                     if is_neg && print_all {
-                        let neg_milli = (milli.hi() + milli.lo()) * neg_one;
+                        let neg_milli = milli * neg_one;
                         fmt::Display::fmt(&(neg_milli.hi() + neg_milli.lo()), f)?;
                     } else {
-                        fmt::Display::fmt(&(milli.hi() + milli.lo()), f)?;
+                        fmt::Display::fmt(&milli, f)?;
                     }
                     write!(f, " ms ")?;
                 }
                 if is_neg && print_all {
-                    let neg_nano = (nano.hi() + nano.lo()) * neg_one;
+                    let neg_nano = nano * neg_one;
                     fmt::Display::fmt(&(neg_nano.hi() + neg_nano.lo()), f)?;
                 } else {
-                    fmt::Display::fmt(&(nano.hi() + nano.lo()), f)?;
+                    fmt::Display::fmt(&nano, f)?;
                 }
                 write!(f, " ns")
             }
