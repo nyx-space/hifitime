@@ -257,39 +257,18 @@ impl fmt::Display for Duration {
             - minutes * TwoFloat::from(60.0 * 1e6)
             - hours * TwoFloat::from(3600.0 * 1e6)
             - days * TwoFloat::from(24.0 * 3600.0 * 1e6);
-        let mut micro = micro_tf.hi() + micro_tf.lo();
-        dbg!(micro);
-        // if micro.abs() < eps {
-        //     micro = 0.0
-        // } else if is_neg {
-        //     micro = micro.ceil()
-        // } else {
-        //     micro = micro.floor()
-        // };
-        // dbg!(micro);
+        let micro = micro_tf.hi() + micro_tf.lo();
 
-        let nano_tf = self.in_unit(TimeUnit::Nanosecond)
-            - micro * TwoFloat::from(1e3)
-            - milli * TwoFloat::from(1e6)
-            - seconds * TwoFloat::from(1e9)
-            - minutes * TwoFloat::from(60.0 * 1e9)
-            - hours * TwoFloat::from(3600.0 * 1e9)
-            - days * TwoFloat::from(24.0 * 3600.0 * 1e9);
-            dbg!(nano_tf);
-        // let mut nano = nano_tf.hi() + nano_tf.lo();
-        let mut nano = 1e3*micro;
+        let mut nano = 1e3 * micro;
 
         if nano.abs() < eps || (nano < 0.0 && !is_neg) {
             nano = 0.0
         } else {
             nano = format!("{:.3}", nano).parse().unwrap();
         }
-        dbg!(nano, micro);
-        // nano += micro * 1e3;
-        // dbg!(nano);
 
         let mut print_all = false;
-        let nil = TwoFloat::from(0);
+        let nil = TwoFloat::try_from((std::f64::EPSILON, 0.0)).unwrap();
 
         let neg_one = TwoFloat::from(-1);
 
@@ -320,7 +299,7 @@ impl fmt::Display for Duration {
             print_all = true;
         }
         // If the milliseconds and nanoseconds are nil, then we stop at the second level
-        if milli.abs() == nil && nano.abs() == nil {
+        if milli.abs() < nil && nano.abs() < nil {
             if is_neg && print_all {
                 let neg_seconds = seconds * neg_one;
                 fmt::Display::fmt(&(neg_seconds.hi() + neg_seconds.lo()), f)?;
@@ -339,7 +318,7 @@ impl fmt::Display for Duration {
                 write!(f, " s ")?;
                 print_all = true;
             }
-            if nano == nil || (is_neg && nano * neg_one <= nil) {
+            if nano.abs() < nil || (is_neg && nano * neg_one <= nil) {
                 // Only stop at the millisecond level
                 if is_neg && print_all {
                     let neg_milli = milli * neg_one;
