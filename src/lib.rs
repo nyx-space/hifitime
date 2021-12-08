@@ -195,6 +195,8 @@ pub enum Errors {
     /// ParseError is returned when a provided string could not be parsed and converted to the desired
     /// struct (e.g. Datetime).
     ParseError(String),
+    /// Raised when trying to initialize an Epoch or Duration from its hi and lo values, but these overlap
+    ConversionOverlapError(f64, f64),
 }
 
 impl fmt::Display for Errors {
@@ -202,6 +204,9 @@ impl fmt::Display for Errors {
         match *self {
             Errors::Carry => write!(f, "a carry error (e.g. 61 seconds)"),
             Errors::ParseError(ref msg) => write!(f, "ParseError: {}", msg),
+            Errors::ConversionOverlapError(hi, lo) => {
+                write!(f, "hi and lo values overlap: {}, {}", hi, lo)
+            }
         }
     }
 }
