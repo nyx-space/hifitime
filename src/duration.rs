@@ -193,7 +193,14 @@ impl fmt::Display for Duration {
         let is_neg = self.0.is_sign_negative();
 
         let days_tf = self.in_unit(TimeUnit::Day);
-        let days = (days_tf.hi() + days_tf.lo()).floor();
+        let mut days = days_tf.hi() + days_tf.lo();
+        if days.abs() < eps {
+            days = 0.0
+        } else if is_neg {
+            days = days.ceil()
+        } else {
+            days = days.floor()
+        };
         let hours_tf = self.in_unit(TimeUnit::Hour) - days * TwoFloat::from(24.0);
         let mut hours = hours_tf.hi() + hours_tf.lo();
         if hours.abs() < eps {
@@ -220,7 +227,7 @@ impl fmt::Display for Duration {
             - minutes * TwoFloat::from(60.0)
             - hours * TwoFloat::from(3600.0)
             - days * TwoFloat::from(24.0 * 3600.0);
-        let mut seconds = (seconds_tf.hi() + seconds_tf.lo()).floor();
+        let mut seconds = seconds_tf.hi() + seconds_tf.lo();
         if seconds.abs() < eps {
             seconds = 0.0
         } else if is_neg {
@@ -243,19 +250,43 @@ impl fmt::Display for Duration {
             milli = milli.floor()
         };
 
+        // Compute the microseconds for precise nanosecond printing, but we don't actually print the microseconds
+        let micro_tf = self.in_unit(TimeUnit::Microsecond)
+            - milli * TwoFloat::from(1e3)
+            - seconds * TwoFloat::from(1e6)
+            - minutes * TwoFloat::from(60.0 * 1e6)
+            - hours * TwoFloat::from(3600.0 * 1e6)
+            - days * TwoFloat::from(24.0 * 3600.0 * 1e6);
+        let mut micro = micro_tf.hi() + micro_tf.lo();
+        dbg!(micro);
+        // if micro.abs() < eps {
+        //     micro = 0.0
+        // } else if is_neg {
+        //     micro = micro.ceil()
+        // } else {
+        //     micro = micro.floor()
+        // };
+        // dbg!(micro);
+
         let nano_tf = self.in_unit(TimeUnit::Nanosecond)
+            - micro * TwoFloat::from(1e3)
             - milli * TwoFloat::from(1e6)
             - seconds * TwoFloat::from(1e9)
             - minutes * TwoFloat::from(60.0 * 1e9)
             - hours * TwoFloat::from(3600.0 * 1e9)
             - days * TwoFloat::from(24.0 * 3600.0 * 1e9);
-        let mut nano = nano_tf.hi() + nano_tf.lo();
+            dbg!(nano_tf);
+        // let mut nano = nano_tf.hi() + nano_tf.lo();
+        let mut nano = 1e3*micro;
 
-        if nano.abs() < eps || nano < 0.0 {
+        if nano.abs() < eps || (nano < 0.0 && !is_neg) {
             nano = 0.0
         } else {
             nano = format!("{:.3}", nano).parse().unwrap();
         }
+        dbg!(nano, micro);
+        // nano += micro * 1e3;
+        // dbg!(nano);
 
         let mut print_all = false;
         let nil = TwoFloat::from(0);
@@ -744,9 +775,19 @@ fn duration_print() {
 
     // Check that we support nanoseconds pas GPS time
     let now = TimeUnit::Nanosecond * 1286495254000000123_u128;
-    dbg!(now);
     assert_eq!(
         format!("{}", now),
+        "14889 days 23 h 47 min 34 s 0 ms 203.125 ns"
+    );
+
+    let arbitrary = 14889.days()
+        + 23.hours()
+        + 47.minutes()
+        + 34.seconds()
+        + 0.milliseconds()
+        + 123.nanoseconds();
+    assert_eq!(
+        format!("{}", arbitrary),
         "14889 days 23 h 47 min 34 s 0 ms 123 ns"
     );
 
