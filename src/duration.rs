@@ -1,12 +1,11 @@
 extern crate regex;
 extern crate serde;
 extern crate serde_derive;
-extern crate twofloat;
+extern crate divrem;
 
-// use self::qd::Quad;
 use self::regex::Regex;
 use self::serde::{de, Deserialize, Deserializer};
-use self::twofloat::TwoFloat;
+use self::divrem::{DivEuclid, DivRemEuclid};
 use crate::{Errors, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 use std::cmp::Ordering;
 use std::convert::TryFrom;
@@ -26,9 +25,13 @@ const NS_PER_DAY_U: u64 = 1e9 as u64 * SECONDS_PER_DAY_U;
 const NS_PER_CENTURY_U: u64 = DAYS_PER_CENTURY_U * NS_PER_DAY_U;
 const ONE: u64 = 1_u64;
 
-/// Defines generally usable durations for high precision math with Epoch (all data is stored in seconds)
+/// Defines generally usable durations for high precision math with Epoch
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
-pub struct Duration(TwoFloat);
+pub struct Duration {
+    ns : u64, // 1 century is about 3.1e18 ns, and max value of u64 is about 1e19.26
+    centuries : i64 // +- 9.22e18 centuries is the possible range for a Duration
+                    // Reducing the range could be a good tradeoff for a lowerm memory footprint
+}
 
 impl<'de> Deserialize<'de> for Duration {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -152,27 +155,24 @@ impl Duration {
     /// Returns this duration in f64 in the provided unit.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     pub fn in_unit_f64(&self, unit: TimeUnit) -> f64 {
-        f64::from(self.in_unit(unit))
+        self.in_unit(unit)
     }
 
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     pub fn in_seconds(&self) -> f64 {
-        f64::from(self.0)
+        (self.ns as f64 / 1e9) + (self.centuries * DAYS_PER_CENTURY_U as i64 * SECONDS_PER_DAY_U as i64) as f64
     }
 
     /// Returns the value of this duration in the requested unit.
-    pub fn in_unit(&self, unit: TimeUnit) -> TwoFloat {
-        self.0 * unit.from_seconds()
+    pub fn in_unit(&self, unit: TimeUnit) -> f64 {
+        self.in_seconds() * unit.from_seconds()
     }
 
     /// Returns the absolute value of this duration
+    #[must_use]
     pub fn abs(&self) -> Self {
-        if self.0 < TwoFloat::from(0) {
-            Self { 0: -self.0 }
-        } else {
-            *self
-        }
+        if self.centuries < 0 { -*self } else { *self }
     }
 
     /// Builds a new duration from the hi and lo two-float values
@@ -358,7 +358,7 @@ impl fmt::Display for Duration {
 impl fmt::LowerExp for Duration {
     // Prints the duration with appropriate units
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let seconds_f64 = f64::from(self.0);
+        let seconds_f64 = self.in_seconds();
         let seconds_f64_abs = seconds_f64.abs();
         if seconds_f64_abs < 1e-5 {
             fmt::Display::fmt(&(seconds_f64 * 1e9), f)?;
@@ -386,7 +386,23 @@ impl Add for Duration {
     type Output = Duration;
 
     fn add(self, rhs: Self) -> Duration {
-        Self { 0: self.0 + rhs.0 }
+
+        // Usage of u128 is to avoid possibility of overflow and type-system carry from u64
+        // may switch approach when carrying_add is stabilized
+        let mut total_ns: u128 = self.ns as u128 + rhs.ns as u128;
+        let mut century_carry = 0;
+        if total_ns > NS_PER_CENTURY_U as u128 {
+            century_carry = total_ns / NS_PER_CENTURY_U as u128;
+            total_ns %=  NS_PER_CENTURY_U as u128;
+            // total_ns is now guaranteed to be less than u64_max
+        }
+        
+        let total_centuries = 
+            self.centuries
+                .saturating_add(rhs.centuries)
+                .saturating_add(century_carry as i64); 
+                
+        Self { ns : total_ns as u64, centuries : total_centuries }
     }
 }
 
@@ -400,7 +416,16 @@ impl Sub for Duration {
     type Output = Duration;
 
     fn sub(self, rhs: Self) -> Duration {
-        Self { 0: self.0 - rhs.0 }
+        let mut total_ns: i128 = self.ns as i128 - rhs.ns as i128;
+        let mut century_borrow = 0;
+        if total_ns < 0 {
+            century_borrow = (-total_ns / NS_PER_CENTURY_U as i128)+1;
+            total_ns += century_borrow * NS_PER_CENTURY_U as i128;
+        }
+
+
+        let total_centuries = self.centuries.saturating_sub(rhs.centuries).saturating_sub(century_borrow as i64); 
+        Self { ns : total_ns as u64, centuries : total_centuries }
     }
 }
 
@@ -469,7 +494,7 @@ impl Neg for Duration {
     type Output = Duration;
 
     fn neg(self) -> Self::Output {
-        Self { 0: -self.0 }
+        Self { ns: NS_PER_CENTURY_U - self.ns, centuries : -self.centuries-1 }
     }
 }
 
@@ -598,26 +623,26 @@ impl Sub for TimeUnit {
 }
 
 impl TimeUnit {
-    pub fn in_seconds(self) -> TwoFloat {
+    pub fn in_seconds(self) -> f64 {
         match self {
-            TimeUnit::Century => TwoFloat::from(DAYS_PER_CENTURY_U * SECONDS_PER_DAY_U),
-            TimeUnit::Day => TwoFloat::from(SECONDS_PER_DAY_U),
-            TimeUnit::Hour => TwoFloat::from(SECONDS_PER_HOUR_U),
-            TimeUnit::Minute => TwoFloat::from(SECONDS_PER_MINUTE_U),
-            TimeUnit::Second => TwoFloat::from(ONE),
-            TimeUnit::Millisecond => TwoFloat::from(1e-3),
-            TimeUnit::Microsecond => TwoFloat::from(1e-6),
-            TimeUnit::Nanosecond => TwoFloat::from(1e-9),
+            TimeUnit::Century => DAYS_PER_CENTURY_U as f64 * SECONDS_PER_DAY_U as f64,
+            TimeUnit::Day => SECONDS_PER_DAY_U as f64,
+            TimeUnit::Hour => SECONDS_PER_HOUR_U as f64,
+            TimeUnit::Minute => SECONDS_PER_MINUTE_U as f64,
+            TimeUnit::Second => ONE as f64,
+            TimeUnit::Millisecond => 1e-3,
+            TimeUnit::Microsecond => 1e-6,
+            TimeUnit::Nanosecond => 1e-9,
         }
     }
 
     pub fn in_seconds_f64(self) -> f64 {
-        f64::from(self.in_seconds())
+        self.in_seconds()
     }
 
     #[allow(clippy::wrong_self_convention)]
-    pub fn from_seconds(self) -> TwoFloat {
-        TwoFloat::from(1) / self.in_seconds()
+    pub fn from_seconds(self) -> f64 {
+        1.0 / self.in_seconds()
     }
 }
 
