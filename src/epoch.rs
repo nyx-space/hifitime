@@ -9,6 +9,7 @@ use crate::{
     Errors, TimeSystem, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
     SECONDS_PER_DAY,
 };
+use std::convert::TryFrom;
 use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::str::FromStr;
@@ -1367,6 +1368,10 @@ fn gpst() {
 #[test]
 fn spice_et_tdb() {
     use crate::J2000_NAIF;
+    let round_prec = |val : f64, prec : i32| -> f64  {
+        let power = (10.0 as f64).powi(prec);
+        ((val * power).round()) / power
+    };
     /*
     >>> sp.str2et("2012-02-07 11:22:33 UTC")
     381885819.18493587
@@ -1433,7 +1438,7 @@ fn spice_et_tdb() {
 
     let sp_ex = Epoch::from_et_seconds(381_885_753.003_859_5);
     assert!(dbg!(2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < 4.7e-10);
-    assert!((2455964.9739931 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
+    assert!((2455964.9739931 - dbg!(round_prec(sp_ex.as_jde_et_days(), 7))).abs() < std::f64::EPSILON);
 
     let sp_ex = Epoch::from_et_seconds(0.0);
     assert!(sp_ex.as_et_seconds() < std::f64::EPSILON);
