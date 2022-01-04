@@ -8,7 +8,6 @@ use self::serde::{de, Deserialize, Deserializer};
 use self::divrem::{DivEuclid, DivRemEuclid};
 use crate::{Errors, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 use std::cmp::Ordering;
-use std::convert::TryFrom;
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 use std::str::FromStr;
@@ -175,183 +174,91 @@ impl Duration {
         if self.centuries < 0 { -*self } else { *self }
     }
 
-    /// Builds a new duration from the hi and lo two-float values
-    pub fn try_from_hi_lo(hi: f64, lo: f64) -> Result<Self, Errors> {
-        match TwoFloat::try_from((hi, lo)) {
-            Ok(t) => Ok(Self(t)),
-            Err(_) => Err(Errors::ConversionOverlapError(hi, lo)),
+
+    pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64, u64, u64) {
+
+        let total_ns : i128 = self.centuries as i128 * NS_PER_CENTURY_U as i128 + self.ns as i128;
+
+        let sign = total_ns.signum() as i8;
+        let mut ns_left = total_ns.abs() as u64;
+
+
+        let centuries = ns_left / NS_PER_CENTURY_U;
+
+
+        let years = ns_left / (1e9 as u64 * SECONDS_PER_DAY_U as u64 * 365);
+        ns_left %= 1e9 as u64 * SECONDS_PER_DAY_U as u64 * 365;
+
+
+        let days = ns_left / (1e9 as u64 * SECONDS_PER_DAY_U as u64);
+        ns_left %= 1e9 as u64 * SECONDS_PER_DAY_U as u64;
+
+        let hours = ns_left / (1e9 as u64 * SECONDS_PER_HOUR_U as u64);
+        ns_left %= 1e9 as u64 * SECONDS_PER_HOUR_U as u64;
+
+        let minutes = ns_left / (1e9 as u64 * SECONDS_PER_MINUTE_U as u64);
+        ns_left %= 1e9 as u64 * SECONDS_PER_MINUTE_U as u64;
+
+        let seconds = ns_left / (1e9 as u64);
+        ns_left %= 1e9 as u64;
+
+        let ms = ns_left / (1e6 as u64);
+        ns_left %= 1e6 as u64;
+
+        let us = ns_left / (1e3 as u64);
+        ns_left %= 1e3 as u64;
+
+        let ns = dbg!(ns_left);
+
+        (sign, centuries, years, days, hours, minutes, seconds, ms, us, ns)
         }
-    }
-}
-
-impl TryFrom<(f64, f64)> for Duration {
-    type Error = Errors;
-
-    fn try_from(value: (f64, f64)) -> Result<Self, Self::Error> {
-        Self::try_from_hi_lo(value.0, value.1)
-    }
-}
+            }
 
 impl fmt::Display for Duration {
     // Prints this duration with automatic selection of the highest and sub-second unit
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let eps = 1e-1;
-        let is_neg = self.0.is_sign_negative();
 
-        let days_tf = self.in_unit(TimeUnit::Day);
-        let mut days = days_tf.hi() + days_tf.lo();
-        if days.abs() < eps {
-            days = 0.0
-        } else if is_neg {
-            days = days.ceil()
-        } else {
-            days = days.floor()
-        };
-        let hours_tf = self.in_unit(TimeUnit::Hour) - days * TwoFloat::from(24.0);
-        let mut hours = hours_tf.hi() + hours_tf.lo();
-        if hours.abs() < eps {
-            hours = 0.0
-        } else if is_neg {
-            hours = hours.ceil()
-        } else {
-            hours = hours.floor()
-        };
+        let (sign, centuries, years, days, hours, minutes, seconds, milli, us, nano) = self.decompose();
+        
+        let values = [centuries, years, days, hours, minutes, seconds, milli, us, nano];
+        let names = ["centuries", "years", "days", "h", "min", "s", "ms", "us", "ns"];
+        
+        let print_all = false;
 
-        let minutes_tf = self.in_unit(TimeUnit::Minute)
-            - hours * TwoFloat::from(60.0)
-            - days * TwoFloat::from(24.0 * 60.0);
-        let mut minutes = minutes_tf.hi() + minutes_tf.lo();
-        if minutes.abs() < eps {
-            minutes = 0.0
-        } else if is_neg {
-            minutes = minutes.ceil()
-        } else {
-            minutes = minutes.floor()
-        };
+        let mut interval_start = None;
+        let mut interval_end = None;
 
-        let seconds_tf = self.in_unit(TimeUnit::Second)
-            - minutes * TwoFloat::from(60.0)
-            - hours * TwoFloat::from(3600.0)
-            - days * TwoFloat::from(24.0 * 3600.0);
-        let mut seconds = seconds_tf.hi() + seconds_tf.lo();
-        if seconds.abs() < eps {
-            seconds = 0.0
-        } else if is_neg {
-            seconds = seconds.ceil()
-        } else {
-            seconds = seconds.floor()
-        };
-
-        let milli_tf = self.in_unit(TimeUnit::Millisecond)
-            - seconds * TwoFloat::from(1e3)
-            - minutes * TwoFloat::from(60.0 * 1e3)
-            - hours * TwoFloat::from(3600.0 * 1e3)
-            - days * TwoFloat::from(24.0 * 3600.0 * 1e3);
-        let mut milli = milli_tf.hi() + milli_tf.lo();
-        if milli.abs() < eps {
-            milli = 0.0
-        } else if is_neg {
-            milli = milli.ceil()
-        } else {
-            milli = milli.floor()
-        };
-
-        // Compute the microseconds for precise nanosecond printing, but we don't actually print the microseconds
-        let micro_tf = self.in_unit(TimeUnit::Microsecond)
-            - milli * TwoFloat::from(1e3)
-            - seconds * TwoFloat::from(1e6)
-            - minutes * TwoFloat::from(60.0 * 1e6)
-            - hours * TwoFloat::from(3600.0 * 1e6)
-            - days * TwoFloat::from(24.0 * 3600.0 * 1e6);
-        let micro = micro_tf.hi() + micro_tf.lo();
-
-        let mut nano = 1e3 * micro;
-
-        if nano.abs() < eps || (nano < 0.0 && !is_neg) {
-            nano = 0.0
-        } else {
-            nano = format!("{:.3}", nano).parse().unwrap();
-        }
-
-        let mut print_all = false;
-        let nil = TwoFloat::try_from((std::f64::EPSILON, 0.0)).unwrap();
-
-        let neg_one = TwoFloat::from(-1);
-
-        if days.abs() > nil {
-            fmt::Display::fmt(&days, f)?;
-            write!(f, " days ")?;
-            print_all = true;
-        }
-        if hours.abs() > nil || print_all {
-            if is_neg && print_all {
-                // We have already printed the negative sign
-                // So let's oppose this number
-                fmt::Display::fmt(&(hours * neg_one), f)?;
+        if print_all {
+            interval_start = Some(0);
+            interval_end = Some(values.len()-1);
             } else {
-                fmt::Display::fmt(&hours, f)?;
+            for index in 0..values.len() {
+                if interval_start.is_none() {
+                    if values[index] > 0 { 
+                        interval_start = Some(index);
+                        interval_end = Some(index);
             }
-            write!(f, " h ")?;
-            print_all = true;
-        }
-        if minutes.abs() > nil || print_all {
-            if is_neg && print_all {
-                let neg_minutes = minutes * neg_one;
-                fmt::Display::fmt(&(neg_minutes.hi() + neg_minutes.lo()), f)?;
-            } else {
-                fmt::Display::fmt(&minutes, f)?;
-            }
-            write!(f, " min ")?;
-            print_all = true;
-        }
-        // If the milliseconds and nanoseconds are nil, then we stop at the second level
-        if milli.abs() < nil && nano.abs() < nil {
-            if is_neg && print_all {
-                let neg_seconds = seconds * neg_one;
-                fmt::Display::fmt(&(neg_seconds.hi() + neg_seconds.lo()), f)?;
-            } else {
-                fmt::Display::fmt(&seconds, f)?;
-            }
-            write!(f, " s")
-        } else {
-            if seconds.abs() > nil || print_all {
-                if is_neg && print_all {
-                    let neg_seconds = seconds * neg_one;
-                    fmt::Display::fmt(&(neg_seconds.hi() + neg_seconds.lo()), f)?;
                 } else {
-                    fmt::Display::fmt(&seconds, f)?;
+                    if values[index] > 0 {
+                        interval_end = Some(index);
                 }
-                write!(f, " s ")?;
-                print_all = true;
-            }
-            if nano.abs() < nil || (is_neg && nano * neg_one <= nil) {
-                // Only stop at the millisecond level
-                if is_neg && print_all {
-                    let neg_milli = milli * neg_one;
-                    fmt::Display::fmt(&(neg_milli.hi() + neg_milli.lo()), f)?;
-                } else {
-                    fmt::Display::fmt(&milli, f)?;
-                }
-                write!(f, " ms")
-            } else {
-                if milli.abs() > nil || print_all {
-                    if is_neg && print_all {
-                        let neg_milli = milli * neg_one;
-                        fmt::Display::fmt(&(neg_milli.hi() + neg_milli.lo()), f)?;
-                    } else {
-                        fmt::Display::fmt(&milli, f)?;
                     }
-                    write!(f, " ms ")?;
                 }
-                if is_neg && print_all {
-                    let neg_nano = nano * neg_one;
-                    fmt::Display::fmt(&(neg_nano.hi() + neg_nano.lo()), f)?;
-                } else {
-                    fmt::Display::fmt(&nano, f)?;
                 }
-                write!(f, " ns")
+        assert!(interval_start.is_some());
+        assert!(interval_end.is_some());
+
+        if sign == -1 {
+            write!(f, "-")?;
             }
+        
+        for i in interval_start.unwrap()..=interval_end.unwrap() {
+            write!(f, "{} {} ", values[i], names[i])?;
         }
+
+
+        Ok(())
+
     }
 }
 

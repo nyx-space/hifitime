@@ -9,7 +9,6 @@ use crate::{
     Errors, TimeSystem, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
     SECONDS_PER_DAY,
 };
-use std::convert::TryFrom;
 use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::str::FromStr;
@@ -256,14 +255,6 @@ impl Epoch {
             "Attempted to initialize Epoch with non finite number"
         );
         Self::from_jde_tai(days) - TimeUnit::Second * ET_OFFSET_S
-    }
-
-    /// Builds a new Epoch from the hi and lo two-float values
-    pub fn try_from_hi_lo(hi: f64, lo: f64) -> Result<Self, Errors> {
-        match Duration::try_from((hi, lo)) {
-            Ok(t) => Ok(Self(t)),
-            Err(_) => Err(Errors::ConversionOverlapError(hi, lo)),
-        }
     }
 
     /// Attempts to build an Epoch from the provided Gregorian date and time in TAI.
@@ -931,13 +922,6 @@ impl Epoch {
     }
 }
 
-impl TryFrom<(f64, f64)> for Epoch {
-    type Error = Errors;
-
-    fn try_from(value: (f64, f64)) -> Result<Self, Self::Error> {
-        Self::try_from_hi_lo(value.0, value.1)
-    }
-}
 
 impl FromStr for Epoch {
     type Err = Errors;
