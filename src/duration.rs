@@ -14,11 +14,17 @@ use std::fmt;
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 use std::str::FromStr;
 
-const DAYS_PER_CENTURY_U: u128 = 36_525;
-const SECONDS_PER_MINUTE_U: u128 = 60;
-const SECONDS_PER_HOUR_U: u128 = 3_600;
-const SECONDS_PER_DAY_U: u128 = 86_400;
-const ONE: u128 = 1_u128;
+
+
+const SECONDS_PER_MINUTE_U: u64 = 60;
+const MINUTES_PER_HOUR_U: u64 = 60;
+const HOURS_PER_DAY_U: u64 = 24;
+const SECONDS_PER_HOUR_U: u64 = SECONDS_PER_MINUTE_U * MINUTES_PER_HOUR_U;
+const SECONDS_PER_DAY_U: u64 = SECONDS_PER_HOUR_U * HOURS_PER_DAY_U;
+const DAYS_PER_CENTURY_U: u64 = 36_525;
+const NS_PER_DAY_U: u64 = 1e9 as u64 * SECONDS_PER_DAY_U;
+const NS_PER_CENTURY_U: u64 = DAYS_PER_CENTURY_U * NS_PER_DAY_U;
+const ONE: u64 = 1_u64;
 
 /// Defines generally usable durations for high precision math with Epoch (all data is stored in seconds)
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
