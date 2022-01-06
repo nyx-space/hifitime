@@ -28,7 +28,7 @@ const ONE: u64 = 1_u64;
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
 pub struct Duration {
     ns : u64, // 1 century is about 3.1e18 ns, and max value of u64 is about 1e19.26
-    centuries : i64 // +- 9.22e18 centuries is the possible range for a Duration
+    centuries : i16 // +- 9.22e18 centuries is the possible range for a Duration
                     // Reducing the range could be a good tradeoff for a lowerm memory footprint
 }
 
@@ -242,7 +242,7 @@ macro_rules! impl_ops_i {
 }
 
 impl Duration {
-    pub fn new(ns : u64, centuries : i64) -> Self {
+    pub fn new(ns : u64, centuries : i16) -> Self {
         let mut out = Duration { ns, centuries };
         out.normalize();
         out
@@ -255,17 +255,17 @@ impl Duration {
     fn normalize(&mut self) {
         if self.ns > NS_PER_CENTURY_U as u64 {
             let carry = self.ns / NS_PER_CENTURY_U as u64;
-            self.centuries += carry as i64;
+            self.centuries = self.centuries.saturating_add(carry as i16);
             self.ns %= NS_PER_CENTURY_U as u64;
         }
     }
 
     pub fn from_value_f(mut value : f64, century_divider : u64, ns_multiplier : u64) -> Self {
-        let centuries = (value.div_euclid(century_divider as f64)) as i64;
+        let centuries = (value.div_euclid(century_divider as f64)) as i16;
         value = value.rem_euclid(century_divider as f64);
 
         // Risks : Overflow, loss of precision, unexpected roundings
-        let ns = dbg!(dbg!(dbg!(value) * ns_multiplier as f64).round() as u64); 
+        let ns = (value * ns_multiplier as f64).round() as u64; 
         Self {
             ns, centuries
         }
@@ -309,7 +309,7 @@ impl Duration {
 
 
     pub fn from_value_u(mut value : u128, century_divider : u64, ns_multiplier : u64) -> Self {
-        let centuries = (value.div_euclid(century_divider as u128)) as i64;
+        let centuries = (value.div_euclid(century_divider as u128)) as i16;
         value = value.rem_euclid(century_divider as u128);
 
         // Risks : Overflow, loss of precision, unexpected roundings
@@ -358,7 +358,7 @@ impl Duration {
 
     
     pub fn from_value_i(mut value : i128, century_divider : u64, ns_multiplier : u64) -> Self {
-        let centuries = (value.div_euclid(century_divider as i128)) as i64;
+        let centuries = (value.div_euclid(century_divider as i128)) as i16;
         value = value.rem_euclid(century_divider as i128);
 
         // Risks : Overflow, loss of precision, unexpected roundings
@@ -421,7 +421,7 @@ impl Duration {
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     pub fn in_seconds(&self) -> f64 {
-        (self.ns as f64 / 1e9) + (self.centuries * DAYS_PER_CENTURY_U as i64 * SECONDS_PER_DAY_U as i64) as f64
+        (self.ns as f64 / 1e9) + (self.centuries as i64 * DAYS_PER_CENTURY_U as i64 * SECONDS_PER_DAY_U as i64) as f64
     }
 
     /// Returns the value of this duration in the requested unit.
@@ -569,7 +569,7 @@ impl Add for Duration {
         let total_centuries = 
             self.centuries
                 .saturating_add(rhs.centuries)
-                .saturating_add(century_carry as i64); 
+                .saturating_add(century_carry as i16); 
                 
         Self { ns : total_ns as u64, centuries : total_centuries }
     }
@@ -593,7 +593,7 @@ impl Sub for Duration {
         }
 
 
-        let total_centuries = self.centuries.saturating_sub(rhs.centuries).saturating_sub(century_borrow as i64); 
+        let total_centuries = self.centuries.saturating_sub(rhs.centuries).saturating_sub(century_borrow as i16); 
         Self { ns : total_ns as u64, centuries : total_centuries }
     }
 }
