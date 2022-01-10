@@ -205,49 +205,49 @@ impl Duration {
         }
     }
 
-    pub fn from_value_f(mut value : f64, century_divider : u64, ns_multiplier : u64) -> Self {
-        let centuries = value.div_euclid(century_divider as f64) as i16;
-        value = value.rem_euclid(century_divider as f64);
+    pub fn from_value_f(mut value : f64, century_divider : f64, ns_multiplier : f64) -> Self {
+        let centuries = value.div_euclid(century_divider) as i16;
+        value = value.rem_euclid(century_divider);
 
         // Risks : Overflow, loss of precision, unexpected roundings
-        let ns = (value * ns_multiplier as f64).round() as u64; 
+        let ns = (value * ns_multiplier).round() as u64; 
         Self {
             ns, centuries
         }
     }
     pub fn from_days_f(days: f64) -> Self {
-        let century_divider = u64::from(DAYS_PER_CENTURY_U);
-        let ns_multiplier = u64::from(SECONDS_PER_DAY_U) * 10u64.pow(9);
+        let century_divider = DAYS_PER_CENTURY_F;
+        let ns_multiplier = SECONDS_PER_DAY_F * 1e9;
         Self::from_value_f(days, century_divider, ns_multiplier)
     }
     pub fn from_hours_f(hours: f64) -> Self {
-        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U);
-        let ns_multiplier = u64::from(SECONDS_PER_HOUR_U) * 10u64.pow(9);
+        let century_divider = DAYS_PER_CENTURY_F * HOURS_PER_DAY_F;
+        let ns_multiplier = SECONDS_PER_HOUR_F * 1e9;
         Self::from_value_f(hours, century_divider, ns_multiplier)
     }
     pub fn from_minutes_f(minutes: f64) -> Self {
-        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U);
-        let ns_multiplier = u64::from(SECONDS_PER_MINUTE_U) * 10u64.pow(9);
+        let century_divider = DAYS_PER_CENTURY_F * HOURS_PER_DAY_F * MINUTES_PER_HOUR_F;
+        let ns_multiplier = SECONDS_PER_MINUTE_F * 1e9;
         Self::from_value_f(minutes, century_divider, ns_multiplier)
     }
     pub fn from_seconds_f(seconds: f64) -> Self {
-        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U) * u64::from(SECONDS_PER_MINUTE_U);
-        let ns_multiplier = 10u64.pow(9);
+        let century_divider = DAYS_PER_CENTURY_F * HOURS_PER_DAY_F * MINUTES_PER_HOUR_F * SECONDS_PER_MINUTE_F;
+        let ns_multiplier = 1e9;
         Self::from_value_f(seconds, century_divider, ns_multiplier)
     }
     pub fn from_milliseconds_f(ms: f64) -> Self {
-        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U) * u64::from(SECONDS_PER_MINUTE_U) * 10u64.pow(3);
-        let ns_multiplier = 10u64.pow(6);
+        let century_divider = DAYS_PER_CENTURY_F * HOURS_PER_DAY_F * MINUTES_PER_HOUR_F * SECONDS_PER_MINUTE_F * 1e3;
+        let ns_multiplier = 1e6;
         Self::from_value_f(ms, century_divider, ns_multiplier)
     }
     pub fn from_microseconds_f(us: f64) -> Self {
-        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U) * u64::from(SECONDS_PER_MINUTE_U) * 10u64.pow(6);
-        let ns_multiplier = 10u64.pow(3);
+        let century_divider = DAYS_PER_CENTURY_F * HOURS_PER_DAY_F * MINUTES_PER_HOUR_F * SECONDS_PER_MINUTE_F * 1e6;
+        let ns_multiplier = 1e3;
         Self::from_value_f(us, century_divider, ns_multiplier)
     }
     pub fn from_nanoseconds_f(ns: f64) -> Self {
-        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U) * u64::from(SECONDS_PER_MINUTE_U) * 10u64.pow(9);
-        let ns_multiplier = 1;
+        let century_divider = DAYS_PER_CENTURY_F * HOURS_PER_DAY_F * MINUTES_PER_HOUR_F * SECONDS_PER_MINUTE_F * 1e9;
+        let ns_multiplier = 1.0;
         Self::from_value_f(ns, century_divider, ns_multiplier)
     }
 
