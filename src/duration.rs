@@ -14,15 +14,26 @@ use std::str::FromStr;
 
 
 
-const SECONDS_PER_MINUTE_U: u64 = 60;
-const MINUTES_PER_HOUR_U: u64 = 60;
-const HOURS_PER_DAY_U: u64 = 24;
-const SECONDS_PER_HOUR_U: u64 = SECONDS_PER_MINUTE_U * MINUTES_PER_HOUR_U;
-const SECONDS_PER_DAY_U: u64 = SECONDS_PER_HOUR_U * HOURS_PER_DAY_U;
-const DAYS_PER_CENTURY_U: u64 = 36_525;
-const NS_PER_DAY_U: u64 = 1e9 as u64 * SECONDS_PER_DAY_U;
-const NS_PER_CENTURY_U: u64 = DAYS_PER_CENTURY_U * NS_PER_DAY_U;
+const SECONDS_PER_MINUTE_U: u16 = 60;
+const MINUTES_PER_HOUR_U: u16 = 60;
+const HOURS_PER_DAY_U: u16 = 24;
+const SECONDS_PER_HOUR_U: u16 = SECONDS_PER_MINUTE_U * MINUTES_PER_HOUR_U;
+const SECONDS_PER_DAY_U: u32 = SECONDS_PER_HOUR_U as u32 * HOURS_PER_DAY_U as u32;
+const DAYS_PER_CENTURY_U: u16 = 36_525;
+const NS_PER_DAY_U: u64 = 10u64.pow(9) * SECONDS_PER_DAY_U as u64;
+const NS_PER_CENTURY_U: u64 = DAYS_PER_CENTURY_U as u64 * NS_PER_DAY_U as u64;
 const ONE: u64 = 1_u64;
+
+const SECONDS_PER_MINUTE_F: f64 = 60.0;
+const MINUTES_PER_HOUR_F: f64 = 60.0;
+const HOURS_PER_DAY_F: f64 = 24.0;
+const SECONDS_PER_HOUR_F: f64 = SECONDS_PER_MINUTE_F * MINUTES_PER_HOUR_F;
+const SECONDS_PER_DAY_F: f64 = SECONDS_PER_HOUR_F * HOURS_PER_DAY_F;
+const DAYS_PER_CENTURY_F: f64 = 36_525.0;
+const NS_PER_DAY_F: f64 = 1e9 * SECONDS_PER_DAY_F;
+const NS_PER_CENTURY_F: f64 = DAYS_PER_CENTURY_F * NS_PER_DAY_F;
+const ONE_F: f64 = 1.0;
+
 
 /// Defines generally usable durations for high precision math with Epoch
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd)]
@@ -51,15 +62,15 @@ macro_rules! impl_ops_f {
             fn mul(self, q: $type) -> Duration {
                 match self {
                     TimeUnit::Century => {
-                        Duration::from_days_f(q as f64 * DAYS_PER_CENTURY_U as f64)
+                        Duration::from_days_f(f64::from(q) * DAYS_PER_CENTURY_F)
                     }
-                    TimeUnit::Day => Duration::from_days_f(q as f64),
-                    TimeUnit::Hour => Duration::from_hours_f(q as f64),
-                    TimeUnit::Minute => Duration::from_minutes_f(q as f64),
-                    TimeUnit::Second => Duration::from_seconds_f(q as f64),
-                    TimeUnit::Millisecond => Duration::from_milliseconds_f(q as f64),
-                    TimeUnit::Microsecond => Duration::from_microseconds_f(q as f64),
-                    TimeUnit::Nanosecond => Duration::from_nanoseconds_f(q as f64),
+                    TimeUnit::Day => Duration::from_days_f(f64::from(q)),
+                    TimeUnit::Hour => Duration::from_hours_f(f64::from(q)),
+                    TimeUnit::Minute => Duration::from_minutes_f(f64::from(q)),
+                    TimeUnit::Second => Duration::from_seconds_f(f64::from(q)),
+                    TimeUnit::Millisecond => Duration::from_milliseconds_f(f64::from(q)),
+                    TimeUnit::Microsecond => Duration::from_microseconds_f(f64::from(q)),
+                    TimeUnit::Nanosecond => Duration::from_nanoseconds_f(f64::from(q)),
                 }
             }
         }
@@ -69,15 +80,15 @@ macro_rules! impl_ops_f {
             fn mul(self, q: TimeUnit) -> Duration {
                 match q {
                     TimeUnit::Century => Duration::from_days_f(
-                        self as f64 * DAYS_PER_CENTURY_U as f64,
+                        f64::from(self) * DAYS_PER_CENTURY_F,
                     ),
-                    TimeUnit::Day => Duration::from_days_f(self as f64),
-                    TimeUnit::Hour => Duration::from_hours_f(self as f64),
-                    TimeUnit::Minute => Duration::from_minutes_f(self as f64),
-                    TimeUnit::Second => Duration::from_seconds_f(self as f64),
-                    TimeUnit::Millisecond => Duration::from_milliseconds_f(self as f64),
-                    TimeUnit::Microsecond => Duration::from_microseconds_f(self as f64),
-                    TimeUnit::Nanosecond => Duration::from_nanoseconds_f(self as f64),
+                    TimeUnit::Day => Duration::from_days_f(f64::from(self)),
+                    TimeUnit::Hour => Duration::from_hours_f(f64::from(self)),
+                    TimeUnit::Minute => Duration::from_minutes_f(f64::from(self)),
+                    TimeUnit::Second => Duration::from_seconds_f(f64::from(self)),
+                    TimeUnit::Millisecond => Duration::from_milliseconds_f(f64::from(self)),
+                    TimeUnit::Microsecond => Duration::from_microseconds_f(f64::from(self)),
+                    TimeUnit::Nanosecond => Duration::from_nanoseconds_f(f64::from(self)),
                 }
             }
         }
@@ -110,72 +121,6 @@ macro_rules! impl_ops_f {
     };
 }
 
-macro_rules! impl_ops_u {
-    ($type:ident) => {
-        impl Mul<$type> for TimeUnit {
-            type Output = Duration;
-            fn mul(self, q: $type) -> Duration {
-                match self {
-                    TimeUnit::Century => {
-                        Duration::from_days_u(q as u128 * DAYS_PER_CENTURY_U as u128)
-                    }
-                    TimeUnit::Day => Duration::from_days_u(q as u128),
-                    TimeUnit::Hour => Duration::from_hours_u(q as u128),
-                    TimeUnit::Minute => Duration::from_minutes_u(q as u128),
-                    TimeUnit::Second => Duration::from_seconds_u(q as u128),
-                    TimeUnit::Millisecond => Duration::from_milliseconds_u(q as u128),
-                    TimeUnit::Microsecond => Duration::from_microseconds_u(q as u128),
-                    TimeUnit::Nanosecond => Duration::from_nanoseconds_u(q as u128),
-                }
-            }
-        }
-
-        impl Mul<TimeUnit> for $type {
-            type Output = Duration;
-            fn mul(self, q: TimeUnit) -> Duration {
-                match q {
-                    TimeUnit::Century => Duration::from_days_u(
-                        self as u128 * DAYS_PER_CENTURY_U as u128,
-                    ),
-                    TimeUnit::Day => Duration::from_days_u(self as u128),
-                    TimeUnit::Hour => Duration::from_hours_u(self as u128),
-                    TimeUnit::Minute => Duration::from_minutes_u(self as u128),
-                    TimeUnit::Second => Duration::from_seconds_u(self as u128),
-                    TimeUnit::Millisecond => Duration::from_milliseconds_u(self as u128),
-                    TimeUnit::Microsecond => Duration::from_microseconds_u(self as u128),
-                    TimeUnit::Nanosecond => Duration::from_nanoseconds_u(self as u128),
-                }
-            }
-        }
-
-        impl Mul<$type> for Duration {
-            type Output = Duration;
-            fn mul(self, q: $type) -> Duration {
-                Self::from_nanoseconds_i(self.total_ns() * q as i128)
-                
-            }
-        }
-
-        impl Div<$type> for Duration {
-            type Output = Duration;
-            fn div(self, q: $type) -> Duration {
-                Self::from_nanoseconds_i(self.total_ns() / q as i128)
-                
-            }
-        }
-
-        impl Mul<Duration> for $type {
-            type Output = Duration;
-            fn mul(self, q: Duration) -> Duration {
-                Duration::from_nanoseconds_i(q.total_ns() * self as i128)
-                
-            }
-        }
-
-        impl TimeUnitHelper for $type {}
-    };
-}
-
 macro_rules! impl_ops_i {
     ($type:ident) => {
         impl Mul<$type> for TimeUnit {
@@ -183,15 +128,15 @@ macro_rules! impl_ops_i {
             fn mul(self, q: $type) -> Duration {
                 match self {
                     TimeUnit::Century => {
-                        Duration::from_days_i(q as i128 * DAYS_PER_CENTURY_U as i128)
+                        Duration::from_days_i(i128::from(q) * DAYS_PER_CENTURY_U as i128)
                     }
-                    TimeUnit::Day => Duration::from_days_i(q as i128),
-                    TimeUnit::Hour => Duration::from_hours_i(q as i128),
-                    TimeUnit::Minute => Duration::from_minutes_i(q as i128),
-                    TimeUnit::Second => Duration::from_seconds_i(q as i128),
-                    TimeUnit::Millisecond => Duration::from_milliseconds_i(q as i128),
-                    TimeUnit::Microsecond => Duration::from_microseconds_i(q as i128),
-                    TimeUnit::Nanosecond => Duration::from_nanoseconds_i(q as i128),
+                    TimeUnit::Day => Duration::from_days_i(i128::from(q)),
+                    TimeUnit::Hour => Duration::from_hours_i(i128::from(q)),
+                    TimeUnit::Minute => Duration::from_minutes_i(i128::from(q)),
+                    TimeUnit::Second => Duration::from_seconds_i(i128::from(q)),
+                    TimeUnit::Millisecond => Duration::from_milliseconds_i(i128::from(q)),
+                    TimeUnit::Microsecond => Duration::from_microseconds_i(i128::from(q)),
+                    TimeUnit::Nanosecond => Duration::from_nanoseconds_i(i128::from(q)),
                 }
             }
         }
@@ -201,15 +146,15 @@ macro_rules! impl_ops_i {
             fn mul(self, q: TimeUnit) -> Duration {
                 match q {
                     TimeUnit::Century => Duration::from_days_i(
-                        self as i128 * DAYS_PER_CENTURY_U as i128,
+                        i128::from(self) * i128::from(DAYS_PER_CENTURY_U),
                     ),
-                    TimeUnit::Day => Duration::from_days_i(self as i128),
-                    TimeUnit::Hour => Duration::from_hours_i(self as i128),
-                    TimeUnit::Minute => Duration::from_minutes_i(self as i128),
-                    TimeUnit::Second => Duration::from_seconds_i(self as i128),
-                    TimeUnit::Millisecond => Duration::from_milliseconds_i(self as i128),
-                    TimeUnit::Microsecond => Duration::from_microseconds_i(self as i128),
-                    TimeUnit::Nanosecond => Duration::from_nanoseconds_i(self as i128),
+                    TimeUnit::Day => Duration::from_days_i(i128::from(self)),
+                    TimeUnit::Hour => Duration::from_hours_i(i128::from(self)),
+                    TimeUnit::Minute => Duration::from_minutes_i(i128::from(self)),
+                    TimeUnit::Second => Duration::from_seconds_i(i128::from(self)),
+                    TimeUnit::Millisecond => Duration::from_milliseconds_i(i128::from(self)),
+                    TimeUnit::Microsecond => Duration::from_microseconds_i(i128::from(self)),
+                    TimeUnit::Nanosecond => Duration::from_nanoseconds_i(i128::from(self)),
                 }
             }
         }
@@ -217,7 +162,7 @@ macro_rules! impl_ops_i {
         impl Mul<$type> for Duration {
             type Output = Duration;
             fn mul(self, q: $type) -> Duration {
-                Self::from_nanoseconds_i(self.total_ns() * q as i128)
+                Self::from_nanoseconds_i(self.total_ns() * i128::from(q))
                 
             }
         }
@@ -225,7 +170,7 @@ macro_rules! impl_ops_i {
         impl Div<$type> for Duration {
             type Output = Duration;
             fn div(self, q: $type) -> Duration {
-                Self::from_nanoseconds_i(self.total_ns() / q as i128)
+                Self::from_nanoseconds_i(self.total_ns() / i128::from(q))
                 
             }
         }
@@ -233,7 +178,7 @@ macro_rules! impl_ops_i {
         impl Mul<Duration> for $type {
             type Output = Duration;
             fn mul(self, q: Duration) -> Duration {
-                Duration::from_nanoseconds_i(q.total_ns() * self as i128)
+                Duration::from_nanoseconds_i(q.total_ns() * i128::from(self))
             }
         }
 
@@ -242,26 +187,26 @@ macro_rules! impl_ops_i {
 }
 
 impl Duration {
-    pub fn new(ns : u64, centuries : i16) -> Self {
+    pub fn new(centuries : i16, ns : u64) -> Self {
         let mut out = Duration { ns, centuries };
         out.normalize();
         out
     }
 
     pub fn total_ns(self) -> i128 {
-        self.centuries as i128 * NS_PER_CENTURY_U as i128 + self.ns as i128
+        i128::from(self.centuries) * i128::from(NS_PER_CENTURY_U) + i128::from(self.ns)
     }
 
     fn normalize(&mut self) {
-        if self.ns > NS_PER_CENTURY_U as u64 {
-            let carry = self.ns / NS_PER_CENTURY_U as u64;
+        if self.ns > NS_PER_CENTURY_U {
+            let carry = self.ns / NS_PER_CENTURY_U ;
             self.centuries = self.centuries.saturating_add(carry as i16);
-            self.ns %= NS_PER_CENTURY_U as u64;
+            self.ns %= NS_PER_CENTURY_U;
         }
     }
 
     pub fn from_value_f(mut value : f64, century_divider : u64, ns_multiplier : u64) -> Self {
-        let centuries = (value.div_euclid(century_divider as f64)) as i16;
+        let centuries = value.div_euclid(century_divider as f64) as i16;
         value = value.rem_euclid(century_divider as f64);
 
         // Risks : Overflow, loss of precision, unexpected roundings
@@ -271,135 +216,86 @@ impl Duration {
         }
     }
     pub fn from_days_f(days: f64) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U;
-        let ns_multiplier = SECONDS_PER_DAY_U * 1e9 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U);
+        let ns_multiplier = u64::from(SECONDS_PER_DAY_U) * 10u64.pow(9);
         Self::from_value_f(days, century_divider, ns_multiplier)
     }
     pub fn from_hours_f(hours: f64) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U;
-        let ns_multiplier = SECONDS_PER_HOUR_U * 1e9 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U);
+        let ns_multiplier = u64::from(SECONDS_PER_HOUR_U) * 10u64.pow(9);
         Self::from_value_f(hours, century_divider, ns_multiplier)
     }
     pub fn from_minutes_f(minutes: f64) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U;
-        let ns_multiplier = SECONDS_PER_MINUTE_U * 1e9 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U);
+        let ns_multiplier = u64::from(SECONDS_PER_MINUTE_U) * 10u64.pow(9);
         Self::from_value_f(minutes, century_divider, ns_multiplier)
     }
     pub fn from_seconds_f(seconds: f64) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U * SECONDS_PER_MINUTE_U;
-        let ns_multiplier = 1e9 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U) * u64::from(SECONDS_PER_MINUTE_U);
+        let ns_multiplier = 10u64.pow(9);
         Self::from_value_f(seconds, century_divider, ns_multiplier)
     }
     pub fn from_milliseconds_f(ms: f64) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U * SECONDS_PER_MINUTE_U * 1e3 as u64;
-        let ns_multiplier = 1e6 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U) * u64::from(SECONDS_PER_MINUTE_U) * 10u64.pow(3);
+        let ns_multiplier = 10u64.pow(6);
         Self::from_value_f(ms, century_divider, ns_multiplier)
     }
     pub fn from_microseconds_f(us: f64) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U * SECONDS_PER_MINUTE_U * 1e6 as u64;
-        let ns_multiplier = 1e3 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U) * u64::from(SECONDS_PER_MINUTE_U) * 10u64.pow(6);
+        let ns_multiplier = 10u64.pow(3);
         Self::from_value_f(us, century_divider, ns_multiplier)
     }
     pub fn from_nanoseconds_f(ns: f64) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U * SECONDS_PER_MINUTE_U * 1e9 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U) * u64::from(SECONDS_PER_MINUTE_U) * 10u64.pow(9);
         let ns_multiplier = 1;
         Self::from_value_f(ns, century_divider, ns_multiplier)
     }
 
 
-
-    pub fn from_value_u(mut value : u128, century_divider : u64, ns_multiplier : u64) -> Self {
-        let centuries = (value.div_euclid(century_divider as u128)) as i16;
-        value = value.rem_euclid(century_divider as u128);
-
-        // Risks : Overflow, loss of precision, unexpected roundings
-        let ns = (value * ns_multiplier as u128) as u64; 
-        Self {
-            ns, centuries
-        }
-    }
-    pub fn from_days_u(days: u128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U;
-        let ns_multiplier = SECONDS_PER_DAY_U * 1e9 as u64;
-        Self::from_value_u(days, century_divider, ns_multiplier)
-    }
-    pub fn from_hours_u(hours: u128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U;
-        let ns_multiplier = SECONDS_PER_HOUR_U * 1e9 as u64;
-        Self::from_value_u(hours, century_divider, ns_multiplier)
-    }
-    pub fn from_minutes_u(minutes: u128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U;
-        let ns_multiplier = SECONDS_PER_MINUTE_U * 1e9 as u64;
-        Self::from_value_u(minutes, century_divider, ns_multiplier)
-    }
-    pub fn from_seconds_u(seconds: u128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U * SECONDS_PER_MINUTE_U;
-        let ns_multiplier = 1e9 as u64;
-        Self::from_value_u(seconds, century_divider, ns_multiplier)
-    }
-    pub fn from_milliseconds_u(ms: u128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U * SECONDS_PER_MINUTE_U * 1e3 as u64;
-        let ns_multiplier = 1e6 as u64;
-        Self::from_value_u(ms, century_divider, ns_multiplier)
-    }
-    pub fn from_microseconds_u(us: u128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U * SECONDS_PER_MINUTE_U * 1e6 as u64;
-        let ns_multiplier = 1e3 as u64;
-        Self::from_value_u(us, century_divider, ns_multiplier)
-    }
-    pub fn from_nanoseconds_u(ns: u128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U * SECONDS_PER_MINUTE_U * 1e9 as u64;
-        let ns_multiplier = 1 as u64;
-        Self::from_value_u(ns, century_divider, ns_multiplier)
-    }
-
-
-
     
     pub fn from_value_i(mut value : i128, century_divider : u64, ns_multiplier : u64) -> Self {
-        let centuries = (value.div_euclid(century_divider as i128)) as i16;
-        value = value.rem_euclid(century_divider as i128);
+        let centuries = (value.div_euclid(i128::from(century_divider))) as i16;
+        value = value.rem_euclid(i128::from(century_divider));
 
         // Risks : Overflow, loss of precision, unexpected roundings
-        let ns = (value * ns_multiplier as i128) as u64; 
+        let ns = (value * i128::from(ns_multiplier)) as u64; 
         Self {
             ns, centuries
         }
     }
     pub fn from_days_i(days: i128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U;
-        let ns_multiplier = SECONDS_PER_DAY_U * 1e9 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U);
+        let ns_multiplier = u64::from(SECONDS_PER_DAY_U) * 10u64.pow(9);
         Self::from_value_i(days, century_divider, ns_multiplier)
     }
     pub fn from_hours_i(hours: i128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U;
-        let ns_multiplier = SECONDS_PER_HOUR_U * 1e9 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U);
+        let ns_multiplier = u64::from(SECONDS_PER_HOUR_U) * 10u64.pow(9);
         Self::from_value_i(hours, century_divider, ns_multiplier)
     }
     pub fn from_minutes_i(minutes: i128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U;
-        let ns_multiplier = SECONDS_PER_MINUTE_U * 1e9 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U);
+        let ns_multiplier = u64::from(SECONDS_PER_MINUTE_U) * 10u64.pow(9);
         Self::from_value_i(minutes, century_divider, ns_multiplier)
     }
     pub fn from_seconds_i(seconds: i128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U * SECONDS_PER_MINUTE_U;
-        let ns_multiplier = 1e9 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U) * u64::from(SECONDS_PER_MINUTE_U);
+        let ns_multiplier = 10u64.pow(9);
         Self::from_value_i(seconds, century_divider, ns_multiplier)
     }
     pub fn from_milliseconds_i(ms: i128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U * SECONDS_PER_MINUTE_U * 1e3 as u64;
-        let ns_multiplier = 1e6 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U) * u64::from(SECONDS_PER_MINUTE_U) * 10u64.pow(3);
+        let ns_multiplier = 10u64.pow(6);
         Self::from_value_i(ms, century_divider, ns_multiplier)
     }
     pub fn from_microseconds_i(us: i128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U * SECONDS_PER_MINUTE_U * 1e6 as u64;
-        let ns_multiplier = 1e3 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U) * u64::from(SECONDS_PER_MINUTE_U) * 10u64.pow(6);
+        let ns_multiplier = 10u64.pow(3);
         Self::from_value_i(us, century_divider, ns_multiplier)
     }
     pub fn from_nanoseconds_i(ns: i128) -> Self {
-        let century_divider = DAYS_PER_CENTURY_U * HOURS_PER_DAY_U * MINUTES_PER_HOUR_U * SECONDS_PER_MINUTE_U * 1e9 as u64;
-        let ns_multiplier = 1 as u64;
+        let century_divider = u64::from(DAYS_PER_CENTURY_U) * u64::from(HOURS_PER_DAY_U) * u64::from(MINUTES_PER_HOUR_U) * u64::from(SECONDS_PER_MINUTE_U) * 10u64.pow(9);
+        let ns_multiplier = 1;
         Self::from_value_i(ns, century_divider, ns_multiplier)
     }
 
@@ -421,7 +317,7 @@ impl Duration {
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     pub fn in_seconds(&self) -> f64 {
-        (self.ns as f64 / 1e9) + (self.centuries as i64 * DAYS_PER_CENTURY_U as i64 * SECONDS_PER_DAY_U as i64) as f64
+        (self.ns as f64 / 1e9) + (i128::from(self.centuries) * i128::from(DAYS_PER_CENTURY_U) * i128::from(SECONDS_PER_DAY_U)) as f64
     }
 
     /// Returns the value of this duration in the requested unit.
@@ -439,7 +335,7 @@ impl Duration {
 
     pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64, u64, u64) {
 
-        let total_ns : i128 = self.centuries as i128 * NS_PER_CENTURY_U as i128 + self.ns as i128;
+        let total_ns : i128 = i128::from(self.centuries) * i128::from(NS_PER_CENTURY_U) + i128::from(self.ns);
 
         let sign = total_ns.signum() as i8;
         let mut ns_left = total_ns.abs() as u64;
@@ -448,29 +344,29 @@ impl Duration {
         let centuries = ns_left / NS_PER_CENTURY_U;
 
         
-        let years = ns_left / (1e9 as u64 * SECONDS_PER_DAY_U as u64 * 365);
-        ns_left %= 1e9 as u64 * SECONDS_PER_DAY_U as u64 * 365;
+        let years = ns_left / (10u64.pow(9) * u64::from(SECONDS_PER_DAY_U) * 365);
+        ns_left %= 10u64.pow(9) * u64::from(SECONDS_PER_DAY_U) * 365;
 
 
-        let days = ns_left / (1e9 as u64 * SECONDS_PER_DAY_U as u64);
-        ns_left %= 1e9 as u64 * SECONDS_PER_DAY_U as u64;
+        let days = ns_left / (10u64.pow(9) * u64::from(SECONDS_PER_DAY_U));
+        ns_left %= 10u64.pow(9) * u64::from(SECONDS_PER_DAY_U) ;
 
-        let hours = ns_left / (1e9 as u64 * SECONDS_PER_HOUR_U as u64);
-        ns_left %= 1e9 as u64 * SECONDS_PER_HOUR_U as u64;
+        let hours = ns_left / (10u64.pow(9) * u64::from(SECONDS_PER_HOUR_U));
+        ns_left %= 10u64.pow(9) * u64::from(SECONDS_PER_HOUR_U);
 
-        let minutes = ns_left / (1e9 as u64 * SECONDS_PER_MINUTE_U as u64);
-        ns_left %= 1e9 as u64 * SECONDS_PER_MINUTE_U as u64;
+        let minutes = ns_left / (10u64.pow(9) * u64::from(SECONDS_PER_MINUTE_U));
+        ns_left %= 10u64.pow(9) * u64::from(SECONDS_PER_MINUTE_U);
 
-        let seconds = ns_left / (1e9 as u64);
-        ns_left %= 1e9 as u64;
+        let seconds = ns_left / 10u64.pow(9);
+        ns_left %= 10u64.pow(9);
 
-        let ms = ns_left / (1e6 as u64);
-        ns_left %= 1e6 as u64;
+        let ms = ns_left / 10u64.pow(6);
+        ns_left %= 10u64.pow(6);
 
-        let us = ns_left / (1e3 as u64);
-        ns_left %= 1e3 as u64;
+        let us = ns_left / 10u64.pow(3);
+        ns_left %= 10u64.pow(3);
 
-        let ns = dbg!(ns_left);
+        let ns = ns_left;
 
         (sign, centuries, years, days, hours, minutes, seconds, ms, us, ns)
     }
@@ -558,11 +454,11 @@ impl Add for Duration {
 
         // Usage of u128 is to avoid possibility of overflow and type-system carry from u64
         // may switch approach when carrying_add is stabilized
-        let mut total_ns: u128 = self.ns as u128 + rhs.ns as u128;
+        let mut total_ns: u128 = u128::from(self.ns) + u128::from(rhs.ns);
         let mut century_carry = 0;
-        if total_ns > NS_PER_CENTURY_U as u128 {
-            century_carry = total_ns / NS_PER_CENTURY_U as u128;
-            total_ns %=  NS_PER_CENTURY_U as u128;
+        if total_ns > u128::from(NS_PER_CENTURY_U) {
+            century_carry = total_ns / u128::from(NS_PER_CENTURY_U);
+            total_ns %=  u128::from(NS_PER_CENTURY_U);
             // total_ns is now guaranteed to be less than u64_max
         }
         
@@ -585,11 +481,11 @@ impl Sub for Duration {
     type Output = Duration;
 
     fn sub(self, rhs: Self) -> Duration {
-        let mut total_ns: i128 = self.ns as i128 - rhs.ns as i128;
+        let mut total_ns: i128 = i128::from(self.ns) - i128::from(rhs.ns);
         let mut century_borrow = 0;
         if total_ns < 0 {
-            century_borrow = (-total_ns / NS_PER_CENTURY_U as i128)+1;
-            total_ns += century_borrow * NS_PER_CENTURY_U as i128;
+            century_borrow = (-total_ns / i128::from(NS_PER_CENTURY_U))+1;
+            total_ns += century_borrow * i128::from(NS_PER_CENTURY_U);
         }
 
 
@@ -795,11 +691,11 @@ impl Sub for TimeUnit {
 impl TimeUnit {
     pub fn in_seconds(self) -> f64 {
         match self {
-            TimeUnit::Century => DAYS_PER_CENTURY_U as f64 * SECONDS_PER_DAY_U as f64,
-            TimeUnit::Day => SECONDS_PER_DAY_U as f64,
-            TimeUnit::Hour => SECONDS_PER_HOUR_U as f64,
-            TimeUnit::Minute => SECONDS_PER_MINUTE_U as f64,
-            TimeUnit::Second => ONE as f64,
+            TimeUnit::Century => DAYS_PER_CENTURY_F * SECONDS_PER_DAY_F,
+            TimeUnit::Day => SECONDS_PER_DAY_F,
+            TimeUnit::Hour => SECONDS_PER_HOUR_F,
+            TimeUnit::Minute => SECONDS_PER_MINUTE_F,
+            TimeUnit::Second => ONE_F,
             TimeUnit::Millisecond => 1e-3,
             TimeUnit::Microsecond => 1e-6,
             TimeUnit::Nanosecond => 1e-9,
@@ -818,20 +714,21 @@ impl TimeUnit {
 
 
 
-impl_ops_u!(u8);
+impl_ops_i!(u8);
 impl_ops_i!(i8);
 
-impl_ops_u!(u16);
+impl_ops_i!(u16);
 impl_ops_i!(i16);
 
-impl_ops_u!(u32);
+impl_ops_i!(u32);
 impl_ops_i!(i32);
 
-impl_ops_u!(u64);
+impl_ops_i!(u64);
 impl_ops_i!(i64);
 
-impl_ops_u!(u128);
-impl_ops_i!(i128);
+// Removed u128 and i128 as some operators couldn’t be made safe and there is no real need for them
+//impl_ops_u!(u128);
+//impl_ops_i!(i128);
 
 impl_ops_f!(f32);
 impl_ops_f!(f64);
