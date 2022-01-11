@@ -333,20 +333,12 @@ impl Duration {
 
     
 
-    pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64, u64, u64) {
+    pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
 
         let total_ns : i128 = i128::from(self.centuries) * i128::from(NS_PER_CENTURY_U) + i128::from(self.ns);
 
         let sign = total_ns.signum() as i8;
         let mut ns_left = total_ns.abs() as u64;
-
-
-        let centuries = ns_left / NS_PER_CENTURY_U;
-
-        
-        let years = ns_left / (10u64.pow(9) * u64::from(SECONDS_PER_DAY_U) * 365);
-        ns_left %= 10u64.pow(9) * u64::from(SECONDS_PER_DAY_U) * 365;
-
 
         let days = ns_left / (10u64.pow(9) * u64::from(SECONDS_PER_DAY_U));
         ns_left %= 10u64.pow(9) * u64::from(SECONDS_PER_DAY_U) ;
@@ -368,7 +360,7 @@ impl Duration {
 
         let ns = ns_left;
 
-        (sign, centuries, years, days, hours, minutes, seconds, ms, us, ns)
+        (sign, days, hours, minutes, seconds, ms, us, ns)
     }
 }
 
@@ -376,10 +368,10 @@ impl fmt::Display for Duration {
     // Prints this duration with automatic selection of the highest and sub-second unit
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
 
-        let (sign, centuries, years, days, hours, minutes, seconds, milli, us, nano) = self.decompose();
+        let (sign, days, hours, minutes, seconds, milli, us, nano) = self.decompose();
         
-        let values = [centuries, years, days, hours, minutes, seconds, milli, us, nano];
-        let names = ["centuries", "years", "days", "h", "min", "s", "ms", "us", "ns"];
+        let values = [days, hours, minutes, seconds, milli, us, nano];
+        let names = ["days", "h", "min", "s", "ms", "us", "ns"];
         
         let print_all = false;
 
@@ -855,7 +847,7 @@ fn duration_print() {
     let now = TimeUnit::Nanosecond * 1286495254000000203_u128;
     assert_eq!(
         format!("{}", now).trim(),
-        "40 years 289 days 23 h 47 min 34 s 0 ms 0 us 203 ns"
+        "14889 days 23 h 47 min 34 s 0 ms 0 us 203 ns"
     );
 
     let arbitrary = 14889.days()
@@ -866,7 +858,7 @@ fn duration_print() {
         + 123.nanoseconds();
     assert_eq!(
         format!("{}", arbitrary).trim(),
-        "40 years 289 days 23 h 47 min 34 s 0 ms 0 us 123 ns"
+        "14889 days 23 h 47 min 34 s 0 ms 0 us 123 ns"
     );
 
     // Test fractional
