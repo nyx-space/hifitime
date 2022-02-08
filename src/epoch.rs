@@ -6,8 +6,8 @@ use self::regex::Regex;
 use self::serde::{de, Deserialize, Deserializer};
 use crate::duration::{Duration, TimeUnit};
 use crate::{
-    Errors, TimeSystem, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
-    SECONDS_PER_DAY,
+    Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET,
+    J2000_OFFSET, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_PER_DAY,
 };
 use std::convert::TryFrom;
 use std::fmt;
@@ -319,14 +319,14 @@ impl Epoch {
     /// defined as UTC midnight of January 5th to 6th 1980 (cf.
     /// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
     pub fn from_gpst_seconds(seconds: f64) -> Self {
-        Self::from_tai_seconds(seconds) + TimeUnit::Second * 19.0
+        Self::from_tai_seconds(seconds) + TimeUnit::Second * SECONDS_GPS_TAI_OFFSET
     }
 
     /// Initialize an Epoch from the number of days since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf.
     /// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
     pub fn from_gpst_days(days: f64) -> Self {
-        Self::from_tai_days(days) + TimeUnit::Second * 19.0
+        Self::from_tai_days(days) + TimeUnit::Day * DAYS_GPS_TAI_OFFSET
     }
 
     /// Builds a new Epoch from the hi and lo two-float values
@@ -664,7 +664,7 @@ impl Epoch {
     }
 
     pub fn as_gpst_duration(self) -> Duration {
-        self.as_tai_duration() - TimeUnit::Second * 19.0
+        self.as_tai_duration() - TimeUnit::Second * SECONDS_GPS_TAI_OFFSET
     }
 
     /// Returns days past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
@@ -1424,7 +1424,6 @@ fn datetime_invalid_dates() {
 #[test]
 fn gpst() {
     use std::f64::EPSILON;
-    // let now = Epoch::from_gregorian_utc_hms(2019, 8, 24, 3, 49, 9);
     let now = Epoch::from_gregorian_tai_hms(2019, 8, 24, 3, 49, 9);
     assert!(
         now.as_tai_seconds() > now.as_utc_seconds(),
@@ -1433,18 +1432,50 @@ fn gpst() {
     assert!((now.as_tai_seconds() - now.as_utc_seconds() - 37.0).abs() < EPSILON);
     assert!(
         now.as_tai_seconds() > now.as_gpst_seconds(),
-        "TAI is not head of GPS Time"
+        "TAI is not ahead of GPS Time"
     );
-    assert!((now.as_tai_seconds() - now.as_gpst_seconds() - 19.0).abs() < EPSILON);
     assert!(
-        now.as_gpst_seconds() > now.as_utc_seconds(),
-        "GPS Time is not head of UTC"
+        (now.as_tai_seconds() - SECONDS_GPS_TAI_OFFSET - now.as_gpst_seconds()).abs() < EPSILON
     );
-    assert!((now.as_gpst_seconds() - now.as_utc_seconds() - 18.0).abs() < EPSILON);
+    assert!(
+        now.as_gpst_seconds() + SECONDS_GPS_TAI_OFFSET > now.as_utc_seconds(),
+        "GPS Time is not ahead of UTC"
+    );
 
-    let epoch = Epoch::from_gpst_days(2_272_060_800.0);
-    assert!((epoch.as_tai_seconds() - epoch.as_gpst_seconds() - 19.0).abs() < EPSILON);
-    assert!((epoch.as_tai_days() - epoch.as_gpst_days() - 19.0 / SECONDS_PER_DAY).abs() < 1e-7);
+    let gps_epoch = Epoch::from_tai_seconds(SECONDS_GPS_TAI_OFFSET);
+    assert_eq!(
+        gps_epoch.as_gregorian_str(TimeSystem::UTC),
+        "1980-01-06T00:00:00 UTC"
+    );
+    assert_eq!(
+        gps_epoch.as_gregorian_str(TimeSystem::TAI),
+        "1980-01-06T00:00:19 TAI"
+    );
+    assert_eq!(
+        gps_epoch.as_tai_seconds(),
+        Epoch::from_gregorian_utc_at_midnight(1980, 1, 6).as_tai_seconds()
+    );
+    assert!(
+        gps_epoch.as_gpst_seconds().abs() < EPSILON,
+        "The number of seconds from the GPS epoch was not 0: {}",
+        gps_epoch.as_gpst_seconds()
+    );
+    assert!(
+        gps_epoch.as_gpst_days().abs() < EPSILON,
+        "The number of days from the GPS epoch was not 0: {}",
+        gps_epoch.as_gpst_days()
+    );
+
+    let epoch = Epoch::from_gregorian_utc_at_midnight(1972, 1, 1);
+    assert!(
+        (epoch.as_tai_seconds() - SECONDS_GPS_TAI_OFFSET - epoch.as_gpst_seconds()).abs() < EPSILON
+    );
+    assert!((epoch.as_tai_days() - DAYS_GPS_TAI_OFFSET - epoch.as_gpst_days()).abs() < 1e-11);
+
+    // 1 Jan 1980 is 5 days before the GPS epoch.
+    let epoch = Epoch::from_gregorian_utc_at_midnight(1980, 1, 1);
+    assert!((epoch.as_gpst_seconds() + 5.0 * SECONDS_PER_DAY).abs() < EPSILON);
+    assert!((epoch.as_gpst_days() + 5.0).abs() < EPSILON);
 }
 
 #[test]
