@@ -155,6 +155,23 @@ impl AddAssign<Duration> for Epoch {
 }
 
 impl Epoch {
+    /// Get the accumulated number of leap seconds up to this Epoch.
+    pub fn get_num_leap_seconds(self) -> i32 {
+        let mut cnt = 0;
+        for tai_ts in LEAP_SECONDS.iter() {
+            if self.0.in_seconds() >= *tai_ts {
+                if cnt == 0 {
+                    cnt = 10;
+                } else {
+                    cnt += 1;
+                }
+            } else {
+                break; // No more leap seconds to process
+            }
+        }
+        cnt
+    }
+
     /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
     pub fn from_tai_seconds(seconds: f64) -> Self {
         assert!(
@@ -177,6 +194,32 @@ impl Epoch {
         }
     }
 
+    /// Initialize an Epoch from the provided UTC seconds since 1900 January 01
+    /// at midnight
+    pub fn from_utc_seconds(seconds: f64) -> Self {
+        let mut e = Self::from_tai_seconds(seconds);
+        // Compute the TAI to UTC offset at this time.
+        let cnt = e.get_num_leap_seconds();
+        // We have the time in TAI. But we were given UTC.
+        // Hence, we need to _add_ the leap seconds to get the actual TAI time.
+        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
+        e.0 += cnt * TimeUnit::Second;
+        e
+    }
+
+    /// Initialize an Epoch from the provided UTC days since 1900 January 01 at
+    /// midnight
+    pub fn from_utc_days(days: f64) -> Self {
+        let mut e = Self::from_tai_days(days);
+        // Compute the TAI to UTC offset at this time.
+        let cnt = e.get_num_leap_seconds();
+        // We have the time in TAI. But we were given UTC.
+        // Hence, we need to _add_ the leap seconds to get the actual TAI time.
+        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
+        e.0 += cnt * TimeUnit::Second;
+        e
+    }
+
     pub fn from_mjd_tai(days: f64) -> Self {
         assert!(
             days.is_finite(),
@@ -187,6 +230,13 @@ impl Epoch {
         }
     }
 
+    pub fn from_mjd_utc(days: f64) -> Self {
+        let mut e = Self::from_mjd_tai(days);
+        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
+        e.0 += e.get_num_leap_seconds() * TimeUnit::Second;
+        e
+    }
+
     pub fn from_jde_tai(days: f64) -> Self {
         assert!(
             days.is_finite(),
@@ -195,6 +245,13 @@ impl Epoch {
         Self {
             0: (days - J1900_OFFSET - MJD_OFFSET) * TimeUnit::Day,
         }
+    }
+
+    pub fn from_jde_utc(days: f64) -> Self {
+        let mut e = Self::from_jde_tai(days);
+        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
+        e.0 += e.get_num_leap_seconds() * TimeUnit::Second;
+        e
     }
 
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
@@ -256,6 +313,20 @@ impl Epoch {
             "Attempted to initialize Epoch with non finite number"
         );
         Self::from_jde_tai(days) - TimeUnit::Second * ET_OFFSET_S
+    }
+
+    /// Initialize an Epoch from the number of seconds since the GPS Time Epoch,
+    /// defined as UTC midnight of January 5th to 6th 1980 (cf.
+    /// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
+    pub fn from_gpst_seconds(seconds: f64) -> Self {
+        Self::from_tai_seconds(seconds) + TimeUnit::Second * 19.0
+    }
+
+    /// Initialize an Epoch from the number of days since the GPS Time Epoch,
+    /// defined as UTC midnight of January 5th to 6th 1980 (cf.
+    /// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
+    pub fn from_gpst_days(days: f64) -> Self {
+        Self::from_tai_days(days) + TimeUnit::Second * 19.0
     }
 
     /// Builds a new Epoch from the hi and lo two-float values
@@ -396,18 +467,7 @@ impl Epoch {
         let mut if_tai =
             Self::maybe_from_gregorian_tai(year, month, day, hour, minute, second, nanos)?;
         // Compute the TAI to UTC offset at this time.
-        let mut cnt = 0;
-        for tai_ts in LEAP_SECONDS.iter() {
-            if if_tai.0.in_seconds() >= *tai_ts {
-                if cnt == 0 {
-                    cnt = 10;
-                } else {
-                    cnt += 1;
-                }
-            } else {
-                break; // No more leap seconds to process
-            }
-        }
+        let cnt = if_tai.get_num_leap_seconds();
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
@@ -477,18 +537,7 @@ impl Epoch {
 
     /// Returns this time in a Duration past J1900 counted in UTC
     fn as_utc_duration(self) -> Duration {
-        let mut cnt = 0;
-        for tai_ts in LEAP_SECONDS.iter() {
-            if self.0.in_seconds() >= *tai_ts {
-                if cnt == 0 {
-                    cnt = 10;
-                } else {
-                    cnt += 1;
-                }
-            } else {
-                break; // No more leap seconds to process
-            }
-        }
+        let cnt = self.get_num_leap_seconds();
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
         self.0 + (-cnt) * TimeUnit::Second
     }
@@ -976,6 +1025,7 @@ impl FromStr for Epoch {
                             TimeSystem::ET => Ok(Self::from_jde_et(value)),
                             TimeSystem::TAI => Ok(Self::from_jde_tai(value)),
                             TimeSystem::TDB => Ok(Self::from_jde_tdb(value)),
+                            TimeSystem::UTC => Ok(Self::from_jde_utc(value)),
                             _ => Err(Errors::ParseError(format!(
                                 "Cannot initialize JD in {:?}",
                                 ts
@@ -983,6 +1033,7 @@ impl FromStr for Epoch {
                         },
                         "MJD" => match ts {
                             TimeSystem::TAI => Ok(Self::from_mjd_tai(value)),
+                            TimeSystem::UTC => Ok(Self::from_mjd_utc(value)),
                             _ => Err(Errors::ParseError(format!(
                                 "Cannot initialize MJD in {:?}",
                                 ts
@@ -993,10 +1044,7 @@ impl FromStr for Epoch {
                             TimeSystem::ET => Ok(Self::from_et_seconds(value)),
                             TimeSystem::TDB => Ok(Self::from_tdb_seconds(value)),
                             TimeSystem::TT => Ok(Self::from_tt_seconds(value)),
-                            _ => Err(Errors::ParseError(format!(
-                                "Cannot initialize SEC in {:?}",
-                                ts
-                            ))),
+                            TimeSystem::UTC => Ok(Self::from_utc_seconds(value)),
                         },
                         _ => Err(Errors::ParseError(format!("Unknown format  {}", format))),
                     }
@@ -1206,7 +1254,7 @@ fn utc_tai() {
     let flp_from_secs_tai = Epoch::from_tai_seconds(2_272_060_800.0);
     let flp_from_greg_tai = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
     assert_eq!(flp_from_secs_tai, flp_from_greg_tai);
-    // Right after the discontinuity, UTC time should be ten seconds behind TAI, i.e. TAI is ten second ahead of UTC
+    // Right after the discontinuity, UTC time should be ten seconds behind TAI, i.e. TAI is ten seconds ahead of UTC
     // In other words, the following date times are equal:
     assert_eq!(
         Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 10),
@@ -1242,6 +1290,21 @@ fn utc_tai() {
     assert!(
         (epoch_utc.as_utc_seconds() - epoch_tai.as_utc_seconds() - 37.0).abs() < EPSILON,
         "TAI is not ahead of UTC"
+    );
+
+    // Test from_utc_seconds and from_utc_days. Any effects from leap seconds
+    // should have no bearing when testing two "from UTC" methods.
+    assert_eq!(
+        Epoch::from_gregorian_utc_at_midnight(1972, 1, 1),
+        Epoch::from_utc_seconds(2_272_060_800.0)
+    );
+    assert_eq!(
+        Epoch::from_gregorian_utc_hms(1972, 1, 1, 0, 0, 10),
+        Epoch::from_utc_seconds(2_272_060_810.0)
+    );
+    assert_eq!(
+        Epoch::from_gregorian_utc_at_midnight(1972, 1, 1),
+        Epoch::from_utc_days(26297.0)
     );
 }
 
@@ -1378,6 +1441,10 @@ fn gpst() {
         "GPS Time is not head of UTC"
     );
     assert!((now.as_gpst_seconds() - now.as_utc_seconds() - 18.0).abs() < EPSILON);
+
+    let epoch = Epoch::from_gpst_days(2_272_060_800.0);
+    assert!((epoch.as_tai_seconds() - epoch.as_gpst_seconds() - 19.0).abs() < EPSILON);
+    assert!((epoch.as_tai_days() - epoch.as_gpst_days() - 19.0 / SECONDS_PER_DAY).abs() < 1e-7);
 }
 
 #[test]
@@ -1592,4 +1659,22 @@ fn regression_test_gh_85() {
         later_epoch > earlier_epoch,
         "later_epoch should be 100ns after earlier_epoch"
     );
+}
+
+#[test]
+fn test_get_num_leap_seconds() {
+    // Just before the very first leap second.
+    let epoch_from_utc_greg = Epoch::from_gregorian_tai_hms(1971, 12, 31, 23, 59, 59);
+    // Just after it.
+    let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 0);
+    assert_eq!(epoch_from_utc_greg.get_num_leap_seconds(), 0);
+    // The first leap second is special; it adds 10 seconds.
+    assert_eq!(epoch_from_utc_greg1.get_num_leap_seconds(), 10);
+
+    // Just before the second leap second.
+    let epoch_from_utc_greg = Epoch::from_gregorian_tai_hms(1972, 6, 30, 23, 59, 59);
+    // Just after it.
+    let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 7, 1, 0, 0, 0);
+    assert_eq!(epoch_from_utc_greg.get_num_leap_seconds(), 10);
+    assert_eq!(epoch_from_utc_greg1.get_num_leap_seconds(), 11);
 }
