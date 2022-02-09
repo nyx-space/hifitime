@@ -160,6 +160,14 @@ pub const SECONDS_PER_YEAR: f64 = 31_557_600.0;
 pub const SECONDS_PER_TROPICAL_YEAR: f64 = 31_556_925.974_7;
 /// `SECONDS_PER_SIDERAL_YEAR` corresponds to the number of seconds per sideral year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
 pub const SECONDS_PER_SIDERAL_YEAR: f64 = 31_558_150.0;
+/// `SECONDS_GPS_TAI_OFFSET` is the number of seconds from the TAI epoch to the
+/// GPS epoch (UTC midnight of January 6th 1980; cf.
+/// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29)
+pub const SECONDS_GPS_TAI_OFFSET: f64 = 80.0 * SECONDS_PER_YEAR + 4.0 * SECONDS_PER_DAY + 19.0;
+/// `DAYS_GPS_TAI_OFFSET` is the number of days from the TAI epoch to the GPS
+/// epoch (UTC midnight of January 6th 1980; cf.
+/// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29)
+pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
 
 mod sim;
 pub use sim::ClockNoise;
