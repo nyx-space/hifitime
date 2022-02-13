@@ -9,7 +9,6 @@ use crate::{
     Errors, TimeSystem, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
     SECONDS_PER_DAY,
 };
-use std::convert::TryFrom;
 use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::str::FromStr;
@@ -58,7 +57,7 @@ const JULY_YEARS: [i32; 11] = [
     1972, 1981, 1982, 1983, 1985, 1992, 1993, 1994, 1997, 2012, 2015,
 ];
 
-const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+const USUAL_DAYS_PER_MONTH: [u32; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
 /// Defines an Epoch in TAI (temps atomique international) in seconds past 1900 January 01 at midnight (like the Network Time Protocol).
 ///
@@ -261,11 +260,11 @@ impl Epoch {
     /// Attempts to build an Epoch from the provided Gregorian date and time in TAI.
     pub fn maybe_from_gregorian_tai(
         year: i32,
-        month: u8,
-        day: u8,
-        hour: u8,
-        minute: u8,
-        second: u8,
+        month: u32,
+        day: u32,
+        hour: u32,
+        minute: u32,
+        second: u32,
         nanos: u32,
     ) -> Result<Self, Errors> {
         Self::maybe_from_gregorian(
@@ -284,11 +283,11 @@ impl Epoch {
     #[allow(clippy::too_many_arguments)]
     pub fn maybe_from_gregorian(
         year: i32,
-        month: u8,
-        day: u8,
-        hour: u8,
-        minute: u8,
-        second: u8,
+        month: u32,
+        day: u32,
+        hour: u32,
+        minute: u32,
+        second: u32,
         nanos: u32,
         ts: TimeSystem,
     ) -> Result<Self, Errors> {
@@ -342,34 +341,34 @@ impl Epoch {
     /// Use maybe_from_gregorian_tai if unsure.
     pub fn from_gregorian_tai(
         year: i32,
-        month: u8,
-        day: u8,
-        hour: u8,
-        minute: u8,
-        second: u8,
+        month: u32,
+        day: u32,
+        hour: u32,
+        minute: u32,
+        second: u32,
         nanos: u32,
     ) -> Self {
         Self::maybe_from_gregorian_tai(year, month, day, hour, minute, second, nanos)
             .expect("invalid Gregorian date")
     }
 
-    pub fn from_gregorian_tai_at_midnight(year: i32, month: u8, day: u8) -> Self {
+    pub fn from_gregorian_tai_at_midnight(year: i32, month: u32, day: u32) -> Self {
         Self::maybe_from_gregorian_tai(year, month, day, 0, 0, 0, 0)
             .expect("invalid Gregorian date")
     }
 
-    pub fn from_gregorian_tai_at_noon(year: i32, month: u8, day: u8) -> Self {
+    pub fn from_gregorian_tai_at_noon(year: i32, month: u32, day: u32) -> Self {
         Self::maybe_from_gregorian_tai(year, month, day, 12, 0, 0, 0)
             .expect("invalid Gregorian date")
     }
 
     pub fn from_gregorian_tai_hms(
         year: i32,
-        month: u8,
-        day: u8,
-        hour: u8,
-        minute: u8,
-        second: u8,
+        month: u32,
+        day: u32,
+        hour: u32,
+        minute: u32,
+        second: u32,
     ) -> Self {
         Self::maybe_from_gregorian_tai(year, month, day, hour, minute, second, 0)
             .expect("invalid Gregorian date")
@@ -378,11 +377,11 @@ impl Epoch {
     /// Attempts to build an Epoch from the provided Gregorian date and time in UTC.
     pub fn maybe_from_gregorian_utc(
         year: i32,
-        month: u8,
-        day: u8,
-        hour: u8,
-        minute: u8,
-        second: u8,
+        month: u32,
+        day: u32,
+        hour: u32,
+        minute: u32,
+        second: u32,
         nanos: u32,
     ) -> Result<Self, Errors> {
         let mut if_tai =
@@ -411,34 +410,34 @@ impl Epoch {
     /// Use maybe_from_gregorian_tai if unsure.
     pub fn from_gregorian_utc(
         year: i32,
-        month: u8,
-        day: u8,
-        hour: u8,
-        minute: u8,
-        second: u8,
+        month: u32,
+        day: u32,
+        hour: u32,
+        minute: u32,
+        second: u32,
         nanos: u32,
     ) -> Self {
         Self::maybe_from_gregorian_utc(year, month, day, hour, minute, second, nanos)
             .expect("invalid Gregorian date")
     }
 
-    pub fn from_gregorian_utc_at_midnight(year: i32, month: u8, day: u8) -> Self {
+    pub fn from_gregorian_utc_at_midnight(year: i32, month: u32, day: u32) -> Self {
         Self::maybe_from_gregorian_utc(year, month, day, 0, 0, 0, 0)
             .expect("invalid Gregorian date")
     }
 
-    pub fn from_gregorian_utc_at_noon(year: i32, month: u8, day: u8) -> Self {
+    pub fn from_gregorian_utc_at_noon(year: i32, month: u32, day: u32) -> Self {
         Self::maybe_from_gregorian_utc(year, month, day, 12, 0, 0, 0)
             .expect("invalid Gregorian date")
     }
 
     pub fn from_gregorian_utc_hms(
         year: i32,
-        month: u8,
-        day: u8,
-        hour: u8,
-        minute: u8,
-        second: u8,
+        month: u32,
+        day: u32,
+        hour: u32,
+        minute: u32,
+        second: u32,
     ) -> Self {
         Self::maybe_from_gregorian_utc(year, month, day, hour, minute, second, 0)
             .expect("invalid Gregorian date")
@@ -741,21 +740,21 @@ impl Epoch {
                         if ts == TimeSystem::UTC {
                             Self::maybe_from_gregorian_utc(
                                 cap[1].to_owned().parse::<i32>()?,
-                                cap[2].to_owned().parse::<u8>()?,
-                                cap[3].to_owned().parse::<u8>()?,
-                                cap[4].to_owned().parse::<u8>()?,
-                                cap[5].to_owned().parse::<u8>()?,
-                                cap[6].to_owned().parse::<u8>()?,
+                                cap[2].to_owned().parse::<u32>()?,
+                                cap[3].to_owned().parse::<u32>()?,
+                                cap[4].to_owned().parse::<u32>()?,
+                                cap[5].to_owned().parse::<u32>()?,
+                                cap[6].to_owned().parse::<u32>()?,
                                 nanos,
                             )
                         } else {
                             Self::maybe_from_gregorian(
                                 cap[1].to_owned().parse::<i32>()?,
-                                cap[2].to_owned().parse::<u8>()?,
-                                cap[3].to_owned().parse::<u8>()?,
-                                cap[4].to_owned().parse::<u8>()?,
-                                cap[5].to_owned().parse::<u8>()?,
-                                cap[6].to_owned().parse::<u8>()?,
+                                cap[2].to_owned().parse::<u32>()?,
+                                cap[3].to_owned().parse::<u32>()?,
+                                cap[4].to_owned().parse::<u32>()?,
+                                cap[5].to_owned().parse::<u32>()?,
+                                cap[6].to_owned().parse::<u32>()?,
                                 nanos,
                                 ts,
                             )
@@ -765,11 +764,11 @@ impl Epoch {
                         // Asumme UTC
                         Self::maybe_from_gregorian_utc(
                             cap[1].to_owned().parse::<i32>()?,
-                            cap[2].to_owned().parse::<u8>()?,
-                            cap[3].to_owned().parse::<u8>()?,
-                            cap[4].to_owned().parse::<u8>()?,
-                            cap[5].to_owned().parse::<u8>()?,
-                            cap[6].to_owned().parse::<u8>()?,
+                            cap[2].to_owned().parse::<u32>()?,
+                            cap[3].to_owned().parse::<u32>()?,
+                            cap[4].to_owned().parse::<u32>()?,
+                            cap[5].to_owned().parse::<u32>()?,
+                            cap[6].to_owned().parse::<u32>()?,
                             nanos,
                         )
                     }
@@ -903,7 +902,7 @@ impl Epoch {
                 month = 12;
                 year -= 1;
             }
-            day = i32::from(USUAL_DAYS_PER_MONTH[(month - 1) as usize]);
+            day = USUAL_DAYS_PER_MONTH[(month - 1) as usize] as i32;
         }
         day += 1; // Otherwise the day count starts at 0
                   // Get the hours by the exact number of seconds in an hour
@@ -922,7 +921,6 @@ impl Epoch {
         )
     }
 }
-
 
 impl FromStr for Epoch {
     type Err = Errors;
@@ -1012,15 +1010,15 @@ impl fmt::Display for Epoch {
 /// Returns true if the provided Gregorian date is valid. Leap second days may have 60 seconds.
 pub fn is_gregorian_valid(
     year: i32,
-    month: u8,
-    day: u8,
-    hour: u8,
-    minute: u8,
-    second: u8,
+    month: u32,
+    day: u32,
+    hour: u32,
+    minute: u32,
+    second: u32,
     nanos: u32,
 ) -> bool {
     let max_seconds = if (month == 12 || month == 6)
-        && day == USUAL_DAYS_PER_MONTH[month as usize - 1]
+        && day == USUAL_DAYS_PER_MONTH[month as usize - 1].into()
         && hour == 23
         && minute == 59
         && ((month == 6 && JULY_YEARS.contains(&year))
@@ -1042,7 +1040,8 @@ pub fn is_gregorian_valid(
     {
         return false;
     }
-    if day > USUAL_DAYS_PER_MONTH[month as usize - 1] && (month != 2 || !is_leap_year(year)) {
+    if day > USUAL_DAYS_PER_MONTH[month as usize - 1].into() && (month != 2 || !is_leap_year(year))
+    {
         // Not in February or not a leap year
         return false;
     }
@@ -1368,10 +1367,6 @@ fn gpst() {
 #[test]
 fn spice_et_tdb() {
     use crate::J2000_NAIF;
-    let round_prec = |val : f64, prec : i32| -> f64  {
-        let power = (10.0 as f64).powi(prec);
-        ((val * power).round()) / power
-    };
     /*
     >>> sp.str2et("2012-02-07 11:22:33 UTC")
     381885819.18493587
@@ -1438,7 +1433,7 @@ fn spice_et_tdb() {
 
     let sp_ex = Epoch::from_et_seconds(381_885_753.003_859_5);
     assert!(dbg!(2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < 4.7e-10);
-    assert!((2455964.9739931 - dbg!(round_prec(sp_ex.as_jde_et_days(), 7))).abs() < std::f64::EPSILON);
+    assert!((2455964.9739931 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
 
     let sp_ex = Epoch::from_et_seconds(0.0);
     assert!(sp_ex.as_et_seconds() < std::f64::EPSILON);
