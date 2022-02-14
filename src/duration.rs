@@ -19,10 +19,7 @@ use std::fmt;
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 use std::str::FromStr;
 
-// const DAYS_PER_CENTURY_U: u128 = 36_525;
 const DAYS_PER_CENTURY_U64: u64 = 36_525;
-const HOURS_PER_CENTURY: f64 = 24.0 * DAYS_PER_CENTURY;
-const MINUTES_PER_CENTURY: f64 = 60.0 * HOURS_PER_CENTURY;
 const NANOSECONDS_PER_MICROSECOND: u64 = 1_000;
 const NANOSECONDS_PER_MILLISECOND: u64 = 1_000 * NANOSECONDS_PER_MICROSECOND;
 const NANOSECONDS_PER_SECOND: u64 = 1_000 * NANOSECONDS_PER_MILLISECOND;
@@ -31,9 +28,6 @@ const NANOSECONDS_PER_HOUR: u64 = 60 * NANOSECONDS_PER_MINUTE;
 const NANOSECONDS_PER_DAY: u64 = 24 * NANOSECONDS_PER_HOUR;
 const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_DAY;
 
-const fn centuries_per_u64_nanoseconds() -> i16 {
-    u64::MAX.div_euclid(NANOSECONDS_PER_CENTURY) as i16
-}
 /// Defines generally usable durations for nanosecond precision valid for 32,768 centuries in either direction, and only on 80 bits / 10 octets.
 ///
 /// **Important conventions:**
@@ -143,11 +137,11 @@ impl Duration {
     #[must_use]
     pub fn in_seconds(&self) -> f64 {
         // Compute the seconds and nanoseconds that we know this fits on a 64bit float
-        let (seconds_u64, nanoseconds_u64) =
-            self.nanoseconds.div_rem_euclid(NANOSECONDS_PER_CENTURY);
-        f64::from(self.centuries) * SECONDS_PER_DAY * DAYS_PER_CENTURY
-            + (seconds_u64 as f64)
-            + (nanoseconds_u64 as f64) * 1e-9
+        let seconds = self.nanoseconds.div_euclid(NANOSECONDS_PER_SECOND);
+        let subseconds = self.nanoseconds.rem_euclid(NANOSECONDS_PER_SECOND);
+        f64::from(self.centuries) * SECONDS_PER_CENTURY
+            + (seconds as f64)
+            + (subseconds as f64) * 1e-9
     }
 
     /// Returns the value of this duration in the requested unit.
@@ -256,146 +250,21 @@ macro_rules! impl_ops_for_type {
         impl Mul<$type> for TimeUnit {
             type Output = Duration;
 
+            /// Converts the input values to i128 and creates a duration from that
+            /// This method will necessarily ignore durations below nanoseconds
             fn mul(self, q: $type) -> Duration {
-                match self {
-                    TimeUnit::Century => {
-                        todo!();
-                        // self * qee * DAYS_PER_CENTURY_U64ee
-                    }
-                    TimeUnit::Day => {
-                        // The centuries will be a round number here so the `as` conversion should work.
-                        let centuries_typed = q.div_euclid(DAYS_PER_CENTURY as $type);
-                        let centuries = if centuries_typed > (i16::MAX as $type) {
-                            return Duration::MAX;
-                        } else if centuries_typed < (i16::MIN as $type) {
-                            return Duration::MIN;
-                        } else {
-                            centuries_typed as i16
-                        };
+                let total_ns = match self {
+                    TimeUnit::Century => (q * (NANOSECONDS_PER_CENTURY as $type)) as i128,
+                    TimeUnit::Day => (q * (NANOSECONDS_PER_DAY as $type)) as i128,
+                    TimeUnit::Hour => (q * (NANOSECONDS_PER_HOUR as $type)) as i128,
+                    TimeUnit::Minute => (q * (NANOSECONDS_PER_MINUTE as $type)) as i128,
+                    TimeUnit::Second => (q * (NANOSECONDS_PER_SECOND as $type)) as i128,
+                    TimeUnit::Millisecond => (q * (NANOSECONDS_PER_MILLISECOND as $type)) as i128,
+                    TimeUnit::Microsecond => (q * (NANOSECONDS_PER_MICROSECOND as $type)) as i128,
+                    TimeUnit::Nanosecond => q as i128,
+                };
 
-                        // rem_euclid returns the nonnegative number, so we can cast that directly into u64
-                        let nanoseconds =
-                            q.rem_euclid(DAYS_PER_CENTURY as $type) as u64 * NANOSECONDS_PER_DAY;
-                        Duration {
-                            centuries,
-                            nanoseconds,
-                        }
-                    }
-                    TimeUnit::Hour => {
-                        // The centuries will be a round number here so the `as` conversion should work.
-                        let centuries_typed = q.div_euclid(HOURS_PER_CENTURY as $type);
-                        let centuries = if centuries_typed > (i16::MAX as $type) {
-                            return Duration::MAX;
-                        } else if centuries_typed < (i16::MIN as $type) {
-                            return Duration::MIN;
-                        } else {
-                            centuries_typed as i16
-                        };
-
-                        // rem_euclid returns the nonnegative number, so we can cast that directly into u64
-                        let nanoseconds =
-                            q.rem_euclid(HOURS_PER_CENTURY as $type) as u64 * NANOSECONDS_PER_HOUR;
-                        Duration {
-                            centuries,
-                            nanoseconds,
-                        }
-                    }
-                    TimeUnit::Minute => {
-                        // The centuries will be a round number here so the `as` conversion should work.
-                        let centuries_typed = q.div_euclid(MINUTES_PER_CENTURY as $type);
-                        let centuries = if centuries_typed > (i16::MAX as $type) {
-                            return Duration::MAX;
-                        } else if centuries_typed < (i16::MIN as $type) {
-                            return Duration::MIN;
-                        } else {
-                            centuries_typed as i16
-                        };
-
-                        // rem_euclid returns the nonnegative number, so we can cast that directly into u64
-                        let nanoseconds = q.rem_euclid(MINUTES_PER_CENTURY as $type) as u64
-                            * NANOSECONDS_PER_MINUTE;
-                        Duration {
-                            centuries,
-                            nanoseconds,
-                        }
-                    }
-                    TimeUnit::Second => {
-                        // The centuries will be a round number here so the `as` conversion should work.
-                        let centuries_typed = q.div_euclid(SECONDS_PER_CENTURY as $type);
-                        let centuries = if centuries_typed > (i16::MAX as $type) {
-                            return Duration::MAX;
-                        } else if centuries_typed < (i16::MIN as $type) {
-                            return Duration::MIN;
-                        } else {
-                            centuries_typed as i16
-                        };
-
-                        // rem_euclid returns the nonnegative number, so we can cast that directly into u64
-                        let nanoseconds = q.rem_euclid(SECONDS_PER_CENTURY as $type) as u64
-                            * NANOSECONDS_PER_SECOND;
-                        Duration {
-                            centuries,
-                            nanoseconds,
-                        }
-                    }
-                    TimeUnit::Millisecond => {
-                        // The centuries will be a round number here so the `as` conversion should work.
-                        let centuries_typed = q.div_euclid((SECONDS_PER_CENTURY * 1e-3) as $type);
-                        let centuries = if centuries_typed > (i16::MAX as $type) {
-                            return Duration::MAX;
-                        } else if centuries_typed < (i16::MIN as $type) {
-                            return Duration::MIN;
-                        } else {
-                            centuries_typed as i16
-                        };
-
-                        // rem_euclid returns the nonnegative number, so we can cast that directly into u64
-                        let nanoseconds =
-                            q.rem_euclid(DAYS_PER_CENTURY as $type) as u64 * NANOSECONDS_PER_SECOND;
-                        Duration {
-                            centuries,
-                            nanoseconds,
-                        }
-                    }
-                    TimeUnit::Microsecond => {
-                        // The centuries will be a round number here so the `as` conversion should work.
-                        let centuries_typed = q.div_euclid((SECONDS_PER_CENTURY * 1e-6) as $type);
-                        let centuries = if centuries_typed > (i16::MAX as $type) {
-                            return Duration::MAX;
-                        } else if centuries_typed < (i16::MIN as $type) {
-                            return Duration::MIN;
-                        } else {
-                            centuries_typed as i16
-                        };
-
-                        // rem_euclid returns the nonnegative number, so we can cast that directly into u64
-                        let nanoseconds = q.rem_euclid(DAYS_PER_CENTURY as $type) as u64
-                            * NANOSECONDS_PER_MICROSECOND;
-                        Duration {
-                            centuries,
-                            nanoseconds,
-                        }
-                    }
-                    TimeUnit::Nanosecond => {
-                        // The centuries will be a round number here so the `as` conversion should work.
-                        let centuries_typed = q.div_euclid(NANOSECONDS_PER_CENTURY as $type);
-                        let centuries = if centuries_typed > (i16::MAX as $type) {
-                            return Duration::MAX;
-                        } else if centuries_typed < (i16::MIN as $type) {
-                            return Duration::MIN;
-                        } else {
-                            centuries_typed as i16
-                        };
-
-                        // rem_euclid returns the nonnegative number, so we can cast that directly into u64
-                        let nanoseconds = if centuries >= 0 {
-                            q.rem_euclid(NANOSECONDS_PER_CENTURY as $type) as u64
-                        } else {
-                            ((NANOSECONDS_PER_CENTURY as $type) + q + (1 as $type)) as u64
-                        };
-                        Duration::from_parts(centuries, nanoseconds)
-                    }
-                }
+                Duration::from_total_nanoseconds(total_ns)
             }
         }
 
@@ -495,18 +364,16 @@ impl fmt::Display for Duration {
             }
 
             let values = [days, hours, minutes, seconds, milli, us, nano];
-            let units = ["days", "h", "min", "s", "ms", "us", "ns"];
-            let mut prev_ignored = true;
+            let units = ["days", "h", "min", "s", "ms", "μs", "ns"];
+
+            let mut insert_space = false;
             for (val, unit) in values.iter().zip(units.iter()) {
                 if *val > 0 {
-                    if !prev_ignored {
-                        // Add space
+                    if insert_space {
                         write!(f, " ")?;
                     }
                     write!(f, "{} {}", val, unit)?;
-                    prev_ignored = false;
-                } else {
-                    prev_ignored = true;
+                    insert_space = true;
                 }
             }
             Ok(())
@@ -594,11 +461,11 @@ impl Sub for Duration {
                 me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
             }
             Some(nanos) => {
-                if me.centuries >= 0 {
-                    me.nanoseconds = nanos
-                } else {
-                    // Account for the zero
+                if self.centuries >= 0 && rhs.centuries < 0 {
+                    // Account for zero crossing
                     me.nanoseconds = nanos + 1
+                } else {
+                    me.nanoseconds = nanos
                 }
             }
         };
@@ -829,15 +696,7 @@ impl TimeUnit {
 }
 
 impl_ops_for_type!(f64);
-// impl_ops_for_type!(u8);
-// impl_ops_for_type!(i8);
-// impl_ops_for_type!(u16);
-// impl_ops_for_type!(i16);
-// impl_ops_for_type!(u32);
-// impl_ops_for_type!(i32);
-// impl_ops_for_type!(u64);
 impl_ops_for_type!(i64);
-// impl_ops_for_type!(u128);
 
 #[test]
 fn time_unit() {
@@ -859,6 +718,7 @@ fn time_unit() {
     assert_eq!(5.0 * TimeUnit::Nanosecond, TimeUnit::Nanosecond * 5);
 
     let d: Duration = 1.0 * TimeUnit::Hour / 3 - 20 * TimeUnit::Minute;
+    dbg!(d);
     assert!(d.abs() < TimeUnit::Nanosecond);
     assert_eq!(3 * (20 * TimeUnit::Minute), TimeUnit::Hour);
 
@@ -920,11 +780,10 @@ fn duration_print() {
         "5 h 256 ms 1 ns"
     );
 
-    assert_eq!(
-        format!("{}", TimeUnit::Hour + TimeUnit::Second),
-        "1 h 0 min 1 s"
-    );
+    assert_eq!(format!("{}", TimeUnit::Hour + TimeUnit::Second), "1 h 1 s");
 
+    // NOTE: We _try_ to specify down to a half of a nanosecond, but duration is NOT
+    // more precise than that, so it only actually stores to that number.
     assert_eq!(
         format!(
             "{}",
@@ -933,7 +792,7 @@ fn duration_print() {
                 + TimeUnit::Microsecond
                 + TimeUnit::Nanosecond * 3.5
         ),
-        "5 h 256 ms 1003.5 ns"
+        "5 h 256 ms 1 μs 3 ns"
     );
 
     // Check printing negative durations only shows one negative sign
@@ -945,9 +804,9 @@ fn duration_print() {
     assert_eq!(
         format!(
             "{}",
-            TimeUnit::Hour * -5 + TimeUnit::Millisecond * -256 + TimeUnit::Nanosecond * -3.5
+            TimeUnit::Hour * -5 + TimeUnit::Millisecond * -256 + TimeUnit::Nanosecond * -3
         ),
-        "-5 h 256 ms 3.5 ns"
+        "-5 h 256 ms 3 ns"
     );
 
     assert_eq!(
@@ -963,10 +822,7 @@ fn duration_print() {
 
     // Check that we support nanoseconds pas GPS time
     let now = TimeUnit::Nanosecond * 1286495254000000123;
-    assert_eq!(
-        format!("{}", now),
-        "14889 days 23 h 47 min 34 s 0 ms 203.125 ns"
-    );
+    assert_eq!(format!("{}", now), "14889 days 23 h 47 min 34 s 123 ns");
 
     let arbitrary = 14889.days()
         + 23.hours()
@@ -976,7 +832,7 @@ fn duration_print() {
         + 123.nanoseconds();
     assert_eq!(
         format!("{}", arbitrary),
-        "14889 days 23 h 47 min 34 s 0 ms 123 ns"
+        "14889 days 23 h 47 min 34 s 123 ns"
     );
 
     // Test fractional
@@ -984,11 +840,11 @@ fn duration_print() {
     let third_hour = (1.0 / 3.0) * TimeUnit::Hour;
     let sum: Duration = quarter_hour + third_hour;
     println!(
-        "Duration: {}\nFloating: {}",
+        "Proof that Duration is more precise than f64: {} vs {}",
         sum.in_unit_f64(TimeUnit::Minute),
         (1.0 / 4.0 + 1.0 / 3.0) * 60.0
     );
-    assert_eq!(format!("{}", sum), "35 min 0 s"); // Note the automatic unit selection
+    assert_eq!(format!("{}", sum), "35 min");
 
     let quarter_hour = -0.25 * TimeUnit::Hour;
     let third_hour: Duration = -1 * TimeUnit::Hour / 3;
@@ -996,7 +852,8 @@ fn duration_print() {
     let delta =
         sum.in_unit(TimeUnit::Millisecond).floor() - sum.in_unit(TimeUnit::Second).floor() * 1000.0;
     println!("{:?}", (delta * -1.0) == 0.0);
-    assert_eq!(format!("{}", sum), "-35 min 0 s"); // Note the automatic unit selection
+    dbg!(sum);
+    assert_eq!(format!("{}", sum), "-35 min"); // Note the automatic unit selection
 }
 
 #[test]
@@ -1011,7 +868,7 @@ fn deser_test() {
 #[test]
 fn test_extremes() {
     let d = Duration::from_total_nanoseconds(i128::MAX);
-    println!("d = {}", Duration::MIN_NEGATIVE - Duration::MIN_POSITIVE);
+
     assert_eq!(Duration::from_total_nanoseconds(d.total_nanoseconds()), d);
     let d = Duration::from_total_nanoseconds(i128::MIN + 1);
     assert_eq!(d, Duration::MIN);
@@ -1028,4 +885,10 @@ fn test_extremes() {
         Duration::MIN_NEGATIVE - Duration::MIN_POSITIVE,
         -2 * TimeUnit::Nanosecond
     );
+    assert_eq!(
+        Duration::from_total_nanoseconds(2),
+        2 * TimeUnit::Nanosecond
+    );
+    // Check that we do not support more precise than nanosecond
+    assert_eq!(TimeUnit::Nanosecond * 3.5, TimeUnit::Nanosecond * 3);
 }
