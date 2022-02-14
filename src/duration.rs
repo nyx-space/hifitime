@@ -2,13 +2,10 @@ extern crate divrem;
 extern crate regex;
 extern crate serde;
 extern crate serde_derive;
-extern crate twofloat;
 
 use self::divrem::DivRemEuclid;
 use self::regex::Regex;
 use self::serde::{de, Deserialize, Deserializer};
-#[allow(unused_imports)]
-use self::twofloat::TwoFloat;
 use crate::{
     Errors, DAYS_PER_CENTURY, SECONDS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR,
     SECONDS_PER_MINUTE,
@@ -36,10 +33,31 @@ const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_DAY;
 /// a durationn with centuries = -1 and nanoseconds = 0 is _a smaller duration_ than centuries = -1 and nanoseconds = 1.
 /// That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
 /// As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
 pub struct Duration {
     centuries: i16,
     nanoseconds: u64,
+}
+
+impl PartialEq for Duration {
+    fn eq(&self, other: &Self) -> bool {
+        if self.centuries == other.centuries {
+            self.nanoseconds == other.nanoseconds
+        } else if (self.centuries - other.centuries).abs() == 1
+            && (self.centuries == 0 || other.centuries == 0)
+        {
+            // Special case where we're at the zero crossing
+            if self.centuries < 0 {
+                // Self is negative,
+                (NANOSECONDS_PER_CENTURY - self.nanoseconds) == other.nanoseconds
+            } else {
+                // Other is negative
+                (NANOSECONDS_PER_CENTURY - other.nanoseconds) == self.nanoseconds
+            }
+        } else {
+            false
+        }
+    }
 }
 
 impl Duration {
@@ -174,9 +192,14 @@ impl Duration {
     /// Decomposes a Duration in its sign,  days,
     #[must_use]
     pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
-        let total_ns = self.total_nanoseconds();
+        let sign = self.centuries.signum() as i8;
+        let total_ns = if sign != -1 {
+            self.total_nanoseconds()
+        } else {
+            dbg!((-*self).total_nanoseconds())
+        };
 
-        let sign = total_ns.signum() as i8;
+        // let sign = total_ns.signum() as i8;
         let ns_left = total_ns.abs();
 
         let (days, ns_left) = ns_left.div_rem_euclid(i128::from(NANOSECONDS_PER_DAY));
@@ -541,10 +564,10 @@ impl Neg for Duration {
 
     #[must_use]
     fn neg(self) -> Self::Output {
-        Self {
-            centuries: -self.centuries - 1,
-            nanoseconds: NANOSECONDS_PER_CENTURY - self.nanoseconds,
-        }
+        Self::from_parts(
+            -self.centuries - 1,
+            NANOSECONDS_PER_CENTURY - self.nanoseconds,
+        )
     }
 }
 
@@ -744,18 +767,13 @@ fn time_unit() {
     let sum: Duration = quarter_hour + third_hour;
     dbg!(quarter_hour, third_hour, sum);
     assert!((sum.in_unit_f64(TimeUnit::Minute) - 35.0).abs() < EPSILON);
-    println!(
-        "Duration: {}\nFloating: {}",
-        sum.in_unit_f64(TimeUnit::Minute),
-        (1.0 / 4.0 + 1.0 / 3.0) * 60.0
-    );
 
     let quarter_hour = -0.25 * TimeUnit::Hour;
     let third_hour: Duration = -1 * TimeUnit::Hour / 3;
     let sum: Duration = quarter_hour + third_hour;
-    let delta = sum.in_unit(TimeUnit::Millisecond).floor()
-        - sum.in_unit(TimeUnit::Second).floor() * TwoFloat::from(1000.0);
-    println!("{:?}", delta * TwoFloat::from(-1) == TwoFloat::from(0));
+    let delta =
+        sum.in_unit(TimeUnit::Millisecond).floor() - sum.in_unit(TimeUnit::Second).floor() * 1000.0;
+    println!("{:?}", sum.in_seconds());
     assert!((sum.in_unit_f64(TimeUnit::Minute) + 35.0).abs() < EPSILON);
 }
 
@@ -849,11 +867,19 @@ fn duration_print() {
     let quarter_hour = -0.25 * TimeUnit::Hour;
     let third_hour: Duration = -1 * TimeUnit::Hour / 3;
     let sum: Duration = quarter_hour + third_hour;
+    println!("{}", -third_hour);
     let delta =
         sum.in_unit(TimeUnit::Millisecond).floor() - sum.in_unit(TimeUnit::Second).floor() * 1000.0;
     println!("{:?}", (delta * -1.0) == 0.0);
     dbg!(sum);
-    assert_eq!(format!("{}", sum), "-35 min"); // Note the automatic unit selection
+    assert_eq!(format!("{}", sum), "-35 min");
+}
+
+#[test]
+fn test_neg() {
+    assert_eq!(Duration::MIN_NEGATIVE, -Duration::MIN_POSITIVE);
+    assert_eq!(Duration::MIN_POSITIVE, -Duration::MIN_NEGATIVE);
+    assert_eq!(2.nanoseconds(), -(2.0.nanoseconds()));
 }
 
 #[test]
