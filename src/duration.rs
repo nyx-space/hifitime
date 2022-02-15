@@ -133,8 +133,64 @@ impl Duration {
     /// Returns the total nanoseconds in a signed 128 bit integer
     #[must_use]
     pub fn total_nanoseconds(self) -> i128 {
-        i128::from(self.centuries) * i128::from(NANOSECONDS_PER_CENTURY)
-            + i128::from(self.nanoseconds)
+        if self.centuries == -1 {
+            -1 * i128::from(NANOSECONDS_PER_CENTURY - self.nanoseconds)
+        } else if self.centuries >= 0 {
+            i128::from(self.centuries) * i128::from(NANOSECONDS_PER_CENTURY)
+                + i128::from(self.nanoseconds)
+        } else {
+            // Centuries negative by a decent amount
+            i128::from(self.centuries + 1) * i128::from(NANOSECONDS_PER_CENTURY)
+                + i128::from(self.nanoseconds)
+        }
+    }
+
+    /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.
+    #[must_use]
+    pub fn try_truncated_nanoseconds(self) -> Result<i64, Errors> {
+        // If it fits, we know that the nanoseconds also fit
+        if self.centuries.abs() >= 3 {
+            Err(Errors::Overflow)
+        } else if self.centuries == -1 {
+            Ok(-1 * (NANOSECONDS_PER_CENTURY - self.nanoseconds) as i64)
+        } else if self.centuries >= 0 {
+            Ok(
+                i64::from(self.centuries) * NANOSECONDS_PER_CENTURY as i64
+                    + self.nanoseconds as i64,
+            )
+        } else {
+            // Centuries negative by a decent amount
+            Ok(
+                i64::from(self.centuries + 1) * NANOSECONDS_PER_CENTURY as i64
+                    + self.nanoseconds as i64,
+            )
+        }
+    }
+
+    /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.
+    /// WARNING: This function will NOT fail and will return the i64::MIN or i64::MAX depending on
+    /// the sign of the centuries if the Duration does not fit on aa i64
+    #[must_use]
+    pub fn truncated_nanoseconds(self) -> i64 {
+        match self.try_truncated_nanoseconds() {
+            Ok(val) => val,
+            Err(_) => {
+                if self.centuries < 0 {
+                    i64::MIN
+                } else {
+                    i64::MAX
+                }
+            }
+        }
+    }
+
+    /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
+    pub fn from_truncated_nanoseconds(nanos: i64) -> Self {
+        if nanos < 0 {
+            Self::from_parts(-1, NANOSECONDS_PER_CENTURY - (nanos.abs() as u64))
+        } else {
+            Self::from_parts(0, nanos.abs() as u64)
+        }
     }
 
     /// Creates a new duration from the provided unit
@@ -193,13 +249,8 @@ impl Duration {
     #[must_use]
     pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
         let sign = self.centuries.signum() as i8;
-        let total_ns = if sign != -1 {
-            self.total_nanoseconds()
-        } else {
-            dbg!((-*self).total_nanoseconds())
-        };
+        let total_ns = self.total_nanoseconds();
 
-        // let sign = total_ns.signum() as i8;
         let ns_left = total_ns.abs();
 
         let (days, ns_left) = ns_left.div_rem_euclid(i128::from(NANOSECONDS_PER_DAY));
@@ -277,17 +328,20 @@ macro_rules! impl_ops_for_type {
             /// This method will necessarily ignore durations below nanoseconds
             fn mul(self, q: $type) -> Duration {
                 let total_ns = match self {
-                    TimeUnit::Century => (q * (NANOSECONDS_PER_CENTURY as $type)) as i128,
-                    TimeUnit::Day => (q * (NANOSECONDS_PER_DAY as $type)) as i128,
-                    TimeUnit::Hour => (q * (NANOSECONDS_PER_HOUR as $type)) as i128,
-                    TimeUnit::Minute => (q * (NANOSECONDS_PER_MINUTE as $type)) as i128,
-                    TimeUnit::Second => (q * (NANOSECONDS_PER_SECOND as $type)) as i128,
-                    TimeUnit::Millisecond => (q * (NANOSECONDS_PER_MILLISECOND as $type)) as i128,
-                    TimeUnit::Microsecond => (q * (NANOSECONDS_PER_MICROSECOND as $type)) as i128,
-                    TimeUnit::Nanosecond => q as i128,
+                    TimeUnit::Century => q * (NANOSECONDS_PER_CENTURY as $type),
+                    TimeUnit::Day => q * (NANOSECONDS_PER_DAY as $type),
+                    TimeUnit::Hour => q * (NANOSECONDS_PER_HOUR as $type),
+                    TimeUnit::Minute => q * (NANOSECONDS_PER_MINUTE as $type),
+                    TimeUnit::Second => q * (NANOSECONDS_PER_SECOND as $type),
+                    TimeUnit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as $type),
+                    TimeUnit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as $type),
+                    TimeUnit::Nanosecond => q,
                 };
-
-                Duration::from_total_nanoseconds(total_ns)
+                if total_ns.abs() < (i64::MAX as $type) {
+                    Duration::from_truncated_nanoseconds(total_ns as i64)
+                } else {
+                    Duration::from_total_nanoseconds(total_ns as i128)
+                }
             }
         }
 
@@ -302,64 +356,20 @@ macro_rules! impl_ops_for_type {
         impl Mul<$type> for Duration {
             type Output = Duration;
             fn mul(self, q: $type) -> Self::Output {
-                // Compute as nanoseconds to align with Duration, and divide as needed.
-                let mut as_duration = q * TimeUnit::Nanosecond;
-                let mut me = self;
-                me.centuries = me.centuries.saturating_mul(as_duration.centuries);
-                if me.centuries == i16::MAX {
-                    return Self::Output::MAX;
-                } else if me.centuries == i16::MIN {
-                    return Self::Output::MIN;
-                }
-                me.nanoseconds = me.nanoseconds.saturating_mul(as_duration.nanoseconds);
-                if me.nanoseconds == u64::MAX {
-                    // Increment the centuries and decrease nanoseconds
-                    as_duration.centuries += 1;
-                    as_duration.nanoseconds -= NANOSECONDS_PER_CENTURY;
-                    // And repeat
-                    me.centuries = me.centuries.saturating_mul(as_duration.centuries);
-                    if me.centuries == i16::MAX {
-                        return Self::Output::MAX;
-                    } else if me.centuries == i16::MIN {
-                        return Self::Output::MIN;
-                    }
-                    me.nanoseconds = me.nanoseconds.saturating_mul(as_duration.nanoseconds);
-                }
-                me
+                Duration::from_total_nanoseconds(
+                    self.total_nanoseconds()
+                        .saturating_mul((q * TimeUnit::Nanosecond).total_nanoseconds()),
+                )
             }
         }
 
         impl Div<$type> for Duration {
             type Output = Duration;
             fn div(self, q: $type) -> Self::Output {
-                // Compute as nanoseconds to align with Duration, and divide as needed.
-                let mut as_duration = q * TimeUnit::Nanosecond;
-                let mut me = self;
-                if as_duration.centuries > 0 {
-                    me.centuries = me.centuries.saturating_div(as_duration.centuries);
-                    if me.centuries == i16::MAX {
-                        return Self::Output::MAX;
-                    } else if me.centuries == i16::MIN {
-                        return Self::Output::MIN;
-                    }
-                }
-                if as_duration.nanoseconds > 0 {
-                    me.nanoseconds = me.nanoseconds.saturating_div(as_duration.nanoseconds);
-                    if me.nanoseconds == u64::MAX {
-                        // Increment the centuries and decrease nanoseconds
-                        as_duration.centuries += 1;
-                        as_duration.nanoseconds -= NANOSECONDS_PER_CENTURY;
-                        // And repeat
-                        me.centuries = me.centuries.saturating_mul(as_duration.centuries);
-                        if me.centuries == i16::MAX {
-                            return Self::Output::MAX;
-                        } else if me.centuries == i16::MIN {
-                            return Self::Output::MIN;
-                        }
-                        me.nanoseconds = me.nanoseconds.saturating_mul(as_duration.nanoseconds);
-                    }
-                }
-                me
+                Duration::from_total_nanoseconds(
+                    self.total_nanoseconds()
+                        .saturating_div((q * TimeUnit::Nanosecond).total_nanoseconds()),
+                )
             }
         }
 
@@ -444,6 +454,9 @@ impl Add for Duration {
             }
             Some(centuries) => {
                 me.centuries = centuries;
+                // if self.centuries < 0 && rhs.centuries >= 0 {
+                //     me.centuries += 1;
+                // }
             }
         }
         // We can safely add two nanoseconds together because we can fit five centuries in one u64
@@ -773,6 +786,7 @@ fn time_unit() {
     let sum: Duration = quarter_hour + third_hour;
     let delta =
         sum.in_unit(TimeUnit::Millisecond).floor() - sum.in_unit(TimeUnit::Second).floor() * 1000.0;
+    assert!(delta < std::f64::EPSILON);
     println!("{:?}", sum.in_seconds());
     assert!((sum.in_unit_f64(TimeUnit::Minute) + 35.0).abs() < EPSILON);
 }
@@ -867,12 +881,42 @@ fn duration_print() {
     let quarter_hour = -0.25 * TimeUnit::Hour;
     let third_hour: Duration = -1 * TimeUnit::Hour / 3;
     let sum: Duration = quarter_hour + third_hour;
-    println!("{}", -third_hour);
+    dbg!(sum.total_nanoseconds());
     let delta =
         sum.in_unit(TimeUnit::Millisecond).floor() - sum.in_unit(TimeUnit::Second).floor() * 1000.0;
     println!("{:?}", (delta * -1.0) == 0.0);
     dbg!(sum);
     assert_eq!(format!("{}", sum), "-35 min");
+}
+
+#[test]
+fn test_ops() {
+    assert_eq!(
+        (0.25 * TimeUnit::Hour).total_nanoseconds(),
+        (15 * NANOSECONDS_PER_MINUTE).into()
+    );
+
+    assert_eq!(
+        (-0.25 * TimeUnit::Hour).total_nanoseconds(),
+        i128::from(15 * NANOSECONDS_PER_MINUTE) * -1
+    );
+
+    assert_eq!(
+        (-0.25 * TimeUnit::Hour - 0.25 * TimeUnit::Hour).total_nanoseconds(),
+        i128::from(30 * NANOSECONDS_PER_MINUTE) * -1
+    );
+
+    println!("{}", -0.25 * TimeUnit::Hour + (-0.25 * TimeUnit::Hour));
+
+    assert_eq!(
+        Duration::MIN_POSITIVE + 4 * Duration::MIN_POSITIVE,
+        5 * TimeUnit::Nanosecond
+    );
+
+    assert_eq!(
+        Duration::MIN_NEGATIVE + 4 * Duration::MIN_NEGATIVE,
+        -5 * TimeUnit::Nanosecond
+    );
 }
 
 #[test]
@@ -917,4 +961,22 @@ fn test_extremes() {
     );
     // Check that we do not support more precise than nanosecond
     assert_eq!(TimeUnit::Nanosecond * 3.5, TimeUnit::Nanosecond * 3);
+
+    assert_eq!(
+        Duration::MIN_POSITIVE + Duration::MIN_NEGATIVE,
+        Duration::ZERO
+    );
+
+    assert_eq!(
+        Duration::MIN_NEGATIVE + Duration::MIN_NEGATIVE,
+        -2 * TimeUnit::Nanosecond
+    );
+
+    // Add i64 tests
+    let d = Duration::from_truncated_nanoseconds(i64::MAX);
+    println!("{}", d);
+    assert_eq!(
+        Duration::from_truncated_nanoseconds(d.truncated_nanoseconds()),
+        d
+    );
 }

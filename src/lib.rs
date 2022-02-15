@@ -199,16 +199,21 @@ pub enum Errors {
     ParseError(String),
     /// Raised when trying to initialize an Epoch or Duration from its hi and lo values, but these overlap
     ConversionOverlapError(f64, f64),
+    Overflow,
 }
 
 impl fmt::Display for Errors {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Errors::Carry => write!(f, "a carry error (e.g. 61 seconds)"),
-            Errors::ParseError(ref msg) => write!(f, "ParseError: {}", msg),
-            Errors::ConversionOverlapError(hi, lo) => {
+            Self::Carry => write!(f, "a carry error (e.g. 61 seconds)"),
+            Self::ParseError(ref msg) => write!(f, "ParseError: {}", msg),
+            Self::ConversionOverlapError(hi, lo) => {
                 write!(f, "hi and lo values overlap: {}, {}", hi, lo)
             }
+            Self::Overflow => write!(
+                f,
+                "overflow occured when trying to convert Duration information"
+            ),
         }
     }
 }
