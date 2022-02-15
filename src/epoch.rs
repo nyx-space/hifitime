@@ -285,7 +285,7 @@ impl Epoch {
         let tt_duration = duration - TimeUnit::Second * TT_OFFSET_S;
 
         let tt_centuries_j2k =
-            (tt_duration - TimeUnit::Second * ET_EPOCH_S).in_unit_f64(TimeUnit::Century);
+            (tt_duration - TimeUnit::Second * ET_EPOCH_S).in_unit(TimeUnit::Century);
 
         let g_rad = (PI / 180.0) * (357.528 + 35_999.050 * tt_centuries_j2k);
 
@@ -514,7 +514,7 @@ impl Epoch {
 
     /// Returns the epoch as a floating point value in the provided unit
     pub fn as_tai(self, unit: TimeUnit) -> f64 {
-        self.0.in_unit_f64(unit)
+        self.0.in_unit(unit)
     }
 
     pub fn as_tai_days(self) -> f64 {
@@ -535,7 +535,7 @@ impl Epoch {
 
     /// Returns the number of UTC seconds since the TAI epoch
     pub fn as_utc(self, unit: TimeUnit) -> f64 {
-        self.as_utc_duration().in_unit_f64(unit)
+        self.as_utc_duration().in_unit(unit)
     }
 
     /// Returns the number of UTC days since the TAI epoch
@@ -555,7 +555,7 @@ impl Epoch {
     }
 
     pub fn as_mjd_tai(self, unit: TimeUnit) -> f64 {
-        (self.0 + TimeUnit::Day * J1900_OFFSET).in_unit_f64(unit)
+        (self.0 + TimeUnit::Day * J1900_OFFSET).in_unit(unit)
     }
 
     /// Returns the Modified Julian Date in days UTC.
@@ -565,7 +565,7 @@ impl Epoch {
 
     /// Returns the Modified Julian Date in the provided unit in UTC.
     pub fn as_mjd_utc(self, unit: TimeUnit) -> f64 {
-        (self.as_utc_duration() + TimeUnit::Day * J1900_OFFSET).in_unit_f64(unit)
+        (self.as_utc_duration() + TimeUnit::Day * J1900_OFFSET).in_unit(unit)
     }
 
     /// Returns the Modified Julian Date in seconds UTC.
@@ -581,7 +581,7 @@ impl Epoch {
     }
 
     pub fn as_jde_tai(self, unit: TimeUnit) -> f64 {
-        self.as_jde_tai_duration().in_unit_f64(unit)
+        self.as_jde_tai_duration().in_unit(unit)
     }
 
     pub fn as_jde_tai_duration(self) -> Duration {
@@ -595,7 +595,7 @@ impl Epoch {
 
     /// Returns the Julian days in UTC.
     pub fn as_jde_utc_days(self) -> f64 {
-        self.as_jde_utc_duration().in_unit_f64(TimeUnit::Day)
+        self.as_jde_utc_duration().in_unit(TimeUnit::Day)
     }
 
     pub fn as_jde_utc_duration(self) -> Duration {
@@ -618,7 +618,7 @@ impl Epoch {
 
     /// Returns days past TAI epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
     pub fn as_tt_days(self) -> f64 {
-        self.as_tt_duration().in_unit_f64(TimeUnit::Day)
+        self.as_tt_duration().in_unit(TimeUnit::Day)
     }
 
     /// Returns the centuries pased J2000 TT
@@ -633,7 +633,7 @@ impl Epoch {
 
     /// Returns days past Julian epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
     pub fn as_jde_tt_days(self) -> f64 {
-        self.as_jde_tt_duration().in_unit_f64(TimeUnit::Day)
+        self.as_jde_tt_duration().in_unit(TimeUnit::Day)
     }
 
     pub fn as_jde_tt_duration(self) -> Duration {
@@ -642,7 +642,7 @@ impl Epoch {
 
     /// Returns days past Modified Julian epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
     pub fn as_mjd_tt_days(self) -> f64 {
-        self.as_mjd_tt_duration().in_unit_f64(TimeUnit::Day)
+        self.as_mjd_tt_duration().in_unit(TimeUnit::Day)
     }
 
     pub fn as_mjd_tt_duration(self) -> Duration {
@@ -660,7 +660,7 @@ impl Epoch {
 
     /// Returns days past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
     pub fn as_gpst_days(self) -> f64 {
-        self.as_gpst_duration().in_unit_f64(TimeUnit::Day)
+        self.as_gpst_duration().in_unit(TimeUnit::Day)
     }
 
     /// Returns the Ephemeris Time seconds past epoch
@@ -695,7 +695,7 @@ impl Epoch {
 
     /// Returns the Ephemeris Time JDE past epoch
     pub fn as_jde_et_days(self) -> f64 {
-        self.as_jde_et_duration().in_unit_f64(TimeUnit::Day)
+        self.as_jde_et_duration().in_unit(TimeUnit::Day)
     }
 
     pub fn as_jde_et_duration(self) -> Duration {
@@ -703,7 +703,7 @@ impl Epoch {
     }
 
     pub fn as_jde_et(self, unit: TimeUnit) -> f64 {
-        self.as_jde_et_duration().in_unit_f64(unit)
+        self.as_jde_et_duration().in_unit(unit)
     }
 
     pub fn as_jde_tdb_duration(self) -> Duration {
@@ -1066,7 +1066,7 @@ pub fn is_gregorian_valid(
     nanos: u32,
 ) -> bool {
     let max_seconds = if (month == 12 || month == 6)
-        && day == USUAL_DAYS_PER_MONTH[month as usize - 1].into()
+        && day == USUAL_DAYS_PER_MONTH[month as usize - 1]
         && hour == 23
         && minute == 59
         && ((month == 6 && JULY_YEARS.contains(&year))
@@ -1088,8 +1088,7 @@ pub fn is_gregorian_valid(
     {
         return false;
     }
-    if day > USUAL_DAYS_PER_MONTH[month as usize - 1].into() && (month != 2 || !is_leap_year(year))
-    {
+    if day > USUAL_DAYS_PER_MONTH[month as usize - 1] && (month != 2 || !is_leap_year(year)) {
         // Not in February or not a leap year
         return false;
     }

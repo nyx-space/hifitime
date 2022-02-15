@@ -132,7 +132,7 @@ impl Duration {
     #[must_use]
     pub fn total_nanoseconds(self) -> i128 {
         if self.centuries == -1 {
-            -1 * i128::from(NANOSECONDS_PER_CENTURY - self.nanoseconds)
+            -i128::from(NANOSECONDS_PER_CENTURY - self.nanoseconds)
         } else if self.centuries >= 0 {
             i128::from(self.centuries) * i128::from(NANOSECONDS_PER_CENTURY)
                 + i128::from(self.nanoseconds)
@@ -144,13 +144,12 @@ impl Duration {
     }
 
     /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.
-    #[must_use]
     pub fn try_truncated_nanoseconds(self) -> Result<i64, Errors> {
         // If it fits, we know that the nanoseconds also fit
         if self.centuries.abs() >= 3 {
             Err(Errors::Overflow)
         } else if self.centuries == -1 {
-            Ok(-1 * (NANOSECONDS_PER_CENTURY - self.nanoseconds) as i64)
+            Ok(-((NANOSECONDS_PER_CENTURY - self.nanoseconds) as i64))
         } else if self.centuries >= 0 {
             Ok(
                 i64::from(self.centuries) * NANOSECONDS_PER_CENTURY as i64
@@ -195,13 +194,6 @@ impl Duration {
     #[must_use]
     pub fn from_f64(value: f64, unit: TimeUnit) -> Self {
         unit * value
-    }
-
-    /// Returns this duration in f64 in the provided unit.
-    /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
-    #[must_use]
-    pub fn in_unit_f64(&self, unit: TimeUnit) -> f64 {
-        f64::from(self.in_unit(unit))
     }
 
     /// Returns this duration in seconds f64.
@@ -390,6 +382,7 @@ macro_rules! impl_ops_for_type {
             }
         }
 
+        #[allow(clippy::suspicious_arithmetic_impl)]
         impl Div<$type> for Duration {
             type Output = Duration;
             fn div(self, q: $type) -> Self::Output {
@@ -585,7 +578,7 @@ impl PartialEq<TimeUnit> for Duration {
 }
 
 impl PartialOrd<TimeUnit> for Duration {
-    #[allow(clippy::identity_op)]
+    #[allow(clippy::identity_op, clippy::comparison_chain)]
     fn partial_cmp(&self, unit: &TimeUnit) -> Option<Ordering> {
         let unit_deref = *unit;
         let unit_as_duration: Duration = unit_deref * 1;
@@ -814,7 +807,7 @@ fn time_unit() {
     let third_hour = (1.0 / 3.0) * TimeUnit::Hour;
     let sum: Duration = quarter_hour + third_hour;
     dbg!(quarter_hour, third_hour, sum);
-    assert!((sum.in_unit_f64(TimeUnit::Minute) - 35.0).abs() < EPSILON);
+    assert!((sum.in_unit(TimeUnit::Minute) - 35.0).abs() < EPSILON);
 
     let quarter_hour = -0.25 * TimeUnit::Hour;
     let third_hour: Duration = -1 * TimeUnit::Hour / 3;
@@ -823,7 +816,7 @@ fn time_unit() {
         sum.in_unit(TimeUnit::Millisecond).floor() - sum.in_unit(TimeUnit::Second).floor() * 1000.0;
     assert!(delta < std::f64::EPSILON);
     println!("{:?}", sum.in_seconds());
-    assert!((sum.in_unit_f64(TimeUnit::Minute) + 35.0).abs() < EPSILON);
+    assert!((sum.in_unit(TimeUnit::Minute) + 35.0).abs() < EPSILON);
 }
 
 #[test]
@@ -908,7 +901,7 @@ fn duration_print() {
     let sum: Duration = quarter_hour + third_hour;
     println!(
         "Proof that Duration is more precise than f64: {} vs {}",
-        sum.in_unit_f64(TimeUnit::Minute),
+        sum.in_unit(TimeUnit::Minute),
         (1.0 / 4.0 + 1.0 / 3.0) * 60.0
     );
     assert_eq!(format!("{}", sum), "35 min");
