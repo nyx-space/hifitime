@@ -284,8 +284,7 @@ impl Epoch {
         use std::f64::consts::PI;
         let tt_duration = duration - Unit::Second * TT_OFFSET_S;
 
-        let tt_centuries_j2k =
-            (tt_duration - Unit::Second * ET_EPOCH_S).in_unit(Unit::Century);
+        let tt_centuries_j2k = (tt_duration - Unit::Second * ET_EPOCH_S).in_unit(Unit::Century);
 
         let g_rad = (PI / 180.0) * (357.528 + 35_999.050 * tt_centuries_j2k);
 
@@ -1610,8 +1609,7 @@ fn test_from_str() {
 #[test]
 fn ops() {
     // Test adding a second
-    let sp_ex: Epoch =
-        Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33) + Unit::Second * 1.0;
+    let sp_ex: Epoch = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33) + Unit::Second * 1.0;
     let expected_et_s = 381_885_819.184_935_87;
     assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s - 1.0).abs() < 1e-5);
     let sp_ex: Epoch = sp_ex - Unit::Second * 1.0;

@@ -186,7 +186,7 @@ mod timeseries;
 pub use timeseries::*;
 
 pub mod prelude {
-    pub use {Duration, Epoch, Unit, TimeSeries, TimeUnits};
+    pub use {Duration, Epoch, TimeSeries, TimeUnits, Unit};
 }
 
 use std::convert;

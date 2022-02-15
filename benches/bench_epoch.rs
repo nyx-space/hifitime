@@ -25,27 +25,15 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("Duration add and assert day hour", |b| {
         b.iter(|| {
-            assert_eq!(
-                Unit::Day * black_box(10.0),
-                Unit::Day * black_box(10)
-            );
-            assert_eq!(
-                Unit::Hour * black_box(-7.0),
-                Unit::Hour * black_box(-7)
-            );
+            assert_eq!(Unit::Day * black_box(10.0), Unit::Day * black_box(10));
+            assert_eq!(Unit::Hour * black_box(-7.0), Unit::Hour * black_box(-7));
         })
     });
 
     c.bench_function("Duration add and assert minute second", |b| {
         b.iter(|| {
-            assert_eq!(
-                Unit::Minute * black_box(-2.0),
-                Unit::Minute * black_box(-2)
-            );
-            assert_eq!(
-                Unit::Second * black_box(3.0),
-                Unit::Second * black_box(3)
-            );
+            assert_eq!(Unit::Minute * black_box(-2.0), Unit::Minute * black_box(-2));
+            assert_eq!(Unit::Second * black_box(3.0), Unit::Second * black_box(3));
         })
     });
 
