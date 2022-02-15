@@ -154,6 +154,8 @@ pub const SECONDS_PER_MINUTE: f64 = 60.0;
 pub const SECONDS_PER_HOUR: f64 = 3_600.0;
 /// `SECONDS_PER_DAY` defines the number of seconds per day.
 pub const SECONDS_PER_DAY: f64 = 86_400.0;
+/// `SECONDS_PER_CENTURY` defines the number of seconds per century.
+pub const SECONDS_PER_CENTURY: f64 = SECONDS_PER_DAY * DAYS_PER_CENTURY;
 /// `SECONDS_PER_YEAR` corresponds to the number of seconds per julian year from [NAIF SPICE](https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/jyear_c.html).
 pub const SECONDS_PER_YEAR: f64 = 31_557_600.0;
 /// `SECONDS_PER_TROPICAL_YEAR` corresponds to the number of seconds per tropical year from [NAIF SPICE](https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/tyear_c.html).
@@ -205,16 +207,21 @@ pub enum Errors {
     ParseError(String),
     /// Raised when trying to initialize an Epoch or Duration from its hi and lo values, but these overlap
     ConversionOverlapError(f64, f64),
+    Overflow,
 }
 
 impl fmt::Display for Errors {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Errors::Carry => write!(f, "a carry error (e.g. 61 seconds)"),
-            Errors::ParseError(ref msg) => write!(f, "ParseError: {}", msg),
-            Errors::ConversionOverlapError(hi, lo) => {
+            Self::Carry => write!(f, "a carry error (e.g. 61 seconds)"),
+            Self::ParseError(ref msg) => write!(f, "ParseError: {}", msg),
+            Self::ConversionOverlapError(hi, lo) => {
                 write!(f, "hi and lo values overlap: {}, {}", hi, lo)
             }
+            Self::Overflow => write!(
+                f,
+                "overflow occured when trying to convert Duration information"
+            ),
         }
     }
 }

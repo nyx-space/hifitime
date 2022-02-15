@@ -1,8 +1,8 @@
 # hifitime 2
 
-Precise date and time handling in Rust built on top of a tuple of two floats.
-The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in
-day-to-day use of this library.
+Precise date and time handling in Rust built on top of a tuple of two integers allowing representation of durations and epochs with the exactly one nanosecond precision for 32,768 years _before_ 01 January 1900 and 32,767 years _after_ that reference epoch, all that in only 80 bits!
+
+The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in day-to-day use of this library.
 
 
 [![Build Status](https://app.travis-ci.com/nyx-space/hifitime.svg?branch=master)](https://app.travis-ci.com/nyx-space/hifitime)
@@ -41,30 +41,32 @@ I believe that SPICE uses TDB for all dates after J2000 TT. Hence, in the follow
 
 The following examples are executed as part of the standard test suite (cf. the function called `spice_et_tdb`).
 
+_Note:_ the differences shown here are likely due to a combination of SPICE using a different formulation for the calculation (using the constants in the SPICE kernels) and computing everything on a 64-bit floating point value. [By design](https://en.wikipedia.org/wiki/IEEE_754), a 64-bit floating point value has approximation errors. Hifitime performs all calculations on integers, which do not suffer from rounding errors.
+
 ## Case 1
 In SPICE, we chose to convert the UTC date `2012-02-07 11:22:33 UTC` into Ephemeris Time. SPICE responds with `381885819.18493587`.
 Initializing the same UTC date in hifitime and requesting the TDB leads to `381885819.18493646`, which is an error of **596.05 nanoseconds**.
 
 ## Case 2
 In SPICE, we chose to convert the UTC date `2002-02-07 00:00:00.000 UTC` into Ephemeris Time. SPICE responds with `66312064.18493876`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **618.39 nanoseconds**.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **633.29 nanoseconds**.
 
 ## Case 3
 This tests that we can correctly compute TDB time which will have a negative number of days because the UTC input is prior to J2000 TT.
 In SPICE, we chose to convert the UTC date `1996-02-07 11:22:33 UTC` into Ephemeris Time. SPICE responds with `-123035784.81506048`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **610.94 nanoseconds**.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **640.74 nanoseconds**.
 
 ## Case 4
 In SPICE, we chose to convert the UTC date `2015-02-07 00:00:00.000 UTC` into Ephemeris Time. SPICE responds with `476580220.1849411`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **596.05 nanoseconds**.
+Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **655.65 nanoseconds**.
 
 ## Case 5
 In SPICE, we chose to convert the TDB Julian Date in days `2452312.500372511` into Ephemeris Time, and initialize a Hifitime Epoch with that result (`66312032.18493909`).
-We then convert that epoch back into **days** of Julian Date TDB and Julian Date ET, both of which lead a difference **below machine precision** on a f64 (the equivalent of a double in C/C++).
+We then convert that epoch back into **days** of Julian Date TDB and Julian Date ET, which lead a difference **below machine precision** for the TDB computation and **0.46 nanoseconds** for the ET computation on a 64-bit floating point (f64/double).
 
 # Notes
 
-Please report and bugs by [clicking here](https://github.com/ChristopherRabotin/hifitime/issues/new).
+Please report and bugs by [clicking here](https://github.com/nyx-space/hifitime/issues/new).
 
 ### Leap second support
 Each time computing library may decide when the extra leap second exists as explained
@@ -79,6 +81,10 @@ day computations for [2015-06-30 23:59:59](https://heasarc.gsfc.nasa.gov/cgi-bin
 ET and TDB should now be identical. However, hifitime uses the European Space Agency's definition of TDB, detailed [here](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB). It seems that SPICE uses the older definition which has a fixed offset from TDT of 0.000935 seconds. This difference is more prominent around the TDB epoch of 01 January 2000.
 
 # Changelog
+
+## 3.0.0
++ Backend rewritten from TwoFloat to a struct of the centuries in `i16` and nanoseconds in `u64`. Thanks to @pwnorbitals for proposing the idea in #107 and writing the proof of concept. This leads to at least a 2x speed up in most calculations, cf. [this comment](https://github.com/nyx-space/hifitime/pull/107#issuecomment-1040702004).
++ Fix GPS epoch, and addition of a helper functions in `Epoch` by @cjordan
 
 ## 2.2.3
 + More deterministic `as_jde_tdb_days()` in `Epoch`. In version 2.2.1, the ephemeris time and TDB _days_ were identical down to machine precision. After a number of validation cases in the rotation equations of the IAU Earth to Earth Mean Equator J2000 frame, the new formulation was shown to lead to less rounding errors when requesting the days. These rounding errors prevented otherwise trivial test cases. However, it adds an error of **40.2 nanoseconds** when initializing an Epoch with the days in ET and requesting the TDB days.
