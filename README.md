@@ -1,4 +1,4 @@
-# hifitime 2
+# hifitime 3
 
 Precise date and time handling in Rust built on top of a tuple of two integers allowing representation of durations and epochs with the exactly one nanosecond precision for 32,768 years _before_ 01 January 1900 and 32,767 years _after_ that reference epoch, all that in only 80 bits!
 

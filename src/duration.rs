@@ -184,7 +184,17 @@ impl Duration {
     /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
     pub fn from_truncated_nanoseconds(nanos: i64) -> Self {
         if nanos < 0 {
-            Self::from_parts(-1, NANOSECONDS_PER_CENTURY - (nanos.abs() as u64))
+            let ns = nanos.abs() as u64;
+            let extra_centuries = ns.div_euclid(NANOSECONDS_PER_CENTURY);
+            if extra_centuries > i16::MAX as u64 {
+                Self::MIN
+            } else {
+                let rem_nanos = ns.rem_euclid(NANOSECONDS_PER_CENTURY);
+                Self::from_parts(
+                    -1 - (extra_centuries as i16),
+                    NANOSECONDS_PER_CENTURY - rem_nanos,
+                )
+            }
         } else {
             Self::from_parts(0, nanos.abs() as u64)
         }
@@ -192,7 +202,7 @@ impl Duration {
 
     /// Creates a new duration from the provided unit
     #[must_use]
-    pub fn from_f64(value: f64, unit: TimeUnit) -> Self {
+    pub fn from_f64(value: f64, unit: Unit) -> Self {
         unit * value
     }
 
@@ -210,7 +220,7 @@ impl Duration {
 
     /// Returns the value of this duration in the requested unit.
     #[must_use]
-    pub fn in_unit(&self, unit: TimeUnit) -> f64 {
+    pub fn in_unit(&self, unit: Unit) -> f64 {
         self.in_seconds() * unit.from_seconds()
     }
 
@@ -235,7 +245,7 @@ impl Duration {
         out
     }
 
-    /// Decomposes a Duration in its sign,  days,
+    /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns
     #[must_use]
     pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
         let sign = self.centuries.signum() as i8;
@@ -340,21 +350,21 @@ impl<'de> Deserialize<'de> for Duration {
 
 macro_rules! impl_ops_for_type {
     ($type:ident) => {
-        impl Mul<$type> for TimeUnit {
+        impl Mul<$type> for Unit {
             type Output = Duration;
 
             /// Converts the input values to i128 and creates a duration from that
             /// This method will necessarily ignore durations below nanoseconds
             fn mul(self, q: $type) -> Duration {
                 let total_ns = match self {
-                    TimeUnit::Century => q * (NANOSECONDS_PER_CENTURY as $type),
-                    TimeUnit::Day => q * (NANOSECONDS_PER_DAY as $type),
-                    TimeUnit::Hour => q * (NANOSECONDS_PER_HOUR as $type),
-                    TimeUnit::Minute => q * (NANOSECONDS_PER_MINUTE as $type),
-                    TimeUnit::Second => q * (NANOSECONDS_PER_SECOND as $type),
-                    TimeUnit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as $type),
-                    TimeUnit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as $type),
-                    TimeUnit::Nanosecond => q,
+                    Unit::Century => q * (NANOSECONDS_PER_CENTURY as $type),
+                    Unit::Day => q * (NANOSECONDS_PER_DAY as $type),
+                    Unit::Hour => q * (NANOSECONDS_PER_HOUR as $type),
+                    Unit::Minute => q * (NANOSECONDS_PER_MINUTE as $type),
+                    Unit::Second => q * (NANOSECONDS_PER_SECOND as $type),
+                    Unit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as $type),
+                    Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as $type),
+                    Unit::Nanosecond => q,
                 };
                 if total_ns.abs() < (i64::MAX as $type) {
                     Duration::from_truncated_nanoseconds(total_ns as i64)
@@ -364,9 +374,9 @@ macro_rules! impl_ops_for_type {
             }
         }
 
-        impl Mul<TimeUnit> for $type {
+        impl Mul<Unit> for $type {
             type Output = Duration;
-            fn mul(self, q: TimeUnit) -> Duration {
+            fn mul(self, q: Unit) -> Duration {
                 // Apply the reflexive property
                 q * self
             }
@@ -377,7 +387,7 @@ macro_rules! impl_ops_for_type {
             fn mul(self, q: $type) -> Self::Output {
                 Duration::from_total_nanoseconds(
                     self.total_nanoseconds()
-                        .saturating_mul((q * TimeUnit::Nanosecond).total_nanoseconds()),
+                        .saturating_mul((q * Unit::Nanosecond).total_nanoseconds()),
                 )
             }
         }
@@ -388,7 +398,7 @@ macro_rules! impl_ops_for_type {
             fn div(self, q: $type) -> Self::Output {
                 Duration::from_total_nanoseconds(
                     self.total_nanoseconds()
-                        .saturating_div((q * TimeUnit::Nanosecond).total_nanoseconds()),
+                        .saturating_div((q * Unit::Nanosecond).total_nanoseconds()),
                 )
             }
         }
@@ -401,7 +411,7 @@ macro_rules! impl_ops_for_type {
             }
         }
 
-        impl TimeUnitHelper for $type {}
+        impl TimeUnits for $type {}
     };
 }
 
@@ -537,49 +547,49 @@ impl SubAssign for Duration {
     }
 }
 
-// Allow adding with a TimeUnit directly
-impl Add<TimeUnit> for Duration {
+// Allow adding with a Unit directly
+impl Add<Unit> for Duration {
     type Output = Duration;
 
     #[allow(clippy::identity_op)]
-    fn add(self, rhs: TimeUnit) -> Duration {
+    fn add(self, rhs: Unit) -> Duration {
         self + rhs * 1
     }
 }
 
-impl AddAssign<TimeUnit> for Duration {
+impl AddAssign<Unit> for Duration {
     #[allow(clippy::identity_op)]
-    fn add_assign(&mut self, rhs: TimeUnit) {
+    fn add_assign(&mut self, rhs: Unit) {
         *self = *self + rhs * 1;
     }
 }
 
-impl Sub<TimeUnit> for Duration {
+impl Sub<Unit> for Duration {
     type Output = Duration;
 
     #[allow(clippy::identity_op)]
-    fn sub(self, rhs: TimeUnit) -> Duration {
+    fn sub(self, rhs: Unit) -> Duration {
         self - rhs * 1
     }
 }
 
-impl SubAssign<TimeUnit> for Duration {
+impl SubAssign<Unit> for Duration {
     #[allow(clippy::identity_op)]
-    fn sub_assign(&mut self, rhs: TimeUnit) {
+    fn sub_assign(&mut self, rhs: Unit) {
         *self = *self - rhs * 1;
     }
 }
 
-impl PartialEq<TimeUnit> for Duration {
+impl PartialEq<Unit> for Duration {
     #[allow(clippy::identity_op)]
-    fn eq(&self, unit: &TimeUnit) -> bool {
+    fn eq(&self, unit: &Unit) -> bool {
         *self == *unit * 1
     }
 }
 
-impl PartialOrd<TimeUnit> for Duration {
+impl PartialOrd<Unit> for Duration {
     #[allow(clippy::identity_op, clippy::comparison_chain)]
-    fn partial_cmp(&self, unit: &TimeUnit) -> Option<Ordering> {
+    fn partial_cmp(&self, unit: &Unit) -> Option<Ordering> {
         let unit_deref = *unit;
         let unit_as_duration: Duration = unit_deref * 1;
         if self < &unit_as_duration {
@@ -620,15 +630,15 @@ impl FromStr for Duration {
     ///
     /// # Example
     /// ```
-    /// use hifitime::{Duration, TimeUnit};
+    /// use hifitime::{Duration, Unit};
     /// use std::str::FromStr;
     ///
-    /// assert_eq!(Duration::from_str("1 d").unwrap(), TimeUnit::Day * 1);
-    /// assert_eq!(Duration::from_str("10.598 days").unwrap(), TimeUnit::Day * 10.598);
-    /// assert_eq!(Duration::from_str("10.598 min").unwrap(), TimeUnit::Minute * 10.598);
-    /// assert_eq!(Duration::from_str("10.598 us").unwrap(), TimeUnit::Microsecond * 10.598);
-    /// assert_eq!(Duration::from_str("10.598 seconds").unwrap(), TimeUnit::Second * 10.598);
-    /// assert_eq!(Duration::from_str("10.598 nanosecond").unwrap(), TimeUnit::Nanosecond * 10.598);
+    /// assert_eq!(Duration::from_str("1 d").unwrap(), Unit::Day * 1);
+    /// assert_eq!(Duration::from_str("10.598 days").unwrap(), Unit::Day * 10.598);
+    /// assert_eq!(Duration::from_str("10.598 min").unwrap(), Unit::Minute * 10.598);
+    /// assert_eq!(Duration::from_str("10.598 us").unwrap(), Unit::Microsecond * 10.598);
+    /// assert_eq!(Duration::from_str("10.598 seconds").unwrap(), Unit::Second * 10.598);
+    /// assert_eq!(Duration::from_str("10.598 nanosecond").unwrap(), Unit::Nanosecond * 10.598);
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let reg = Regex::new(r"^(\d+\.?\d*)\W*(\w+)$").unwrap();
@@ -636,13 +646,13 @@ impl FromStr for Duration {
             Some(cap) => {
                 let value = cap[1].to_owned().parse::<f64>().unwrap();
                 match cap[2].to_owned().to_lowercase().as_str() {
-                    "d" | "days" | "day" => Ok(TimeUnit::Day * value),
-                    "h" | "hours" | "hour" => Ok(TimeUnit::Hour * value),
-                    "min" | "mins" | "minute" | "minutes" => Ok(TimeUnit::Minute * value),
-                    "s" | "second" | "seconds" => Ok(TimeUnit::Second * value),
-                    "ms" | "millisecond" | "milliseconds" => Ok(TimeUnit::Millisecond * value),
-                    "us" | "microsecond" | "microseconds" => Ok(TimeUnit::Microsecond * value),
-                    "ns" | "nanosecond" | "nanoseconds" => Ok(TimeUnit::Nanosecond * value),
+                    "d" | "days" | "day" => Ok(Unit::Day * value),
+                    "h" | "hours" | "hour" => Ok(Unit::Hour * value),
+                    "min" | "mins" | "minute" | "minutes" => Ok(Unit::Minute * value),
+                    "s" | "second" | "seconds" => Ok(Unit::Second * value),
+                    "ms" | "millisecond" | "milliseconds" => Ok(Unit::Millisecond * value),
+                    "us" | "microsecond" | "microseconds" => Ok(Unit::Microsecond * value),
+                    "ns" | "nanosecond" | "nanoseconds" => Ok(Unit::Nanosecond * value),
                     _ => Err(Errors::ParseError(format!(
                         "unknown duration unit in `{}`",
                         s
@@ -670,36 +680,36 @@ impl FromStr for Duration {
 /// assert_eq!(Duration::from_str("10.598 seconds").unwrap(), 10.598_f64.seconds());
 /// assert_eq!(Duration::from_str("10.598 nanosecond").unwrap(), 10.598_f64.nanoseconds());
 /// ```
-pub trait TimeUnitHelper: Copy + Mul<TimeUnit, Output = Duration> {
+pub trait TimeUnits: Copy + Mul<Unit, Output = Duration> {
     // TODO: Find a better name for this, it's a pain to import and use
     fn centuries(self) -> Duration {
-        self * TimeUnit::Century
+        self * Unit::Century
     }
     fn days(self) -> Duration {
-        self * TimeUnit::Day
+        self * Unit::Day
     }
     fn hours(self) -> Duration {
-        self * TimeUnit::Hour
+        self * Unit::Hour
     }
     fn minutes(self) -> Duration {
-        self * TimeUnit::Minute
+        self * Unit::Minute
     }
     fn seconds(self) -> Duration {
-        self * TimeUnit::Second
+        self * Unit::Second
     }
     fn milliseconds(self) -> Duration {
-        self * TimeUnit::Millisecond
+        self * Unit::Millisecond
     }
     fn microseconds(self) -> Duration {
-        self * TimeUnit::Microsecond
+        self * Unit::Microsecond
     }
     fn nanoseconds(self) -> Duration {
-        self * TimeUnit::Nanosecond
+        self * Unit::Nanosecond
     }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
-pub enum TimeUnit {
+pub enum Unit {
     /// 36525 days, it the number of days per century in the Julian calendar
     Century,
     Day,
@@ -711,7 +721,7 @@ pub enum TimeUnit {
     Nanosecond,
 }
 
-impl Add for TimeUnit {
+impl Add for Unit {
     type Output = Duration;
 
     #[allow(clippy::identity_op)]
@@ -720,7 +730,7 @@ impl Add for TimeUnit {
     }
 }
 
-impl Sub for TimeUnit {
+impl Sub for Unit {
     type Output = Duration;
 
     #[allow(clippy::identity_op)]
@@ -729,18 +739,18 @@ impl Sub for TimeUnit {
     }
 }
 
-impl TimeUnit {
+impl Unit {
     #[must_use]
     pub fn in_seconds(self) -> f64 {
         match self {
-            TimeUnit::Century => DAYS_PER_CENTURY * SECONDS_PER_DAY,
-            TimeUnit::Day => SECONDS_PER_DAY,
-            TimeUnit::Hour => SECONDS_PER_HOUR,
-            TimeUnit::Minute => SECONDS_PER_MINUTE,
-            TimeUnit::Second => 1.0,
-            TimeUnit::Millisecond => 1e-3,
-            TimeUnit::Microsecond => 1e-6,
-            TimeUnit::Nanosecond => 1e-9,
+            Unit::Century => DAYS_PER_CENTURY * SECONDS_PER_DAY,
+            Unit::Day => SECONDS_PER_DAY,
+            Unit::Hour => SECONDS_PER_HOUR,
+            Unit::Minute => SECONDS_PER_MINUTE,
+            Unit::Second => 1.0,
+            Unit::Millisecond => 1e-3,
+            Unit::Microsecond => 1e-6,
+            Unit::Nanosecond => 1e-9,
         }
     }
 
@@ -766,30 +776,30 @@ fn div_rem_i64(me: i64, rhs: i64) -> (i64, i64) {
 fn time_unit() {
     use std::f64::EPSILON;
     // Check that the same number is created for different types
-    assert_eq!(TimeUnit::Day * 10.0, TimeUnit::Day * 10);
-    assert_eq!(TimeUnit::Hour * -7.0, TimeUnit::Hour * -7);
-    assert_eq!(TimeUnit::Minute * -2.0, TimeUnit::Minute * -2);
-    assert_eq!(TimeUnit::Second * 3.0, TimeUnit::Second * 3);
-    assert_eq!(TimeUnit::Millisecond * 4.0, TimeUnit::Millisecond * 4);
-    assert_eq!(TimeUnit::Nanosecond * 5.0, TimeUnit::Nanosecond * 5);
+    assert_eq!(Unit::Day * 10.0, Unit::Day * 10);
+    assert_eq!(Unit::Hour * -7.0, Unit::Hour * -7);
+    assert_eq!(Unit::Minute * -2.0, Unit::Minute * -2);
+    assert_eq!(Unit::Second * 3.0, Unit::Second * 3);
+    assert_eq!(Unit::Millisecond * 4.0, Unit::Millisecond * 4);
+    assert_eq!(Unit::Nanosecond * 5.0, Unit::Nanosecond * 5);
 
     // Check the LHS multiplications match the RHS ones
-    assert_eq!(10.0 * TimeUnit::Day, TimeUnit::Day * 10);
-    assert_eq!(-7 * TimeUnit::Hour, TimeUnit::Hour * -7.0);
-    assert_eq!(-2.0 * TimeUnit::Minute, TimeUnit::Minute * -2);
-    assert_eq!(3.0 * TimeUnit::Second, TimeUnit::Second * 3);
-    assert_eq!(4.0 * TimeUnit::Millisecond, TimeUnit::Millisecond * 4);
-    assert_eq!(5.0 * TimeUnit::Nanosecond, TimeUnit::Nanosecond * 5);
+    assert_eq!(10.0 * Unit::Day, Unit::Day * 10);
+    assert_eq!(-7 * Unit::Hour, Unit::Hour * -7.0);
+    assert_eq!(-2.0 * Unit::Minute, Unit::Minute * -2);
+    assert_eq!(3.0 * Unit::Second, Unit::Second * 3);
+    assert_eq!(4.0 * Unit::Millisecond, Unit::Millisecond * 4);
+    assert_eq!(5.0 * Unit::Nanosecond, Unit::Nanosecond * 5);
 
-    let d: Duration = 1.0 * TimeUnit::Hour / 3 - 20 * TimeUnit::Minute;
+    let d: Duration = 1.0 * Unit::Hour / 3 - 20 * Unit::Minute;
     dbg!(d);
-    assert!(d.abs() < TimeUnit::Nanosecond);
-    assert_eq!(3 * (20 * TimeUnit::Minute), TimeUnit::Hour);
+    assert!(d.abs() < Unit::Nanosecond);
+    assert_eq!(3 * (20 * Unit::Minute), Unit::Hour);
 
     // Test operations
-    let seven_hours = TimeUnit::Hour * 7;
-    let six_minutes = TimeUnit::Minute * 6;
-    // let five_seconds = TimeUnit::Second * 5.0;
+    let seven_hours = Unit::Hour * 7;
+    let six_minutes = Unit::Minute * 6;
+    // let five_seconds = Unit::Second * 5.0;
     let five_seconds = 5.0.seconds();
     let sum: Duration = seven_hours + six_minutes + five_seconds;
     assert!((sum.in_seconds() - 25565.0).abs() < EPSILON);
@@ -803,68 +813,64 @@ fn time_unit() {
     assert!((sub.in_seconds() - 24835.0).abs() < EPSILON);
 
     // Test fractional
-    let quarter_hour = 0.25 * TimeUnit::Hour;
-    let third_hour = (1.0 / 3.0) * TimeUnit::Hour;
+    let quarter_hour = 0.25 * Unit::Hour;
+    let third_hour = (1.0 / 3.0) * Unit::Hour;
     let sum: Duration = quarter_hour + third_hour;
     dbg!(quarter_hour, third_hour, sum);
-    assert!((sum.in_unit(TimeUnit::Minute) - 35.0).abs() < EPSILON);
+    assert!((sum.in_unit(Unit::Minute) - 35.0).abs() < EPSILON);
 
-    let quarter_hour = -0.25 * TimeUnit::Hour;
-    let third_hour: Duration = -1 * TimeUnit::Hour / 3;
+    let quarter_hour = -0.25 * Unit::Hour;
+    let third_hour: Duration = -1 * Unit::Hour / 3;
     let sum: Duration = quarter_hour + third_hour;
-    let delta =
-        sum.in_unit(TimeUnit::Millisecond).floor() - sum.in_unit(TimeUnit::Second).floor() * 1000.0;
+    let delta = sum.in_unit(Unit::Millisecond).floor() - sum.in_unit(Unit::Second).floor() * 1000.0;
     assert!(delta < std::f64::EPSILON);
     println!("{:?}", sum.in_seconds());
-    assert!((sum.in_unit(TimeUnit::Minute) + 35.0).abs() < EPSILON);
+    assert!((sum.in_unit(Unit::Minute) + 35.0).abs() < EPSILON);
 }
 
 #[test]
 fn duration_print() {
     // Check printing adds precision
     assert_eq!(
-        format!("{}", TimeUnit::Day * 10.0 + TimeUnit::Hour * 5),
+        format!("{}", Unit::Day * 10.0 + Unit::Hour * 5),
         "10 days 5 h"
     );
 
     assert_eq!(
-        format!("{}", TimeUnit::Hour * 5 + TimeUnit::Millisecond * 256),
+        format!("{}", Unit::Hour * 5 + Unit::Millisecond * 256),
         "5 h 256 ms"
     );
 
     assert_eq!(
         format!(
             "{}",
-            TimeUnit::Hour * 5 + TimeUnit::Millisecond * 256 + TimeUnit::Nanosecond
+            Unit::Hour * 5 + Unit::Millisecond * 256 + Unit::Nanosecond
         ),
         "5 h 256 ms 1 ns"
     );
 
-    assert_eq!(format!("{}", TimeUnit::Hour + TimeUnit::Second), "1 h 1 s");
+    assert_eq!(format!("{}", Unit::Hour + Unit::Second), "1 h 1 s");
 
     // NOTE: We _try_ to specify down to a half of a nanosecond, but duration is NOT
     // more precise than that, so it only actually stores to that number.
     assert_eq!(
         format!(
             "{}",
-            TimeUnit::Hour * 5
-                + TimeUnit::Millisecond * 256
-                + TimeUnit::Microsecond
-                + TimeUnit::Nanosecond * 3.5
+            Unit::Hour * 5 + Unit::Millisecond * 256 + Unit::Microsecond + Unit::Nanosecond * 3.5
         ),
         "5 h 256 ms 1 μs 3 ns"
     );
 
     // Check printing negative durations only shows one negative sign
     assert_eq!(
-        format!("{}", TimeUnit::Hour * -5 + TimeUnit::Millisecond * -256),
+        format!("{}", Unit::Hour * -5 + Unit::Millisecond * -256),
         "-5 h 256 ms"
     );
 
     assert_eq!(
         format!(
             "{}",
-            TimeUnit::Hour * -5 + TimeUnit::Millisecond * -256 + TimeUnit::Nanosecond * -3
+            Unit::Hour * -5 + Unit::Millisecond * -256 + Unit::Nanosecond * -3
         ),
         "-5 h 256 ms 3 ns"
     );
@@ -872,16 +878,16 @@ fn duration_print() {
     assert_eq!(
         format!(
             "{}",
-            (TimeUnit::Hour * -5 + TimeUnit::Millisecond * -256)
-                - (TimeUnit::Hour * -5 + TimeUnit::Millisecond * -256 + TimeUnit::Nanosecond * 2)
+            (Unit::Hour * -5 + Unit::Millisecond * -256)
+                - (Unit::Hour * -5 + Unit::Millisecond * -256 + Unit::Nanosecond * 2)
         ),
         "-2 ns"
     );
 
-    assert_eq!(format!("{}", TimeUnit::Nanosecond * 2), "2 ns");
+    assert_eq!(format!("{}", Unit::Nanosecond * 2), "2 ns");
 
     // Check that we support nanoseconds pas GPS time
-    let now = TimeUnit::Nanosecond * 1286495254000000123;
+    let now = Unit::Nanosecond * 1286495254000000123;
     assert_eq!(format!("{}", now), "14889 days 23 h 47 min 34 s 123 ns");
 
     let arbitrary = 14889.days()
@@ -896,22 +902,21 @@ fn duration_print() {
     );
 
     // Test fractional
-    let quarter_hour = 0.25 * TimeUnit::Hour;
-    let third_hour = (1.0 / 3.0) * TimeUnit::Hour;
+    let quarter_hour = 0.25 * Unit::Hour;
+    let third_hour = (1.0 / 3.0) * Unit::Hour;
     let sum: Duration = quarter_hour + third_hour;
     println!(
         "Proof that Duration is more precise than f64: {} vs {}",
-        sum.in_unit(TimeUnit::Minute),
+        sum.in_unit(Unit::Minute),
         (1.0 / 4.0 + 1.0 / 3.0) * 60.0
     );
     assert_eq!(format!("{}", sum), "35 min");
 
-    let quarter_hour = -0.25 * TimeUnit::Hour;
-    let third_hour: Duration = -1 * TimeUnit::Hour / 3;
+    let quarter_hour = -0.25 * Unit::Hour;
+    let third_hour: Duration = -1 * Unit::Hour / 3;
     let sum: Duration = quarter_hour + third_hour;
     dbg!(sum.total_nanoseconds());
-    let delta =
-        sum.in_unit(TimeUnit::Millisecond).floor() - sum.in_unit(TimeUnit::Second).floor() * 1000.0;
+    let delta = sum.in_unit(Unit::Millisecond).floor() - sum.in_unit(Unit::Second).floor() * 1000.0;
     println!("{:?}", (delta * -1.0) == 0.0);
     dbg!(sum);
     assert_eq!(format!("{}", sum), "-35 min");
@@ -920,30 +925,30 @@ fn duration_print() {
 #[test]
 fn test_ops() {
     assert_eq!(
-        (0.25 * TimeUnit::Hour).total_nanoseconds(),
+        (0.25 * Unit::Hour).total_nanoseconds(),
         (15 * NANOSECONDS_PER_MINUTE).into()
     );
 
     assert_eq!(
-        (-0.25 * TimeUnit::Hour).total_nanoseconds(),
+        (-0.25 * Unit::Hour).total_nanoseconds(),
         i128::from(15 * NANOSECONDS_PER_MINUTE) * -1
     );
 
     assert_eq!(
-        (-0.25 * TimeUnit::Hour - 0.25 * TimeUnit::Hour).total_nanoseconds(),
+        (-0.25 * Unit::Hour - 0.25 * Unit::Hour).total_nanoseconds(),
         i128::from(30 * NANOSECONDS_PER_MINUTE) * -1
     );
 
-    println!("{}", -0.25 * TimeUnit::Hour + (-0.25 * TimeUnit::Hour));
+    println!("{}", -0.25 * Unit::Hour + (-0.25 * Unit::Hour));
 
     assert_eq!(
         Duration::MIN_POSITIVE + 4 * Duration::MIN_POSITIVE,
-        5 * TimeUnit::Nanosecond
+        5 * Unit::Nanosecond
     );
 
     assert_eq!(
         Duration::MIN_NEGATIVE + 4 * Duration::MIN_NEGATIVE,
-        -5 * TimeUnit::Nanosecond
+        -5 * Unit::Nanosecond
     );
 }
 
@@ -977,18 +982,15 @@ fn test_extremes() {
     dbg!(Duration::MIN_NEGATIVE, Duration::MIN_POSITIVE);
     assert_eq!(
         Duration::MIN_POSITIVE - Duration::MIN_NEGATIVE,
-        2 * TimeUnit::Nanosecond
+        2 * Unit::Nanosecond
     );
     assert_eq!(
         Duration::MIN_NEGATIVE - Duration::MIN_POSITIVE,
-        -2 * TimeUnit::Nanosecond
+        -2 * Unit::Nanosecond
     );
-    assert_eq!(
-        Duration::from_total_nanoseconds(2),
-        2 * TimeUnit::Nanosecond
-    );
+    assert_eq!(Duration::from_total_nanoseconds(2), 2 * Unit::Nanosecond);
     // Check that we do not support more precise than nanosecond
-    assert_eq!(TimeUnit::Nanosecond * 3.5, TimeUnit::Nanosecond * 3);
+    assert_eq!(Unit::Nanosecond * 3.5, Unit::Nanosecond * 3);
 
     assert_eq!(
         Duration::MIN_POSITIVE + Duration::MIN_NEGATIVE,
@@ -997,7 +999,7 @@ fn test_extremes() {
 
     assert_eq!(
         Duration::MIN_NEGATIVE + Duration::MIN_NEGATIVE,
-        -2 * TimeUnit::Nanosecond
+        -2 * Unit::Nanosecond
     );
 
     // Add i64 tests
