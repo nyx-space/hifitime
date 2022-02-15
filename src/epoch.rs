@@ -202,7 +202,7 @@ impl Epoch {
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.0 += cnt * TimeUnit::Second;
+        e.0 += i64::from(cnt) * TimeUnit::Second;
         e
     }
 
@@ -215,7 +215,7 @@ impl Epoch {
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.0 += cnt * TimeUnit::Second;
+        e.0 += i64::from(cnt) * TimeUnit::Second;
         e
     }
 
@@ -232,7 +232,7 @@ impl Epoch {
     pub fn from_mjd_utc(days: f64) -> Self {
         let mut e = Self::from_mjd_tai(days);
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.0 += e.get_num_leap_seconds() * TimeUnit::Second;
+        e.0 += i64::from(e.get_num_leap_seconds()) * TimeUnit::Second;
         e
     }
 
@@ -249,7 +249,7 @@ impl Epoch {
     pub fn from_jde_utc(days: f64) -> Self {
         let mut e = Self::from_jde_tai(days);
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.0 += e.get_num_leap_seconds() * TimeUnit::Second;
+        e.0 += i64::from(e.get_num_leap_seconds()) * TimeUnit::Second;
         e
     }
 
@@ -462,7 +462,7 @@ impl Epoch {
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        if_tai.0 += cnt * TimeUnit::Second;
+        if_tai.0 += i64::from(cnt) * TimeUnit::Second;
         Ok(if_tai)
     }
 
@@ -530,7 +530,7 @@ impl Epoch {
     fn as_utc_duration(self) -> Duration {
         let cnt = self.get_num_leap_seconds();
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        self.0 + (-cnt) * TimeUnit::Second
+        self.0 + i64::from(-cnt) * TimeUnit::Second
     }
 
     /// Returns the number of UTC seconds since the TAI epoch

@@ -83,7 +83,7 @@ ET and TDB should now be identical. However, hifitime uses the European Space Ag
 # Changelog
 
 ## 3.0.0
-+ Backend rewritten from TwoFloat to a struct of the centuries in `i16` and nanoseconds in `u64`. Thanks to @pwnorbitals for proposing the idea in #107 and writing the proof of concept. 
++ Backend rewritten from TwoFloat to a struct of the centuries in `i16` and nanoseconds in `u64`. Thanks to @pwnorbitals for proposing the idea in #107 and writing the proof of concept. This leads to at least a 2x speed up in most calculations, cf. [this comment](https://github.com/nyx-space/hifitime/pull/107#issuecomment-1040702004).
 + Fix GPS epoch, and addition of a helper functions in `Epoch` by @cjordan
 
 ## 2.2.3
