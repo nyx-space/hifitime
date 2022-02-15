@@ -1379,9 +1379,10 @@ fn spice_et_tdb() {
     let expected_et_s = 381_885_819.184_935_87;
     // Check reciprocity
     let from_et_s = Epoch::from_et_seconds(expected_et_s);
-    assert!(dbg!(from_et_s.as_et_seconds() - expected_et_s).abs() < std::f64::EPSILON);
-    assert!((sp_ex.as_et_seconds() - expected_et_s).abs() < 1e-6);
-    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
+    assert!((from_et_s.as_et_seconds() - expected_et_s).abs() < std::f64::EPSILON);
+    // Validate UTC to ET when initialization from UTC
+    assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < 1e-6); // -9.5367431640625e-7 s <=> -954 ns error
+    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6); // 5.960464477539063e-7 s <=> 596 ns error
     assert!((sp_ex.as_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
     assert!(
         dbg!(sp_ex.as_tai_seconds() - from_et_s.as_tai_seconds()).abs() // Broken
@@ -1425,20 +1426,20 @@ fn spice_et_tdb() {
     >>> sp.str2et("JD 2452312.500372511 TDB")
     66312032.18493909
     */
-    let sp_ex = Epoch::from_et_seconds(66_312_032.184_939_09);
-    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
+    let ex_from_et_s = Epoch::from_et_seconds(66_312_032.184_939_09);
+    assert!(dbg!(2452312.500372511 - ex_from_et_s.as_jde_et_days()).abs() < std::f64::EPSILON);
     // 4.7e-10 is the exact difference hifitime computes between ET and TDB.
     // That corresponds to 4.02e-5 seconds, or 4.02 nanoseconds
-    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_tdb_days()).abs() < 4.7e-10);
+    assert!(dbg!(2452312.500372511 - ex_from_et_s.as_jde_tdb_days()).abs() < 4.7e-10);
 
-    let sp_ex = Epoch::from_et_seconds(381_885_753.003_859_5);
-    assert!(dbg!(2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < 4.7e-10);
-    assert!((2455964.9739931 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
+    let ex_from_et_s = Epoch::from_et_seconds(381_885_753.003_859_5);
+    assert!(dbg!(2455964.9739931 - ex_from_et_s.as_jde_tdb_days()).abs() < std::f64::EPSILON);
+    assert!(dbg!(2455964.9739931 - ex_from_et_s.as_jde_et_days()).abs() < 4.7e-10);
 
-    let sp_ex = Epoch::from_et_seconds(0.0);
-    assert!(sp_ex.as_et_seconds() < std::f64::EPSILON);
-    assert!(dbg!(J2000_NAIF - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
-    assert!(dbg!(J2000_NAIF - sp_ex.as_jde_tdb_days()).abs() < 1e-7);
+    let ex_from_et_s = Epoch::from_et_seconds(0.0);
+    assert!(ex_from_et_s.as_et_seconds() < std::f64::EPSILON);
+    assert!(dbg!(J2000_NAIF - ex_from_et_s.as_jde_et_days()).abs() < std::f64::EPSILON);
+    assert!(dbg!(J2000_NAIF - ex_from_et_s.as_jde_tdb_days()).abs() < 1e-7);
 }
 
 #[test]
