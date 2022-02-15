@@ -1,9 +1,7 @@
-extern crate divrem;
 extern crate regex;
 extern crate serde;
 extern crate serde_derive;
 
-use self::divrem::DivRemEuclid;
 use self::regex::Regex;
 use self::serde::{de, Deserialize, Deserializer};
 use crate::{
@@ -249,30 +247,59 @@ impl Duration {
     #[must_use]
     pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
         let sign = self.centuries.signum() as i8;
-        let total_ns = self.total_nanoseconds();
 
-        let ns_left = total_ns.abs();
+        match self.try_truncated_nanoseconds() {
+            Ok(total_ns) => {
+                let ns_left = total_ns.abs();
 
-        let (days, ns_left) = ns_left.div_rem_euclid(i128::from(NANOSECONDS_PER_DAY));
-        let (hours, ns_left) = ns_left.div_rem_euclid(i128::from(NANOSECONDS_PER_HOUR));
-        let (minutes, ns_left) = ns_left.div_rem_euclid(i128::from(NANOSECONDS_PER_MINUTE));
-        let (seconds, ns_left) = ns_left.div_rem_euclid(i128::from(NANOSECONDS_PER_SECOND));
-        let (milliseconds, ns_left) =
-            ns_left.div_rem_euclid(i128::from(NANOSECONDS_PER_MILLISECOND));
-        let (microseconds, ns_left) =
-            ns_left.div_rem_euclid(i128::from(NANOSECONDS_PER_MICROSECOND));
+                let (days, ns_left) = div_rem_i64(ns_left, NANOSECONDS_PER_DAY as i64);
+                let (hours, ns_left) = div_rem_i64(ns_left, NANOSECONDS_PER_HOUR as i64);
+                let (minutes, ns_left) = div_rem_i64(ns_left, NANOSECONDS_PER_MINUTE as i64);
+                let (seconds, ns_left) = div_rem_i64(ns_left, NANOSECONDS_PER_SECOND as i64);
+                let (milliseconds, ns_left) =
+                    div_rem_i64(ns_left, NANOSECONDS_PER_MILLISECOND as i64);
+                let (microseconds, ns_left) =
+                    div_rem_i64(ns_left, NANOSECONDS_PER_MICROSECOND as i64);
 
-        // Everything should fit in the expected types now
-        (
-            sign,
-            days.try_into().unwrap(),
-            hours.try_into().unwrap(),
-            minutes.try_into().unwrap(),
-            seconds.try_into().unwrap(),
-            milliseconds.try_into().unwrap(),
-            microseconds.try_into().unwrap(),
-            ns_left.try_into().unwrap(),
-        )
+                // Everything should fit in the expected types now
+                (
+                    sign,
+                    days.try_into().unwrap(),
+                    hours.try_into().unwrap(),
+                    minutes.try_into().unwrap(),
+                    seconds.try_into().unwrap(),
+                    milliseconds.try_into().unwrap(),
+                    microseconds.try_into().unwrap(),
+                    ns_left.try_into().unwrap(),
+                )
+            }
+            Err(_) => {
+                // Doesn't fit on a i64, so let's use the slower i128
+                let total_ns = self.total_nanoseconds();
+                let ns_left = total_ns.abs();
+
+                let (days, ns_left) = div_rem_i128(ns_left, i128::from(NANOSECONDS_PER_DAY));
+                let (hours, ns_left) = div_rem_i128(ns_left, i128::from(NANOSECONDS_PER_HOUR));
+                let (minutes, ns_left) = div_rem_i128(ns_left, i128::from(NANOSECONDS_PER_MINUTE));
+                let (seconds, ns_left) = div_rem_i128(ns_left, i128::from(NANOSECONDS_PER_SECOND));
+                let (milliseconds, ns_left) =
+                    div_rem_i128(ns_left, i128::from(NANOSECONDS_PER_MILLISECOND));
+                let (microseconds, ns_left) =
+                    div_rem_i128(ns_left, i128::from(NANOSECONDS_PER_MICROSECOND));
+
+                // Everything should fit in the expected types now
+                (
+                    sign,
+                    days.try_into().unwrap(),
+                    hours.try_into().unwrap(),
+                    minutes.try_into().unwrap(),
+                    seconds.try_into().unwrap(),
+                    milliseconds.try_into().unwrap(),
+                    microseconds.try_into().unwrap(),
+                    ns_left.try_into().unwrap(),
+                )
+            }
+        }
     }
 
     /// A duration of exactly zero nanoseconds
@@ -733,6 +760,14 @@ impl TimeUnit {
 
 impl_ops_for_type!(f64);
 impl_ops_for_type!(i64);
+
+fn div_rem_i128(me: i128, rhs: i128) -> (i128, i128) {
+    (me.div_euclid(rhs), me.rem_euclid(rhs))
+}
+
+fn div_rem_i64(me: i64, rhs: i64) -> (i64, i64) {
+    (me.div_euclid(rhs), me.rem_euclid(rhs))
+}
 
 #[test]
 fn time_unit() {

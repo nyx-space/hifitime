@@ -12,7 +12,6 @@ readme = "README.md"
 license = "Apache-2.0"
 
 [dependencies]
-divrem = "1.0.0"
 rand = "0.8"
 rand_distr = "0.4"
 regex = "1.3"
