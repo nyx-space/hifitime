@@ -10,7 +10,7 @@
 //!  * Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
 //!  * UTC representation with ISO8601 formatting (and parsing in that format #45)
 //!  * High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) (caveat: up to 10ms difference with SPICE near 01 Jan 2000)
-//!  * Trivial support of time arithmetic (e.g. `2 * TimeUnit::Hour + TimeUnit::Second * 3`)
+//!  * Trivial support of time arithmetic (e.g. `2 * Unit::Hour + Unit::Second * 3`)
 //!  * Supports ranges of Epochs and TimeSeries (linspace of `Epoch`s and `Duration`s)
 //!
 //! Almost all examples are validated with external references, as detailed on a test-by-test
@@ -52,14 +52,14 @@
 //!
 //! #### Time creation
 //! ```rust
-//! use hifitime::{Epoch, TimeUnit};
+//! use hifitime::{Epoch, Unit};
 //! use std::str::FromStr;
 //!
 //! let mut santa = Epoch::from_gregorian_utc(2017, 12, 25, 01, 02, 14, 0);
 //! assert_eq!(santa.as_mjd_utc_days(), 58112.043217592590);
 //! assert_eq!(santa.as_jde_utc_days(), 2458112.5432175924);
 //!
-//! santa += 3600 * TimeUnit::Second;
+//! santa += 3600 * Unit::Second;
 //! assert_eq!(
 //!     santa,
 //!     Epoch::from_gregorian_utc(2017, 12, 25, 02, 02, 14, 0),
@@ -76,13 +76,13 @@
 //! #### Time differences, time unit, and duration handling
 //! Comparing times will lead to a Duration type. Printing that will automatically select the unit.
 //! ```rust
-//! use hifitime::{Epoch, TimeUnit, Duration};
+//! use hifitime::{Epoch, Unit, Duration};
 //!
 //! let at_midnight = Epoch::from_gregorian_utc_at_midnight(2020, 11, 2);
 //! let at_noon = Epoch::from_gregorian_utc_at_noon(2020, 11, 2);
-//! assert_eq!(at_noon - at_midnight, 12 * TimeUnit::Hour);
-//! assert_eq!(at_noon - at_midnight, 1 * TimeUnit::Day / 2);
-//! assert_eq!(at_midnight - at_noon, -1 * TimeUnit::Day / 2);
+//! assert_eq!(at_noon - at_midnight, 12 * Unit::Hour);
+//! assert_eq!(at_noon - at_midnight, 1 * Unit::Day / 2);
+//! assert_eq!(at_midnight - at_noon, -1 * Unit::Day / 2);
 //!
 //! let delta_time = at_noon - at_midnight;
 //! // assert_eq!(format!("{}", delta_time), "12 h 0 min 0 s".to_string());
@@ -102,10 +102,10 @@
 //! Finally, something which may come in very handy, line spaces between times with a given step.
 //!
 //! ```rust
-//! use hifitime::{Epoch, TimeUnit, TimeSeries};
+//! use hifitime::{Epoch, Unit, TimeSeries};
 //! let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
 //! let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
-//! let step = 2 * TimeUnit::Hour;
+//! let step = 2 * Unit::Hour;
 //! let time_series = TimeSeries::inclusive(start, end, step);
 //! let mut cnt = 0;
 //! for epoch in time_series {
@@ -186,7 +186,7 @@ mod timeseries;
 pub use timeseries::*;
 
 pub mod prelude {
-    pub use {Duration, Epoch, TimeSeries, TimeUnit, TimeUnitHelper};
+    pub use {Duration, Epoch, Unit, TimeSeries, TimeUnits};
 }
 
 use std::convert;

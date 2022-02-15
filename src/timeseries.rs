@@ -18,10 +18,10 @@ pub struct TimeSeries {
 impl TimeSeries {
     /// Return an iterator of evenly spaced Epochs, **inclusive** on start and **exclusive** on end.
     /// ```
-    /// use hifitime::{Epoch, TimeUnit, TimeSeries};
+    /// use hifitime::{Epoch, Unit, TimeSeries};
     /// let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
     /// let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
-    /// let step = TimeUnit::Hour * 2;
+    /// let step = Unit::Hour * 2;
     /// let time_series = TimeSeries::exclusive(start, end, step);
     /// let mut cnt = 0;
     /// for epoch in time_series {
@@ -44,10 +44,10 @@ impl TimeSeries {
 
     /// Return an iterator of evenly spaced Epochs, inclusive on start **and** on end.
     /// ```
-    /// use hifitime::{Epoch, TimeUnit, TimeSeries};
+    /// use hifitime::{Epoch, Unit, TimeSeries};
     /// let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
     /// let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
-    /// let step = TimeUnit::Hour * 2;
+    /// let step = Unit::Hour * 2;
     /// let time_series = TimeSeries::inclusive(start, end, step);
     /// let mut cnt = 0;
     /// for epoch in time_series {
@@ -100,10 +100,10 @@ impl ExactSizeIterator for TimeSeries where TimeSeries: Iterator {}
 
 #[test]
 fn test_timeseries() {
-    use super::TimeUnit;
+    use super::Unit;
     let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
     let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
-    let step = TimeUnit::Hour * 2;
+    let step = Unit::Hour * 2;
 
     let mut count = 0;
     let time_series = TimeSeries::exclusive(start, end, step);
