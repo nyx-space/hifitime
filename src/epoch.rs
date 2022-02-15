@@ -1055,6 +1055,13 @@ impl fmt::Display for Epoch {
     }
 }
 
+impl fmt::LowerHex for Epoch {
+    /// Prints the Epoch in TAI
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_gregorian_tai_str())
+    }
+}
+
 /// Returns true if the provided Gregorian date is valid. Leap second days may have 60 seconds.
 pub fn is_gregorian_valid(
     year: i32,
@@ -1692,4 +1699,20 @@ fn test_get_num_leap_seconds() {
     let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 7, 1, 0, 0, 0);
     assert_eq!(epoch_from_utc_greg.get_num_leap_seconds(), 10);
     assert_eq!(epoch_from_utc_greg1.get_num_leap_seconds(), 11);
+}
+
+#[test]
+fn et_init() {
+    // Test for https://github.com/nyx-space/hifitime/issues/106
+    // NOTE: The printing is in TAI (not ET) hence the ~32 seconds of difference with the print from SPICE
+
+    // CAL-ET 2053 OCT 09 00:00:00.000
+    let present = Epoch::from_tdb_seconds(1696852800.0);
+    assert_eq!(present.0.decompose().1 / 365, 153); // Should be the year 2053, or 153 years after J1900
+    println!("{:x}", present);
+
+    // CAL-ET 1899 JUL 29 00:00:00.000
+    let past = Epoch::from_tdb_seconds(-3169195200.0);
+    println!("{:x}", past);
+    assert_eq!(past.0.decompose().1, 156); // There are 156 days between 29 July and 01 January
 }

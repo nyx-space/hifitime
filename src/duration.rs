@@ -184,7 +184,17 @@ impl Duration {
     /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
     pub fn from_truncated_nanoseconds(nanos: i64) -> Self {
         if nanos < 0 {
-            Self::from_parts(-1, NANOSECONDS_PER_CENTURY - (nanos.abs() as u64))
+            let ns = nanos.abs() as u64;
+            let extra_centuries = ns.div_euclid(NANOSECONDS_PER_CENTURY);
+            if extra_centuries > i16::MAX as u64 {
+                Self::MIN
+            } else {
+                let rem_nanos = ns.rem_euclid(NANOSECONDS_PER_CENTURY);
+                Self::from_parts(
+                    -1 - (extra_centuries as i16),
+                    NANOSECONDS_PER_CENTURY - rem_nanos,
+                )
+            }
         } else {
             Self::from_parts(0, nanos.abs() as u64)
         }
@@ -235,7 +245,7 @@ impl Duration {
         out
     }
 
-    /// Decomposes a Duration in its sign,  days,
+    /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns
     #[must_use]
     pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
         let sign = self.centuries.signum() as i8;
