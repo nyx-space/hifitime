@@ -27,10 +27,11 @@ const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_DAY;
 ///
 /// **Important conventions:**
 /// Conventions had to be made to define the partial order of a duration.
-/// It was decided that the nanoseconds corresponds to the nanoseconds _into_ the current century. In other words,
+/// 1. It was decided that the nanoseconds corresponds to the nanoseconds _into_ the current century. In other words,
 /// a durationn with centuries = -1 and nanoseconds = 0 is _a smaller duration_ than centuries = -1 and nanoseconds = 1.
 /// That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
 /// As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
+/// 2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
 #[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
 pub struct Duration {
     centuries: i16,
@@ -245,10 +246,16 @@ impl Duration {
         out
     }
 
+    /// Returns the sign of this duration
+    #[must_use]
+    pub fn signum(&self) -> i8 {
+        self.centuries.signum() as i8
+    }
+
     /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns
     #[must_use]
     pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
-        let sign = self.centuries.signum() as i8;
+        let sign = self.signum();
 
         match self.try_truncated_nanoseconds() {
             Ok(total_ns) => {
@@ -348,6 +355,44 @@ impl<'de> Deserialize<'de> for Duration {
     }
 }
 
+impl Mul<i64> for Duration {
+    type Output = Duration;
+    fn mul(self, q: i64) -> Self::Output {
+        Duration::from_total_nanoseconds(
+            self.total_nanoseconds()
+                .saturating_mul((q * Unit::Nanosecond).total_nanoseconds()),
+        )
+    }
+}
+
+impl Mul<f64> for Duration {
+    type Output = Duration;
+    fn mul(self, q: f64) -> Self::Output {
+        // Make sure that we don't trim the number by finding its precision
+        let mut p: i32 = 0;
+        let mut new_val = q;
+        let ten: f64 = 10.0;
+
+        loop {
+            if (new_val.floor() - new_val).abs() < f64::EPSILON {
+                // Yay, we've found the precision of this number
+                break;
+            }
+            // Multiply by the precision
+            // Note: we multiply by powers of ten to avoid this kind of round error with f32s:
+            // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b760579f103b7192c20413ebbe167b90
+            p += 1;
+            new_val = q * ten.powi(p);
+        }
+
+        Duration::from_total_nanoseconds(
+            self.total_nanoseconds()
+                .saturating_mul(new_val as i128)
+                .saturating_div(10_i128.pow(p.try_into().unwrap())),
+        )
+    }
+}
+
 macro_rules! impl_ops_for_type {
     ($type:ident) => {
         impl Mul<$type> for Unit {
@@ -382,15 +427,15 @@ macro_rules! impl_ops_for_type {
             }
         }
 
-        impl Mul<$type> for Duration {
-            type Output = Duration;
-            fn mul(self, q: $type) -> Self::Output {
-                Duration::from_total_nanoseconds(
-                    self.total_nanoseconds()
-                        .saturating_mul((q * Unit::Nanosecond).total_nanoseconds()),
-                )
-            }
-        }
+        // impl Mul<$type> for Duration {
+        //     type Output = Duration;
+        //     fn mul(self, q: $type) -> Self::Output {
+        //         Duration::from_total_nanoseconds(
+        //             self.total_nanoseconds()
+        //                 .saturating_mul((q * Unit::Nanosecond).total_nanoseconds()),
+        //         )
+        //     }
+        // }
 
         #[allow(clippy::suspicious_arithmetic_impl)]
         impl Div<$type> for Duration {
@@ -950,6 +995,15 @@ fn test_ops() {
         Duration::MIN_NEGATIVE + 4 * Duration::MIN_NEGATIVE,
         -5 * Unit::Nanosecond
     );
+
+    let halfhour = 0.5.hours();
+    let quarterhour = 0.5 * halfhour;
+    assert_eq!(quarterhour, 15.minutes());
+    println!("{}", quarterhour);
+
+    let min_quarterhour = -0.5 * halfhour;
+    assert_eq!(min_quarterhour, -15.minutes());
+    println!("{}", min_quarterhour);
 }
 
 #[test]
