@@ -379,7 +379,6 @@ impl Mul<f64> for Duration {
                 break;
             }
             // Multiply by the precision
-            // Note: we multiply by powers of ten to avoid this kind of round error with f32s:
             // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b760579f103b7192c20413ebbe167b90
             p += 1;
             new_val = q * ten.powi(p);
@@ -426,16 +425,6 @@ macro_rules! impl_ops_for_type {
                 q * self
             }
         }
-
-        // impl Mul<$type> for Duration {
-        //     type Output = Duration;
-        //     fn mul(self, q: $type) -> Self::Output {
-        //         Duration::from_total_nanoseconds(
-        //             self.total_nanoseconds()
-        //                 .saturating_mul((q * Unit::Nanosecond).total_nanoseconds()),
-        //         )
-        //     }
-        // }
 
         #[allow(clippy::suspicious_arithmetic_impl)]
         impl Div<$type> for Duration {
