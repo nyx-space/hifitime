@@ -727,6 +727,17 @@ impl Epoch {
         self.as_tdb_days_since_j2000() / DAYS_PER_CENTURY
     }
 
+    /// Returns the number of days since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
+    pub fn as_et_days_since_j2000(self) -> f64 {
+        let jde_et_days = self.as_jde_et_days();
+        jde_et_days - MJD_OFFSET - J2000_OFFSET
+    }
+
+    /// Returns the number of centuries since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
+    pub fn as_et_centuries_since_j2000(self) -> f64 {
+        self.as_et_days_since_j2000() / DAYS_PER_CENTURY
+    }
+
     /// Converts an ISO8601 Datetime representation without timezone offset to an Epoch.
     /// If no time system is specified, than UTC is assumed.
     /// The `T` which separates the date from the time can be replaced with a single whitespace character (`\W`).
