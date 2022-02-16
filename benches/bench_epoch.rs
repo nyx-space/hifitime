@@ -16,6 +16,17 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         })
     });
 
+    c.bench_function("TT", |b| {
+        b.iter(|| {
+            // TT is too slow now! Used to be 184ns, is now 241
+            let e = Epoch::from_gregorian_utc_hms(2015, 2, 7, 11, 22, 33);
+            e.as_tt_seconds();
+
+            let f: Epoch = e + black_box(50) * Unit::Second;
+            f.as_tt_seconds();
+        })
+    });
+
     c.bench_function("Duration to f64 seconds", |b| {
         b.iter(|| {
             let d: Duration = Unit::Second * black_box(3.0);
@@ -37,7 +48,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         })
     });
 
-    c.bench_function("Duration add and assert subsecons", |b| {
+    c.bench_function("Duration add and assert subseconds", |b| {
         b.iter(|| {
             assert_eq!(
                 Unit::Millisecond * black_box(4.0),

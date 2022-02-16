@@ -7,14 +7,14 @@ use self::serde::{de, Deserialize, Deserializer};
 use crate::duration::{Duration, Unit};
 use crate::{
     Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET,
-    J2000_OFFSET, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_PER_DAY,
+    J2000_OFFSET, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64, SECONDS_PER_DAY,
 };
 use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
 use std::str::FromStr;
 
-const TT_OFFSET_S: f64 = 32.184;
-const ET_OFFSET_S: f64 = 32.184_935;
+const TT_OFFSET_MS: i64 = 32_184;
+const ET_OFFSET_US: i64 = 32_184_935;
 
 /// From https://www.ietf.org/timezones/data/leap-seconds.list .
 const LEAP_SECONDS: [f64; 28] = [
@@ -259,7 +259,7 @@ impl Epoch {
             seconds.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self::from_tai_seconds(seconds) - Unit::Second * TT_OFFSET_S
+        Self::from_tai_seconds(seconds) - Unit::Millisecond * TT_OFFSET_MS
     }
 
     pub fn from_et_seconds(seconds: f64) -> Epoch {
@@ -267,7 +267,8 @@ impl Epoch {
             seconds.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self::from_tai_seconds(seconds) + Unit::Second * (ET_EPOCH_S - ET_OFFSET_S)
+        Self::from_tai_seconds(seconds) + Unit::Second * ET_EPOCH_S
+            - Unit::Microsecond * (ET_OFFSET_US)
     }
 
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI
@@ -282,7 +283,7 @@ impl Epoch {
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI
     fn from_tdb_seconds_d(duration: Duration) -> Epoch {
         use std::f64::consts::PI;
-        let tt_duration = duration - Unit::Second * TT_OFFSET_S;
+        let tt_duration = duration - Unit::Millisecond * TT_OFFSET_MS;
 
         let tt_centuries_j2k = (tt_duration - Unit::Second * ET_EPOCH_S).in_unit(Unit::Century);
 
@@ -292,7 +293,7 @@ impl Epoch {
         let inner = g_rad + 0.0167 * g_rad.sin();
 
         Self {
-            0: tt_duration + (ET_EPOCH_S - (0.001_658 * inner.sin())) * Unit::Second,
+            0: tt_duration + ((ET_EPOCH_S as f64) - (0.001_658 * inner.sin())) * Unit::Second,
         }
     }
 
@@ -310,7 +311,7 @@ impl Epoch {
             days.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self::from_jde_tai(days) - Unit::Second * ET_OFFSET_S
+        Self::from_jde_tai(days) - Unit::Microsecond * ET_OFFSET_US
     }
 
     /// Initialize an Epoch from the number of seconds since the GPS Time Epoch,
@@ -397,10 +398,11 @@ impl Epoch {
                 0: seconds_wrt_1900,
             },
             TimeSystem::TT => Self {
-                0: (seconds_wrt_1900 - Unit::Second * TT_OFFSET_S),
+                0: (seconds_wrt_1900 - Unit::Millisecond * TT_OFFSET_MS),
             },
             TimeSystem::ET => Self {
-                0: (seconds_wrt_1900 + Unit::Second * (ET_EPOCH_S - ET_OFFSET_S)),
+                0: (seconds_wrt_1900 + Unit::Second * ET_EPOCH_S
+                    - Unit::Microsecond * ET_OFFSET_US),
             },
             TimeSystem::TDB => Self::from_tdb_seconds_d(seconds_wrt_1900),
             TimeSystem::UTC => panic!("use maybe_from_gregorian_utc for UTC time system"),
@@ -608,11 +610,11 @@ impl Epoch {
 
     /// Returns seconds past TAI epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
     pub fn as_tt_seconds(self) -> f64 {
-        self.as_tai_seconds() + TT_OFFSET_S
+        self.as_tt_duration().in_seconds()
     }
 
     pub fn as_tt_duration(self) -> Duration {
-        self.0 + Unit::Second * TT_OFFSET_S
+        self.0 + Unit::Millisecond * TT_OFFSET_MS
     }
 
     /// Returns days past TAI epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
@@ -622,7 +624,10 @@ impl Epoch {
 
     /// Returns the centuries pased J2000 TT
     pub fn as_tt_centuries_j2k(self) -> f64 {
-        (self.as_tt_seconds() - ET_EPOCH_S) / (DAYS_PER_CENTURY * SECONDS_PER_DAY)
+        // NOTE: Although we call "in_seconds", we've actually manually converted to centuries with the fraction.
+        // Up until that call, everything is in Duration, making it more precise than f64.
+        ((self.as_tt_duration() - ET_EPOCH_S * Unit::Second) / (DAYS_PER_CENTURY * SECONDS_PER_DAY))
+            .in_seconds()
     }
 
     /// Returns the duration past J2000 TT
@@ -654,7 +659,7 @@ impl Epoch {
     }
 
     pub fn as_gpst_duration(self) -> Duration {
-        self.as_tai_duration() - Unit::Second * SECONDS_GPS_TAI_OFFSET
+        self.as_tai_duration() - Unit::Second * SECONDS_GPS_TAI_OFFSET_I64
     }
 
     /// Returns days past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
@@ -668,14 +673,21 @@ impl Epoch {
     }
 
     pub fn as_et_duration(self) -> Duration {
-        self.as_tai_duration() - Unit::Second * (ET_EPOCH_S - ET_OFFSET_S)
+        let rtn =
+            self.as_tai_duration() + Unit::Microsecond * ET_OFFSET_US - Unit::Second * ET_EPOCH_S;
+        rtn
+    }
+
+    fn as_tdb(self) -> Duration {
+        let inner = self.inner_g_rad();
+
+        self.as_tt_duration() - (ET_EPOCH_S * Unit::Second)
+            + (0.001_658 * inner.sin()) * Unit::Second
     }
 
     /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
     pub fn as_tdb_seconds(self) -> f64 {
-        let inner = self.inner_g_rad();
-
-        self.as_tt_seconds() - ET_EPOCH_S + (0.001_658 * inner.sin())
+        self.as_tdb().in_seconds()
     }
 
     /// For TDB computation, we're using f64 only because BigDecimal is far too slow for Nyx (uses FromStr).
@@ -686,19 +698,14 @@ impl Epoch {
         g_rad + 0.0167 * g_rad.sin()
     }
 
-    pub fn as_tdb_duration(self) -> Duration {
-        let inner = self.inner_g_rad();
-
-        self.as_tt_duration() - Unit::Second * (ET_EPOCH_S + (0.001_658 * inner.sin()))
-    }
-
     /// Returns the Ephemeris Time JDE past epoch
     pub fn as_jde_et_days(self) -> f64 {
         self.as_jde_et_duration().in_unit(Unit::Day)
     }
 
     pub fn as_jde_et_duration(self) -> Duration {
-        self.as_jde_tt_duration() + Unit::Second * 0.000_935
+        // self.as_jde_tt_duration() + Unit::Second * 0.000_935
+        self.as_jde_tt_duration() + Unit::Microsecond * 935
     }
 
     pub fn as_jde_et(self, unit: Unit) -> f64 {
@@ -706,20 +713,20 @@ impl Epoch {
     }
 
     pub fn as_jde_tdb_duration(self) -> Duration {
-        self.as_jde_tdb_days() * Unit::Day
+        let inner = self.inner_g_rad();
+        let tdb_delta = 0.001_658 * inner.sin() * Unit::Second;
+        self.as_jde_tt_duration() + tdb_delta
     }
 
     /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
     pub fn as_jde_tdb_days(self) -> f64 {
-        let inner = self.inner_g_rad();
-        let tdb_delta = 0.001_658 * inner.sin();
-        self.as_jde_tt_days() + tdb_delta / SECONDS_PER_DAY
+        self.as_jde_tdb_duration().in_unit(Unit::Day)
     }
 
     /// Returns the number of days since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
     pub fn as_tdb_days_since_j2000(self) -> f64 {
-        let jde_tdb_days = self.as_jde_tdb_days();
-        jde_tdb_days - MJD_OFFSET - J2000_OFFSET
+        (self.as_jde_tdb_duration() - MJD_OFFSET * Unit::Day - J2000_OFFSET * Unit::Day)
+            .in_seconds()
     }
 
     /// Returns the number of centuries since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
@@ -729,8 +736,7 @@ impl Epoch {
 
     /// Returns the number of days since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
     pub fn as_et_days_since_j2000(self) -> f64 {
-        let jde_et_days = self.as_jde_et_days();
-        jde_et_days - MJD_OFFSET - J2000_OFFSET
+        (self.as_jde_et_duration() - MJD_OFFSET * Unit::Day - J2000_OFFSET * Unit::Day).in_seconds()
     }
 
     /// Returns the number of centuries since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
@@ -1490,12 +1496,15 @@ fn spice_et_tdb() {
     'JD 2455964.9739931'
     */
     let sp_ex = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33);
+    dbg!(sp_ex);
     let expected_et_s = 381_885_819.184_935_87;
     // Check reciprocity
     let from_et_s = Epoch::from_et_seconds(expected_et_s);
+    dbg!(from_et_s);
+    println!("{}", from_et_s - sp_ex);
     assert!((from_et_s.as_et_seconds() - expected_et_s).abs() < std::f64::EPSILON);
     // Validate UTC to ET when initialization from UTC
-    assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < 1e-6); // -9.5367431640625e-7 s <=> -954 ns error
+    assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < 1e-6); // -8.940696716308594e-7 s <=> -894 ns error
     assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6); // 5.960464477539063e-7 s <=> 596 ns error
     assert!((sp_ex.as_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
     assert!(
@@ -1540,20 +1549,20 @@ fn spice_et_tdb() {
     >>> sp.str2et("JD 2452312.500372511 TDB")
     66312032.18493909
     */
-    let ex_from_et_s = Epoch::from_et_seconds(66_312_032.184_939_09);
-    assert!(dbg!(2452312.500372511 - ex_from_et_s.as_jde_et_days()).abs() < std::f64::EPSILON);
-    // 4.7e-10 is the exact difference hifitime computes between ET and TDB.
-    // That corresponds to 4.02e-5 seconds, or 4.02 nanoseconds
-    assert!(dbg!(2452312.500372511 - ex_from_et_s.as_jde_tdb_days()).abs() < 4.7e-10);
+    // 2002-02-07T00:00:00.4291 TAI
+    let sp_ex = Epoch::from_et_seconds(66_312_032.184_939_09);
+    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
+    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
 
-    let ex_from_et_s = Epoch::from_et_seconds(381_885_753.003_859_5);
-    assert!(dbg!(2455964.9739931 - ex_from_et_s.as_jde_tdb_days()).abs() < std::f64::EPSILON);
-    assert!(dbg!(2455964.9739931 - ex_from_et_s.as_jde_et_days()).abs() < 4.7e-10);
+    // 2012-02-07T11:22:00.818924427 TAI
+    let sp_ex = Epoch::from_et_seconds(381_885_753.003_859_5);
+    assert!(dbg!(2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < 4.7e-10);
+    assert!(dbg!(2455964.9739931 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
 
-    let ex_from_et_s = Epoch::from_et_seconds(0.0);
-    assert!(ex_from_et_s.as_et_seconds() < std::f64::EPSILON);
-    assert!(dbg!(J2000_NAIF - ex_from_et_s.as_jde_et_days()).abs() < std::f64::EPSILON);
-    assert!(dbg!(J2000_NAIF - ex_from_et_s.as_jde_tdb_days()).abs() < 1e-7);
+    let sp_ex = Epoch::from_et_seconds(0.0);
+    assert!(sp_ex.as_et_seconds() < std::f64::EPSILON);
+    assert!(dbg!(J2000_NAIF - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
+    assert!(dbg!(J2000_NAIF - sp_ex.as_jde_tdb_days()).abs() < 1e-7);
 }
 
 #[test]
