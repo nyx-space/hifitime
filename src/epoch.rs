@@ -6,8 +6,8 @@ use self::regex::Regex;
 use self::serde::{de, Deserialize, Deserializer};
 use crate::duration::{Duration, Unit};
 use crate::{
-    Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, DAYS_PER_CENTURY, ET_EPOCH_S, J1900_OFFSET,
-    J2000_OFFSET, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64, SECONDS_PER_DAY,
+    Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
+    SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64, SECONDS_PER_DAY,
 };
 use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
@@ -625,10 +625,7 @@ impl Epoch {
 
     /// Returns the centuries pased J2000 TT
     pub fn as_tt_centuries_j2k(self) -> f64 {
-        // NOTE: Although we call "in_seconds", we've actually manually converted to centuries with the fraction.
-        // Up until that call, everything is in Duration, making it more precise than f64.
-        ((self.as_tt_duration() - ET_EPOCH_S * Unit::Second) / (DAYS_PER_CENTURY * SECONDS_PER_DAY))
-            .in_seconds()
+        (self.as_tt_duration() - Unit::Second * ET_EPOCH_S).in_unit(Unit::Century)
     }
 
     /// Returns the duration past J2000 TT
@@ -674,9 +671,7 @@ impl Epoch {
     }
 
     pub fn as_et_duration(self) -> Duration {
-        let rtn =
-            self.as_tai_duration() + Unit::Microsecond * ET_OFFSET_US - Unit::Second * ET_EPOCH_S;
-        rtn
+        self.as_tai_duration() + Unit::Microsecond * ET_OFFSET_US - Unit::Second * ET_EPOCH_S
     }
 
     /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration
@@ -726,25 +721,34 @@ impl Epoch {
         self.as_jde_tdb_duration().in_unit(Unit::Day)
     }
 
+    /// Returns the duration since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
+    pub fn as_tdb_duration_since_j2000(self) -> Duration {
+        self.as_jde_tdb_duration() - MJD_OFFSET * Unit::Day - J2000_OFFSET * Unit::Day
+    }
+
     /// Returns the number of days since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
     pub fn as_tdb_days_since_j2000(self) -> f64 {
-        (self.as_jde_tdb_duration() - MJD_OFFSET * Unit::Day - J2000_OFFSET * Unit::Day)
-            .in_seconds()
+        self.as_tdb_duration_since_j2000().in_seconds()
     }
 
     /// Returns the number of centuries since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
     pub fn as_tdb_centuries_since_j2000(self) -> f64 {
-        self.as_tdb_days_since_j2000() / DAYS_PER_CENTURY
+        self.as_tdb_duration_since_j2000().in_unit(Unit::Century)
+    }
+
+    /// Returns the duration since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
+    pub fn as_et_duration_since_j2000(self) -> Duration {
+        self.as_jde_et_duration() - MJD_OFFSET * Unit::Day - J2000_OFFSET * Unit::Day
     }
 
     /// Returns the number of days since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
     pub fn as_et_days_since_j2000(self) -> f64 {
-        (self.as_jde_et_duration() - MJD_OFFSET * Unit::Day - J2000_OFFSET * Unit::Day).in_seconds()
+        self.as_et_duration_since_j2000().in_seconds()
     }
 
     /// Returns the number of centuries since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
     pub fn as_et_centuries_since_j2000(self) -> f64 {
-        self.as_et_days_since_j2000() / DAYS_PER_CENTURY
+        self.as_et_duration_since_j2000().in_unit(Unit::Century)
     }
 
     /// Converts an ISO8601 Datetime representation without timezone offset to an Epoch.
@@ -921,7 +925,6 @@ impl Epoch {
     }
 
     fn compute_gregorian(absolute_seconds: f64) -> (i32, u8, u8, u8, u8, u8, u32) {
-        // let (mut year, mut year_fraction) = quorem(absolute_seconds, 365.0 * SECONDS_PER_DAY);
         let (mut year, mut year_fraction) = div_rem_f64(absolute_seconds, 365.0 * SECONDS_PER_DAY);
         // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
         year += 1900;

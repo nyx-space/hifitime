@@ -214,9 +214,13 @@ impl Duration {
         // Compute the seconds and nanoseconds that we know this fits on a 64bit float
         let seconds = self.nanoseconds.div_euclid(NANOSECONDS_PER_SECOND);
         let subseconds = self.nanoseconds.rem_euclid(NANOSECONDS_PER_SECOND);
-        f64::from(self.centuries) * SECONDS_PER_CENTURY
-            + (seconds as f64)
-            + (subseconds as f64) * 1e-9
+        if self.centuries == 0 {
+            (seconds as f64) + (subseconds as f64) * 1e-9
+        } else {
+            f64::from(self.centuries) * SECONDS_PER_CENTURY
+                + (seconds as f64)
+                + (subseconds as f64) * 1e-9
+        }
     }
 
     /// Returns the value of this duration in the requested unit.
