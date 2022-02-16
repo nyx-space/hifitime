@@ -611,6 +611,7 @@ impl Epoch {
     /// Returns seconds past TAI epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
     pub fn as_tt_seconds(self) -> f64 {
         self.as_tt_duration().in_seconds()
+        // self.0.in_seconds() + (TT_OFFSET_MS as f64) * 1e-3
     }
 
     pub fn as_tt_duration(self) -> Duration {
@@ -678,7 +679,8 @@ impl Epoch {
         rtn
     }
 
-    fn as_tdb(self) -> Duration {
+    /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration
+    pub fn as_tdb_duration(self) -> Duration {
         let inner = self.inner_g_rad();
 
         self.as_tt_duration() - (ET_EPOCH_S * Unit::Second)
@@ -687,7 +689,9 @@ impl Epoch {
 
     /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
     pub fn as_tdb_seconds(self) -> f64 {
-        self.as_tdb().in_seconds()
+        // Note that we redo the calculation of as_tdb_duration to save computational cost
+        let inner = self.inner_g_rad();
+        self.as_tt_seconds() - (ET_EPOCH_S as f64) + (0.001_658 * inner.sin())
     }
 
     /// For TDB computation, we're using f64 only because BigDecimal is far too slow for Nyx (uses FromStr).
@@ -704,7 +708,6 @@ impl Epoch {
     }
 
     pub fn as_jde_et_duration(self) -> Duration {
-        // self.as_jde_tt_duration() + Unit::Second * 0.000_935
         self.as_jde_tt_duration() + Unit::Microsecond * 935
     }
 
@@ -714,7 +717,7 @@ impl Epoch {
 
     pub fn as_jde_tdb_duration(self) -> Duration {
         let inner = self.inner_g_rad();
-        let tdb_delta = 0.001_658 * inner.sin() * Unit::Second;
+        let tdb_delta = (0.001_658 * inner.sin()) * Unit::Second;
         self.as_jde_tt_duration() + tdb_delta
     }
 
@@ -918,7 +921,8 @@ impl Epoch {
     }
 
     fn compute_gregorian(absolute_seconds: f64) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let (mut year, mut year_fraction) = quorem(absolute_seconds, 365.0 * SECONDS_PER_DAY);
+        // let (mut year, mut year_fraction) = quorem(absolute_seconds, 365.0 * SECONDS_PER_DAY);
+        let (mut year, mut year_fraction) = div_rem_f64(absolute_seconds, 365.0 * SECONDS_PER_DAY);
         // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
         year += 1900;
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
@@ -954,12 +958,12 @@ impl Epoch {
         }
         // Get the month fraction by the number of seconds in this month from the number of
         // seconds since the start of this month.
-        let (_, month_fraction) = quorem(
+        let (_, month_fraction) = div_rem_f64(
             year_fraction - seconds_til_this_month,
             f64::from(days_this_month) * SECONDS_PER_DAY,
         );
         // Get the day by the exact number of seconds in a day
-        let (mut day, day_fraction) = quorem(month_fraction, SECONDS_PER_DAY);
+        let (mut day, day_fraction) = div_rem_f64(month_fraction, SECONDS_PER_DAY);
         if day < 0 {
             // Overflow backwards (this happens for end of year calculations)
             month -= 1;
@@ -971,10 +975,10 @@ impl Epoch {
         }
         day += 1; // Otherwise the day count starts at 0
                   // Get the hours by the exact number of seconds in an hour
-        let (hours, hours_fraction) = quorem(day_fraction, 60.0 * 60.0);
+        let (hours, hours_fraction) = div_rem_f64(day_fraction, 60.0 * 60.0);
         // Get the minutes and seconds by the exact number of seconds in a minute
-        let (mins, secs) = quorem(hours_fraction, 60.0);
-        let nanos = (quorem(secs, 1.0).1 * 1e9) as u32;
+        let (mins, secs) = div_rem_f64(hours_fraction, 60.0);
+        let nanos = (div_rem_f64(secs, 1.0).1 * 1e9) as u32;
         (
             year,
             month as u8,
@@ -1496,11 +1500,9 @@ fn spice_et_tdb() {
     'JD 2455964.9739931'
     */
     let sp_ex = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33);
-    dbg!(sp_ex);
     let expected_et_s = 381_885_819.184_935_87;
     // Check reciprocity
     let from_et_s = Epoch::from_et_seconds(expected_et_s);
-    dbg!(from_et_s);
     println!("{}", from_et_s - sp_ex);
     assert!((from_et_s.as_et_seconds() - expected_et_s).abs() < std::f64::EPSILON);
     // Validate UTC to ET when initialization from UTC
@@ -1553,6 +1555,8 @@ fn spice_et_tdb() {
     let sp_ex = Epoch::from_et_seconds(66_312_032.184_939_09);
     assert!(dbg!(2452312.500372511 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
     assert!(dbg!(2452312.500372511 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
+    // Confirm that they are _not_ equal, only that the number of days in f64 is equal
+    assert_ne!(sp_ex.as_jde_et_duration(), sp_ex.as_jde_tdb_duration());
 
     // 2012-02-07T11:22:00.818924427 TAI
     let sp_ex = Epoch::from_et_seconds(381_885_753.003_859_5);
@@ -1636,37 +1640,21 @@ fn ops() {
     assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-5);
 }
 
-/// `quorem` returns a tuple of the quotient and the remainder a numerator and a denominator.
-fn quorem(numerator: f64, denominator: f64) -> (i32, f64) {
-    if denominator == 0.0 {
-        panic!("cannot divide by zero");
-    }
-    let quotient = (numerator / denominator).floor() as i32;
-    let remainder = numerator % denominator;
-    if remainder >= 0.0 {
-        (quotient, remainder)
-    } else {
-        (quotient - 1, remainder + denominator)
-    }
+fn div_rem_f64(me: f64, rhs: f64) -> (i32, f64) {
+    ((me.div_euclid(rhs) as i32), me.rem_euclid(rhs))
 }
 
 #[test]
-fn quorem_nominal_test() {
-    assert_eq!(quorem(24.0, 6.0), (4, 0.0));
-    assert_eq!(quorem(25.0, 6.0), (4, 1.0));
-    assert_eq!(quorem(6.0, 6.0), (1, 0.0));
-    assert_eq!(quorem(5.0, 6.0), (0, 5.0));
-    assert_eq!(quorem(3540.0, 3600.0), (0, 3540.0));
-    assert_eq!(quorem(3540.0, 60.0), (59, 0.0));
-    assert_eq!(quorem(24.0, -6.0), (-4, 0.0));
-    assert_eq!(quorem(-24.0, 6.0), (-4, 0.0));
-    assert_eq!(quorem(-24.0, -6.0), (4, 0.0));
-}
-
-#[test]
-#[should_panic]
-fn quorem_nil_den_test() {
-    assert_eq!(quorem(24.0, 0.0), (4, 0.0));
+fn div_rem_f64_test() {
+    assert_eq!(div_rem_f64(24.0, 6.0), (4, 0.0));
+    assert_eq!(div_rem_f64(25.0, 6.0), (4, 1.0));
+    assert_eq!(div_rem_f64(6.0, 6.0), (1, 0.0));
+    assert_eq!(div_rem_f64(5.0, 6.0), (0, 5.0));
+    assert_eq!(div_rem_f64(3540.0, 3600.0), (0, 3540.0));
+    assert_eq!(div_rem_f64(3540.0, 60.0), (59, 0.0));
+    assert_eq!(div_rem_f64(24.0, -6.0), (-4, 0.0));
+    assert_eq!(div_rem_f64(-24.0, 6.0), (-4, 0.0));
+    assert_eq!(div_rem_f64(-24.0, -6.0), (4, 0.0));
 }
 
 #[test]
@@ -1733,4 +1721,16 @@ fn et_init() {
     let past = Epoch::from_tdb_seconds(-3169195200.0);
     println!("{:x}", past);
     assert_eq!(past.0.decompose().1, 156); // There are 156 days between 29 July and 01 January
+}
+
+#[test]
+fn e2022() {
+    let et0 = Epoch::from_gregorian_utc_at_noon(2022, 11, 30);
+    println!("{}", et0);
+    println!("{:x}", et0);
+    println!("{}", et0.as_jde_et_duration());
+    println!("{}", et0.as_jde_tdb_duration());
+    println!("{}", et0.as_jde_tdb_duration() - et0.as_jde_et_duration());
+    println!("{}", et0.as_jde_et_days());
+    println!("{}", et0.as_jde_tdb_days());
 }
