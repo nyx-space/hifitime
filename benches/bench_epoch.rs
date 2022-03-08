@@ -3,6 +3,7 @@ extern crate hifitime;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use hifitime::{Duration, Epoch, Unit};
 
+#[allow(unused_must_use)]
 pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("TBD seconds and JDE ET", |b| {
         b.iter(|| {

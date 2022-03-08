@@ -728,7 +728,7 @@ impl Epoch {
 
     /// Returns the number of days since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
     pub fn as_tdb_days_since_j2000(self) -> f64 {
-        self.as_tdb_duration_since_j2000().in_seconds()
+        self.as_tdb_duration_since_j2000().in_unit(Unit::Day)
     }
 
     /// Returns the number of centuries since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
@@ -743,7 +743,7 @@ impl Epoch {
 
     /// Returns the number of days since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
     pub fn as_et_days_since_j2000(self) -> f64 {
-        self.as_et_duration_since_j2000().in_seconds()
+        self.as_et_duration_since_j2000().in_unit(Unit::Day)
     }
 
     /// Returns the number of centuries since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
@@ -1563,8 +1563,8 @@ fn spice_et_tdb() {
 
     // 2012-02-07T11:22:00.818924427 TAI
     let sp_ex = Epoch::from_et_seconds(381_885_753.003_859_5);
-    assert!(dbg!(2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < 4.7e-10);
-    assert!(dbg!(2455964.9739931 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
+    assert!(dbg!(2455964.9739931 - sp_ex.as_jde_et_days()).abs() < 4.7e-10);
+    assert!(dbg!(2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
 
     let sp_ex = Epoch::from_et_seconds(0.0);
     assert!(sp_ex.as_et_seconds() < std::f64::EPSILON);
@@ -1727,13 +1727,19 @@ fn et_init() {
 }
 
 #[test]
-fn e2022() {
-    let et0 = Epoch::from_gregorian_utc_at_noon(2022, 11, 30);
-    println!("{}", et0);
-    println!("{:x}", et0);
-    println!("{}", et0.as_jde_et_duration());
-    println!("{}", et0.as_jde_tdb_duration());
-    println!("{}", et0.as_jde_tdb_duration() - et0.as_jde_et_duration());
-    println!("{}", et0.as_jde_et_days());
-    println!("{}", et0.as_jde_tdb_days());
+fn test_days_tdb_j2000() {
+    let e = Epoch(Duration::from_parts(1, 723038437000000000));
+    let days_d = e.as_tdb_days_since_j2000();
+    let centuries_t = e.as_tdb_centuries_since_j2000();
+    assert!((days_d - 8369.000800729867).abs() < f64::EPSILON);
+    assert!((centuries_t - 0.22913075429787455).abs() < f64::EPSILON);
+}
+
+#[test]
+fn test_const_ops() {
+    // Tests that multiplying a constant with a unit returns the correct number in that same unit
+    let mjd_offset = MJD_OFFSET * Unit::Day;
+    assert!((mjd_offset.in_unit(Unit::Day) - MJD_OFFSET).abs() < f64::EPSILON);
+    let j2000_offset = J2000_OFFSET * Unit::Day;
+    assert!((j2000_offset.in_unit(Unit::Day) - J2000_OFFSET).abs() < f64::EPSILON);
 }
