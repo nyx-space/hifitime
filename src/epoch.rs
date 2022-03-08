@@ -83,9 +83,7 @@ impl Sub<Duration> for Epoch {
     type Output = Self;
 
     fn sub(self, duration: Duration) -> Self {
-        Self {
-            0: self.0 - duration,
-        }
+        Self(self.0 - duration)
     }
 }
 
@@ -95,9 +93,7 @@ impl Add<f64> for Epoch {
     /// WARNING: For speed, there is a possibility to add seconds directly to an Epoch.
     /// Using this is _discouraged_ and should only be used if you have facing bottlenecks with the units.
     fn add(self, seconds: f64) -> Self {
-        Self {
-            0: (self.0.in_seconds() + seconds) * Unit::Second,
-        }
+        Self((self.0.in_seconds() + seconds) * Unit::Second)
     }
 }
 
@@ -105,9 +101,7 @@ impl Add<Duration> for Epoch {
     type Output = Self;
 
     fn add(self, duration: Duration) -> Self {
-        Self {
-            0: self.0 + duration,
-        }
+        Self(self.0 + duration)
     }
 }
 
@@ -130,9 +124,7 @@ impl Sub<Unit> for Epoch {
 
     #[allow(clippy::identity_op)]
     fn sub(self, unit: Unit) -> Self {
-        Self {
-            0: self.0 - unit * 1,
-        }
+        Self(self.0 - unit * 1)
     }
 }
 
@@ -141,9 +133,7 @@ impl Add<Unit> for Epoch {
 
     #[allow(clippy::identity_op)]
     fn add(self, unit: Unit) -> Self {
-        Self {
-            0: self.0 + unit * 1,
-        }
+        Self(self.0 + unit * 1)
     }
 }
 
@@ -177,9 +167,7 @@ impl Epoch {
             seconds.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self {
-            0: seconds * Unit::Second,
-        }
+        Self(seconds * Unit::Second)
     }
 
     /// Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight
@@ -188,9 +176,7 @@ impl Epoch {
             days.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self {
-            0: days * Unit::Day,
-        }
+        Self(days * Unit::Day)
     }
 
     /// Initialize an Epoch from the provided UTC seconds since 1900 January 01
@@ -224,9 +210,7 @@ impl Epoch {
             days.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self {
-            0: (days - J1900_OFFSET) * Unit::Day,
-        }
+        Self((days - J1900_OFFSET) * Unit::Day)
     }
 
     pub fn from_mjd_utc(days: f64) -> Self {
@@ -241,9 +225,7 @@ impl Epoch {
             days.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self {
-            0: (days - J1900_OFFSET - MJD_OFFSET) * Unit::Day,
-        }
+        Self((days - J1900_OFFSET - MJD_OFFSET) * Unit::Day)
     }
 
     pub fn from_jde_utc(days: f64) -> Self {
@@ -292,9 +274,7 @@ impl Epoch {
         // Decimal does not provide trig functions, so let's define the parts of the trig separately.
         let inner = g_rad + 0.0167 * g_rad.sin();
 
-        Self {
-            0: tt_duration + ((ET_EPOCH_S as f64) - (0.001_658 * inner.sin())) * Unit::Second,
-        }
+        Self(tt_duration + ((ET_EPOCH_S as f64) - (0.001_658 * inner.sin())) * Unit::Second)
     }
 
     pub fn from_jde_et(days: f64) -> Self {
@@ -394,16 +374,11 @@ impl Epoch {
         }
 
         Ok(match ts {
-            TimeSystem::TAI => Self {
-                0: seconds_wrt_1900,
-            },
-            TimeSystem::TT => Self {
-                0: (seconds_wrt_1900 - Unit::Millisecond * TT_OFFSET_MS),
-            },
-            TimeSystem::ET => Self {
-                0: (seconds_wrt_1900 + Unit::Second * ET_EPOCH_S
-                    - Unit::Microsecond * ET_OFFSET_US),
-            },
+            TimeSystem::TAI => Self(seconds_wrt_1900),
+            TimeSystem::TT => Self(seconds_wrt_1900 - Unit::Millisecond * TT_OFFSET_MS),
+            TimeSystem::ET => Self(
+                seconds_wrt_1900 + Unit::Second * ET_EPOCH_S - Unit::Microsecond * ET_OFFSET_US,
+            ),
             TimeSystem::TDB => Self::from_tdb_seconds_d(seconds_wrt_1900),
             TimeSystem::UTC => panic!("use maybe_from_gregorian_utc for UTC time system"),
         })
