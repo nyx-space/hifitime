@@ -430,6 +430,34 @@ macro_rules! impl_ops_for_type {
             }
         }
 
+        impl Mul<$type> for Freq {
+            type Output = Duration;
+
+            /// Converts the input values to i128 and creates a duration from that
+            /// This method will necessarily ignore durations below nanoseconds
+            fn mul(self, q: $type) -> Duration {
+                let total_ns = match self {
+                    Freq::GigaHertz => 1.0 / (q as f64),
+                    Freq::MegaHertz => (NANOSECONDS_PER_MICROSECOND as f64) / (q as f64),
+                    Freq::KiloHertz => NANOSECONDS_PER_MILLISECOND as f64 / (q as f64),
+                    Freq::Hertz => (NANOSECONDS_PER_SECOND as f64) / (q as f64),
+                };
+                if total_ns.abs() < (i64::MAX as f64) {
+                    Duration::from_truncated_nanoseconds(total_ns as i64)
+                } else {
+                    Duration::from_total_nanoseconds(total_ns as i128)
+                }
+            }
+        }
+
+        impl Mul<Freq> for $type {
+            type Output = Duration;
+            fn mul(self, q: Freq) -> Duration {
+                // Apply the reflexive property
+                q * self
+            }
+        }
+
         #[allow(clippy::suspicious_arithmetic_impl)]
         impl Div<$type> for Duration {
             type Output = Duration;
@@ -450,6 +478,8 @@ macro_rules! impl_ops_for_type {
         }
 
         impl TimeUnits for $type {}
+
+        impl Frequencies for $type {}
     };
 }
 
@@ -712,14 +742,13 @@ impl FromStr for Duration {
 /// use std::str::FromStr;
 ///
 /// assert_eq!(Duration::from_str("1 d").unwrap(), 1.days());
-/// assert_eq!(Duration::from_str("10.598 days").unwrap(), 10.598_f64.days());
-/// assert_eq!(Duration::from_str("10.598 min").unwrap(), 10.598_f64.minutes());
-/// assert_eq!(Duration::from_str("10.598 us").unwrap(), 10.598_f64.microseconds());
-/// assert_eq!(Duration::from_str("10.598 seconds").unwrap(), 10.598_f64.seconds());
-/// assert_eq!(Duration::from_str("10.598 nanosecond").unwrap(), 10.598_f64.nanoseconds());
+/// assert_eq!(Duration::from_str("10.598 days").unwrap(), 10.598.days());
+/// assert_eq!(Duration::from_str("10.598 min").unwrap(), 10.598.minutes());
+/// assert_eq!(Duration::from_str("10.598 us").unwrap(), 10.598.microseconds());
+/// assert_eq!(Duration::from_str("10.598 seconds").unwrap(), 10.598.seconds());
+/// assert_eq!(Duration::from_str("10.598 nanosecond").unwrap(), 10.598.nanoseconds());
 /// ```
 pub trait TimeUnits: Copy + Mul<Unit, Output = Duration> {
-    // TODO: Find a better name for this, it's a pain to import and use
     fn centuries(self) -> Duration {
         self * Unit::Century
     }
@@ -744,6 +773,48 @@ pub trait TimeUnits: Copy + Mul<Unit, Output = Duration> {
     fn nanoseconds(self) -> Duration {
         self * Unit::Nanosecond
     }
+}
+
+/// A trait to automatically convert some primitives to an approximate frequency as a duration, **rounded to the closest nanosecond**
+/// Does not support more than 1 GHz (because max precision of a duration is 1 nanosecond)
+///
+/// ```
+/// use hifitime::prelude::*;
+/// use std::str::FromStr;
+///
+/// assert_eq!(1.Hz(), 1.seconds());
+/// assert_eq!(10.Hz(), 0.1.seconds());
+/// assert_eq!(100.Hz(), 0.01.seconds());
+/// assert_eq!(1.MHz(), 1.microseconds());
+/// assert_eq!(250.MHz(), 4.nanoseconds());
+/// assert_eq!(1.GHz(), 1.nanoseconds());
+/// // LIMITATIONS
+/// assert_eq!(240.MHz(), 4.nanoseconds()); // 240 MHz is actually 4.1666.. nanoseconds, not 4 exactly!
+/// assert_eq!(10.GHz(), 0.nanoseconds()); // NOTE: anything greater than 1 GHz is NOT supported
+/// ```
+#[allow(non_snake_case)]
+pub trait Frequencies: Copy + Mul<Freq, Output = Duration> {
+    fn GHz(self) -> Duration {
+        self * Freq::GigaHertz
+    }
+    fn MHz(self) -> Duration {
+        self * Freq::MegaHertz
+    }
+    fn kHz(self) -> Duration {
+        self * Freq::KiloHertz
+    }
+    fn Hz(self) -> Duration {
+        self * Freq::Hertz
+    }
+}
+
+/// An Enum to convert frequencies to their approximate duration, **rounded to the closest nanosecond**.
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
+pub enum Freq {
+    GigaHertz,
+    MegaHertz,
+    KiloHertz,
+    Hertz,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
