@@ -1,9 +1,5 @@
-extern crate regex;
-extern crate serde;
-extern crate serde_derive;
-
-use self::regex::Regex;
-use self::serde::{de, Deserialize, Deserializer};
+use super::regex::Regex;
+use super::serde::{de, Deserialize, Deserializer};
 use crate::duration::{Duration, Unit};
 use crate::{
     Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
@@ -1229,7 +1225,7 @@ fn utc_epochs() {
     assert_eq!(epoch_utc, this_epoch, "Incorrect epoch after sub");
 
     let this_epoch = Epoch::from_gregorian_tai_at_midnight(2020, 1, 1);
-    assert!((this_epoch.as_jde_tai_days() - 2_458_849.5).abs() < std::f64::EPSILON)
+    assert!((this_epoch.as_jde_tai_days() - 2_458_849.5).abs() < EPSILON)
 }
 
 #[allow(clippy::float_equality_without_abs)]
@@ -1469,6 +1465,7 @@ fn gpst() {
 #[test]
 fn spice_et_tdb() {
     use crate::J2000_NAIF;
+    use std::f64::EPSILON;
     /*
     >>> sp.str2et("2012-02-07 11:22:33 UTC")
     381885819.18493587
@@ -1482,7 +1479,7 @@ fn spice_et_tdb() {
     // Check reciprocity
     let from_et_s = Epoch::from_et_seconds(expected_et_s);
     println!("{}", from_et_s - sp_ex);
-    assert!((from_et_s.as_et_seconds() - expected_et_s).abs() < std::f64::EPSILON);
+    assert!((from_et_s.as_et_seconds() - expected_et_s).abs() < EPSILON);
     // Validate UTC to ET when initialization from UTC
     assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < 1e-6); // -8.940696716308594e-7 s <=> -894 ns error
     assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6); // 5.960464477539063e-7 s <=> 596 ns error
@@ -1531,19 +1528,19 @@ fn spice_et_tdb() {
     */
     // 2002-02-07T00:00:00.4291 TAI
     let sp_ex = Epoch::from_et_seconds(66_312_032.184_939_09);
-    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
-    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
+    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_et_days()).abs() < EPSILON);
+    assert!(dbg!(2452312.500372511 - sp_ex.as_jde_tdb_days()).abs() < EPSILON);
     // Confirm that they are _not_ equal, only that the number of days in f64 is equal
     assert_ne!(sp_ex.as_jde_et_duration(), sp_ex.as_jde_tdb_duration());
 
     // 2012-02-07T11:22:00.818924427 TAI
     let sp_ex = Epoch::from_et_seconds(381_885_753.003_859_5);
     assert!(dbg!(2455964.9739931 - sp_ex.as_jde_et_days()).abs() < 4.7e-10);
-    assert!(dbg!(2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < std::f64::EPSILON);
+    assert!(dbg!(2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < EPSILON);
 
     let sp_ex = Epoch::from_et_seconds(0.0);
-    assert!(sp_ex.as_et_seconds() < std::f64::EPSILON);
-    assert!(dbg!(J2000_NAIF - sp_ex.as_jde_et_days()).abs() < std::f64::EPSILON);
+    assert!(sp_ex.as_et_seconds() < EPSILON);
+    assert!(dbg!(J2000_NAIF - sp_ex.as_jde_et_days()).abs() < EPSILON);
     assert!(dbg!(J2000_NAIF - sp_ex.as_jde_tdb_days()).abs() < 1e-7);
 }
 
@@ -1647,7 +1644,7 @@ fn test_range() {
 
 #[test]
 fn deser_test() {
-    use self::serde_derive::Deserialize;
+    use super::serde_derive::Deserialize;
     #[derive(Deserialize)]
     struct _D {
         pub _e: Epoch,
