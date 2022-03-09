@@ -1,9 +1,5 @@
-extern crate regex;
-extern crate serde;
-extern crate serde_derive;
-
-use self::regex::Regex;
-use self::serde::{de, Deserialize, Deserializer};
+use super::regex::Regex;
+use super::serde::{de, Deserialize, Deserializer};
 use crate::{
     Errors, DAYS_PER_CENTURY, SECONDS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR,
     SECONDS_PER_MINUTE,
@@ -1079,7 +1075,7 @@ fn test_neg() {
 
 #[test]
 fn deser_test() {
-    use self::serde_derive::Deserialize;
+    use super::serde_derive::Deserialize;
     #[derive(Deserialize)]
     struct _D {
         pub _d: Duration,

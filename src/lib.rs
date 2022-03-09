@@ -176,9 +176,6 @@ pub const SECONDS_GPS_TAI_OFFSET_I64: i64 =
 /// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29)
 pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
 
-mod sim;
-pub use sim::ClockNoise;
-
 mod epoch;
 
 pub use epoch::*;
@@ -193,6 +190,10 @@ pub use timeseries::*;
 pub mod prelude {
     pub use {Duration, Epoch, Freq, Frequencies, TimeSeries, TimeUnits, Unit};
 }
+
+extern crate regex;
+extern crate serde;
+extern crate serde_derive;
 
 use std::convert;
 use std::error::Error;
