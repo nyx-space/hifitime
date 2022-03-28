@@ -157,6 +157,16 @@ impl Epoch {
         cnt
     }
 
+    /// Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch.
+    pub fn from_tai_duration(duration: Duration) -> Self {
+        Self(duration)
+    }
+
+    /// Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch.
+    pub fn from_tai_parts(centuries: i16, nanoseconds: u64) -> Self {
+        Self(Duration::from_parts(centuries, nanoseconds))
+    }
+
     /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
     pub fn from_tai_seconds(seconds: f64) -> Self {
         assert!(
@@ -302,6 +312,17 @@ impl Epoch {
     /// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
     pub fn from_gpst_days(days: f64) -> Self {
         Self::from_tai_days(days) + Unit::Day * DAYS_GPS_TAI_OFFSET
+    }
+
+    /// Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
+    /// defined as UTC midnight of January 5th to 6th 1980 (cf.
+    /// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
+    /// This may be useful for time keeping devices that use GPS as a time source.
+    pub fn from_gpst_nanoseconds(nanoseconds: u64) -> Self {
+        Self(Duration {
+            centuries: 0,
+            nanoseconds,
+        }) + Unit::Second * SECONDS_GPS_TAI_OFFSET
     }
 
     /// Attempts to build an Epoch from the provided Gregorian date and time in TAI.
@@ -629,6 +650,17 @@ impl Epoch {
 
     pub fn as_gpst_duration(self) -> Duration {
         self.as_tai_duration() - Unit::Second * SECONDS_GPS_TAI_OFFSET_I64
+    }
+
+    /// Returns nanoseconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
+    /// NOTE: This function will return an error if the centuries past GPST time are not zero.
+    pub fn as_gpst_nanoseconds(self) -> Result<u64, Errors> {
+        let (centuries, nanoseconds) = self.as_gpst_duration().to_parts();
+        if centuries != 0 {
+            Err(Errors::Overflow)
+        } else {
+            Ok(nanoseconds)
+        }
     }
 
     /// Returns days past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
@@ -1417,6 +1449,11 @@ fn gpst() {
     assert!(
         now.as_tai_seconds() > now.as_gpst_seconds(),
         "TAI is not ahead of GPS Time"
+    );
+    assert_eq!(
+        Epoch::from_gpst_nanoseconds(now.as_gpst_nanoseconds().unwrap()),
+        now,
+        "To/from GPST nanoseconds failed"
     );
     assert!(
         (now.as_tai_seconds() - SECONDS_GPS_TAI_OFFSET - now.as_gpst_seconds()).abs() < EPSILON
