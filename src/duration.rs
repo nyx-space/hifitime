@@ -30,8 +30,8 @@ const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_DAY;
 /// 2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
 #[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
 pub struct Duration {
-    centuries: i16,
-    nanoseconds: u64,
+    pub(crate) centuries: i16,
+    pub(crate) nanoseconds: u64,
 }
 
 impl PartialEq for Duration {
@@ -102,6 +102,13 @@ impl Duration {
         };
         me.normalize();
         me
+    }
+
+    #[must_use]
+    /// Returns the centures and nanoseconds of this duration
+    /// NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly.
+    pub fn to_parts(&self) -> (i16, u64) {
+        (self.centuries, self.nanoseconds)
     }
 
     /// Converts the total nanoseconds as i128 into this Duration (saving 48 bits)
