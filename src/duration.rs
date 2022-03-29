@@ -1,11 +1,14 @@
+#[cfg(feature = "std")]
+use crate::ParsingErrors;
 use crate::{
     Errors, DAYS_PER_CENTURY, SECONDS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR,
     SECONDS_PER_MINUTE,
 };
-use std::cmp::Ordering;
-use std::convert::TryInto;
-use std::fmt;
-use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
+
+use core::cmp::Ordering;
+use core::convert::TryInto;
+use core::fmt;
+use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 #[cfg(feature = "std")]
 use super::regex::Regex;
@@ -730,16 +733,10 @@ impl FromStr for Duration {
                     "ms" | "millisecond" | "milliseconds" => Ok(Unit::Millisecond * value),
                     "us" | "microsecond" | "microseconds" => Ok(Unit::Microsecond * value),
                     "ns" | "nanosecond" | "nanoseconds" => Ok(Unit::Nanosecond * value),
-                    _ => Err(Errors::ParseError(format!(
-                        "unknown duration unit in `{}`",
-                        s
-                    ))),
+                    _ => Err(Errors::ParseError(ParsingErrors::FromStrUnknownUnit)),
                 }
             }
-            None => Err(Errors::ParseError(format!(
-                "Could not parse duration: `{}`",
-                s
-            ))),
+            None => Err(Errors::ParseError(ParsingErrors::FromStrUnknownFormat)),
         }
     }
 }
@@ -895,7 +892,7 @@ fn div_rem_i64(me: i64, rhs: i64) -> (i64, i64) {
 
 #[test]
 fn time_unit() {
-    use std::f64::EPSILON;
+    use core::f64::EPSILON;
     // Check that the same number is created for different types
     assert_eq!(Unit::Day * 10.0, Unit::Day * 10);
     assert_eq!(Unit::Hour * -7.0, Unit::Hour * -7);
@@ -913,7 +910,6 @@ fn time_unit() {
     assert_eq!(5.0 * Unit::Nanosecond, Unit::Nanosecond * 5);
 
     let d: Duration = 1.0 * Unit::Hour / 3 - 20 * Unit::Minute;
-    dbg!(d);
     assert!(d.abs() < Unit::Nanosecond);
     assert_eq!(3 * (20 * Unit::Minute), Unit::Hour);
 
@@ -937,18 +933,17 @@ fn time_unit() {
     let quarter_hour = 0.25 * Unit::Hour;
     let third_hour = (1.0 / 3.0) * Unit::Hour;
     let sum: Duration = quarter_hour + third_hour;
-    dbg!(quarter_hour, third_hour, sum);
     assert!((sum.in_unit(Unit::Minute) - 35.0).abs() < EPSILON);
 
     let quarter_hour = -0.25 * Unit::Hour;
     let third_hour: Duration = -1 * Unit::Hour / 3;
     let sum: Duration = quarter_hour + third_hour;
     let delta = sum.in_unit(Unit::Millisecond).floor() - sum.in_unit(Unit::Second).floor() * 1000.0;
-    assert!(delta < std::f64::EPSILON);
-    println!("{:?}", sum.in_seconds());
+    assert!(delta < EPSILON);
     assert!((sum.in_unit(Unit::Minute) + 35.0).abs() < EPSILON);
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn duration_print() {
     // Check printing adds precision
@@ -1026,6 +1021,7 @@ fn duration_print() {
     let quarter_hour = 0.25 * Unit::Hour;
     let third_hour = (1.0 / 3.0) * Unit::Hour;
     let sum: Duration = quarter_hour + third_hour;
+
     println!(
         "Proof that Duration is more precise than f64: {} vs {}",
         sum.in_unit(Unit::Minute),
@@ -1036,10 +1032,8 @@ fn duration_print() {
     let quarter_hour = -0.25 * Unit::Hour;
     let third_hour: Duration = -1 * Unit::Hour / 3;
     let sum: Duration = quarter_hour + third_hour;
-    dbg!(sum.total_nanoseconds());
     let delta = sum.in_unit(Unit::Millisecond).floor() - sum.in_unit(Unit::Second).floor() * 1000.0;
-    println!("{:?}", (delta * -1.0) == 0.0);
-    dbg!(sum);
+    assert_eq!(delta * -1.0, 0.0);
     assert_eq!(format!("{}", sum), "-35 min");
 }
 
@@ -1060,6 +1054,7 @@ fn test_ops() {
         i128::from(30 * NANOSECONDS_PER_MINUTE) * -1
     );
 
+    #[cfg(feature = "std")]
     println!("{}", -0.25 * Unit::Hour + (-0.25 * Unit::Hour));
 
     assert_eq!(
@@ -1075,10 +1070,12 @@ fn test_ops() {
     let halfhour = 0.5.hours();
     let quarterhour = 0.5 * halfhour;
     assert_eq!(quarterhour, 15.minutes());
+    #[cfg(feature = "std")]
     println!("{}", quarterhour);
 
     let min_quarterhour = -0.5 * halfhour;
     assert_eq!(min_quarterhour, -15.minutes());
+    #[cfg(feature = "std")]
     println!("{}", min_quarterhour);
 }
 
@@ -1110,7 +1107,6 @@ fn test_extremes() {
     let d_min = Duration::from_total_nanoseconds(Duration::MIN_POSITIVE.total_nanoseconds());
     assert_eq!(d_min, Duration::MIN_POSITIVE);
     // Test difference between min durations
-    dbg!(Duration::MIN_NEGATIVE, Duration::MIN_POSITIVE);
     assert_eq!(
         Duration::MIN_POSITIVE - Duration::MIN_NEGATIVE,
         2 * Unit::Nanosecond
@@ -1135,6 +1131,7 @@ fn test_extremes() {
 
     // Add i64 tests
     let d = Duration::from_truncated_nanoseconds(i64::MAX);
+    #[cfg(feature = "std")]
     println!("{}", d);
     assert_eq!(
         Duration::from_truncated_nanoseconds(d.truncated_nanoseconds()),

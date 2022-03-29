@@ -128,6 +128,8 @@
 //!     * -4.291534e-06 seconds for 1996-Feb-7 11:22:33 UTC
 //!
 
+#![cfg_attr(not(feature = "std"), no_std)]
+
 pub const J1900_NAIF: f64 = 2_415_020.0;
 pub const J2000_NAIF: f64 = 2_451_545.0;
 /// `J1900_OFFSET` determines the offset in julian days between 01 Jan 1900 at midnight and the
@@ -194,19 +196,27 @@ pub mod prelude {
     pub use {Duration, Epoch, Freq, Frequencies, TimeSeries, TimeUnits, Unit};
 }
 
+extern crate serde;
+
+#[cfg(feature = "std")]
+extern crate core;
+
+use core::convert;
+use core::fmt;
+use core::num::ParseIntError;
+use core::str::FromStr;
+
 #[cfg(feature = "std")]
 extern crate regex;
-extern crate serde;
+#[cfg(feature = "std")]
 extern crate serde_derive;
-
-use std::convert;
+// #[cfg(feature = "std")]
+// extern crate std;
+#[cfg(feature = "std")]
 use std::error::Error;
-use std::fmt;
-use std::num::ParseIntError;
-use std::str::FromStr;
 
 /// Errors handles all oddities which may occur in this library.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Errors {
     /// Carry is returned when a provided function does not support time carry. For example,
     /// if a call to `Datetime::new` receives 60 seconds and there are only 59 seconds in the provided
@@ -214,17 +224,27 @@ pub enum Errors {
     Carry,
     /// ParseError is returned when a provided string could not be parsed and converted to the desired
     /// struct (e.g. Datetime).
-    ParseError(String),
+    ParseError(ParsingErrors),
     /// Raised when trying to initialize an Epoch or Duration from its hi and lo values, but these overlap
     ConversionOverlapError(f64, f64),
     Overflow,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum ParsingErrors {
+    ParseIntError,
+    TimeSystem,
+    ISO8601,
+    FromStrUnsupportedTimeSystem,
+    FromStrUnknownFormat,
+    FromStrUnknownUnit,
 }
 
 impl fmt::Display for Errors {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
             Self::Carry => write!(f, "a carry error (e.g. 61 seconds)"),
-            Self::ParseError(ref msg) => write!(f, "ParseError: {}", msg),
+            Self::ParseError(kind) => write!(f, "ParseError: {:?}", kind),
             Self::ConversionOverlapError(hi, lo) => {
                 write!(f, "hi and lo values overlap: {}, {}", hi, lo)
             }
@@ -237,11 +257,12 @@ impl fmt::Display for Errors {
 }
 
 impl convert::From<ParseIntError> for Errors {
-    fn from(error: ParseIntError) -> Self {
-        Errors::ParseError(format!("std::num::ParseIntError encountered: {}", error))
+    fn from(_: ParseIntError) -> Self {
+        Errors::ParseError(ParsingErrors::ParseIntError)
     }
 }
 
+#[cfg(feature = "std")]
 impl Error for Errors {}
 
 /// Enum of the different time systems available
@@ -273,15 +294,7 @@ impl FromStr for TimeSystem {
         } else if val == "ET" {
             Ok(TimeSystem::ET)
         } else {
-            Err(Errors::ParseError(format!("unknown time system `{}`", val)))
+            Err(Errors::ParseError(ParsingErrors::TimeSystem))
         }
     }
-}
-
-#[test]
-fn error_unittest() {
-    assert_eq!(
-        format!("{}", Errors::Carry),
-        "a carry error (e.g. 61 seconds)"
-    );
 }

@@ -12,16 +12,16 @@ readme = "README.md"
 license = "Apache-2.0"
 
 [dependencies]
-regex = {version = "1.5.5", optional = true}
 serde = "1.0.136"
-serde_derive = "1.0.136"
+regex = {version = "1.5.5", optional = true}
+serde_derive = {version = "1.0.136", optional = true}
 
 [dev-dependencies]
 criterion = "0.3.5"
 
 [features]
 default = ["std"]
-std = ["regex"]
+std = ["regex", "serde_derive"]
 
 [[bench]]
 name = "bench_epoch"

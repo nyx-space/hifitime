@@ -116,6 +116,7 @@ fn test_timeseries() {
         } else if count == 5 {
             assert_ne!(epoch, end, "Ending epoch of exclusive time series is wrong");
         }
+        #[cfg(feature = "std")]
         println!("{}", epoch);
         count += 1;
     }
@@ -133,6 +134,7 @@ fn test_timeseries() {
         } else if count == 6 {
             assert_eq!(epoch, end, "Ending epoch of inclusive time series is wrong");
         }
+        #[cfg(feature = "std")]
         println!("{}", epoch);
         count += 1;
     }
