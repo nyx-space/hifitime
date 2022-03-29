@@ -40,10 +40,15 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Run cargo test
+      - name: Run no-std cargo test
         uses: actions-rs/cargo@v1
         with:
           command: test
+      
+      - name: Run cargo test no-default-features
+        uses: actions-rs/cargo@v1
+        with:
+          command: test --no-default-features
 
   lints:
     name: Lints

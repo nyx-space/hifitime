@@ -1,5 +1,3 @@
-use super::regex::Regex;
-use super::serde::{de, Deserialize, Deserializer};
 use crate::duration::{Duration, Unit};
 use crate::{
     Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
@@ -7,6 +5,12 @@ use crate::{
 };
 use std::fmt;
 use std::ops::{Add, AddAssign, Sub, SubAssign};
+
+#[cfg(feature = "std")]
+use super::regex::Regex;
+#[cfg(feature = "std")]
+use super::serde::{de, Deserialize, Deserializer};
+#[cfg(feature = "std")]
 use std::str::FromStr;
 
 const TT_OFFSET_MS: i64 = 32_184;
@@ -754,115 +758,20 @@ impl Epoch {
         self.as_et_duration_since_j2000().in_unit(Unit::Century)
     }
 
-    /// Converts an ISO8601 Datetime representation without timezone offset to an Epoch.
-    /// If no time system is specified, than UTC is assumed.
-    /// The `T` which separates the date from the time can be replaced with a single whitespace character (`\W`).
-    /// The offset is also optional, cf. the examples below.
-    ///
-    /// # Example
-    /// ```
-    /// use hifitime::Epoch;
-    /// let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
-    /// assert_eq!(
-    ///     dt,
-    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55 UTC").unwrap()
-    /// );
-    /// assert_eq!(
-    ///     dt,
-    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55.0000 UTC").unwrap()
-    /// );
-    /// assert_eq!(
-    ///     dt,
-    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55").unwrap()
-    /// );
-    /// assert_eq!(
-    ///     dt,
-    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55").unwrap()
-    /// );
-    /// // Regression test for #90
-    /// assert_eq!(
-    ///     Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811000000),
-    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55.811 UTC").unwrap()
-    /// );
-    /// assert_eq!(
-    ///     Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811200000),
-    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55.8112 UTC").unwrap()
-    /// );
-    /// ```
-    pub fn from_gregorian_str(s: &str) -> Result<Self, Errors> {
-        let reg: Regex = Regex::new(
-            r"^(\d{4})-(\d{2})-(\d{2})(?:T|\W)(\d{2}):(\d{2}):(\d{2})\.?(\d+)?\W?(\w{2,3})?$",
-        )
-        .unwrap();
-        match reg.captures(s) {
-            Some(cap) => {
-                let nanos = match cap.get(7) {
-                    Some(val) => {
-                        let val_str = val.as_str();
-                        let val = val_str.parse::<u32>().unwrap();
-                        if val_str.len() != 9 {
-                            val * 10_u32.pow((9 - val_str.len()) as u32)
-                        } else {
-                            val
-                        }
-                    }
-                    None => 0,
-                };
-
-                match cap.get(8) {
-                    Some(ts_str) => {
-                        let ts = TimeSystem::from_str(ts_str.as_str())?;
-                        if ts == TimeSystem::UTC {
-                            Self::maybe_from_gregorian_utc(
-                                cap[1].to_owned().parse::<i32>()?,
-                                cap[2].to_owned().parse::<u8>()?,
-                                cap[3].to_owned().parse::<u8>()?,
-                                cap[4].to_owned().parse::<u8>()?,
-                                cap[5].to_owned().parse::<u8>()?,
-                                cap[6].to_owned().parse::<u8>()?,
-                                nanos,
-                            )
-                        } else {
-                            Self::maybe_from_gregorian(
-                                cap[1].to_owned().parse::<i32>()?,
-                                cap[2].to_owned().parse::<u8>()?,
-                                cap[3].to_owned().parse::<u8>()?,
-                                cap[4].to_owned().parse::<u8>()?,
-                                cap[5].to_owned().parse::<u8>()?,
-                                cap[6].to_owned().parse::<u8>()?,
-                                nanos,
-                                ts,
-                            )
-                        }
-                    }
-                    None => {
-                        // Asumme UTC
-                        Self::maybe_from_gregorian_utc(
-                            cap[1].to_owned().parse::<i32>()?,
-                            cap[2].to_owned().parse::<u8>()?,
-                            cap[3].to_owned().parse::<u8>()?,
-                            cap[4].to_owned().parse::<u8>()?,
-                            cap[5].to_owned().parse::<u8>()?,
-                            cap[6].to_owned().parse::<u8>()?,
-                            nanos,
-                        )
-                    }
-                }
-            }
-            None => Err(Errors::ParseError(
-                "Input not in ISO8601 format without offset (e.g. 2018-01-27T00:41:55)".to_owned(),
-            )),
-        }
-    }
-
     /// Converts the Epoch to the Gregorian UTC equivalent as (year, month, day, hour, minute, second).
     /// WARNING: Nanoseconds are lost in this conversion!
     ///
     /// # Example
     /// ```
     /// use hifitime::Epoch;
-    /// let dt_str = "2017-01-14T00:31:55 UTC";
-    /// let dt = Epoch::from_gregorian_str(dt_str).unwrap();
+    ///
+    /// let dt = Epoch::from_tai_parts(1, 537582752000000000);
+    /// // let dt = if cfg!(feature = "std") {
+    /// //     let dt_str = "2017-01-14T00:31:55 UTC";
+    /// //     Epoch::from_gregorian_str(dt_str).unwrap()
+    /// // } else {
+    /// //     Epoch::from_gregorian_utc_hms(2017, 1, 14, 0, 31, 55)
+    /// // };
     /// let (y, m, d, h, min, s, _) = dt.as_gregorian_utc();
     /// assert_eq!(y, 2017);
     /// assert_eq!(m, 1);
@@ -870,6 +779,7 @@ impl Epoch {
     /// assert_eq!(h, 0);
     /// assert_eq!(min, 31);
     /// assert_eq!(s, 55);
+    /// #[cfg(feature = "std")]
     /// assert_eq!(dt_str, dt.as_gregorian_utc_str().to_owned());
     /// ```
     pub fn as_gregorian_utc(self) -> (i32, u8, u8, u8, u8, u8, u32) {
@@ -997,6 +907,111 @@ impl Epoch {
     }
 }
 
+#[cfg(feature = "std")]
+impl Epoch {
+    /// Converts an ISO8601 Datetime representation without timezone offset to an Epoch.
+    /// If no time system is specified, than UTC is assumed.
+    /// The `T` which separates the date from the time can be replaced with a single whitespace character (`\W`).
+    /// The offset is also optional, cf. the examples below.
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::Epoch;
+    /// let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
+    /// assert_eq!(
+    ///     dt,
+    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55 UTC").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     dt,
+    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55.0000 UTC").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     dt,
+    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     dt,
+    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55").unwrap()
+    /// );
+    /// // Regression test for #90
+    /// assert_eq!(
+    ///     Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811000000),
+    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55.811 UTC").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811200000),
+    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55.8112 UTC").unwrap()
+    /// );
+    /// ```
+    pub fn from_gregorian_str(s: &str) -> Result<Self, Errors> {
+        let reg: Regex = Regex::new(
+            r"^(\d{4})-(\d{2})-(\d{2})(?:T|\W)(\d{2}):(\d{2}):(\d{2})\.?(\d+)?\W?(\w{2,3})?$",
+        )
+        .unwrap();
+        match reg.captures(s) {
+            Some(cap) => {
+                let nanos = match cap.get(7) {
+                    Some(val) => {
+                        let val_str = val.as_str();
+                        let val = val_str.parse::<u32>().unwrap();
+                        if val_str.len() != 9 {
+                            val * 10_u32.pow((9 - val_str.len()) as u32)
+                        } else {
+                            val
+                        }
+                    }
+                    None => 0,
+                };
+
+                match cap.get(8) {
+                    Some(ts_str) => {
+                        let ts = TimeSystem::from_str(ts_str.as_str())?;
+                        if ts == TimeSystem::UTC {
+                            Self::maybe_from_gregorian_utc(
+                                cap[1].to_owned().parse::<i32>()?,
+                                cap[2].to_owned().parse::<u8>()?,
+                                cap[3].to_owned().parse::<u8>()?,
+                                cap[4].to_owned().parse::<u8>()?,
+                                cap[5].to_owned().parse::<u8>()?,
+                                cap[6].to_owned().parse::<u8>()?,
+                                nanos,
+                            )
+                        } else {
+                            Self::maybe_from_gregorian(
+                                cap[1].to_owned().parse::<i32>()?,
+                                cap[2].to_owned().parse::<u8>()?,
+                                cap[3].to_owned().parse::<u8>()?,
+                                cap[4].to_owned().parse::<u8>()?,
+                                cap[5].to_owned().parse::<u8>()?,
+                                cap[6].to_owned().parse::<u8>()?,
+                                nanos,
+                                ts,
+                            )
+                        }
+                    }
+                    None => {
+                        // Asumme UTC
+                        Self::maybe_from_gregorian_utc(
+                            cap[1].to_owned().parse::<i32>()?,
+                            cap[2].to_owned().parse::<u8>()?,
+                            cap[3].to_owned().parse::<u8>()?,
+                            cap[4].to_owned().parse::<u8>()?,
+                            cap[5].to_owned().parse::<u8>()?,
+                            cap[6].to_owned().parse::<u8>()?,
+                            nanos,
+                        )
+                    }
+                }
+            }
+            None => Err(Errors::ParseError(
+                "Input not in ISO8601 format without offset (e.g. 2018-01-27T00:41:55)".to_owned(),
+            )),
+        }
+    }
+}
+
+#[cfg(feature = "std")]
 impl FromStr for Epoch {
     type Err = Errors;
 
@@ -1064,6 +1079,7 @@ impl FromStr for Epoch {
     }
 }
 
+#[cfg(feature = "std")]
 impl<'de> Deserialize<'de> for Epoch {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -1581,6 +1597,7 @@ fn spice_et_tdb() {
     assert!(dbg!(J2000_NAIF - sp_ex.as_jde_tdb_days()).abs() < 1e-7);
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn test_from_str() {
     use std::f64::EPSILON;
@@ -1679,6 +1696,7 @@ fn test_range() {
     assert!(rng.contains(&middle));
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn deser_test() {
     use super::serde_derive::Deserialize;
@@ -1751,4 +1769,14 @@ fn test_const_ops() {
     assert!((mjd_offset.in_unit(Unit::Day) - MJD_OFFSET).abs() < f64::EPSILON);
     let j2000_offset = J2000_OFFSET * Unit::Day;
     assert!((j2000_offset.in_unit(Unit::Day) - J2000_OFFSET).abs() < f64::EPSILON);
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn test_utc_str() {
+    let dt_str = "2017-01-14T00:31:55 UTC";
+    let dt = Epoch::from_gregorian_str(dt_str).unwrap();
+    let (centuries, nanos) = dt.as_tai_duration().to_parts();
+    assert_eq!(centuries, 1);
+    assert_eq!(nanos, 537582752000000000);
 }

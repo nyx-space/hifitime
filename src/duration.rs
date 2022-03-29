@@ -1,5 +1,3 @@
-use super::regex::Regex;
-use super::serde::{de, Deserialize, Deserializer};
 use crate::{
     Errors, DAYS_PER_CENTURY, SECONDS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR,
     SECONDS_PER_MINUTE,
@@ -8,6 +6,12 @@ use std::cmp::Ordering;
 use std::convert::TryInto;
 use std::fmt;
 use std::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
+
+#[cfg(feature = "std")]
+use super::regex::Regex;
+#[cfg(feature = "std")]
+use super::serde::{de, Deserialize, Deserializer};
+#[cfg(feature = "std")]
 use std::str::FromStr;
 
 const DAYS_PER_CENTURY_U64: u64 = 36_525;
@@ -105,7 +109,7 @@ impl Duration {
     }
 
     #[must_use]
-    /// Returns the centures and nanoseconds of this duration
+    /// Returns the centuries and nanoseconds of this duration
     /// NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly.
     pub fn to_parts(&self) -> (i16, u64) {
         (self.centuries, self.nanoseconds)
@@ -352,6 +356,7 @@ impl Duration {
     };
 }
 
+#[cfg(feature = "std")]
 impl<'de> Deserialize<'de> for Duration {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -685,6 +690,7 @@ impl Neg for Duration {
     }
 }
 
+#[cfg(feature = "std")]
 impl FromStr for Duration {
     type Err = Errors;
 
@@ -741,6 +747,8 @@ impl FromStr for Duration {
 /// A trait to automatically convert some primitives to a duration
 ///
 /// ```
+/// #[cfg(feature = "std")]
+/// {
 /// use hifitime::prelude::*;
 /// use std::str::FromStr;
 ///
@@ -750,6 +758,7 @@ impl FromStr for Duration {
 /// assert_eq!(Duration::from_str("10.598 us").unwrap(), 10.598.microseconds());
 /// assert_eq!(Duration::from_str("10.598 seconds").unwrap(), 10.598.seconds());
 /// assert_eq!(Duration::from_str("10.598 nanosecond").unwrap(), 10.598.nanoseconds());
+/// }
 /// ```
 pub trait TimeUnits: Copy + Mul<Unit, Output = Duration> {
     fn centuries(self) -> Duration {
@@ -1080,6 +1089,7 @@ fn test_neg() {
     assert_eq!(2.nanoseconds(), -(2.0.nanoseconds()));
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn deser_test() {
     use super::serde_derive::Deserialize;

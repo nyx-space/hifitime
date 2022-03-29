@@ -53,7 +53,6 @@
 //! #### Time creation
 //! ```rust
 //! use hifitime::{Epoch, Unit};
-//! use std::str::FromStr;
 //!
 //! let mut santa = Epoch::from_gregorian_utc(2017, 12, 25, 01, 02, 14, 0);
 //! assert_eq!(santa.as_mjd_utc_days(), 58112.043217592590);
@@ -66,11 +65,15 @@
 //!     "Could not add one hour to Christmas"
 //! );
 //!
+//! #[cfg(feature = "std")]
+//! {
+//! use std::str::FromStr;
 //! let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
 //! assert_eq!(dt, Epoch::from_str("2017-01-14T00:31:55 UTC").unwrap());
 //! // And you can print it too, although by default it will print in UTC
 //! assert_eq!(dt.as_gregorian_utc_str(), "2017-01-14T00:31:55 UTC".to_string());
 //! assert_eq!(format!("{}", dt), "2017-01-14T00:31:55 UTC".to_string());
+//! }
 //! ```
 //!
 //! #### Time differences, time unit, and duration handling
@@ -191,6 +194,7 @@ pub mod prelude {
     pub use {Duration, Epoch, Freq, Frequencies, TimeSeries, TimeUnits, Unit};
 }
 
+#[cfg(feature = "std")]
 extern crate regex;
 extern crate serde;
 extern crate serde_derive;
