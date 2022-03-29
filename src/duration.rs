@@ -733,10 +733,10 @@ impl FromStr for Duration {
                     "ms" | "millisecond" | "milliseconds" => Ok(Unit::Millisecond * value),
                     "us" | "microsecond" | "microseconds" => Ok(Unit::Microsecond * value),
                     "ns" | "nanosecond" | "nanoseconds" => Ok(Unit::Nanosecond * value),
-                    _ => Err(Errors::ParseError(ParsingErrors::FromStrUnknownUnit)),
+                    _ => Err(Errors::ParseError(ParsingErrors::UnknownUnit)),
                 }
             }
-            None => Err(Errors::ParseError(ParsingErrors::FromStrUnknownFormat)),
+            None => Err(Errors::ParseError(ParsingErrors::UnknownFormat)),
         }
     }
 }

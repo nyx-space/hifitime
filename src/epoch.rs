@@ -1050,16 +1050,12 @@ impl FromStr for Epoch {
                             TimeSystem::TAI => Ok(Self::from_jde_tai(value)),
                             TimeSystem::TDB => Ok(Self::from_jde_tdb(value)),
                             TimeSystem::UTC => Ok(Self::from_jde_utc(value)),
-                            _ => Err(Errors::ParseError(
-                                ParsingErrors::FromStrUnsupportedTimeSystem,
-                            )),
+                            _ => Err(Errors::ParseError(ParsingErrors::UnsupportedTimeSystem)),
                         },
                         "MJD" => match ts {
                             TimeSystem::TAI => Ok(Self::from_mjd_tai(value)),
                             TimeSystem::UTC => Ok(Self::from_mjd_utc(value)),
-                            _ => Err(Errors::ParseError(
-                                ParsingErrors::FromStrUnsupportedTimeSystem,
-                            )),
+                            _ => Err(Errors::ParseError(ParsingErrors::UnsupportedTimeSystem)),
                         },
                         "SEC" => match ts {
                             TimeSystem::TAI => Ok(Self::from_tai_seconds(value)),
@@ -1068,10 +1064,10 @@ impl FromStr for Epoch {
                             TimeSystem::TT => Ok(Self::from_tt_seconds(value)),
                             TimeSystem::UTC => Ok(Self::from_utc_seconds(value)),
                         },
-                        _ => Err(Errors::ParseError(ParsingErrors::FromStrUnknownFormat)),
+                        _ => Err(Errors::ParseError(ParsingErrors::UnknownFormat)),
                     }
                 }
-                None => Err(Errors::ParseError(ParsingErrors::FromStrUnknownFormat)),
+                None => Err(Errors::ParseError(ParsingErrors::UnknownFormat)),
             },
         }
     }
@@ -1565,10 +1561,7 @@ fn spice_et_tdb() {
     assert!((sp_ex.as_et_seconds() - expected_et_s).abs() < 1e-6); // -8.940696716308594e-7 s <=> -894 ns error
     assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6); // 5.960464477539063e-7 s <=> 596 ns error
     assert!((sp_ex.as_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
-    assert!(
-        (sp_ex.as_tai_seconds() - from_et_s.as_tai_seconds()).abs() // Broken
-            < 1e-6
-    );
+    assert!((sp_ex.as_tai_seconds() - from_et_s.as_tai_seconds()).abs() < 1e-6);
 
     // Second example
     let sp_ex = Epoch::from_gregorian_utc_at_midnight(2002, 2, 7);

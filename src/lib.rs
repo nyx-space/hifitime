@@ -210,8 +210,6 @@ use core::str::FromStr;
 extern crate regex;
 #[cfg(feature = "std")]
 extern crate serde_derive;
-// #[cfg(feature = "std")]
-// extern crate std;
 #[cfg(feature = "std")]
 use std::error::Error;
 
@@ -235,9 +233,9 @@ pub enum ParsingErrors {
     ParseIntError,
     TimeSystem,
     ISO8601,
-    FromStrUnsupportedTimeSystem,
-    FromStrUnknownFormat,
-    FromStrUnknownUnit,
+    UnknownFormat,
+    UnknownUnit,
+    UnsupportedTimeSystem,
 }
 
 impl fmt::Display for Errors {
