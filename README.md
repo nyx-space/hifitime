@@ -82,10 +82,13 @@ ET and TDB should now be identical. However, hifitime uses the European Space Ag
 
 # Changelog
 
-## 3.1.0 (unreleased - work in progress)
+## 3.1.0
++ Add `#![no_std]` support
 + Add `to_parts` to `Duration` to extract the centuries and nanoseconds of a duration
 + Allow building an `Epoch` from its duration and parts in TAI system
 + Add pure nanosecond (`u64`) constructor and getter for GPST since GPS based clocks will count in nanoseconds
+### Possibly breaking change
++ `Errors::ParseError` no longer contains a `String` but an enum `ParsingErrors` instead. This is considered possibly breaking because it would only break code in the cases where a datetime parsing or unit parsing was caught and handled (uncommon). Moreover, the output is still `Display`-able.
 ## 3.0.0
 + Backend rewritten from TwoFloat to a struct of the centuries in `i16` and nanoseconds in `u64`. Thanks to [@pwnorbitals](https://github.com/pwnorbitals) for proposing the idea in #107 and writing the proof of concept. This leads to at least a 2x speed up in most calculations, cf. [this comment](https://github.com/nyx-space/hifitime/pull/107#issuecomment-1040702004).
 + Fix GPS epoch, and addition of a helper functions in `Epoch` by [@cjordan](https://github.com/cjordan)
