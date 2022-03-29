@@ -1,26 +1,27 @@
 [package]
 name = "hifitime"
-version = "3.1.0-beta.1"
+version = "3.1.0"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
 description = "Ultra-precise date and time handling in Rust for scientific applications with leap second support"
 homepage = "https://nyxspace.com/MathSpec/time/"
 documentation = "https://docs.rs/hifitime/"
 repository = "https://github.com/nyx-space/hifitime"
-keywords = ["date", "time", "barycentric", "leap-second", "tai"]
+keywords = ["date", "time", "science", "leap-second", "no-std"]
 categories = ["date-and-time"]
 readme = "README.md"
 license = "Apache-2.0"
 
 [dependencies]
-rand = "0.8.5"
-rand_distr = "0.4.3"
-regex = "1.5.4"
 serde = "1.0.136"
-serde_derive = "1.0.136"
+regex = {version = "1.5.5", optional = true}
+serde_derive = {version = "1.0.136", optional = true}
 
 [dev-dependencies]
-serde_derive = "1.0.136"
 criterion = "0.3.5"
+
+[features]
+default = ["std"]
+std = ["regex", "serde_derive"]
 
 [[bench]]
 name = "bench_epoch"
