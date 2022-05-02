@@ -1,7 +1,7 @@
 use crate::duration::{Duration, Unit};
 use crate::{
     Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
-    SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64, SECONDS_PER_DAY,
+    SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64, SECONDS_PER_DAY, UNIX_OFFSET_UTC_SECONDS,
 };
 use core::fmt;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
@@ -330,6 +330,35 @@ impl Epoch {
             centuries: 0,
             nanoseconds,
         }) + Unit::Second * SECONDS_GPS_TAI_OFFSET
+    }
+
+    /// Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01.
+    pub fn from_unix_seconds(seconds: f64) -> Self {
+        let mut e = Self::from_tai_duration(
+            seconds * Unit::Second + UNIX_OFFSET_UTC_SECONDS * Unit::Second,
+        );
+        // Compute the TAI to UTC offset at this time.
+        let cnt = e.get_num_leap_seconds();
+        // We have the time in TAI. But we were given UNIX (UTC).
+        // Hence, we need to _add_ the leap seconds  to get the actual TAI time.
+        // TAI = UNIX + leap_seconds + UNIX_OFFSET_UTC_SECONDS <=> UTC = TAI - leap_seconds - UNIX_OFFSET_UTC_SECONDS
+        e.0 += i64::from(cnt) * Unit::Second;
+        e
+    }
+
+    /// Initialize an Epoch from the provided UNIX milisecond timestamp since UTC midnight 1970 January 01.
+    pub fn from_unix_miliseconds(seconds: f64) -> Self {
+        // Need to add the UTC offset to unix time stamp
+        let mut e = Self::from_tai_duration(
+            seconds * Unit::Millisecond + UNIX_OFFSET_UTC_SECONDS * Unit::Second,
+        );
+        // Compute the TAI to UTC offset at this time.
+        let cnt = e.get_num_leap_seconds();
+        // We have the time in TAI. But we were given UNIX (UTC).
+        // Hence, we need to _add_ the leap seconds  to get the actual TAI time.
+        // TAI = UNIX + leap_seconds + UNIX_OFFSET_UTC_SECONDS <=> UTC = TAI - leap_seconds - UNIX_OFFSET_UTC_SECONDS
+        e.0 += i64::from(cnt) * Unit::Second;
+        e
     }
 
     /// Attempts to build an Epoch from the provided Gregorian date and time in TAI.
@@ -673,6 +702,33 @@ impl Epoch {
     /// Returns days past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
     pub fn as_gpst_days(self) -> f64 {
         self.as_gpst_duration().in_unit(Unit::Day)
+    }
+
+    ///Returns the Duration since the UNIX epoch UTC midnight 01 Jan 1970.
+    pub fn as_unix_duration(self) -> Duration {
+        let cnt = self.get_num_leap_seconds();
+        // TAI = UNIX + leap_seconds + UNIX_OFFSET_UTC_SECONDS <=> UNIX = TAI - leap_seconds - UNIX_OFFSET_UTC_SECONDS
+        self.0 + i64::from(-cnt) * Unit::Second - UNIX_OFFSET_UTC_SECONDS * Unit::Second
+    }
+
+    /// Returns the duration since the UNIX epoch in the provided unit.
+    pub fn as_unix(self, unit: Unit) -> f64 {
+        self.as_unix_duration().in_unit(unit)
+    }
+
+    /// Returns the number seconds since the UNIX epoch defined 01 Jan 1970 midnight UTC.
+    pub fn as_unix_seconds(self) -> f64 {
+        self.as_unix(Unit::Second)
+    }
+
+    /// Returns the number miliseconds since the UNIX epoch defined 01 Jan 1970 midnight UTC.
+    pub fn as_unix_miliseconds(self) -> f64 {
+        self.as_unix(Unit::Millisecond)
+    }
+
+    /// Returns the number days since the UNIX epoch defined 01 Jan 1970 midnight UTC.
+    pub fn as_unix_days(self) -> f64 {
+        self.as_unix(Unit::Day)
     }
 
     /// Returns the Ephemeris Time seconds past epoch
@@ -1538,6 +1594,65 @@ fn gpst() {
     let epoch = Epoch::from_gregorian_utc_at_midnight(1980, 1, 1);
     assert!((epoch.as_gpst_seconds() + 5.0 * SECONDS_PER_DAY).abs() < EPSILON);
     assert!((epoch.as_gpst_days() + 5.0).abs() < EPSILON);
+}
+
+#[test]
+fn unix() {
+    use core::f64::EPSILON;
+    let now = Epoch::from_gregorian_utc_hms(2022, 5, 2, 10, 39, 15);
+    assert!(
+        now.as_tai_seconds() > now.as_utc_seconds(),
+        "TAI is not ahead of UTC."
+    );
+    assert!((now.as_tai_seconds() - now.as_utc_seconds() - 37.0).abs() < EPSILON);
+    assert!(
+        now.as_tai_seconds() > now.as_unix_seconds(),
+        "TAI is not ahead of UNIX."
+    );
+    assert!((now.as_unix_seconds() - 1651487955.0f64).abs() < EPSILON);
+    assert!((now.as_unix_miliseconds() - 1651487955000.0f64).abs() < EPSILON);
+    assert_eq!(
+        Epoch::from_unix_seconds(now.as_unix_seconds()),
+        now,
+        "To/from UNIX seconds failed"
+    );
+    assert_eq!(
+        Epoch::from_unix_miliseconds(now.as_unix_miliseconds()),
+        now,
+        "To/from UNIX miliseconds failed"
+    );
+
+    let unix_epoch = Epoch::from_utc_seconds(UNIX_OFFSET_UTC_SECONDS as f64);
+    #[cfg(feature = "std")]
+    {
+        assert_eq!(
+            unix_epoch.as_gregorian_str(TimeSystem::UTC),
+            "1970-01-01T00:00:00 UTC"
+        );
+        assert_eq!(
+            unix_epoch.as_gregorian_str(TimeSystem::TAI),
+            "1970-01-01T00:00:00 TAI"
+        );
+    }
+    assert_eq!(
+        unix_epoch.as_tai_seconds(),
+        Epoch::from_gregorian_utc_at_midnight(1970, 1, 1).as_tai_seconds()
+    );
+    assert!(
+        unix_epoch.as_unix_seconds().abs() < EPSILON,
+        "The number of seconds from the UNIX epoch was not 0: {}",
+        unix_epoch.as_unix_seconds()
+    );
+    assert!(
+        unix_epoch.as_unix_miliseconds().abs() < EPSILON,
+        "The number of miliseconds from the UNIX epoch was not 0: {}",
+        unix_epoch.as_unix_seconds()
+    );
+    assert!(
+        unix_epoch.as_unix_days().abs() < EPSILON,
+        "The number of days from the UNIX epoch was not 0: {}",
+        unix_epoch.as_unix_days()
+    );
 }
 
 #[test]
