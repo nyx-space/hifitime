@@ -347,7 +347,7 @@ impl Epoch {
     }
 
     /// Initialize an Epoch from the provided UNIX milisecond timestamp since UTC midnight 1970 January 01.
-    pub fn from_unix_miliseconds(seconds: f64) -> Self {
+    pub fn from_unix_milliseconds(seconds: f64) -> Self {
         // Need to add the UTC offset to unix time stamp
         let mut e = Self::from_tai_duration(
             seconds * Unit::Millisecond + UNIX_OFFSET_UTC_SECONDS * Unit::Second,
@@ -721,8 +721,8 @@ impl Epoch {
         self.as_unix(Unit::Second)
     }
 
-    /// Returns the number miliseconds since the UNIX epoch defined 01 Jan 1970 midnight UTC.
-    pub fn as_unix_miliseconds(self) -> f64 {
+    /// Returns the number milliseconds since the UNIX epoch defined 01 Jan 1970 midnight UTC.
+    pub fn as_unix_milliseconds(self) -> f64 {
         self.as_unix(Unit::Millisecond)
     }
 
@@ -1600,26 +1600,17 @@ fn gpst() {
 fn unix() {
     use core::f64::EPSILON;
     let now = Epoch::from_gregorian_utc_hms(2022, 5, 2, 10, 39, 15);
-    assert!(
-        now.as_tai_seconds() > now.as_utc_seconds(),
-        "TAI is not ahead of UTC."
-    );
-    assert!((now.as_tai_seconds() - now.as_utc_seconds() - 37.0).abs() < EPSILON);
-    assert!(
-        now.as_tai_seconds() > now.as_unix_seconds(),
-        "TAI is not ahead of UNIX."
-    );
-    assert!((now.as_unix_seconds() - 1651487955.0f64).abs() < EPSILON);
-    assert!((now.as_unix_miliseconds() - 1651487955000.0f64).abs() < EPSILON);
+    assert!((now.as_unix_seconds() - 1651487955.0_f64).abs() < EPSILON);
+    assert!((now.as_unix_milliseconds() - 1651487955000.0_f64).abs() < EPSILON);
     assert_eq!(
         Epoch::from_unix_seconds(now.as_unix_seconds()),
         now,
         "To/from UNIX seconds failed"
     );
     assert_eq!(
-        Epoch::from_unix_miliseconds(now.as_unix_miliseconds()),
+        Epoch::from_unix_milliseconds(now.as_unix_milliseconds()),
         now,
-        "To/from UNIX miliseconds failed"
+        "To/from UNIX milliseconds failed"
     );
 
     let unix_epoch = Epoch::from_utc_seconds(UNIX_OFFSET_UTC_SECONDS as f64);
@@ -1644,8 +1635,8 @@ fn unix() {
         unix_epoch.as_unix_seconds()
     );
     assert!(
-        unix_epoch.as_unix_miliseconds().abs() < EPSILON,
-        "The number of miliseconds from the UNIX epoch was not 0: {}",
+        unix_epoch.as_unix_milliseconds().abs() < EPSILON,
+        "The number of milliseconds from the UNIX epoch was not 0: {}",
         unix_epoch.as_unix_seconds()
     );
     assert!(
