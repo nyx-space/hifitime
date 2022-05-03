@@ -180,10 +180,6 @@ pub const SECONDS_GPS_TAI_OFFSET_I64: i64 =
 /// epoch (UTC midnight of January 6th 1980; cf.
 /// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29)
 pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
-/// `UNIX_OFFSET_SECONDS` is the number of seconds from 01 JAN 1900 midnight UTC
-/// and 01 JAN 1970 UTC. Defined if [RFC-868](https://datatracker.ietf.org/doc/html/rfc868)
-/// This is equivalent to SECONDS_PER_YEAR * 70.0 - SECONDS_PER_HOUR * 12.0;
-pub const UNIX_OFFSET_UTC_SECONDS: i64 = 2_208_988_800;
 
 mod epoch;
 
