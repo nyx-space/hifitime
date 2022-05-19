@@ -328,24 +328,21 @@ impl Epoch {
 
     #[must_use]
     /// Initialize an Epoch from the number of seconds since the GPS Time Epoch,
-    /// defined as UTC midnight of January 5th to 6th 1980 (cf.
-    /// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
+    /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn from_gpst_seconds(seconds: f64) -> Self {
         Self::from_tai_seconds(seconds) + Unit::Second * SECONDS_GPS_TAI_OFFSET
     }
 
     #[must_use]
     /// Initialize an Epoch from the number of days since the GPS Time Epoch,
-    /// defined as UTC midnight of January 5th to 6th 1980 (cf.
-    /// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
+    /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn from_gpst_days(days: f64) -> Self {
         Self::from_tai_days(days) + Unit::Day * DAYS_GPS_TAI_OFFSET
     }
 
     #[must_use]
     /// Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
-    /// defined as UTC midnight of January 5th to 6th 1980 (cf.
-    /// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
+    /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use GPS as a time source.
     pub fn from_gpst_nanoseconds(nanoseconds: u64) -> Self {
         Self(Duration {
@@ -740,7 +737,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Returns seconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
+    /// Returns seconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn as_gpst_seconds(&self) -> f64 {
         self.as_gpst_duration().in_seconds()
     }
@@ -750,7 +747,7 @@ impl Epoch {
         self.as_tai_duration() - Unit::Second * SECONDS_GPS_TAI_OFFSET_I64
     }
 
-    /// Returns nanoseconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
+    /// Returns nanoseconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// NOTE: This function will return an error if the centuries past GPST time are not zero.
     pub fn as_gpst_nanoseconds(&self) -> Result<u64, Errors> {
         let (centuries, nanoseconds) = self.as_gpst_duration().to_parts();
@@ -762,7 +759,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Returns days past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
+    /// Returns days past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn as_gpst_days(&self) -> f64 {
         self.as_gpst_duration().in_unit(Unit::Day)
     }
@@ -820,7 +817,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
+    /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. <https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB>)
     pub fn as_tdb_seconds(&self) -> f64 {
         // Note that we redo the calculation of as_tdb_duration to save computational cost
         let inner = self.inner_g_rad();
@@ -859,7 +856,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
+    /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. <https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB>)
     pub fn as_jde_tdb_days(&self) -> f64 {
         self.as_jde_tdb_duration().in_unit(Unit::Day)
     }
