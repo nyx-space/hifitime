@@ -818,25 +818,25 @@ pub trait Frequencies: Copy + Mul<Freq, Output = Duration> {
 }
 
 /// An Enum to convert frequencies to their approximate duration, **rounded to the closest nanosecond**.
-#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 pub enum Freq {
-    GigaHertz,
-    MegaHertz,
-    KiloHertz,
     Hertz,
+    KiloHertz,
+    MegaHertz,
+    GigaHertz,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 pub enum Unit {
+    Nanosecond,
+    Microsecond,
+    Millisecond,
+    Second,
+    Minute,
+    Hour,
+    Day,
     /// 36525 days, it the number of days per century in the Julian calendar
     Century,
-    Day,
-    Hour,
-    Minute,
-    Second,
-    Millisecond,
-    Microsecond,
-    Nanosecond,
 }
 
 impl Add for Unit {
@@ -1137,4 +1137,23 @@ fn test_extremes() {
         Duration::from_truncated_nanoseconds(d.truncated_nanoseconds()),
         d
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Freq, Unit};
+
+    #[test]
+    fn duration_enum_eq() {
+        // Check the equality compiles (if one compiles, then all asserts will work)
+        assert!(Freq::GigaHertz == Freq::GigaHertz);
+        assert!(Unit::Century == Unit::Century);
+    }
+
+    #[test]
+    fn duration_enum_orq() {
+        // Check the equality compiles (if one compiles, then all asserts will work)
+        assert!(Freq::GigaHertz > Freq::MegaHertz);
+        assert!(Unit::Century > Unit::Day);
+    }
 }

@@ -228,7 +228,7 @@ pub enum Errors {
     Overflow,
 }
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ParsingErrors {
     ParseIntError,
     TimeSystem,
@@ -264,7 +264,7 @@ impl convert::From<ParseIntError> for Errors {
 impl Error for Errors {}
 
 /// Enum of the different time systems available
-#[derive(Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum TimeSystem {
     /// Ephemeris Time as defined by SPICE (slightly different from true TDB)
     ET,
@@ -274,6 +274,7 @@ pub enum TimeSystem {
     TT,
     /// Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time)
     TDB,
+    /// Universal Coordinated Time
     UTC,
 }
 
@@ -294,5 +295,18 @@ impl FromStr for TimeSystem {
         } else {
             Err(Errors::ParseError(ParsingErrors::TimeSystem))
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Errors, ParsingErrors, TimeSystem};
+
+    #[test]
+    fn enum_eq() {
+        // Check the equality compiles (if one compiles, then all asserts will work)
+        assert!(Errors::Carry == Errors::Carry);
+        assert!(ParsingErrors::ParseIntError == ParsingErrors::ParseIntError);
+        assert!(TimeSystem::ET == TimeSystem::ET);
     }
 }
