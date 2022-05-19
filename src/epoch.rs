@@ -1,7 +1,7 @@
 use crate::duration::{Duration, Unit};
 use crate::{
     Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
-    SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64, SECONDS_PER_DAY,
+    SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64, SECONDS_PER_DAY, UNIX_REF_EPOCH,
 };
 use core::fmt;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
@@ -357,16 +357,14 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01.
     pub fn from_unix_seconds(seconds: f64) -> Self {
-        let utc_seconds = Self::from_gregorian_utc_at_midnight(1970, 1, 1).as_utc_duration()
-            + seconds * Unit::Second;
+        let utc_seconds = UNIX_REF_EPOCH.as_utc_duration() + seconds * Unit::Second;
         Self::from_utc_seconds(utc_seconds.in_unit(Unit::Second))
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided UNIX milisecond timestamp since UTC midnight 1970 January 01.
     pub fn from_unix_milliseconds(millisecond: f64) -> Self {
-        let utc_seconds = Self::from_gregorian_utc_at_midnight(1970, 1, 1).as_utc_duration()
-            + millisecond * Unit::Millisecond;
+        let utc_seconds = UNIX_REF_EPOCH.as_utc_duration() + millisecond * Unit::Millisecond;
         Self::from_utc_seconds(utc_seconds.in_unit(Unit::Second))
     }
 
@@ -774,8 +772,7 @@ impl Epoch {
     fn as_unix_duration(&self) -> Duration {
         let cnt = self.get_num_leap_seconds();
         // TAI = UNIX + leap_seconds + UNIX_OFFSET_UTC_SECONDS <=> UNIX = TAI - leap_seconds - UNIX_OFFSET_UTC_SECONDS
-        self.0 + i64::from(-cnt) * Unit::Second
-            - Self::from_gregorian_utc_at_midnight(1970, 1, 1).as_utc_duration()
+        self.0 + i64::from(-cnt) * Unit::Second - UNIX_REF_EPOCH.as_utc_duration()
     }
 
     #[must_use]

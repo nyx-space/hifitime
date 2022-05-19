@@ -181,6 +181,12 @@ pub const SECONDS_GPS_TAI_OFFSET_I64: i64 =
 /// https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29)
 pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
 
+/// The UNIX reference epoch of 1970-01-01.
+pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
+    centuries: 0,
+    nanoseconds: 2208988800000000000,
+});
+
 mod epoch;
 
 pub use epoch::*;
