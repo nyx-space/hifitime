@@ -1,12 +1,9 @@
 # hifitime 3
 
-Precise date and time handling in Rust built on top of a tuple of two integers allowing representation of durations and epochs with the exactly one nanosecond precision for 32,768 years _before_ 01 January 1900 and 32,767 years _after_ that reference epoch, all that in only 80 bits!
+Scientifically accurate date and time handling with guaranteed nanosecond precision for 32,768 years _before_ 01 January 1900 and 32,767 years _after_ that reference epoch.
 
-The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in day-to-day use of this library.
-
-
-[![Build Status](https://app.travis-ci.com/nyx-space/hifitime.svg?branch=master)](https://app.travis-ci.com/nyx-space/hifitime)
 [![hifitime on crates.io][cratesio-image]][cratesio]
+[![Build Status](https://github.com/nyx-space/hifitime/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/nyx-space/hifitime/actions)
 [![hifitime on docs.rs][docsrs-image]][docsrs]
 
 [cratesio-image]: https://img.shields.io/crates/v/hifitime.svg
@@ -18,19 +15,142 @@ The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matt
 # Features
 
  * [x] Leap seconds (as announced by the IETF on a yearly basis)
- * [x] Julian dates and Modified Julian dates
- * [x] Clock drift via oscillator stability for simulation of time measuring hardware (via the `simulation` feature)
- * [x] UTC representation with ISO8601 formatting (and parsing in that format #45)
- * [x] High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) (caveat: up to 10ms difference with SPICE near 01 Jan 2000)
- * [x] Trivial support of time arithmetic (e.g. `TimeUnit::Hour * 2 + TimeUnit::Second * 3`)
+ * [x] UTC representation with ISO8601 formatting
+ * [x] Trivial support of time arithmetic (e.g. `2.hours() + 3.seconds()`)
  * [x] Supports ranges of Epochs and TimeSeries (linspace of `Epoch`s and `Duration`s)
+ * [x] Trivial conversion between the time systems TAI, TT, ET, TDB, GPS, and UNIX.
+ * [x] High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
+ * [x] Julian dates and Modified Julian dates
+ * [x] Embedded device friendly: `no-std` and `const fn` where possible
  * [ ] Support for custom representations of time (e.g. NASA GMAT Modified Julian Date)
  * [ ] Trivial support of other time representations, such as TDT (cf #44)
 
-Almost all examples are validated with external references, as detailed on a test-by-test
-basis.
+Almost all examples are validated with external references, as detailed on a test-by-test basis.
 
-# Validation example
+## Non-features
+* Time-agnostic / date-only epochs. Hifitime only supports the combination of date and time, but the `Epoch::{at_midnight, at_noon}` is provided as a helper function.
+
+# Usage
+
+Put this in your `Cargo.toml`:
+
+```toml
+[dependencies]
+hifitime = "3.2"
+```
+
+And add the following to your crate root:
+
+```rust
+extern crate hifitime;
+```
+
+## Examples:
+### Time creation
+```rust
+use hifitime::{Epoch, Unit, TimeUnits};
+
+let mut santa = Epoch::from_gregorian_utc_hms(2017, 12, 25, 01, 02, 14);
+assert_eq!(santa.as_mjd_utc_days(), 58112.043217592590);
+assert_eq!(santa.as_jde_utc_days(), 2458112.5432175924);
+
+assert_eq!(
+    santa + 3600 * Unit::Second,
+    Epoch::from_gregorian_utc_hms(2017, 12, 25, 02, 02, 14),
+    "Could not add one hour to Christmas"
+);
+
+assert_eq!(
+    santa + 60.0.minutes(),
+    Epoch::from_gregorian_utc_hms(2017, 12, 25, 02, 02, 14),
+    "Could not add one hour to Christmas"
+);
+
+assert_eq!(
+    santa + 1.hours(),
+    Epoch::from_gregorian_utc_hms(2017, 12, 25, 02, 02, 14),
+    "Could not add one hour to Christmas"
+);
+
+#[cfg(feature = "std")]
+{
+use std::str::FromStr;
+let dt = Epoch::from_gregorian_utc_hms(2017, 1, 14, 0, 31, 55);
+assert_eq!(dt, Epoch::from_str("2017-01-14T00:31:55 UTC").unwrap());
+// And you can print it too, although by default it will print in UTC
+assert_eq!(dt.as_gregorian_utc_str(), "2017-01-14T00:31:55 UTC".to_string());
+assert_eq!(format!("{}", dt), "2017-01-14T00:31:55 UTC".to_string());
+}
+```
+### Time differences, time unit, and duration handling
+Comparing times will lead to a Duration type. Printing that will automatically select the unit.
+```rust
+use hifitime::{Epoch, Unit, Duration, TimeUnits};
+
+let at_midnight = Epoch::from_gregorian_utc_at_midnight(2020, 11, 2);
+let at_noon = Epoch::from_gregorian_utc_at_noon(2020, 11, 2);
+assert_eq!(at_noon - at_midnight, 12 * Unit::Hour);
+assert_eq!(at_noon - at_midnight, 1 * Unit::Day / 2);
+assert_eq!(at_midnight - at_noon, -1.days() / 2);
+
+let delta_time = at_noon - at_midnight;
+// assert_eq!(format!("{}", delta_time), "12 h 0 min 0 s".to_string());
+// And we can multiply durations by a scalar...
+let delta2 = 2 * delta_time;
+// assert_eq!(format!("{}", delta2), "1 days 0 h 0 min 0 s".to_string());
+// Or divide them by a scalar.
+// assert_eq!(format!("{}", delta2 / 2.0), "12 h 0 min 0 s".to_string());
+
+// And of course, these comparisons account for differences in time systems
+let at_midnight_utc = Epoch::from_gregorian_utc_at_midnight(2020, 11, 2);
+let at_noon_tai = Epoch::from_gregorian_tai_at_noon(2020, 11, 2);
+// assert_eq!(format!("{}", at_noon_tai - at_midnight_utc), "11 h 59 min 23 s".to_string());
+```
+
+Timeunits and frequency units are trivially supported. Hifitime only supports up to nanosecond precision (but guarantees it for 64 millenia), so any duration less than one nanosecond is truncated.
+
+```rust
+use hifitime::{Epoch, Unit, Freq, Duration, TimeUnits};
+
+// One can compare durations
+assert!(10.seconds() > 5.seconds());
+assert!(10.days() + 1.nanoseconds() > 10.days());
+
+// Those durations are more precise than floating point since this is integer math in nanoseconds
+let d: Duration = 1.0.hours() / 3 - 20.minutes();
+assert!(d.abs() < Unit::Nanosecond);
+assert_eq!(3 * 20.minutes(), Unit::Hour);
+
+// And also frequencies but note that frequencies are converted to Durations!
+// So the duration of that frequency is compared, hence the following:
+assert!(10 * Freq::Hertz < 5 * Freq::Hertz);
+assert!(4 * Freq::MegaHertz > 5 * Freq::MegaHertz);
+
+// And asserts on the units themselves
+assert!(Freq::GigaHertz < Freq::MegaHertz);
+assert!(Unit::Second > Unit::Millisecond);
+```
+
+### Iterating over times ("linspace" of epochs)
+Finally, something which may come in very handy, line spaces between times with a given step.
+
+```rust
+use hifitime::{Epoch, Unit, TimeSeries};
+let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
+let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
+let step = 2 * Unit::Hour;
+let time_series = TimeSeries::inclusive(start, end, step);
+let mut cnt = 0;
+for epoch in time_series {
+    println!("{}", epoch);
+    cnt += 1
+}
+// Check that there are indeed six two-hour periods in a half a day,
+// including start and end times.
+assert_eq!(cnt, 7)
+```
+
+# Validation examples
 Validation is done using NASA's SPICE toolkit, and specifically the [spiceypy](https://spiceypy.readthedocs.io/) Python wrapper.
 
 The most challenging validation is the definition of Ephemeris Time, which is very nearly the same as the Dynamic Barycentric Time (TDB).
@@ -82,6 +202,11 @@ ET and TDB should now be identical. However, hifitime uses the European Space Ag
 
 # Changelog
 
+## 3.2.0
++ Add UNIX timestamp, thanks [@mkolopanis](https://github.com/mkolopanis)
++ Enums now derive `Eq` and some derive `Ord` (where relevant) #[118](https://github.com/nyx-space/hifitime/issues/118)
++ Use const fn where possible and switch to references where possible [#119](https://github.com/nyx-space/hifitime/issues/119)
++ Allow extracting the centuries and nanoseconds of a Duration and Epoch, respectively with to_parts and to_tai_parts [#122](https://github.com/nyx-space/hifitime/issues/122)
 ## 3.1.0
 + Add `#![no_std]` support
 + Add `to_parts` to `Duration` to extract the centuries and nanoseconds of a duration
@@ -90,7 +215,7 @@ ET and TDB should now be identical. However, hifitime uses the European Space Ag
 ### Possibly breaking change
 + `Errors::ParseError` no longer contains a `String` but an enum `ParsingErrors` instead. This is considered possibly breaking because it would only break code in the cases where a datetime parsing or unit parsing was caught and handled (uncommon). Moreover, the output is still `Display`-able.
 ## 3.0.0
-+ Backend rewritten from TwoFloat to a struct of the centuries in `i16` and nanoseconds in `u64`. Thanks to [@pwnorbitals](https://github.com/pwnorbitals) for proposing the idea in #107 and writing the proof of concept. This leads to at least a 2x speed up in most calculations, cf. [this comment](https://github.com/nyx-space/hifitime/pull/107#issuecomment-1040702004).
++ Backend rewritten from TwoFloat to a struct of the centuries in `i16` and nanoseconds in `u64`. Thanks to [@pwnorbitals](https://github.com/pwnorbitals) for proposing the idea in #[107](https://github.com/nyx-space/hifitime/issues/107) and writing the proof of concept. This leads to at least a 2x speed up in most calculations, cf. [this comment](https://github.com/nyx-space/hifitime/pull/107#issuecomment-1040702004).
 + Fix GPS epoch, and addition of a helper functions in `Epoch` by [@cjordan](https://github.com/cjordan)
 
 ## 2.2.3
