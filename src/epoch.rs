@@ -370,7 +370,6 @@ impl Epoch {
         Self::from_utc_seconds(utc_seconds.in_unit(Unit::Second))
     }
 
-    #[must_use]
     /// Attempts to build an Epoch from the provided Gregorian date and time in TAI.
     pub fn maybe_from_gregorian_tai(
         year: i32,
@@ -393,7 +392,6 @@ impl Epoch {
         )
     }
 
-    #[must_use]
     /// Attempts to build an Epoch from the provided Gregorian date and time in the provided time system.
     #[allow(clippy::too_many_arguments)]
     pub fn maybe_from_gregorian(
@@ -492,7 +490,6 @@ impl Epoch {
             .expect("invalid Gregorian date")
     }
 
-    #[must_use]
     /// Attempts to build an Epoch from the provided Gregorian date and time in UTC.
     pub fn maybe_from_gregorian_utc(
         year: i32,
@@ -755,7 +752,6 @@ impl Epoch {
         self.as_tai_duration() - Unit::Second * SECONDS_GPS_TAI_OFFSET_I64
     }
 
-    #[must_use]
     /// Returns nanoseconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29).
     /// NOTE: This function will return an error if the centuries past GPST time are not zero.
     pub fn as_gpst_nanoseconds(self) -> Result<u64, Errors> {
@@ -1027,7 +1023,6 @@ impl Epoch {
 
 #[cfg(feature = "std")]
 impl Epoch {
-    #[must_use]
     /// Converts an ISO8601 Datetime representation without timezone offset to an Epoch.
     /// If no time system is specified, than UTC is assumed.
     /// The `T` which separates the date from the time can be replaced with a single whitespace character (`\W`).
