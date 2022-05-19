@@ -167,7 +167,7 @@ impl Epoch {
 
     #[must_use]
     /// Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch.
-    pub fn from_tai_duration(duration: Duration) -> Self {
+    pub const fn from_tai_duration(duration: Duration) -> Self {
         Self(duration)
     }
 
@@ -563,7 +563,7 @@ impl Epoch {
 
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in TAI
-    pub fn as_tai_duration(&self) -> Duration {
+    pub const fn as_tai_duration(&self) -> Duration {
         self.0
     }
 
@@ -575,7 +575,7 @@ impl Epoch {
 
     #[must_use]
     /// Returns the TAI parts of this duration
-    pub fn as_tai_parts(&self) -> (i16, u64) {
+    pub const fn as_tai_parts(&self) -> (i16, u64) {
         self.0.to_parts()
     }
 

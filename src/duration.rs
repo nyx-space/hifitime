@@ -115,7 +115,7 @@ impl Duration {
     #[must_use]
     /// Returns the centuries and nanoseconds of this duration
     /// NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly.
-    pub fn to_parts(&self) -> (i16, u64) {
+    pub const fn to_parts(&self) -> (i16, u64) {
         (self.centuries, self.nanoseconds)
     }
 
@@ -265,7 +265,7 @@ impl Duration {
 
     /// Returns the sign of this duration
     #[must_use]
-    pub fn signum(&self) -> i8 {
+    pub const fn signum(&self) -> i8 {
         self.centuries.signum() as i8
     }
 
@@ -884,11 +884,11 @@ impl Unit {
 impl_ops_for_type!(f64);
 impl_ops_for_type!(i64);
 
-fn div_rem_i128(me: i128, rhs: i128) -> (i128, i128) {
+const fn div_rem_i128(me: i128, rhs: i128) -> (i128, i128) {
     (me.div_euclid(rhs), me.rem_euclid(rhs))
 }
 
-fn div_rem_i64(me: i64, rhs: i64) -> (i64, i64) {
+const fn div_rem_i64(me: i64, rhs: i64) -> (i64, i64) {
     (me.div_euclid(rhs), me.rem_euclid(rhs))
 }
 
