@@ -143,7 +143,7 @@ impl Duration {
 
     /// Returns the total nanoseconds in a signed 128 bit integer
     #[must_use]
-    pub fn total_nanoseconds(self) -> i128 {
+    pub fn total_nanoseconds(&self) -> i128 {
         if self.centuries == -1 {
             -i128::from(NANOSECONDS_PER_CENTURY - self.nanoseconds)
         } else if self.centuries >= 0 {
@@ -157,7 +157,7 @@ impl Duration {
     }
 
     /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.
-    pub fn try_truncated_nanoseconds(self) -> Result<i64, Errors> {
+    pub fn try_truncated_nanoseconds(&self) -> Result<i64, Errors> {
         // If it fits, we know that the nanoseconds also fit
         if self.centuries.abs() >= 3 {
             Err(Errors::Overflow)
@@ -181,7 +181,7 @@ impl Duration {
     /// WARNING: This function will NOT fail and will return the i64::MIN or i64::MAX depending on
     /// the sign of the centuries if the Duration does not fit on aa i64
     #[must_use]
-    pub fn truncated_nanoseconds(self) -> i64 {
+    pub fn truncated_nanoseconds(&self) -> i64 {
         match self.try_truncated_nanoseconds() {
             Ok(val) => val,
             Err(_) => {
@@ -862,7 +862,7 @@ impl Sub for Unit {
 
 impl Unit {
     #[must_use]
-    pub fn in_seconds(self) -> f64 {
+    pub fn in_seconds(&self) -> f64 {
         match self {
             Unit::Century => DAYS_PER_CENTURY * SECONDS_PER_DAY,
             Unit::Day => SECONDS_PER_DAY,
@@ -875,9 +875,8 @@ impl Unit {
         }
     }
 
-    // #[allow(clippy::wrong_self_convention)]
     #[must_use]
-    pub fn from_seconds(self) -> f64 {
+    pub fn from_seconds(&self) -> f64 {
         1.0 / self.in_seconds()
     }
 }
