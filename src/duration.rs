@@ -823,10 +823,10 @@ pub trait Frequencies: Copy + Mul<Freq, Output = Duration> {
 /// An Enum to convert frequencies to their approximate duration, **rounded to the closest nanosecond**.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 pub enum Freq {
-    Hertz,
-    KiloHertz,
-    MegaHertz,
     GigaHertz,
+    MegaHertz,
+    KiloHertz,
+    Hertz,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
@@ -1160,7 +1160,8 @@ mod tests {
     #[test]
     fn duration_enum_orq() {
         // Check the equality compiles (if one compiles, then all asserts will work)
-        assert!(Freq::GigaHertz > Freq::MegaHertz);
         assert!(Unit::Century > Unit::Day);
+        // Frequencies are converted to durations, and that's what compared!
+        assert!(Freq::GigaHertz < Freq::MegaHertz);
     }
 }

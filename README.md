@@ -76,13 +76,13 @@ assert_eq!(format!("{}", dt), "2017-01-14T00:31:55 UTC".to_string());
 ### Time differences, time unit, and duration handling
 Comparing times will lead to a Duration type. Printing that will automatically select the unit.
 ```rust
-use hifitime::{Epoch, Unit, Duration};
+use hifitime::{Epoch, Unit, Duration, TimeUnits};
 
 let at_midnight = Epoch::from_gregorian_utc_at_midnight(2020, 11, 2);
 let at_noon = Epoch::from_gregorian_utc_at_noon(2020, 11, 2);
 assert_eq!(at_noon - at_midnight, 12 * Unit::Hour);
 assert_eq!(at_noon - at_midnight, 1 * Unit::Day / 2);
-assert_eq!(at_midnight - at_noon, -1 * Unit::Day / 2);
+assert_eq!(at_midnight - at_noon, -1.days() / 2);
 
 let delta_time = at_noon - at_midnight;
 // assert_eq!(format!("{}", delta_time), "12 h 0 min 0 s".to_string());
@@ -97,6 +97,31 @@ let at_midnight_utc = Epoch::from_gregorian_utc_at_midnight(2020, 11, 2);
 let at_noon_tai = Epoch::from_gregorian_tai_at_noon(2020, 11, 2);
 // assert_eq!(format!("{}", at_noon_tai - at_midnight_utc), "11 h 59 min 23 s".to_string());
 ```
+
+Timeunits and frequency units are trivially supported. Hifitime only supports up to nanosecond precision (but guarantees it for 64 millenia), so any duration less than one nanosecond is truncated.
+
+```rust
+use hifitime::{Epoch, Unit, Freq, Duration, TimeUnits};
+
+// One can compare durations
+assert!(10.seconds() > 5.seconds());
+assert!(10.days() + 1.nanoseconds() > 10.days());
+
+// Those durations are more precise than floating point since this is integer math in nanoseconds
+let d: Duration = 1.0.hours() / 3 - 20.minutes();
+assert!(d.abs() < Unit::Nanosecond);
+assert_eq!(3 * 20.minutes(), Unit::Hour);
+
+// And also frequencies but note that frequencies are converted to Durations!
+// So the duration of that frequency is compared, hence the following:
+assert!(10 * Freq::Hertz < 5 * Freq::Hertz);
+assert!(4 * Freq::MegaHertz > 5 * Freq::MegaHertz);
+
+// And asserts on the units themselves
+assert!(Freq::GigaHertz < Freq::MegaHertz);
+assert!(Unit::Second > Unit::Millisecond);
+```
+
 ### Iterating over times ("linspace" of epochs)
 Finally, something which may come in very handy, line spaces between times with a given step.
 
