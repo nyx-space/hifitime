@@ -48,23 +48,34 @@ extern crate hifitime;
 ## Examples:
 ### Time creation
 ```rust
-use hifitime::{Epoch, Unit};
+use hifitime::{Epoch, Unit, TimeUnits};
 
-let mut santa = Epoch::from_gregorian_utc(2017, 12, 25, 01, 02, 14, 0);
+let mut santa = Epoch::from_gregorian_utc_hms(2017, 12, 25, 01, 02, 14);
 assert_eq!(santa.as_mjd_utc_days(), 58112.043217592590);
 assert_eq!(santa.as_jde_utc_days(), 2458112.5432175924);
 
-santa += 3600 * Unit::Second;
 assert_eq!(
-    santa,
-    Epoch::from_gregorian_utc(2017, 12, 25, 02, 02, 14, 0),
+    santa + 3600 * Unit::Second,
+    Epoch::from_gregorian_utc_hms(2017, 12, 25, 02, 02, 14),
+    "Could not add one hour to Christmas"
+);
+
+assert_eq!(
+    santa + 60.0.minutes(),
+    Epoch::from_gregorian_utc_hms(2017, 12, 25, 02, 02, 14),
+    "Could not add one hour to Christmas"
+);
+
+assert_eq!(
+    santa + 1.hours(),
+    Epoch::from_gregorian_utc_hms(2017, 12, 25, 02, 02, 14),
     "Could not add one hour to Christmas"
 );
 
 #[cfg(feature = "std")]
 {
 use std::str::FromStr;
-let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
+let dt = Epoch::from_gregorian_utc_hms(2017, 1, 14, 0, 31, 55);
 assert_eq!(dt, Epoch::from_str("2017-01-14T00:31:55 UTC").unwrap());
 // And you can print it too, although by default it will print in UTC
 assert_eq!(dt.as_gregorian_utc_str(), "2017-01-14T00:31:55 UTC".to_string());
@@ -193,9 +204,9 @@ ET and TDB should now be identical. However, hifitime uses the European Space Ag
 
 ## 3.2.0
 + Add UNIX timestamp, thanks [@mkolopanis](https://github.com/mkolopanis)
-+ Enums now derive `Eq` and some derive `Ord` (where relevant) #118
-+ Use const fn where possible and switch to references where possible #119
-+ Allow extracting the centuries and nanoseconds of a Duration and Epoch, respectively with to_parts and to_tai_parts #112
++ Enums now derive `Eq` and some derive `Ord` (where relevant) #[118](https://github.com/nyx-space/hifitime/issues/118)
++ Use const fn where possible and switch to references where possible [#119](https://github.com/nyx-space/hifitime/issues/119)
++ Allow extracting the centuries and nanoseconds of a Duration and Epoch, respectively with to_parts and to_tai_parts [#112](https://github.com/nyx-space/hifitime/issues/112)
 ## 3.1.0
 + Add `#![no_std]` support
 + Add `to_parts` to `Duration` to extract the centuries and nanoseconds of a duration
@@ -204,7 +215,7 @@ ET and TDB should now be identical. However, hifitime uses the European Space Ag
 ### Possibly breaking change
 + `Errors::ParseError` no longer contains a `String` but an enum `ParsingErrors` instead. This is considered possibly breaking because it would only break code in the cases where a datetime parsing or unit parsing was caught and handled (uncommon). Moreover, the output is still `Display`-able.
 ## 3.0.0
-+ Backend rewritten from TwoFloat to a struct of the centuries in `i16` and nanoseconds in `u64`. Thanks to [@pwnorbitals](https://github.com/pwnorbitals) for proposing the idea in #107 and writing the proof of concept. This leads to at least a 2x speed up in most calculations, cf. [this comment](https://github.com/nyx-space/hifitime/pull/107#issuecomment-1040702004).
++ Backend rewritten from TwoFloat to a struct of the centuries in `i16` and nanoseconds in `u64`. Thanks to [@pwnorbitals](https://github.com/pwnorbitals) for proposing the idea in #[107](https://github.com/nyx-space/hifitime/issues/107) and writing the proof of concept. This leads to at least a 2x speed up in most calculations, cf. [this comment](https://github.com/nyx-space/hifitime/pull/107#issuecomment-1040702004).
 + Fix GPS epoch, and addition of a helper functions in `Epoch` by [@cjordan](https://github.com/cjordan)
 
 ## 2.2.3
