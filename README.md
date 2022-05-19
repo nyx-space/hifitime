@@ -14,6 +14,7 @@ Scientifically accurate date and time handling with guaranteed nanosecond precis
 
 # Features
 
+ * [x] Initialize a high precision Epoch from the system time in UTC
  * [x] Leap seconds (as announced by the IETF on a yearly basis)
  * [x] UTC representation with ISO8601 formatting
  * [x] Trivial support of time arithmetic (e.g. `2.hours() + 3.seconds()`)
@@ -49,6 +50,13 @@ extern crate hifitime;
 ### Time creation
 ```rust
 use hifitime::{Epoch, Unit, TimeUnits};
+
+#[cfg(feature = "std")]
+{
+// Initialization from system time is only availble when std feature is enabled
+let now = Epoch::now().unwrap();
+println!("{}", now);
+}
 
 let mut santa = Epoch::from_gregorian_utc_hms(2017, 12, 25, 01, 02, 14);
 assert_eq!(santa.as_mjd_utc_days(), 58112.043217592590);
