@@ -53,7 +53,7 @@ pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
 /// The UNIX reference epoch of 1970-01-01.
 pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
-    nanoseconds: 2208988800000000000,
+    nanoseconds: 2_208_988_800_000_000_000,
 });
 
 mod epoch;

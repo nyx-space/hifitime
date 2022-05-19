@@ -1,8 +1,6 @@
 # hifitime 3
 
-Scientifically accurate precise date and time handling in Rust built on top of two integers allowing representation of durations and epochs with the exactly one nanosecond precision for 32,768 years _before_ 01 January 1900 and 32,767 years _after_ that reference epoch. Fits in only 80 bits and is embedded-ready!
-
-The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matter in day-to-day use of this library.
+Scientifically accurate date and time handling with guaranteed nanosecond precision for 32,768 years _before_ 01 January 1900 and 32,767 years _after_ that reference epoch.
 
 [![hifitime on crates.io][cratesio-image]][cratesio]
 [![Build Status](https://github.com/nyx-space/hifitime/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/nyx-space/hifitime/actions)
@@ -17,20 +15,20 @@ The Epoch used is TAI Epoch of 01 Jan 1900 at midnight, but that should not matt
 # Features
 
  * [x] Leap seconds (as announced by the IETF on a yearly basis)
- * [x] Julian dates and Modified Julian dates
  * [x] UTC representation with ISO8601 formatting
- * [x] High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
  * [x] Trivial support of time arithmetic (e.g. `2.hours() + 3.seconds()`)
  * [x] Supports ranges of Epochs and TimeSeries (linspace of `Epoch`s and `Duration`s)
- * [x] Embedded device friendly: no-std and `const fn` where possible
+ * [x] Trivial conversion between the time systems TAI, TT, ET, TDB, GPS, and UNIX.
+ * [x] High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
+ * [x] Julian dates and Modified Julian dates
+ * [x] Embedded device friendly: `no-std` and `const fn` where possible
  * [ ] Support for custom representations of time (e.g. NASA GMAT Modified Julian Date)
  * [ ] Trivial support of other time representations, such as TDT (cf #44)
 
-Almost all examples are validated with external references, as detailed on a test-by-test
-basis.
+Almost all examples are validated with external references, as detailed on a test-by-test basis.
 
 ## Non-features
-* Date only epochs (hifitime only supports the combination of date and time), but the `Epoch::{at_midnight, at_noon}` is provided as a helper function.
+* Time-agnostic / date-only epochs. Hifitime only supports the combination of date and time, but the `Epoch::{at_midnight, at_noon}` is provided as a helper function.
 
 # Usage
 
