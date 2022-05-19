@@ -15,6 +15,8 @@ use super::regex::Regex;
 use super::serde::{de, Deserialize, Deserializer};
 #[cfg(feature = "std")]
 use std::str::FromStr;
+#[cfg(feature = "std")]
+use std::time::SystemTime;
 
 const TT_OFFSET_MS: i64 = 32_184;
 const ET_OFFSET_US: i64 = 32_184_935;
@@ -198,8 +200,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Initialize an Epoch from the provided UTC seconds since 1900 January 01
-    /// at midnight
+    /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
     pub fn from_utc_seconds(seconds: f64) -> Self {
         let mut e = Self::from_tai_seconds(seconds);
         // Compute the TAI to UTC offset at this time.
@@ -212,8 +213,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Initialize an Epoch from the provided UTC days since 1900 January 01 at
-    /// midnight
+    /// Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight
     pub fn from_utc_days(days: f64) -> Self {
         let mut e = Self::from_tai_days(days);
         // Compute the TAI to UTC offset at this time.
@@ -1150,6 +1150,16 @@ impl Epoch {
             )
         }
     }
+
+    /// Initializes a new Epoch from `now`.
+    /// WARNING: This assumes that the system time returns the time in UTC (which is the case on Linux)
+    /// Uses [`std::time::SystemTime::now`](https://doc.rust-lang.org/std/time/struct.SystemTime.html#method.now) under the hood
+    pub fn now() -> Result<Self, Errors> {
+        match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+            Ok(std_duration) => Ok(Self::from_unix_seconds(std_duration.as_secs_f64())),
+            Err(_) => Err(Errors::SystemTimeError),
+        }
+    }
 }
 
 #[cfg(feature = "std")]
@@ -2014,5 +2024,13 @@ mod tests {
         let (centuries, nanos) = dt.as_tai_duration().to_parts();
         assert_eq!(centuries, 1);
         assert_eq!(nanos, 537582752000000000);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_now() {
+        // Simply ensure that this call does not panic
+        let now = Epoch::now().unwrap();
+        println!("{now}");
     }
 }
