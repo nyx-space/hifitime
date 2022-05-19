@@ -82,6 +82,11 @@ ET and TDB should now be identical. However, hifitime uses the European Space Ag
 
 # Changelog
 
+## 3.2.0
++ Add UNIX timestamp, thanks [@mkolopanis](https://github.com/mkolopanis)
++ Enums now derive `Eq` and some derive `Ord` (where relevant) #118
++ Use const fn where possible and switch to references where possible #119
++ Allow extracting the centuries and nanoseconds of a Duration and Epoch, respectively with to_parts and to_tai_parts #112
 ## 3.1.0
 + Add `#![no_std]` support
 + Add `to_parts` to `Duration` to extract the centuries and nanoseconds of a duration
