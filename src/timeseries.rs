@@ -98,46 +98,50 @@ impl DoubleEndedIterator for TimeSeries {
 
 impl ExactSizeIterator for TimeSeries where TimeSeries: Iterator {}
 
-#[test]
-fn test_timeseries() {
-    use super::Unit;
-    let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
-    let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
-    let step = Unit::Hour * 2;
+#[cfg(test)]
+mod tests {
+    use crate::{Epoch, TimeSeries, Unit};
 
-    let mut count = 0;
-    let time_series = TimeSeries::exclusive(start, end, step);
-    for epoch in time_series {
-        if count == 0 {
-            assert_eq!(
-                epoch, start,
-                "Starting epoch of exclusive time series is wrong"
-            );
-        } else if count == 5 {
-            assert_ne!(epoch, end, "Ending epoch of exclusive time series is wrong");
+    #[test]
+    fn test_timeseries() {
+        let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
+        let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
+        let step = Unit::Hour * 2;
+
+        let mut count = 0;
+        let time_series = TimeSeries::exclusive(start, end, step);
+        for epoch in time_series {
+            if count == 0 {
+                assert_eq!(
+                    epoch, start,
+                    "Starting epoch of exclusive time series is wrong"
+                );
+            } else if count == 5 {
+                assert_ne!(epoch, end, "Ending epoch of exclusive time series is wrong");
+            }
+            #[cfg(feature = "std")]
+            println!("{}", epoch);
+            count += 1;
         }
-        #[cfg(feature = "std")]
-        println!("{}", epoch);
-        count += 1;
-    }
 
-    assert_eq!(count, 6, "Should have five items in this iterator");
+        assert_eq!(count, 6, "Should have five items in this iterator");
 
-    count = 0;
-    let time_series = TimeSeries::inclusive(start, end, step);
-    for epoch in time_series {
-        if count == 0 {
-            assert_eq!(
-                epoch, start,
-                "Starting epoch of inclusive time series is wrong"
-            );
-        } else if count == 6 {
-            assert_eq!(epoch, end, "Ending epoch of inclusive time series is wrong");
+        count = 0;
+        let time_series = TimeSeries::inclusive(start, end, step);
+        for epoch in time_series {
+            if count == 0 {
+                assert_eq!(
+                    epoch, start,
+                    "Starting epoch of inclusive time series is wrong"
+                );
+            } else if count == 6 {
+                assert_eq!(epoch, end, "Ending epoch of inclusive time series is wrong");
+            }
+            #[cfg(feature = "std")]
+            println!("{}", epoch);
+            count += 1;
         }
-        #[cfg(feature = "std")]
-        println!("{}", epoch);
-        count += 1;
-    }
 
-    assert_eq!(count, 7, "Should have six items in this iterator");
+        assert_eq!(count, 7, "Should have six items in this iterator");
+    }
 }
