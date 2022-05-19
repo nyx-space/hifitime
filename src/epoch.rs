@@ -575,7 +575,7 @@ impl Epoch {
 
     #[must_use]
     /// Returns the TAI parts of this duration
-    pub const fn as_tai_parts(&self) -> (i16, u64) {
+    pub const fn to_tai_parts(&self) -> (i16, u64) {
         self.0.to_parts()
     }
 
