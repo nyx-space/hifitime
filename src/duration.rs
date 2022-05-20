@@ -329,6 +329,7 @@ impl Duration {
     }
 
     /// Creates a new duration from its parts
+    #[allow(clippy::too_many_arguments)]
     #[must_use]
     pub fn compose(
         sign: i8,
@@ -385,11 +386,11 @@ impl Duration {
     /// use hifitime::{Duration, TimeUnits};
     ///
     /// let two_hours_three_min = 2.hours() + 3.minutes();
-    /// //assert_eq!(two_hours_three_min.ceil(1.hours()), 3.hours());
-    /// //assert_eq!(two_hours_three_min.ceil(30.minutes()), 2.hours() + 30.minutes());
-    /// //assert_eq!(two_hours_three_min.ceil(4.hours()), 4.hours());
-    /// //assert_eq!(two_hours_three_min.ceil(1.seconds()), two_hours_three_min);
-    /// //assert_eq!(two_hours_three_min.ceil(1.hours() + 5.minutes()), two_hours_three_min);
+    /// assert_eq!(two_hours_three_min.ceil(1.hours()), 3.hours());
+    /// assert_eq!(two_hours_three_min.ceil(30.minutes()), 2.hours() + 30.minutes());
+    /// assert_eq!(two_hours_three_min.ceil(4.hours()), 4.hours());
+    /// assert_eq!(two_hours_three_min.ceil(1.seconds()), two_hours_three_min + 1.seconds());
+    /// assert_eq!(two_hours_three_min.ceil(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
     /// ```
     pub fn ceil(&self, duration: Self) -> Self {
         let floored = self.floor(duration);
@@ -399,6 +400,30 @@ impl Duration {
         {
             Some(total_ns) => Self::from_total_nanoseconds(total_ns),
             None => Self::MAX,
+        }
+    }
+
+    /// Rounds this duration to the closest provided duration
+    ///
+    /// This performs both a `ceil` and `floor` and returns the value which is the closest to current one.
+    /// # Example
+    /// ```
+    /// use hifitime::{Duration, TimeUnits};
+    ///
+    /// let two_hours_three_min = 2.hours() + 3.minutes();
+    /// assert_eq!(two_hours_three_min.round(1.hours()), 2.hours());
+    /// assert_eq!(two_hours_three_min.round(30.minutes()), 2.hours());
+    /// assert_eq!(two_hours_three_min.round(4.hours()), 4.hours());
+    /// assert_eq!(two_hours_three_min.round(1.seconds()), two_hours_three_min);
+    /// assert_eq!(two_hours_three_min.round(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
+    /// ```
+    pub fn round(&self, duration: Self) -> Self {
+        let floored = self.floor(duration);
+        let ceiled = self.ceil(duration);
+        if *self - floored < (ceiled - *self).abs() {
+            floored
+        } else {
+            ceiled
         }
     }
 
@@ -1245,13 +1270,6 @@ mod tests {
         let d = 5.minutes() + 7.seconds();
         assert_eq!(d.floor(6.seconds()), 5.minutes() + 6.seconds());
         assert_eq!(d.floor(-6.seconds()), 5.minutes() + 6.seconds());
-        println!(
-            "d = {}\t{}",
-            d.total_nanoseconds(),
-            6.seconds().total_nanoseconds()
-        );
-        dbg!(d.total_nanoseconds() % 6.seconds().total_nanoseconds());
-        println!("ceil: {}", d.ceil(6.seconds()));
         assert_eq!(d.ceil(6.seconds()), 5.minutes() + 12.seconds());
         assert_eq!(d.ceil(-6.seconds()), 5.minutes() + 12.seconds());
 
@@ -1259,17 +1277,20 @@ mod tests {
         assert_eq!(d, 4.minutes() + 13.seconds() + 671.milliseconds());
         // Rounding to the closest microsecond should return the same duration
         assert_eq!(d.floor(1.microseconds()), d);
-        println!("{}", d.floor(3.seconds()));
         assert_eq!(d.floor(1.seconds()), 4.minutes() + 13.seconds());
         assert_eq!(d.floor(3.seconds()), 4.minutes() + 12.seconds());
         assert_eq!(d.floor(9.minutes()), 0.minutes());
 
         // Ceil
-        let two_hours_three_min = 2.hours() + 3.minutes();
-        println!("{}", two_hours_three_min.ceil(1.hours()));
-        // assert_eq!(
-        //     two_hours_three_min.ceil(1.hours() + 5.minutes()),
-        //     two_hours_three_min
-        // );
+        assert_eq!(d.ceil(1.minutes()), 5.minutes());
+        assert_eq!(d.ceil(30.seconds()), 4.minutes() + 30.seconds());
+        assert_eq!(d.ceil(4.minutes()), 8.minutes());
+        assert_eq!(d.ceil(1.seconds()), 4.minutes() + 14.seconds());
+
+        // Round
+        assert_eq!(d.round(1.minutes()), 4.minutes());
+        assert_eq!(d.round(30.seconds()), 4.minutes());
+        assert_eq!(d.round(4.minutes()), 4.minutes());
+        assert_eq!(d.round(1.seconds()), 4.minutes() + 14.seconds());
     }
 }
