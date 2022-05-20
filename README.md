@@ -17,7 +17,7 @@ Scientifically accurate date and time handling with guaranteed nanosecond precis
  * [x] Initialize a high precision Epoch from the system time in UTC
  * [x] Leap seconds (as announced by the IETF on a yearly basis)
  * [x] UTC representation with ISO8601 formatting
- * [x] Trivial support of time arithmetic (e.g. `2.hours() + 3.seconds()`)
+ * [x] Trivial support of time arithmetic: addition (e.g. `2.hours() + 3.seconds()`), subtraction (e.g. `2.hours() - 3.seconds()`), round/floor/ceil operations (e.g. `2.hours().round(3.seconds())`)
  * [x] Supports ranges of Epochs and TimeSeries (linspace of `Epoch`s and `Duration`s)
  * [x] Trivial conversion between the time systems TAI, TT, ET, TDB, GPS, and UNIX.
  * [x] High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
