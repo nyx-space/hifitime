@@ -328,6 +328,70 @@ impl Duration {
         }
     }
 
+    /// Creates a new duration from its parts
+    #[must_use]
+    pub fn compose(
+        sign: i8,
+        days: u64,
+        hours: u64,
+        minutes: u64,
+        seconds: u64,
+        milliseconds: u64,
+        microseconds: u64,
+        nanoseconds: u64,
+    ) -> Self {
+        let me: Self = (days as i64).days()
+            + (hours as i64).hours()
+            + (minutes as i64).minutes()
+            + (seconds as i64).seconds()
+            + (milliseconds as i64).seconds()
+            + (microseconds as i64).microseconds()
+            + (nanoseconds as i64).nanoseconds();
+        if sign == -1 {
+            -me
+        } else {
+            me
+        }
+    }
+
+    /// Floors this duration to the closest duration from the bottom
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Duration, TimeUnits};
+    ///
+    /// let two_hours_three_min = 2.hours() + 3.minutes();
+    /// assert_eq!(two_hours_three_min.floor(1.hours()), 2.hours());
+    /// assert_eq!(two_hours_three_min.floor(30.minutes()), 2.hours());
+    /// assert_eq!(two_hours_three_min.floor(4.hours()), 2.hours());
+    /// assert_eq!(two_hours_three_min.floor(1.seconds()), two_hours_three_min);
+    /// assert_eq!(two_hours_three_min.floor(1.hours() + 5.minutes()), two_hours_three_min);
+    /// ```
+    pub fn floor(&self, duration: Self) -> Self {
+        Self::from_total_nanoseconds(
+            self.total_nanoseconds() - (self.total_nanoseconds() % duration.total_nanoseconds()),
+        )
+    }
+
+    /// Ceils this duration to the closest duration from the top
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Duration, TimeUnits};
+    ///
+    /// let two_hours_three_min = 2.hours() + 3.minutes();
+    /// assert_eq!(two_hours_three_min.ceil(1.hours()), 3.hours());
+    /// assert_eq!(two_hours_three_min.ceil(30.minutes()), 2.hours() + 30.minutes());
+    /// assert_eq!(two_hours_three_min.ceil(4.hours()), 4.hours());
+    /// assert_eq!(two_hours_three_min.ceil(1.seconds()), two_hours_three_min);
+    /// assert_eq!(two_hours_three_min.ceil(1.hours() + 5.minutes()), two_hours_three_min);
+    /// ```
+    pub fn ceil(&self, duration: Self) -> Self {
+        Self::from_total_nanoseconds(
+            self.total_nanoseconds() + (self.total_nanoseconds() % duration.total_nanoseconds()),
+        )
+    }
+
     /// A duration of exactly zero nanoseconds
     const ZERO: Self = Self {
         centuries: 0,
@@ -1163,5 +1227,39 @@ mod tests {
         assert!(Unit::Century > Unit::Day);
         // Frequencies are converted to durations, and that's what compared!
         assert!(Freq::GigaHertz < Freq::MegaHertz);
+    }
+
+    #[test]
+    fn duration_floor_ceil() {
+        // These are from here: https://www.geeksforgeeks.org/time-round-function-in-golang-with-examples/
+        let d = 5.minutes() + 7.seconds();
+        assert_eq!(d.floor(6.seconds()), 5.minutes() + 6.seconds());
+        assert_eq!(d.floor(-6.seconds()), 5.minutes() + 6.seconds());
+        println!(
+            "d = {}\t{}",
+            d.total_nanoseconds(),
+            6.seconds().total_nanoseconds()
+        );
+        dbg!(d.total_nanoseconds() % 6.seconds().total_nanoseconds());
+        println!("ceil: {}", d.ceil(6.seconds()));
+        assert_eq!(d.ceil(6.seconds()), 5.minutes() + 12.seconds());
+        assert_eq!(d.ceil(-6.seconds()), 5.minutes() + 12.seconds());
+
+        let d = 3.minutes() + 73.671.seconds();
+        assert_eq!(d, 4.minutes() + 13.seconds() + 671.milliseconds());
+        // Rounding to the closest microsecond should return the same duration
+        assert_eq!(d.floor(1.microseconds()), d);
+        println!("{}", d.floor(3.seconds()));
+        assert_eq!(d.floor(1.seconds()), 4.minutes() + 13.seconds());
+        assert_eq!(d.floor(3.seconds()), 4.minutes() + 12.seconds());
+        assert_eq!(d.floor(9.minutes()), 0.minutes());
+
+        // Ceil
+        let two_hours_three_min = 2.hours() + 3.minutes();
+        println!("{}", two_hours_three_min.ceil(1.hours()));
+        // assert_eq!(
+        //     two_hours_three_min.ceil(1.hours() + 5.minutes()),
+        //     two_hours_three_min
+        // );
     }
 }
