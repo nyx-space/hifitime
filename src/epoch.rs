@@ -1013,6 +1013,54 @@ impl Epoch {
             nanos,
         )
     }
+
+    /// Floors this epoch to the closest provided duration
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Epoch, TimeUnits};
+    ///
+    /// let e = Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 57, 43);
+    /// assert_eq!(
+    ///     e.floor(1.hours()),
+    ///     Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 0, 0)
+    /// );
+    /// ```
+    pub fn floor(&self, duration: Duration) -> Self {
+        Self(self.0.floor(duration))
+    }
+
+    /// Ceils this epoch to the closest provided duration
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Epoch, TimeUnits};
+    ///
+    /// let e = Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 57, 43);
+    /// assert_eq!(
+    ///     e.ceil(1.hours()),
+    ///     Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
+    /// );
+    /// ```
+    pub fn ceil(&self, duration: Duration) -> Self {
+        Self(self.0.ceil(duration))
+    }
+
+    /// Rounds this epoch to the closest provided duration
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Epoch, TimeUnits};
+    ///
+    /// let e = Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 57, 43);
+    /// assert_eq!(
+    ///     e.round(1.hours()),
+    ///     Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
+    /// );
+    /// ```
+    pub fn round(&self, duration: Duration) -> Self {
+        Self(self.0.round(duration))
+    }
 }
 
 #[cfg(feature = "std")]
@@ -2032,5 +2080,25 @@ mod tests {
         // Simply ensure that this call does not panic
         let now = Epoch::now().unwrap();
         println!("{now}");
+    }
+
+    #[test]
+    fn test_floor_ceil_round() {
+        // NOTE: This test suite is more limited than the Duration equivalent because Epoch uses Durations for these operations.
+        use crate::TimeUnits;
+
+        let e = Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 57, 43);
+        assert_eq!(
+            e.ceil(1.hours()),
+            Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
+        );
+        assert_eq!(
+            e.floor(1.hours()),
+            Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 0, 0)
+        );
+        assert_eq!(
+            e.round(1.hours()),
+            Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
+        );
     }
 }

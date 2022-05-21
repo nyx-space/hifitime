@@ -1265,7 +1265,7 @@ mod tests {
     }
 
     #[test]
-    fn duration_floor_ceil() {
+    fn duration_floor_ceil_round() {
         // These are from here: https://www.geeksforgeeks.org/time-round-function-in-golang-with-examples/
         let d = 5.minutes() + 7.seconds();
         assert_eq!(d.floor(6.seconds()), 5.minutes() + 6.seconds());
