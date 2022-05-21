@@ -211,6 +211,7 @@ ET and TDB should now be identical. However, hifitime uses the European Space Ag
 # Changelog
 
 ## 3.2.0
++ Fix no-std implementation by using `libm` for non-core f64 operations
 + Add UNIX timestamp, thanks [@mkolopanis](https://github.com/mkolopanis)
 + Enums now derive `Eq` and some derive `Ord` (where relevant) #[118](https://github.com/nyx-space/hifitime/issues/118)
 + Use const fn where possible and switch to references where possible [#119](https://github.com/nyx-space/hifitime/issues/119)

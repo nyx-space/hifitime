@@ -12,6 +12,7 @@ readme = "README.md"
 license = "Apache-2.0"
 
 [dependencies]
+libm = "0.2.2"
 serde = {version = "1.0.137", optional = true}
 regex = {version = "1.5.5", optional = true}
 serde_derive = {version = "1.0.137", optional = true}

@@ -1,3 +1,5 @@
+use libm::{fabs, floor, pow};
+
 #[cfg(feature = "std")]
 use crate::ParsingErrors;
 use crate::{
@@ -491,14 +493,14 @@ impl Mul<f64> for Duration {
         let ten: f64 = 10.0;
 
         loop {
-            if (new_val.floor() - new_val).abs() < f64::EPSILON {
+            if fabs(floor(new_val) - new_val) < f64::EPSILON {
                 // Yay, we've found the precision of this number
                 break;
             }
             // Multiply by the precision
             // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b760579f103b7192c20413ebbe167b90
             p += 1;
-            new_val = q * ten.powi(p);
+            new_val = q * pow(ten, f64::from(p));
         }
 
         Duration::from_total_nanoseconds(
@@ -509,32 +511,56 @@ impl Mul<f64> for Duration {
     }
 }
 
+impl Mul<i64> for Unit {
+    type Output = Duration;
+
+    /// Converts the input values to i128 and creates a duration from that
+    /// This method will necessarily ignore durations below nanoseconds
+    fn mul(self, q: i64) -> Duration {
+        let total_ns = match self {
+            Unit::Century => q * (NANOSECONDS_PER_CENTURY as i64),
+            Unit::Day => q * (NANOSECONDS_PER_DAY as i64),
+            Unit::Hour => q * (NANOSECONDS_PER_HOUR as i64),
+            Unit::Minute => q * (NANOSECONDS_PER_MINUTE as i64),
+            Unit::Second => q * (NANOSECONDS_PER_SECOND as i64),
+            Unit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as i64),
+            Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as i64),
+            Unit::Nanosecond => q,
+        };
+        if total_ns.abs() < (i64::MAX as i64) {
+            Duration::from_truncated_nanoseconds(total_ns as i64)
+        } else {
+            Duration::from_total_nanoseconds(total_ns as i128)
+        }
+    }
+}
+
+impl Mul<f64> for Unit {
+    type Output = Duration;
+
+    /// Converts the input values to i128 and creates a duration from that
+    /// This method will necessarily ignore durations below nanoseconds
+    fn mul(self, q: f64) -> Duration {
+        let total_ns = match self {
+            Unit::Century => q * (NANOSECONDS_PER_CENTURY as f64),
+            Unit::Day => q * (NANOSECONDS_PER_DAY as f64),
+            Unit::Hour => q * (NANOSECONDS_PER_HOUR as f64),
+            Unit::Minute => q * (NANOSECONDS_PER_MINUTE as f64),
+            Unit::Second => q * (NANOSECONDS_PER_SECOND as f64),
+            Unit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as f64),
+            Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as f64),
+            Unit::Nanosecond => q,
+        };
+        if fabs(total_ns) < (i64::MAX as f64) {
+            Duration::from_truncated_nanoseconds(total_ns as i64)
+        } else {
+            Duration::from_total_nanoseconds(total_ns as i128)
+        }
+    }
+}
+
 macro_rules! impl_ops_for_type {
     ($type:ident) => {
-        impl Mul<$type> for Unit {
-            type Output = Duration;
-
-            /// Converts the input values to i128 and creates a duration from that
-            /// This method will necessarily ignore durations below nanoseconds
-            fn mul(self, q: $type) -> Duration {
-                let total_ns = match self {
-                    Unit::Century => q * (NANOSECONDS_PER_CENTURY as $type),
-                    Unit::Day => q * (NANOSECONDS_PER_DAY as $type),
-                    Unit::Hour => q * (NANOSECONDS_PER_HOUR as $type),
-                    Unit::Minute => q * (NANOSECONDS_PER_MINUTE as $type),
-                    Unit::Second => q * (NANOSECONDS_PER_SECOND as $type),
-                    Unit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as $type),
-                    Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as $type),
-                    Unit::Nanosecond => q,
-                };
-                if total_ns.abs() < (i64::MAX as $type) {
-                    Duration::from_truncated_nanoseconds(total_ns as i64)
-                } else {
-                    Duration::from_total_nanoseconds(total_ns as i128)
-                }
-            }
-        }
-
         impl Mul<Unit> for $type {
             type Output = Duration;
             fn mul(self, q: Unit) -> Duration {
@@ -555,7 +581,7 @@ macro_rules! impl_ops_for_type {
                     Freq::KiloHertz => NANOSECONDS_PER_MILLISECOND as f64 / (q as f64),
                     Freq::Hertz => (NANOSECONDS_PER_SECOND as f64) / (q as f64),
                 };
-                if total_ns.abs() < (i64::MAX as f64) {
+                if fabs(total_ns) < (i64::MAX as f64) {
                     Duration::from_truncated_nanoseconds(total_ns as i64)
                 } else {
                     Duration::from_total_nanoseconds(total_ns as i128)
@@ -629,7 +655,7 @@ impl fmt::LowerExp for Duration {
     // Prints the duration with appropriate units
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let seconds_f64 = self.in_seconds();
-        let seconds_f64_abs = seconds_f64.abs();
+        let seconds_f64_abs = fabs(seconds_f64);
         if seconds_f64_abs < 1e-5 {
             fmt::Display::fmt(&(seconds_f64 * 1e9), f)?;
             write!(f, " ns")
