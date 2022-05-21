@@ -71,6 +71,9 @@ pub mod prelude {
     pub use {Duration, Epoch, Freq, Frequencies, TimeSeries, TimeUnits, Unit};
 }
 
+extern crate libm;
+
+#[cfg(feature = "std")]
 extern crate serde;
 
 #[cfg(feature = "std")]
@@ -100,7 +103,10 @@ pub enum Errors {
     ParseError(ParsingErrors),
     /// Raised when trying to initialize an Epoch or Duration from its hi and lo values, but these overlap
     ConversionOverlapError(f64, f64),
+    /// Raised if an overflow occured
     Overflow,
+    /// Raised if the initialization from system time failed
+    SystemTimeError,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -125,6 +131,7 @@ impl fmt::Display for Errors {
                 f,
                 "overflow occured when trying to convert Duration information"
             ),
+            Self::SystemTimeError => write!(f, "std::time::SystemTime returned an error"),
         }
     }
 }

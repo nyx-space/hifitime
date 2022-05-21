@@ -1,3 +1,5 @@
+use libm::{fabs, floor, pow};
+
 #[cfg(feature = "std")]
 use crate::ParsingErrors;
 use crate::{
@@ -328,6 +330,105 @@ impl Duration {
         }
     }
 
+    /// Creates a new duration from its parts
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn compose(
+        sign: i8,
+        days: u64,
+        hours: u64,
+        minutes: u64,
+        seconds: u64,
+        milliseconds: u64,
+        microseconds: u64,
+        nanoseconds: u64,
+    ) -> Self {
+        let me: Self = (days as i64).days()
+            + (hours as i64).hours()
+            + (minutes as i64).minutes()
+            + (seconds as i64).seconds()
+            + (milliseconds as i64).seconds()
+            + (microseconds as i64).microseconds()
+            + (nanoseconds as i64).nanoseconds();
+        if sign == -1 {
+            -me
+        } else {
+            me
+        }
+    }
+
+    /// Floors this duration to the closest duration from the bottom
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Duration, TimeUnits};
+    ///
+    /// let two_hours_three_min = 2.hours() + 3.minutes();
+    /// assert_eq!(two_hours_three_min.floor(1.hours()), 2.hours());
+    /// assert_eq!(two_hours_three_min.floor(30.minutes()), 2.hours());
+    /// // This is zero because we floor by a duration longer than the current duration, rounding it down
+    /// assert_eq!(two_hours_three_min.floor(4.hours()), 0.hours());
+    /// assert_eq!(two_hours_three_min.floor(1.seconds()), two_hours_three_min);
+    /// assert_eq!(two_hours_three_min.floor(1.hours() + 1.minutes()), 2.hours() + 2.minutes());
+    /// assert_eq!(two_hours_three_min.floor(1.hours() + 5.minutes()), 1.hours() + 5.minutes());
+    /// ```
+    pub fn floor(&self, duration: Self) -> Self {
+        // Note that we don't use checked_sub because, at most, this will be zero.
+        Self::from_total_nanoseconds(
+            self.total_nanoseconds() - self.total_nanoseconds() % duration.total_nanoseconds(),
+        )
+    }
+
+    /// Ceils this duration to the closest provided duration
+    ///
+    /// This simply floors then adds the requested duration
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Duration, TimeUnits};
+    ///
+    /// let two_hours_three_min = 2.hours() + 3.minutes();
+    /// assert_eq!(two_hours_three_min.ceil(1.hours()), 3.hours());
+    /// assert_eq!(two_hours_three_min.ceil(30.minutes()), 2.hours() + 30.minutes());
+    /// assert_eq!(two_hours_three_min.ceil(4.hours()), 4.hours());
+    /// assert_eq!(two_hours_three_min.ceil(1.seconds()), two_hours_three_min + 1.seconds());
+    /// assert_eq!(two_hours_three_min.ceil(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
+    /// ```
+    pub fn ceil(&self, duration: Self) -> Self {
+        let floored = self.floor(duration);
+        match floored
+            .total_nanoseconds()
+            .checked_add(duration.abs().total_nanoseconds())
+        {
+            Some(total_ns) => Self::from_total_nanoseconds(total_ns),
+            None => Self::MAX,
+        }
+    }
+
+    /// Rounds this duration to the closest provided duration
+    ///
+    /// This performs both a `ceil` and `floor` and returns the value which is the closest to current one.
+    /// # Example
+    /// ```
+    /// use hifitime::{Duration, TimeUnits};
+    ///
+    /// let two_hours_three_min = 2.hours() + 3.minutes();
+    /// assert_eq!(two_hours_three_min.round(1.hours()), 2.hours());
+    /// assert_eq!(two_hours_three_min.round(30.minutes()), 2.hours());
+    /// assert_eq!(two_hours_three_min.round(4.hours()), 4.hours());
+    /// assert_eq!(two_hours_three_min.round(1.seconds()), two_hours_three_min);
+    /// assert_eq!(two_hours_three_min.round(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
+    /// ```
+    pub fn round(&self, duration: Self) -> Self {
+        let floored = self.floor(duration);
+        let ceiled = self.ceil(duration);
+        if *self - floored < (ceiled - *self).abs() {
+            floored
+        } else {
+            ceiled
+        }
+    }
+
     /// A duration of exactly zero nanoseconds
     const ZERO: Self = Self {
         centuries: 0,
@@ -392,14 +493,14 @@ impl Mul<f64> for Duration {
         let ten: f64 = 10.0;
 
         loop {
-            if (new_val.floor() - new_val).abs() < f64::EPSILON {
+            if fabs(floor(new_val) - new_val) < f64::EPSILON {
                 // Yay, we've found the precision of this number
                 break;
             }
             // Multiply by the precision
             // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b760579f103b7192c20413ebbe167b90
             p += 1;
-            new_val = q * ten.powi(p);
+            new_val = q * pow(ten, f64::from(p));
         }
 
         Duration::from_total_nanoseconds(
@@ -410,32 +511,56 @@ impl Mul<f64> for Duration {
     }
 }
 
+impl Mul<i64> for Unit {
+    type Output = Duration;
+
+    /// Converts the input values to i128 and creates a duration from that
+    /// This method will necessarily ignore durations below nanoseconds
+    fn mul(self, q: i64) -> Duration {
+        let total_ns = match self {
+            Unit::Century => q * (NANOSECONDS_PER_CENTURY as i64),
+            Unit::Day => q * (NANOSECONDS_PER_DAY as i64),
+            Unit::Hour => q * (NANOSECONDS_PER_HOUR as i64),
+            Unit::Minute => q * (NANOSECONDS_PER_MINUTE as i64),
+            Unit::Second => q * (NANOSECONDS_PER_SECOND as i64),
+            Unit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as i64),
+            Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as i64),
+            Unit::Nanosecond => q,
+        };
+        if total_ns.abs() < (i64::MAX as i64) {
+            Duration::from_truncated_nanoseconds(total_ns as i64)
+        } else {
+            Duration::from_total_nanoseconds(total_ns as i128)
+        }
+    }
+}
+
+impl Mul<f64> for Unit {
+    type Output = Duration;
+
+    /// Converts the input values to i128 and creates a duration from that
+    /// This method will necessarily ignore durations below nanoseconds
+    fn mul(self, q: f64) -> Duration {
+        let total_ns = match self {
+            Unit::Century => q * (NANOSECONDS_PER_CENTURY as f64),
+            Unit::Day => q * (NANOSECONDS_PER_DAY as f64),
+            Unit::Hour => q * (NANOSECONDS_PER_HOUR as f64),
+            Unit::Minute => q * (NANOSECONDS_PER_MINUTE as f64),
+            Unit::Second => q * (NANOSECONDS_PER_SECOND as f64),
+            Unit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as f64),
+            Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as f64),
+            Unit::Nanosecond => q,
+        };
+        if fabs(total_ns) < (i64::MAX as f64) {
+            Duration::from_truncated_nanoseconds(total_ns as i64)
+        } else {
+            Duration::from_total_nanoseconds(total_ns as i128)
+        }
+    }
+}
+
 macro_rules! impl_ops_for_type {
     ($type:ident) => {
-        impl Mul<$type> for Unit {
-            type Output = Duration;
-
-            /// Converts the input values to i128 and creates a duration from that
-            /// This method will necessarily ignore durations below nanoseconds
-            fn mul(self, q: $type) -> Duration {
-                let total_ns = match self {
-                    Unit::Century => q * (NANOSECONDS_PER_CENTURY as $type),
-                    Unit::Day => q * (NANOSECONDS_PER_DAY as $type),
-                    Unit::Hour => q * (NANOSECONDS_PER_HOUR as $type),
-                    Unit::Minute => q * (NANOSECONDS_PER_MINUTE as $type),
-                    Unit::Second => q * (NANOSECONDS_PER_SECOND as $type),
-                    Unit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as $type),
-                    Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as $type),
-                    Unit::Nanosecond => q,
-                };
-                if total_ns.abs() < (i64::MAX as $type) {
-                    Duration::from_truncated_nanoseconds(total_ns as i64)
-                } else {
-                    Duration::from_total_nanoseconds(total_ns as i128)
-                }
-            }
-        }
-
         impl Mul<Unit> for $type {
             type Output = Duration;
             fn mul(self, q: Unit) -> Duration {
@@ -456,7 +581,7 @@ macro_rules! impl_ops_for_type {
                     Freq::KiloHertz => NANOSECONDS_PER_MILLISECOND as f64 / (q as f64),
                     Freq::Hertz => (NANOSECONDS_PER_SECOND as f64) / (q as f64),
                 };
-                if total_ns.abs() < (i64::MAX as f64) {
+                if fabs(total_ns) < (i64::MAX as f64) {
                     Duration::from_truncated_nanoseconds(total_ns as i64)
                 } else {
                     Duration::from_total_nanoseconds(total_ns as i128)
@@ -530,7 +655,7 @@ impl fmt::LowerExp for Duration {
     // Prints the duration with appropriate units
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let seconds_f64 = self.in_seconds();
-        let seconds_f64_abs = seconds_f64.abs();
+        let seconds_f64_abs = fabs(seconds_f64);
         if seconds_f64_abs < 1e-5 {
             fmt::Display::fmt(&(seconds_f64 * 1e9), f)?;
             write!(f, " ns")
@@ -1163,5 +1288,35 @@ mod tests {
         assert!(Unit::Century > Unit::Day);
         // Frequencies are converted to durations, and that's what compared!
         assert!(Freq::GigaHertz < Freq::MegaHertz);
+    }
+
+    #[test]
+    fn duration_floor_ceil_round() {
+        // These are from here: https://www.geeksforgeeks.org/time-round-function-in-golang-with-examples/
+        let d = 5.minutes() + 7.seconds();
+        assert_eq!(d.floor(6.seconds()), 5.minutes() + 6.seconds());
+        assert_eq!(d.floor(-6.seconds()), 5.minutes() + 6.seconds());
+        assert_eq!(d.ceil(6.seconds()), 5.minutes() + 12.seconds());
+        assert_eq!(d.ceil(-6.seconds()), 5.minutes() + 12.seconds());
+
+        let d = 3.minutes() + 73.671.seconds();
+        assert_eq!(d, 4.minutes() + 13.seconds() + 671.milliseconds());
+        // Rounding to the closest microsecond should return the same duration
+        assert_eq!(d.floor(1.microseconds()), d);
+        assert_eq!(d.floor(1.seconds()), 4.minutes() + 13.seconds());
+        assert_eq!(d.floor(3.seconds()), 4.minutes() + 12.seconds());
+        assert_eq!(d.floor(9.minutes()), 0.minutes());
+
+        // Ceil
+        assert_eq!(d.ceil(1.minutes()), 5.minutes());
+        assert_eq!(d.ceil(30.seconds()), 4.minutes() + 30.seconds());
+        assert_eq!(d.ceil(4.minutes()), 8.minutes());
+        assert_eq!(d.ceil(1.seconds()), 4.minutes() + 14.seconds());
+
+        // Round
+        assert_eq!(d.round(1.minutes()), 4.minutes());
+        assert_eq!(d.round(30.seconds()), 4.minutes());
+        assert_eq!(d.round(4.minutes()), 4.minutes());
+        assert_eq!(d.round(1.seconds()), 4.minutes() + 14.seconds());
     }
 }

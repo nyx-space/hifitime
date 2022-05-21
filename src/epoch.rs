@@ -1,3 +1,5 @@
+use libm::{fabs, sin, trunc};
+
 use crate::duration::{Duration, Unit};
 use crate::{
     Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
@@ -15,6 +17,8 @@ use super::regex::Regex;
 use super::serde::{de, Deserialize, Deserializer};
 #[cfg(feature = "std")]
 use std::str::FromStr;
+#[cfg(feature = "std")]
+use std::time::SystemTime;
 
 const TT_OFFSET_MS: i64 = 32_184;
 const ET_OFFSET_US: i64 = 32_184_935;
@@ -198,8 +202,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Initialize an Epoch from the provided UTC seconds since 1900 January 01
-    /// at midnight
+    /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
     pub fn from_utc_seconds(seconds: f64) -> Self {
         let mut e = Self::from_tai_seconds(seconds);
         // Compute the TAI to UTC offset at this time.
@@ -212,8 +215,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Initialize an Epoch from the provided UTC days since 1900 January 01 at
-    /// midnight
+    /// Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight
     pub fn from_utc_days(days: f64) -> Self {
         let mut e = Self::from_tai_days(days);
         // Compute the TAI to UTC offset at this time.
@@ -301,9 +303,9 @@ impl Epoch {
         let g_rad = (PI / 180.0) * (357.528 + 35_999.050 * tt_centuries_j2k);
 
         // Decimal does not provide trig functions, so let's define the parts of the trig separately.
-        let inner = g_rad + 0.0167 * g_rad.sin();
+        let inner = g_rad + 0.0167 * sin(g_rad);
 
-        Self(tt_duration + ((ET_EPOCH_S as f64) - (0.001_658 * inner.sin())) * Unit::Second)
+        Self(tt_duration + ((ET_EPOCH_S as f64) - (0.001_658 * sin(inner))) * Unit::Second)
     }
 
     #[must_use]
@@ -813,7 +815,7 @@ impl Epoch {
         let inner = self.inner_g_rad();
 
         self.as_tt_duration() - (ET_EPOCH_S * Unit::Second)
-            + (0.001_658 * inner.sin()) * Unit::Second
+            + (0.001_658 * sin(inner)) * Unit::Second
     }
 
     #[must_use]
@@ -821,7 +823,7 @@ impl Epoch {
     pub fn as_tdb_seconds(&self) -> f64 {
         // Note that we redo the calculation of as_tdb_duration to save computational cost
         let inner = self.inner_g_rad();
-        self.as_tt_seconds() - (ET_EPOCH_S as f64) + (0.001_658 * inner.sin())
+        self.as_tt_seconds() - (ET_EPOCH_S as f64) + (0.001_658 * sin(inner))
     }
 
     /// For TDB computation, we're using f64 only because BigDecimal is far too slow for Nyx (uses FromStr).
@@ -829,7 +831,7 @@ impl Epoch {
         use core::f64::consts::PI;
         let g_rad = (PI / 180.0) * (357.528 + 35_999.050 * self.as_tt_centuries_j2k());
 
-        g_rad + 0.0167 * g_rad.sin()
+        g_rad + 0.0167 * sin(g_rad)
     }
 
     #[must_use]
@@ -851,7 +853,7 @@ impl Epoch {
     #[must_use]
     pub fn as_jde_tdb_duration(&self) -> Duration {
         let inner = self.inner_g_rad();
-        let tdb_delta = (0.001_658 * inner.sin()) * Unit::Second;
+        let tdb_delta = (0.001_658 * sin(inner)) * Unit::Second;
         self.as_jde_tt_duration() + tdb_delta
     }
 
@@ -1013,6 +1015,54 @@ impl Epoch {
             nanos,
         )
     }
+
+    /// Floors this epoch to the closest provided duration
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Epoch, TimeUnits};
+    ///
+    /// let e = Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 57, 43);
+    /// assert_eq!(
+    ///     e.floor(1.hours()),
+    ///     Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 0, 0)
+    /// );
+    /// ```
+    pub fn floor(&self, duration: Duration) -> Self {
+        Self(self.0.floor(duration))
+    }
+
+    /// Ceils this epoch to the closest provided duration
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Epoch, TimeUnits};
+    ///
+    /// let e = Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 57, 43);
+    /// assert_eq!(
+    ///     e.ceil(1.hours()),
+    ///     Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
+    /// );
+    /// ```
+    pub fn ceil(&self, duration: Duration) -> Self {
+        Self(self.0.ceil(duration))
+    }
+
+    /// Rounds this epoch to the closest provided duration
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Epoch, TimeUnits};
+    ///
+    /// let e = Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 57, 43);
+    /// assert_eq!(
+    ///     e.round(1.hours()),
+    ///     Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
+    /// );
+    /// ```
+    pub fn round(&self, duration: Duration) -> Self {
+        Self(self.0.round(duration))
+    }
 }
 
 #[cfg(feature = "std")]
@@ -1148,6 +1198,16 @@ impl Epoch {
                 "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
                 y, mm, dd, hh, min, s, nanos, ts
             )
+        }
+    }
+
+    /// Initializes a new Epoch from `now`.
+    /// WARNING: This assumes that the system time returns the time in UTC (which is the case on Linux)
+    /// Uses [`std::time::SystemTime::now`](https://doc.rust-lang.org/std/time/struct.SystemTime.html#method.now) under the hood
+    pub fn now() -> Result<Self, Errors> {
+        match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
+            Ok(std_duration) => Ok(Self::from_unix_seconds(std_duration.as_secs_f64())),
+            Err(_) => Err(Errors::SystemTimeError),
         }
     }
 }
@@ -1315,7 +1375,24 @@ fn is_leap_year(year: i32) -> bool {
 }
 
 fn div_rem_f64(me: f64, rhs: f64) -> (i32, f64) {
-    ((me.div_euclid(rhs) as i32), me.rem_euclid(rhs))
+    ((div_euclid_f64(me, rhs) as i32), rem_euclid_f64(me, rhs))
+}
+
+fn div_euclid_f64(lhs: f64, rhs: f64) -> f64 {
+    let q = trunc(lhs / rhs);
+    if lhs % rhs < 0.0 {
+        return if rhs > 0.0 { q - 1.0 } else { q + 1.0 };
+    }
+    q
+}
+
+fn rem_euclid_f64(lhs: f64, rhs: f64) -> f64 {
+    let r = lhs % rhs;
+    if r < 0.0 {
+        r + fabs(rhs)
+    } else {
+        r
+    }
 }
 
 #[test]
@@ -2014,5 +2091,33 @@ mod tests {
         let (centuries, nanos) = dt.as_tai_duration().to_parts();
         assert_eq!(centuries, 1);
         assert_eq!(nanos, 537582752000000000);
+    }
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_now() {
+        // Simply ensure that this call does not panic
+        let now = Epoch::now().unwrap();
+        println!("{now}");
+    }
+
+    #[test]
+    fn test_floor_ceil_round() {
+        // NOTE: This test suite is more limited than the Duration equivalent because Epoch uses Durations for these operations.
+        use crate::TimeUnits;
+
+        let e = Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 57, 43);
+        assert_eq!(
+            e.ceil(1.hours()),
+            Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
+        );
+        assert_eq!(
+            e.floor(1.hours()),
+            Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 0, 0)
+        );
+        assert_eq!(
+            e.round(1.hours()),
+            Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
+        );
     }
 }

@@ -14,9 +14,10 @@ Scientifically accurate date and time handling with guaranteed nanosecond precis
 
 # Features
 
+ * [x] Initialize a high precision Epoch from the system time in UTC
  * [x] Leap seconds (as announced by the IETF on a yearly basis)
  * [x] UTC representation with ISO8601 formatting
- * [x] Trivial support of time arithmetic (e.g. `2.hours() + 3.seconds()`)
+ * [x] Trivial support of time arithmetic: addition (e.g. `2.hours() + 3.seconds()`), subtraction (e.g. `2.hours() - 3.seconds()`), round/floor/ceil operations (e.g. `2.hours().round(3.seconds())`)
  * [x] Supports ranges of Epochs and TimeSeries (linspace of `Epoch`s and `Duration`s)
  * [x] Trivial conversion between the time systems TAI, TT, ET, TDB, GPS, and UNIX.
  * [x] High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
@@ -49,6 +50,13 @@ extern crate hifitime;
 ### Time creation
 ```rust
 use hifitime::{Epoch, Unit, TimeUnits};
+
+#[cfg(feature = "std")]
+{
+// Initialization from system time is only availble when std feature is enabled
+let now = Epoch::now().unwrap();
+println!("{}", now);
+}
 
 let mut santa = Epoch::from_gregorian_utc_hms(2017, 12, 25, 01, 02, 14);
 assert_eq!(santa.as_mjd_utc_days(), 58112.043217592590);
@@ -203,10 +211,12 @@ ET and TDB should now be identical. However, hifitime uses the European Space Ag
 # Changelog
 
 ## 3.2.0
++ Fix no-std implementation by using `libm` for non-core f64 operations
 + Add UNIX timestamp, thanks [@mkolopanis](https://github.com/mkolopanis)
 + Enums now derive `Eq` and some derive `Ord` (where relevant) #[118](https://github.com/nyx-space/hifitime/issues/118)
 + Use const fn where possible and switch to references where possible [#119](https://github.com/nyx-space/hifitime/issues/119)
-+ Allow extracting the centuries and nanoseconds of a Duration and Epoch, respectively with to_parts and to_tai_parts [#122](https://github.com/nyx-space/hifitime/issues/122)
++ Allow extracting the centuries and nanoseconds of a `Duration` and `Epoch`, respectively with to_parts and to_tai_parts [#122](https://github.com/nyx-space/hifitime/issues/122)
++ Add `ceil`, `floor`, `round` operations to `Epoch` and `Duration`
 ## 3.1.0
 + Add `#![no_std]` support
 + Add `to_parts` to `Duration` to extract the centuries and nanoseconds of a duration
