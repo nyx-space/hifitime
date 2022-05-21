@@ -1,0 +1,12 @@
+[target.thumbv7em-none-eabihf]
+# runner = "arm-none-eabi-gdb -q -x openocd.gdb"
+runner = "probe-run --chip STM32F746NGHx"
+rustflags = [
+  "-C", "link-arg=-Tlink.x",
+  "-C", "debuginfo=1", # REMOVE LATER ! helps with debugging to keep the frame pointer.
+  
+]
+
+
+[build]
+target = "thumbv7em-none-eabihf"
