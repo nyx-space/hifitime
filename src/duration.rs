@@ -1,5 +1,3 @@
-use libm::{fabs, floor, pow};
-
 #[cfg(feature = "std")]
 use crate::ParsingErrors;
 use crate::{
@@ -493,14 +491,14 @@ impl Mul<f64> for Duration {
         let ten: f64 = 10.0;
 
         loop {
-            if fabs(floor(new_val) - new_val) < f64::EPSILON {
+            if (new_val.floor() - new_val).abs() < f64::EPSILON {
                 // Yay, we've found the precision of this number
                 break;
             }
             // Multiply by the precision
             // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b760579f103b7192c20413ebbe167b90
             p += 1;
-            new_val = q * pow(ten, f64::from(p));
+            new_val = q * ten.powi(p);
         }
 
         Duration::from_total_nanoseconds(
@@ -551,7 +549,7 @@ impl Mul<f64> for Unit {
             Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as f64),
             Unit::Nanosecond => q,
         };
-        if fabs(total_ns) < (i64::MAX as f64) {
+        if total_ns.abs() < (i64::MAX as f64) {
             Duration::from_truncated_nanoseconds(total_ns as i64)
         } else {
             Duration::from_total_nanoseconds(total_ns as i128)
@@ -581,7 +579,7 @@ macro_rules! impl_ops_for_type {
                     Freq::KiloHertz => NANOSECONDS_PER_MILLISECOND as f64 / (q as f64),
                     Freq::Hertz => (NANOSECONDS_PER_SECOND as f64) / (q as f64),
                 };
-                if fabs(total_ns) < (i64::MAX as f64) {
+                if total_ns.abs() < (i64::MAX as f64) {
                     Duration::from_truncated_nanoseconds(total_ns as i64)
                 } else {
                     Duration::from_total_nanoseconds(total_ns as i128)
@@ -655,7 +653,7 @@ impl fmt::LowerExp for Duration {
     // Prints the duration with appropriate units
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let seconds_f64 = self.in_seconds();
-        let seconds_f64_abs = fabs(seconds_f64);
+        let seconds_f64_abs = seconds_f64.abs();
         if seconds_f64_abs < 1e-5 {
             fmt::Display::fmt(&(seconds_f64 * 1e9), f)?;
             write!(f, " ns")

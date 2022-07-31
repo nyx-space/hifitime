@@ -71,7 +71,7 @@ pub mod prelude {
     pub use {Duration, Epoch, Freq, Frequencies, TimeSeries, TimeUnits, Unit};
 }
 
-extern crate libm;
+extern crate num_traits;
 
 #[cfg(feature = "std")]
 extern crate serde;
