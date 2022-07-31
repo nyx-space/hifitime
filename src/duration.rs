@@ -200,7 +200,7 @@ impl Duration {
     /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
     pub fn from_truncated_nanoseconds(nanos: i64) -> Self {
         if nanos < 0 {
-            let ns = nanos.abs() as u64;
+            let ns = nanos.unsigned_abs();
             let extra_centuries = ns.div_euclid(NANOSECONDS_PER_CENTURY);
             if extra_centuries > i16::MAX as u64 {
                 Self::MIN
@@ -212,7 +212,7 @@ impl Duration {
                 )
             }
         } else {
-            Self::from_parts(0, nanos.abs() as u64)
+            Self::from_parts(0, nanos.unsigned_abs())
         }
     }
 
