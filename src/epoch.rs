@@ -1327,6 +1327,83 @@ impl fmt::LowerHex for Epoch {
     }
 }
 
+impl fmt::UpperHex for Epoch {
+    /// Prints the Epoch in TT
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let ts = TimeSystem::TT;
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_tt_seconds());
+        if nanos == 0 {
+            write!(
+                f,
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {:?}",
+                y, mm, dd, hh, min, s, ts
+            )
+        } else {
+            write!(
+                f,
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
+                y, mm, dd, hh, min, s, nanos, ts
+            )
+        }
+    }
+}
+
+impl fmt::LowerExp for Epoch {
+    /// Prints the Epoch in TDB
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let ts = TimeSystem::TDB;
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_tdb_seconds());
+        if nanos == 0 {
+            write!(
+                f,
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {:?}",
+                y, mm, dd, hh, min, s, ts
+            )
+        } else {
+            write!(
+                f,
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
+                y, mm, dd, hh, min, s, nanos, ts
+            )
+        }
+    }
+}
+
+impl fmt::UpperExp for Epoch {
+    /// Prints the Epoch in ET
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let ts = TimeSystem::ET;
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_et_seconds());
+        if nanos == 0 {
+            write!(
+                f,
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {:?}",
+                y, mm, dd, hh, min, s, ts
+            )
+        } else {
+            write!(
+                f,
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
+                y, mm, dd, hh, min, s, nanos, ts
+            )
+        }
+    }
+}
+
+impl fmt::Pointer for Epoch {
+    /// Prints the Epoch in UNIX
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_unix_seconds())
+    }
+}
+
+impl fmt::Octal for Epoch {
+    /// Prints the Epoch in GPS
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.as_gpst_nanoseconds().unwrap())
+    }
+}
+
 #[must_use]
 /// Returns true if the provided Gregorian date is valid. Leap second days may have 60 seconds.
 pub fn is_gregorian_valid(
@@ -1790,6 +1867,7 @@ mod tests {
                 gps_epoch.as_gregorian_str(TimeSystem::TAI),
                 "1980-01-06T00:00:19 TAI"
             );
+            assert_eq!(format!("{:o}", gps_epoch), "0");
         }
         assert_eq!(
             gps_epoch.as_tai_seconds(),
@@ -1847,6 +1925,8 @@ mod tests {
                 unix_epoch.as_gregorian_str(TimeSystem::TAI),
                 "1970-01-01T00:00:00 TAI"
             );
+            // Print as UNIX seconds
+            assert_eq!(format!("{:p}", unix_epoch), "0");
         }
         assert_eq!(
             unix_epoch.as_tai_seconds(),
