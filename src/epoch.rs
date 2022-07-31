@@ -590,7 +590,7 @@ impl Epoch {
 
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in UTC
-    fn as_utc_duration(&self) -> Duration {
+    pub fn as_utc_duration(&self) -> Duration {
         let cnt = self.get_num_leap_seconds();
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
         self.0 + i64::from(-cnt) * Unit::Second
