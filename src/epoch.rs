@@ -2201,13 +2201,14 @@ mod tests {
 
     #[test]
     fn test_ord() {
-        let dt_str = "2017-01-14T00:31:55 UTC";
-        let dt_str2 = "2022-01-14T00:31:55 UTC";
-        let epoch1 = Epoch::from_gregorian_str(dt_str).unwrap();
-        let epoch2 = Epoch::from_gregorian_str(dt_str2).unwrap();
+        let epoch1 =
+            Epoch::maybe_from_gregorian(2020, 1, 8, 16, 1, 17, 100, TimeSystem::TAI).unwrap();
+        let epoch2 =
+            Epoch::maybe_from_gregorian(2020, 1, 8, 16, 1, 17, 200, TimeSystem::TAI).unwrap();
 
         assert_eq!(epoch1.max(epoch2), epoch2);
         assert_eq!(epoch2.min(epoch1), epoch1);
+        #[cfg(feature = "std")]
         assert_eq!(epoch1.cmp(&epoch1), std::cmp::Ordering::Equal);
     }
 }
