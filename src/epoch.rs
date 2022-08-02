@@ -2208,7 +2208,6 @@ mod tests {
 
         assert_eq!(epoch1.max(epoch2), epoch2);
         assert_eq!(epoch2.min(epoch1), epoch1);
-        #[cfg(feature = "std")]
-        assert_eq!(epoch1.cmp(&epoch1), std::cmp::Ordering::Equal);
+        assert_eq!(epoch1.cmp(&epoch1), core::cmp::Ordering::Equal);
     }
 }
