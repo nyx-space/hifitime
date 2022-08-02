@@ -67,7 +67,7 @@ const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 
 /// Defines an Epoch in TAI (temps atomique international) in seconds past 1900 January 01 at midnight (like the Network Time Protocol).
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time systems or representations.
-#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Epoch(Duration);
 
 impl Sub for Epoch {
@@ -2197,5 +2197,17 @@ mod tests {
             e.round(1.hours()),
             Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
         );
+    }
+
+    #[test]
+    fn test_ord() {
+        let dt_str = "2017-01-14T00:31:55 UTC";
+        let dt_str2 = "2022-01-14T00:31:55 UTC";
+        let epoch1 = Epoch::from_gregorian_str(dt_str).unwrap();
+        let epoch2 = Epoch::from_gregorian_str(dt_str2).unwrap();
+
+        assert_eq!(epoch1.max(epoch2), epoch2);
+        assert_eq!(epoch2.min(epoch1), epoch1);
+        assert_eq!(epoch1.cmp(&epoch1), std::cmp::Ordering::Equal);
     }
 }
