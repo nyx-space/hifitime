@@ -210,10 +210,17 @@ ET and TDB should now be identical. However, hifitime uses the European Space Ag
 
 # Changelog
 
+## 3.3.0
++ Fix `len` and `size_hint` for `TimeSeries`, cf. [#131](https://github.com/nyx-space/hifitime/issues/131), reported by [@d3v-null](https://github.com/d3v-null), thanks for the find!
++ `Epoch` now implements `Eq` and `Ord`, cf. [#133](https://github.com/nyx-space/hifitime/pull/133), thanks [@mkolopanis](https://github.com/mkolopanis) for the PR!
++ `Epoch` can now be printed in different time systems with format modifiers, cf. [#130](https://github.com/nyx-space/hifitime/issues/130)
++ (minor) `as_utc_duration` in `Epoch` is now public, cf. [#129](https://github.com/nyx-space/hifitime/issues/129)
++ (minor) The whole crate now uses `num-traits` thereby skipping the explicit use of `libm`. Basically, operations on `f64` look like normal Rust again, cf. [#128](https://github.com/nyx-space/hifitime/issues/128)
+
 ## 3.2.0
 + Fix no-std implementation by using `libm` for non-core f64 operations
 + Add UNIX timestamp, thanks [@mkolopanis](https://github.com/mkolopanis)
-+ Enums now derive `Eq` and some derive `Ord` (where relevant) #[118](https://github.com/nyx-space/hifitime/issues/118)
++ Enums now derive `Eq` and some derive `Ord` (where relevant) [#118](https://github.com/nyx-space/hifitime/issues/118)
 + Use const fn where possible and switch to references where possible [#119](https://github.com/nyx-space/hifitime/issues/119)
 + Allow extracting the centuries and nanoseconds of a `Duration` and `Epoch`, respectively with to_parts and to_tai_parts [#122](https://github.com/nyx-space/hifitime/issues/122)
 + Add `ceil`, `floor`, `round` operations to `Epoch` and `Duration`
