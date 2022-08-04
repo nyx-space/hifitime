@@ -169,7 +169,7 @@ mod tests {
 
     #[test]
     fn gh131_regression() {
-        let start = Epoch::from_gregorian_str("2022-07-14T02:56:11.228271007 UTC").unwrap();
+        let start = Epoch::from_gregorian_utc(2022, 7, 14, 2, 56, 11, 228271007);
         let step = 0.5 * Unit::Microsecond;
         let steps = 1_000_000_000;
         let end = start + steps * step; // This is 500 ms later
