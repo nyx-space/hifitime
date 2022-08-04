@@ -178,8 +178,8 @@ mod tests {
         assert_eq!(times.len(), steps as usize - 1);
         assert_eq!(times.len(), times.size_hint().0);
 
+        // For an _inclusive_ time series, we skip the last item, so it's the steps count
         let times = TimeSeries::inclusive(start, end, step);
-        // For an _exclusive_ time series, we skip the last item, so it's the steps count
         assert_eq!(times.len(), steps as usize);
         assert_eq!(times.len(), times.size_hint().0);
     }
