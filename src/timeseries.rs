@@ -112,12 +112,10 @@ where
             } else {
                 approx.ceil() as usize
             }
+        } else if approx.floor() >= usize::MAX as f64 {
+            usize::MAX
         } else {
-            if approx.floor() >= usize::MAX as f64 {
-                usize::MAX
-            } else {
-                approx.floor() as usize
-            }
+            approx.floor() as usize
         }
     }
 }
