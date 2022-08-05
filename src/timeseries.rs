@@ -82,6 +82,10 @@ impl Iterator for TimeSeries {
             Some(next_item)
         }
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.len(), Some(self.len() + 1))
+    }
 }
 
 impl DoubleEndedIterator for TimeSeries {
@@ -96,7 +100,25 @@ impl DoubleEndedIterator for TimeSeries {
     }
 }
 
-impl ExactSizeIterator for TimeSeries where TimeSeries: Iterator {}
+impl ExactSizeIterator for TimeSeries
+where
+    TimeSeries: Iterator,
+{
+    fn len(&self) -> usize {
+        let approx = ((self.end - self.start).in_seconds() / self.step.in_seconds()).abs();
+        if self.incl {
+            if approx.ceil() >= usize::MAX as f64 {
+                usize::MAX
+            } else {
+                approx.ceil() as usize
+            }
+        } else if approx.floor() >= usize::MAX as f64 {
+            usize::MAX
+        } else {
+            approx.floor() as usize
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -143,5 +165,22 @@ mod tests {
         }
 
         assert_eq!(count, 7, "Should have six items in this iterator");
+    }
+
+    #[test]
+    fn gh131_regression() {
+        let start = Epoch::from_gregorian_utc(2022, 7, 14, 2, 56, 11, 228271007);
+        let step = 0.5 * Unit::Microsecond;
+        let steps = 1_000_000_000;
+        let end = start + steps * step; // This is 500 ms later
+        let times = TimeSeries::exclusive(start, end, step);
+        // For an _exclusive_ time series, we skip the last item, so it's steps minus one
+        assert_eq!(times.len(), steps as usize - 1);
+        assert_eq!(times.len(), times.size_hint().0);
+
+        // For an _inclusive_ time series, we skip the last item, so it's the steps count
+        let times = TimeSeries::inclusive(start, end, step);
+        assert_eq!(times.len(), steps as usize);
+        assert_eq!(times.len(), times.size_hint().0);
     }
 }
