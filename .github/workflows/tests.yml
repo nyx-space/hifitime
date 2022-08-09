@@ -61,8 +61,8 @@ jobs:
       - name: Install Kani
         run: cargo install --locked kani-verifier && cargo-kani setup
       
-      - name: Test (no default features)
-        run: cargo test --no-default-features
+      - name: Run Kani
+        run: cargo kani
 
 
   lints:

@@ -1026,3 +1026,13 @@ fn deser_test() {
         pub _d: Duration,
     }
 }
+
+#[kani::proof]
+fn ops_duration() {
+    // use self::{Duration, TimeUnits, Unit};
+
+    let first: f64 = kani::any();
+    let second: f64 = kani::any();
+    let first_dur = first.seconds();
+    let second_dur = second.seconds();
+}
