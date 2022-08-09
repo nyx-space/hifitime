@@ -1,6 +1,7 @@
 # hifitime 3
 
 Scientifically accurate date and time handling with guaranteed nanosecond precision for 32,768 years _before_ 01 January 1900 and 32,767 years _after_ that reference epoch.
+Formally verified to not crash on operations on epochs and durations using the [`Kani`](https://model-checking.github.io/kani/) model checking.
 
 [![hifitime on crates.io][cratesio-image]][cratesio]
 [![Build Status](https://github.com/nyx-space/hifitime/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/nyx-space/hifitime/actions)
@@ -37,7 +38,7 @@ Put this in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hifitime = "3.2"
+hifitime = "3.3"
 ```
 
 And add the following to your crate root:
@@ -211,6 +212,7 @@ ET and TDB should now be identical. However, hifitime uses the European Space Ag
 # Changelog
 
 ## 3.3.0
++ Formal verification of the normalization operation on `Duration`, which in turn guarantees that `Epoch` operations cannot panic, cf. [#127](https://github.com/nyx-space/hifitime/issues/127)
 + Fix `len` and `size_hint` for `TimeSeries`, cf. [#131](https://github.com/nyx-space/hifitime/issues/131), reported by [@d3v-null](https://github.com/d3v-null), thanks for the find!
 + `Epoch` now implements `Eq` and `Ord`, cf. [#133](https://github.com/nyx-space/hifitime/pull/133), thanks [@mkolopanis](https://github.com/mkolopanis) for the PR!
 + `Epoch` can now be printed in different time systems with format modifiers, cf. [#130](https://github.com/nyx-space/hifitime/issues/130)

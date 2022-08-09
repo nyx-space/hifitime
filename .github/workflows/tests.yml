@@ -64,7 +64,6 @@ jobs:
       - name: Run Kani
         run: cargo kani
 
-
   lints:
     name: Lints
     runs-on: ubuntu-latest

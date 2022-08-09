@@ -81,7 +81,7 @@ impl Duration {
                 // Check that we can safely cast because we have that room without overflowing
                 if (i16::MAX - self.centuries) as u64 >= extra_centuries {
                     // We can safely add without an overflow
-                    self.centuries += extra_centuries as i16;
+                    self.centuries = self.centuries.checked_add(extra_centuries as i16).unwrap();
                     self.nanoseconds = rem_nanos;
                 } else {
                     // Saturated max again
@@ -93,7 +93,7 @@ impl Duration {
                 // Check that we can safely cast because we have that room without overflowing
                 if (i16::MIN - self.centuries) as u64 >= extra_centuries {
                     // We can safely add without an overflow
-                    self.centuries += extra_centuries as i16;
+                    self.centuries = self.centuries.checked_add(extra_centuries as i16).unwrap();
                     self.nanoseconds = rem_nanos;
                 } else {
                     // Saturated max again
@@ -1027,12 +1027,29 @@ fn deser_test() {
     }
 }
 
+#[cfg(kani)]
 #[kani::proof]
-fn ops_duration() {
-    // use self::{Duration, TimeUnits, Unit};
+fn formal_normalize_min() {
+    // Test that a normalization from the min does not fail
+    let centuries = i16::MIN;
+    let nanoseconds: u64 = kani::any();
+    let _dur = Duration::from_parts(centuries, nanoseconds);
+}
 
-    let first: f64 = kani::any();
-    let second: f64 = kani::any();
-    let first_dur = first.seconds();
-    let second_dur = second.seconds();
+#[cfg(kani)]
+#[kani::proof]
+fn formal_normalize_max() {
+    // Test that a normalization from the min does not fail
+    let centuries = i16::MAX;
+    let nanoseconds: u64 = kani::any();
+    let _dur = Duration::from_parts(centuries, nanoseconds);
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_normalize_any() {
+    // Test that a normalization from the min does not fail
+    let centuries: i16 = kani::any();
+    let nanoseconds: u64 = kani::any();
+    let _dur = Duration::from_parts(centuries, nanoseconds);
 }
