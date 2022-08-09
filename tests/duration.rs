@@ -1,12 +1,16 @@
 extern crate hifitime;
-use hifitime::{NANOSECONDS_PER_MINUTE, Duration, Freq, TimeUnits, Unit};
+use hifitime::{Duration, Freq, TimeUnits, Unit, NANOSECONDS_PER_MINUTE};
 
 #[cfg(feature = "std")]
 extern crate core;
 
+#[cfg(feature = "std")]
+use core::f64::EPSILON;
+#[cfg(not(feature = "std"))]
+use std::f64::EPSILON;
+
 #[test]
 fn time_unit() {
-    use core::f64::EPSILON;
     // Check that the same number is created for different types
     assert_eq!(Unit::Day * 10.0, Unit::Day * 10);
     assert_eq!(Unit::Hour * -7.0, Unit::Hour * -7);

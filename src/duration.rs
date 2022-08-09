@@ -5,6 +5,8 @@ use crate::{
     SECONDS_PER_MINUTE,
 };
 
+#[cfg(feature = "std")]
+extern crate core;
 use core::cmp::Ordering;
 use core::convert::TryInto;
 use core::fmt;

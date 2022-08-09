@@ -7,6 +7,11 @@ use hifitime::{
     J2000_OFFSET, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
+#[cfg(feature = "std")]
+use core::f64::EPSILON;
+#[cfg(not(feature = "std"))]
+use std::f64::EPSILON;
+
 #[test]
 fn test_const_ops() {
     // Tests that multiplying a constant with a unit returns the correct number in that same unit
@@ -19,7 +24,6 @@ fn test_const_ops() {
 #[allow(clippy::float_equality_without_abs)]
 #[test]
 fn utc_epochs() {
-    use core::f64::EPSILON;
     assert!(Epoch::from_mjd_tai(J1900_OFFSET).as_tai_seconds() < EPSILON);
     assert!((Epoch::from_mjd_tai(J1900_OFFSET).as_mjd_tai_days() - J1900_OFFSET).abs() < EPSILON);
 
@@ -147,7 +151,7 @@ fn utc_epochs() {
 fn utc_tai() {
     // General note: TAI "ahead" of UTC means that there are _less_ TAI seconds since epoch for a given date
     // than there are seconds for that UTC epoch: the same TAI time happens _before_ that UTC time.
-    use core::f64::EPSILON;
+
     // flp = first leap second
     let flp_from_secs_tai = Epoch::from_tai_seconds(2_272_060_800.0);
     let flp_from_greg_tai = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
@@ -208,7 +212,6 @@ fn utc_tai() {
 
 #[test]
 fn julian_epoch() {
-    use core::f64::EPSILON;
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=1900-01-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=1900-01-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     let nist_j1900 = Epoch::from_tai_days(0.0);
@@ -298,7 +301,6 @@ fn datetime_invalid_dates() {
 
 #[test]
 fn gpst() {
-    use core::f64::EPSILON;
     let now = Epoch::from_gregorian_tai_hms(2019, 8, 24, 3, 49, 9);
     assert!(
         now.as_tai_seconds() > now.as_utc_seconds(),
@@ -364,7 +366,6 @@ fn gpst() {
 
 #[test]
 fn unix() {
-    use core::f64::EPSILON;
     let now = Epoch::from_gregorian_utc_hms(2022, 5, 2, 10, 39, 15);
     assert!((now.as_unix_seconds() - 1651487955.0_f64).abs() < EPSILON);
     assert!((now.as_unix_milliseconds() - 1651487955000.0_f64).abs() < EPSILON);
@@ -416,7 +417,6 @@ fn unix() {
 
 #[test]
 fn spice_et_tdb() {
-    use core::f64::EPSILON;
     use hifitime::J2000_NAIF;
     /*
     >>> sp.str2et("2012-02-07 11:22:33 UTC")
@@ -495,7 +495,6 @@ fn spice_et_tdb() {
 #[cfg(feature = "std")]
 #[test]
 fn test_from_str() {
-    use core::f64::EPSILON;
     use std::str::FromStr;
 
     let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);

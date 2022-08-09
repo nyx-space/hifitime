@@ -216,6 +216,7 @@ ET and TDB should now be identical. However, hifitime uses the European Space Ag
 + `Epoch` can now be printed in different time systems with format modifiers, cf. [#130](https://github.com/nyx-space/hifitime/issues/130)
 + (minor) `as_utc_duration` in `Epoch` is now public, cf. [#129](https://github.com/nyx-space/hifitime/issues/129)
 + (minor) The whole crate now uses `num-traits` thereby skipping the explicit use of `libm`. Basically, operations on `f64` look like normal Rust again, cf. [#128](https://github.com/nyx-space/hifitime/issues/128)
++ (minor) Move the tests to their own folder to make it obvious that this is thoroughly tested
 
 ## 3.2.0
 + Fix no-std implementation by using `libm` for non-core f64 operations
