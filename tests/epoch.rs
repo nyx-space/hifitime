@@ -551,6 +551,20 @@ fn test_from_str() {
     );
 }
 
+#[cfg(feature = "std")]
+#[test]
+fn test_from_str_tdb() {
+    use std::str::FromStr;
+
+    let greg = "2020-01-31T00:00:00 TDB";
+    assert_eq!(
+        "2020-01-30T23:59:59.999961853 TDB",
+        Epoch::from_str(greg)
+            .unwrap()
+            .as_gregorian_str(TimeSystem::TDB)
+    );
+}
+
 #[test]
 fn ops() {
     // Test adding a second
