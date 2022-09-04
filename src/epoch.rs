@@ -185,14 +185,15 @@ impl Epoch {
     pub fn to_seconds_et_esa(&self) -> f64 {
         // Run a Newton Raphston to convert find the correct value of the
         let mut seconds = (self.0 - SPICE_OFFSET).in_seconds();
+        let mut delta = 1e-6; // Large number.
         for _ in 0..10 {
-            // Calculate the derivative of gamma at this point by finite differencing
-            let dg_dseconds = (Self::esa_gamma(seconds) - Self::esa_gamma(seconds + 0.1)) / 0.1;
-            let next = seconds + Self::esa_gamma(seconds) / dg_dseconds;
-            if dbg!(next - seconds).abs() < 1e-6 {
+            let next = seconds - Self::esa_gamma(seconds);
+            let new_delta = (next - seconds).abs();
+            if (new_delta - delta).abs() < 1e-10 {
                 break;
             }
             seconds = next; // Loop
+            delta = new_delta;
         }
 
         // At this point, we have a good estimate of the number of seconds of this epoch.
