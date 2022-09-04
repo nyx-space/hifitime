@@ -158,18 +158,8 @@ impl AddAssign<Duration> for Epoch {
 
 impl Epoch {
     pub fn from_et_seconds_spice(seconds: f64) -> Self {
-        // Calculate M, the mean anomaly.
-        let m0 = 6.239996;
-        let m1 = 1.99096871e-7;
-        let m = m0 + seconds * m1;
-        // Calculate eccentric anomaly
-        let eb = 1.671e-2;
-        let e = m + eb * m.sin();
-
-        let delta_t_a = 32.184;
-        let k = 1.657e-3;
         // WRT to J2000: offset to apply to TAI to give ET
-        let delta_et_tai = delta_t_a + k * e.sin();
+        let delta_et_tai = Self::spice_delta_et_tai(seconds);
         // Offset back to J1900
         Self((seconds - delta_et_tai) * Unit::Second + SPICE_OFFSET)
     }
@@ -198,11 +188,45 @@ impl Epoch {
 
         // At this point, we have a good estimate of the number of seconds of this epoch.
         // Reverse the algorithm:
-        let gamma = Self::esa_gamma(seconds);
+        let gamma = Self::esa_gamma(seconds + 32.184);
         let delta_tdb_tai = gamma + 32.184;
 
         let rslt = (self.0 + delta_tdb_tai * Unit::Second - SPICE_OFFSET).in_seconds();
-        println!("{rslt} vs {seconds}");
+        println!("[esa] {rslt} vs {seconds}");
+        rslt
+    }
+
+    pub fn to_seconds_et_spice(&self) -> f64 {
+        // Calculate M, the mean anomaly.
+        let m0 = 6.239996;
+        let m1 = 1.99096871e-7;
+        // Calculate eccentric anomaly
+        let eb = 1.671e-2;
+        let delta_t_a = 32.184;
+        let k = 1.657e-3;
+
+        // Run a Newton Raphston to convert find the correct value of the
+        let mut seconds = (self.0 - SPICE_OFFSET).in_seconds();
+        let mut delta = 1e6; // Large number.
+        for _ in 0..3 {
+            // let next = seconds - Self::spice_delta_et_tai(seconds);
+
+            seconds = seconds - k * (m0 + m1 * seconds + eb * (m0 + m1 * seconds).sin()).sin();
+
+            // let new_delta = (next - seconds).abs();
+            // if (new_delta - delta).abs() < 1e-10 {
+            //     break;
+            // }
+            // seconds = next; // Loop
+            // delta = new_delta;
+        }
+
+        // At this point, we have a good estimate of the number of seconds of this epoch.
+        // Reverse the algorithm:
+        let delta_et_tai = Self::spice_delta_et_tai(seconds + 32.184);
+
+        let rslt = (self.0 + delta_et_tai * Unit::Second - SPICE_OFFSET).in_seconds();
+        println!("[spice] {rslt} vs {seconds}");
         rslt
     }
 
@@ -210,6 +234,21 @@ impl Epoch {
         let g = TAU / 360.0 * 357.528 + 1.990910018065731e-07 * seconds;
         // Return gamma
         1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
+    }
+
+    fn spice_delta_et_tai(seconds: f64) -> f64 {
+        // Calculate M, the mean anomaly.
+        let m0 = 6.239996;
+        let m1 = 1.99096871e-7;
+        let m = m0 + seconds * m1;
+        // Calculate eccentric anomaly
+        let eb = 1.671e-2;
+        let e = m + eb * m.sin();
+
+        let delta_t_a = 32.184;
+        let k = 1.657e-3;
+        // WRT to J2000: offset to apply to TAI to give ET
+        delta_t_a + k * e.sin()
     }
 }
 
@@ -227,7 +266,9 @@ fn test_spice() {
         println!("[{}] => {}\t{} => {}", delta, spice, esa, spice - esa);
         // Convert back
         let esa_s = esa.to_seconds_et_esa();
-        println!("Error {:e} s", (esa_s - delta).abs());
+        println!("ESA Error {:e} s", (esa_s - delta).abs());
+        let spice_s = spice.to_seconds_et_spice();
+        println!("SPICE Error {:e} s", (spice_s - delta).abs());
     }
 }
 
