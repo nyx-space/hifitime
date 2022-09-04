@@ -56,6 +56,12 @@ pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     nanoseconds: 2_208_988_800_000_000_000,
 });
 
+/// The duration between J2000 and J1900: one century and twelve hours.
+pub const J2000_TO_J1900_OFFSET: Duration = Duration {
+    centuries: 1,
+    nanoseconds: 43200000000000,
+};
+
 mod epoch;
 
 pub use epoch::*;

@@ -429,10 +429,10 @@ fn spice_et_tdb() {
     let sp_ex = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33);
     let expected_et_s = 381_885_819.184_935_87;
     // Check reciprocity
-    let from_et_s = Epoch::from_et_seconds(expected_et_s);
-    assert!((from_et_s.as_et_seconds() - expected_et_s).abs() < EPSILON);
+    let from_et_s = Epoch::from_tdb_seconds(expected_et_s);
+    assert!((from_et_s.as_tdb_seconds() - expected_et_s).abs() < EPSILON);
     // Validate UTC to ET when initialization from UTC
-    assert!((sp_ex.as_et_seconds() - expected_et_s).abs() < 1e-6); // -8.940696716308594e-7 s <=> -894 ns error
+    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6); // -8.940696716308594e-7 s <=> -894 ns error
     assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6); // 5.960464477539063e-7 s <=> 596 ns error
     assert!((sp_ex.as_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
     assert!((sp_ex.as_tai_seconds() - from_et_s.as_tai_seconds()).abs() < 1e-6);
@@ -442,7 +442,7 @@ fn spice_et_tdb() {
     let expected_et_s = 66_312_064.184_938_76;
     assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
     assert!(
-        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expected_et_s).as_tai_seconds()).abs()
+        (sp_ex.as_tai_seconds() - Epoch::from_tdb_seconds(expected_et_s).as_tai_seconds()).abs()
             < 1e-5
     );
 
@@ -451,7 +451,7 @@ fn spice_et_tdb() {
     let expected_et_s = -123_035_784.815_060_48;
     assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
     assert!(
-        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expected_et_s).as_tai_seconds()).abs()
+        (sp_ex.as_tai_seconds() - Epoch::from_tdb_seconds(expected_et_s).as_tai_seconds()).abs()
             < 1e-5
     );
     // Fourth example
@@ -475,19 +475,19 @@ fn spice_et_tdb() {
     66312032.18493909
     */
     // 2002-02-07T00:00:00.4291 TAI
-    let sp_ex = Epoch::from_et_seconds(66_312_032.184_939_09);
+    let sp_ex = Epoch::from_tdb_seconds(66_312_032.184_939_09);
     assert!((2452312.500372511 - sp_ex.as_jde_et_days()).abs() < EPSILON);
     assert!((2452312.500372511 - sp_ex.as_jde_tdb_days()).abs() < EPSILON);
     // Confirm that they are _not_ equal, only that the number of days in f64 is equal
     assert_ne!(sp_ex.as_jde_et_duration(), sp_ex.as_jde_tdb_duration());
 
     // 2012-02-07T11:22:00.818924427 TAI
-    let sp_ex = Epoch::from_et_seconds(381_885_753.003_859_5);
+    let sp_ex = Epoch::from_tdb_seconds(381_885_753.003_859_5);
     assert!((2455964.9739931 - sp_ex.as_jde_et_days()).abs() < 4.7e-10);
     assert!((2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < EPSILON);
 
-    let sp_ex = Epoch::from_et_seconds(0.0);
-    assert!(sp_ex.as_et_seconds() < EPSILON);
+    let sp_ex = Epoch::from_tdb_seconds(0.0);
+    assert!(sp_ex.as_tdb_seconds() < EPSILON);
     assert!((J2000_NAIF - sp_ex.as_jde_et_days()).abs() < EPSILON);
     assert!((J2000_NAIF - sp_ex.as_jde_tdb_days()).abs() < 1e-7);
 }
