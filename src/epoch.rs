@@ -175,12 +175,40 @@ impl Epoch {
     }
 
     pub fn from_et_seconds_esa(seconds: f64) -> Self {
-        let g = TAU / 360.0 * 357.528 + 1.990910018065731e-07 * seconds;
-        let gamma = 1.658e-3 * (g + 1.67e-2 * g.sin()).sin();
+        let gamma = Self::esa_gamma(seconds);
 
         let delta_tdb_tai = gamma + 32.184;
 
         Self((seconds - delta_tdb_tai) * Unit::Second + SPICE_OFFSET)
+    }
+
+    pub fn to_seconds_et_esa(&self) -> f64 {
+        // Run a Newton Raphston to convert find the correct value of the
+        let mut seconds = (self.0 - SPICE_OFFSET).in_seconds();
+        for _ in 0..10 {
+            // Calculate the derivative of gamma at this point by finite differencing
+            let dg_dseconds = (Self::esa_gamma(seconds) - Self::esa_gamma(seconds + 0.1)) / 0.1;
+            let next = seconds + Self::esa_gamma(seconds) / dg_dseconds;
+            if dbg!(next - seconds).abs() < 1e-6 {
+                break;
+            }
+            seconds = next; // Loop
+        }
+
+        // At this point, we have a good estimate of the number of seconds of this epoch.
+        // Reverse the algorithm:
+        let gamma = Self::esa_gamma(seconds);
+        let delta_tdb_tai = gamma + 32.184;
+
+        let rslt = (self.0 + delta_tdb_tai * Unit::Second - SPICE_OFFSET).in_seconds();
+        println!("{rslt} vs {seconds}");
+        rslt
+    }
+
+    fn esa_gamma(seconds: f64) -> f64 {
+        let g = TAU / 360.0 * 357.528 + 1.990910018065731e-07 * seconds;
+        // Return gamma
+        1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
     }
 }
 
@@ -196,6 +224,9 @@ fn test_spice() {
         let spice = Epoch::from_et_seconds_spice(*delta);
         let esa = Epoch::from_et_seconds_esa(*delta);
         println!("[{}] => {}\t{} => {}", delta, spice, esa, spice - esa);
+        // Convert back
+        let esa_s = esa.to_seconds_et_esa();
+        println!("Error {:e} s", (esa_s - delta).abs());
     }
 }
 
