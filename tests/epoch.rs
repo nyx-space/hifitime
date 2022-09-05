@@ -423,6 +423,9 @@ fn unix() {
 fn naif_spice_et_tdb_verification() {
     // The maximum error due to small perturbations accounted for in ESA algorithm but not SPICE algorithm.
     let max_tdb_et_err = 32 * Unit::Microsecond;
+    // Prior to 01 JAN 1972, UNIX claims that there is no leap second at all but SPICE claims that there are nine leap seconds
+    // between TAI and UTC. Hifitime also claims that there are zero leap seconds (to ensure correct computation of UNIX time).
+    let spice_utc_tai_ls_err = 9.0;
     let test_function = |epoch: Epoch, et_s: f64, jde_d: f64| {
         // Test reciprocity
         // assert!(
@@ -436,14 +439,20 @@ fn naif_spice_et_tdb_verification() {
         //     epoch
         // );
         // Test ET computation
+        let extra_seconds = if epoch.get_num_leap_seconds() == 0 {
+            spice_utc_tai_ls_err
+        } else {
+            0.0
+        };
         assert!(
-            (epoch.as_et_seconds() - et_s).abs() < EPSILON,
+            (epoch.as_et_seconds() - et_s + extra_seconds).abs() < EPSILON,
             "{} failed ET test",
             epoch
         );
         // Test TDB computation
         assert!(
-            (epoch.as_tdb_duration() - et_s * Unit::Second).abs() <= max_tdb_et_err,
+            (epoch.as_tdb_duration() - et_s * Unit::Second + extra_seconds * Unit::Second).abs()
+                <= max_tdb_et_err,
             "{} failed TDB test",
             epoch
         );
@@ -590,8 +599,8 @@ fn spice_et_tdb() {
 
     // 2012-02-07T11:22:00.818924427 TAI
     let sp_ex = Epoch::from_tdb_seconds(381_885_753.003_859_5);
-    assert!((2455964.9739931 - sp_ex.as_jde_et_days()).abs() < 4.7e-10);
-    assert!((2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < EPSILON);
+    assert!((2455964.9739931 - sp_ex.as_jde_et_days()).abs() < EPSILON);
+    assert!((2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < max_tdb_et_err.in_seconds());
 }
 
 #[cfg(feature = "std")]

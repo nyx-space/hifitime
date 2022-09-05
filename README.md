@@ -105,12 +105,12 @@ assert_eq!(at_midnight - at_noon, -1.days() / 2);
 #[cfg(feature = "std")]
 {
 let delta_time = at_noon - at_midnight;
-assert_eq!(format!("{}", delta_time), "12 h 0 min 0 s".to_string());
+assert_eq!(format!("{}", delta_time), "12 h".to_string());
 // And we can multiply durations by a scalar...
 let delta2 = 2 * delta_time;
-assert_eq!(format!("{}", delta2), "1 days 0 h 0 min 0 s".to_string());
+assert_eq!(format!("{}", delta2), "1 days".to_string());
 // Or divide them by a scalar.
-assert_eq!(format!("{}", delta2 / 2.0), "12 h 0 min 0 s".to_string());
+assert_eq!(format!("{}", delta2 / 2.0), "12 h".to_string());
 
 // And of course, these comparisons account for differences in time systems
 let at_midnight_utc = Epoch::from_gregorian_utc_at_midnight(2020, 11, 2);
@@ -165,7 +165,7 @@ assert_eq!(cnt, 7)
 
 Please report any bugs by [clicking here](https://github.com/nyx-space/hifitime/issues/new).
 
-### Leap second support
+## Leap second support
 Each time computing library may decide when the extra leap second exists as explained
 in the [IETF leap second reference](https://www.ietf.org/timezones/data/leap-seconds.list).
 To ease computation, `hifitime` decides that second is the 60th of a UTC date, if such exists.
@@ -174,7 +174,9 @@ used for validation of Julian dates. As an example of how this is handled, check
 day computations for [2015-06-30 23:59:59](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A59&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes),
 [2015-06-30 23:59:60](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A60&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes) and [2015-07-01 00:00:00](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-07-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes).
 
-### Ephemeris Time vs Dynamic Barycentric Time (TDB)
+**Important:** there is a nine (9) second difference between NAIF SPICE and hifitime in the computation of ET/TDB times _prior_ to 01 January 1972 (date of the first leap second). NAIF assumes that because IERS did not publish leap seconds before that epoch, then the difference between TAI and UTC is fixed to nine seconds. Instead, hifitime claims that the number of leap seconds before that time is strictly zero, which allows the computation of UNIX time to be a specific offset of TAI, and follows the [IETF leap second list](https://www.ietf.org/timezones/data/leap-seconds.list) precisely.
+
+## Ephemeris Time vs Dynamic Barycentric Time (TDB)
 ET and TDB should now be identical. _However_, NASA NAIF leap seconds files (e.g. [naif00012.tls](./naif00012.tls)) uses a simplified algorithm to compute the TDB:
 > Equation [4], which ignores small-period fluctuations, is accurate to about 0.000030 seconds.
 

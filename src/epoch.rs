@@ -160,96 +160,6 @@ impl AddAssign<Duration> for Epoch {
 }
 
 impl Epoch {
-    //     pub fn from_et_seconds_spice(seconds: f64) -> Self {
-    //         // WRT to J2000: offset to apply to TAI to give ET
-    //         let delta_et_tai = Self::spice_delta_et_tai(seconds);
-    //         // Offset back to J1900
-    //         Self((seconds - delta_et_tai) * Unit::Second + SPICE_OFFSET)
-    //     }
-
-    //     pub fn from_et_seconds_esa(seconds: f64) -> Self {
-    //         let gamma = Self::esa_gamma(seconds);
-
-    //         let delta_tdb_tai = gamma + 32.184;
-
-    //         Self((seconds - delta_tdb_tai) * Unit::Second + SPICE_OFFSET)
-    //     }
-
-    //     pub fn to_seconds_et_esa(&self) -> f64 {
-    //         // Run a Newton Raphston to convert find the correct value of the
-    //         let mut seconds = (self.0 - SPICE_OFFSET).in_seconds();
-    //         let mut delta = 1e-6; // Large number.
-    //         for _ in 0..10 {
-    //             let next = seconds - Self::esa_gamma(seconds);
-    //             let new_delta = (next - seconds).abs();
-    //             if (new_delta - delta).abs() < 1e-10 {
-    //                 break;
-    //             }
-    //             seconds = next; // Loop
-    //             delta = new_delta;
-    //         }
-
-    //         // At this point, we have a good estimate of the number of seconds of this epoch.
-    //         // Reverse the algorithm:
-    //         let gamma = Self::esa_gamma(seconds + 32.184);
-    //         let delta_tdb_tai = gamma + 32.184;
-
-    //         let rslt = (self.0 + delta_tdb_tai * Unit::Second - SPICE_OFFSET).in_seconds();
-    //         println!("[esa] {rslt} vs {seconds}");
-    //         rslt
-    //     }
-
-    //     pub fn to_seconds_et_spice(&self) -> f64 {
-    //         // Calculate M, the mean anomaly.
-    //         let m0 = 6.239996;
-    //         let m1 = 1.99096871e-7;
-    //         // Calculate eccentric anomaly
-    //         let eb = 1.671e-2;
-    //         let delta_t_a = 32.184;
-    //         let k = 1.657e-3;
-
-    //         // Run a Newton Raphston to convert find the correct value of the
-    //         let mut seconds = (self.0 - SPICE_OFFSET).in_seconds();
-    //         let mut delta = 1e6; // Large number.
-    //         for _ in 0..3 {
-    //             // let next = seconds - Self::spice_delta_et_tai(seconds);
-
-    //             seconds = seconds - k * (m0 + m1 * seconds + eb * (m0 + m1 * seconds).sin()).sin();
-
-    //             // let new_delta = (next - seconds).abs();
-    //             // if (new_delta - delta).abs() < 1e-10 {
-    //             //     break;
-    //             // }
-    //             // seconds = next; // Loop
-    //             // delta = new_delta;
-    //         }
-
-    //         // At this point, we have a good estimate of the number of seconds of this epoch.
-    //         // Reverse the algorithm:
-    //         let delta_et_tai = Self::spice_delta_et_tai(seconds + 32.184);
-
-    //         let rslt = (self.0 + delta_et_tai * Unit::Second - SPICE_OFFSET).in_seconds();
-    //         println!("[spice] {rslt} vs {seconds}");
-    //         rslt
-    //     }
-
-    // fn spice_delta_et_tai(seconds: f64) -> f64 {
-    //     // Calculate M, the mean anomaly.
-    //     let m0 = 6.239996;
-    //     let m1 = 1.99096871e-7;
-    //     let m = m0 + seconds * m1;
-    //     // Calculate eccentric anomaly
-    //     let eb = 1.671e-2;
-    //     let e = m + eb * m.sin();
-
-    //     let delta_t_a = 32.184;
-    //     let k = 1.657e-3;
-    //     // WRT to J2000: offset to apply to TAI to give ET
-    //     delta_t_a + k * e.sin()
-    // }
-}
-
-impl Epoch {
     #[must_use]
     /// Get the accumulated number of leap seconds up to this Epoch.
     ///
@@ -257,7 +167,7 @@ impl Epoch {
     /// Before the leap seconds were published by IERS, the difference between UTC and TAI was exactly nine (9) seconds.
     /// This is best shown in the naif_spice_et_tdb_verification test.
     pub fn get_num_leap_seconds(&self) -> i32 {
-        let mut cnt = 9;
+        let mut cnt = 0;
         for tai_ts in LEAP_SECONDS.iter() {
             if self.0.in_seconds() >= *tai_ts {
                 if cnt == 0 {
@@ -913,6 +823,14 @@ impl Epoch {
     }
 
     #[must_use]
+    /// Returns the duration between J2000 and the current epoch as per NAIF SPICE.
+    ///
+    /// # Warning
+    /// The et2utc function of NAIF SPICE will assume that there are 9 leap seconds before 01 JAN 1972,
+    /// as this date introduces 10 leap seconds. At the time of writing, this does _not_ seem to be in
+    /// line with IERS and the documentation in the leap seconds list.
+    ///
+    /// In order to match SPICE, the as_et_duration() function will manually get rid of that difference.
     pub fn as_et_duration(&self) -> Duration {
         // Run a Newton Raphston to convert find the correct value of the
         let mut seconds = (self.0 - J2000_TO_J1900_DURATION).in_seconds();
@@ -926,6 +844,8 @@ impl Epoch {
         // Reverse the algorithm:
         let delta_et_tai =
             Self::delta_et_tai(seconds + (TT_OFFSET_MS * Unit::Millisecond).in_seconds());
+
+        // Match SPICE by changing the UTC definition.
 
         self.0 + delta_et_tai * Unit::Second - J2000_TO_J1900_DURATION
     }
@@ -1653,8 +1573,8 @@ fn test_days_tdb_j2000() {
     let e = Epoch(Duration::from_parts(1, 723038437000000000));
     let days_d = e.as_tdb_days_since_j2000();
     let centuries_t = e.as_tdb_centuries_since_j2000();
-    assert!((days_d - 8369.000800729867).abs() < f64::EPSILON);
-    assert!((centuries_t - 0.22913075429787455).abs() < f64::EPSILON);
+    assert!((days_d - 8369.000800729798).abs() < f64::EPSILON);
+    assert!((centuries_t - 0.22913075429787266).abs() < f64::EPSILON);
 }
 
 #[test]
