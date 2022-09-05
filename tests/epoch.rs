@@ -415,9 +415,53 @@ fn unix() {
     );
 }
 
+/// This test has a series of verifications between NAIF SPICE and hifitime.
+/// All of the test cases were create using spiceypy and cover a range of values from J1900 to J2100.
+/// All of the test cases include the UTC conversion, the JDE computation, and the reciprocity within hifitime.
+#[test]
+fn naif_spice_et_tdb_verification() {
+    // The maximum error due to small perturbations accounted for in ESA algorithm but not SPICE algorithm.
+    let max_tdb_et_err = 30 * Unit::Microsecond;
+    let test_function = |epoch: Epoch, et_s: f64, jde_d: f64| {
+        assert!(
+            dbg!(epoch.as_et_seconds() - et_s).abs() < EPSILON,
+            "{} failed ET test",
+            epoch
+        );
+        assert!(
+            (epoch.as_tdb_duration() - et_s * Unit::Second).abs() > max_tdb_et_err,
+            "{} failed TDB test",
+            epoch
+        );
+        assert!(
+            (dbg!(epoch.as_jde_et_days()) - jde_d).abs() < EPSILON,
+            "{} failed JDE test",
+            epoch
+        );
+    };
+
+    // sp.utc2et('1900-01-09 00:17:15.0 UTC')
+    // test_function(
+    //     Epoch::from_gregorian_utc(1900, 1, 9, 0, 17, 15, 0),
+    //     -3155024523.8157988,
+    //     0.0,
+    // )
+
+    // sp.utc2et('1920-07-23 14:39:29.0 UTC')
+    test_function(
+        Epoch::from_gregorian_utc(1920, 7, 23, 14, 39, 29, 0),
+        -2506972789.816543,
+        0.0,
+    )
+}
+
 #[test]
 fn spice_et_tdb() {
     use hifitime::J2000_NAIF;
+    // The maximum error due to small perturbations accounted for in ESA algorithm but not SPICE algorithm.
+    let max_tdb_et_err = 30 * Unit::Microsecond;
+    // The maximum precision that spiceypy/SPICE allow when calling `utc2et`
+    let max_prec = 10 * Unit::Nanosecond;
     /*
     >>> sp.str2et("2012-02-07 11:22:33 UTC")
     381885819.18493587
@@ -432,8 +476,13 @@ fn spice_et_tdb() {
     let from_et_s = Epoch::from_tdb_seconds(expected_et_s);
     assert!((from_et_s.as_tdb_seconds() - expected_et_s).abs() < EPSILON);
     // Validate UTC to ET when initialization from UTC
-    // assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6); // -8.940696716308594e-7 s <=> -894 ns error
-    // assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6); // 5.960464477539063e-7 s <=> 596 ns error
+    println!(
+        "{}, {}",
+        sp_ex.as_et_duration() - expected_et_s * Unit::Second,
+        (sp_ex.as_et_seconds() - expected_et_s) * Unit::Second
+    );
+    assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < max_prec.in_seconds());
+    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.in_seconds());
     assert!(dbg!(sp_ex.as_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
     // assert!(dbg!(sp_ex.as_tai_seconds() - from_et_s.as_tai_seconds()).abs() < 1e-6);
 

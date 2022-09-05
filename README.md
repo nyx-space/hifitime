@@ -38,7 +38,7 @@ Put this in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hifitime = "3.3"
+hifitime = "3.4"
 ```
 
 And add the following to your crate root:
@@ -102,18 +102,21 @@ assert_eq!(at_noon - at_midnight, 12 * Unit::Hour);
 assert_eq!(at_noon - at_midnight, 1 * Unit::Day / 2);
 assert_eq!(at_midnight - at_noon, -1.days() / 2);
 
+#[cfg(feature = "std")]
+{
 let delta_time = at_noon - at_midnight;
-// assert_eq!(format!("{}", delta_time), "12 h 0 min 0 s".to_string());
+assert_eq!(format!("{}", delta_time), "12 h 0 min 0 s".to_string());
 // And we can multiply durations by a scalar...
 let delta2 = 2 * delta_time;
-// assert_eq!(format!("{}", delta2), "1 days 0 h 0 min 0 s".to_string());
+assert_eq!(format!("{}", delta2), "1 days 0 h 0 min 0 s".to_string());
 // Or divide them by a scalar.
-// assert_eq!(format!("{}", delta2 / 2.0), "12 h 0 min 0 s".to_string());
+assert_eq!(format!("{}", delta2 / 2.0), "12 h 0 min 0 s".to_string());
 
 // And of course, these comparisons account for differences in time systems
 let at_midnight_utc = Epoch::from_gregorian_utc_at_midnight(2020, 11, 2);
 let at_noon_tai = Epoch::from_gregorian_tai_at_noon(2020, 11, 2);
-// assert_eq!(format!("{}", at_noon_tai - at_midnight_utc), "11 h 59 min 23 s".to_string());
+assert_eq!(format!("{}", at_noon_tai - at_midnight_utc), "11 h 59 min 23 s".to_string());
+}
 ```
 
 Timeunits and frequency units are trivially supported. Hifitime only supports up to nanosecond precision (but guarantees it for 64 millenia), so any duration less than one nanosecond is truncated.
@@ -158,44 +161,9 @@ for epoch in time_series {
 // including start and end times.
 assert_eq!(cnt, 7)
 ```
-
-# Validation examples
-Validation is done using NASA's SPICE toolkit, and specifically the [spiceypy](https://spiceypy.readthedocs.io/) Python wrapper.
-
-The most challenging validation is the definition of Ephemeris Time, which is very nearly the same as the Dynamic Barycentric Time (TDB).
-These calculations in hifitime are from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB).
-
-Hifitime uses a fixed offset for the computation of Ephemeris Time, as is recommended in Navipedia. For TDB however, the offset is based on the centuries since J2000 TT and therefore time varying.
-I believe that SPICE uses TDB for all dates after J2000 TT. Hence, in the following validation, we will be comparing the SPICE ET with the Hifitime TDB.
-
-The following examples are executed as part of the standard test suite (cf. the function called `spice_et_tdb`).
-
-_Note:_ the differences shown here are likely due to a combination of SPICE using a different formulation for the calculation (using the constants in the SPICE kernels) and computing everything on a 64-bit floating point value. [By design](https://en.wikipedia.org/wiki/IEEE_754), a 64-bit floating point value has approximation errors. Hifitime performs all calculations on integers, which do not suffer from rounding errors.
-
-## Case 1
-In SPICE, we chose to convert the UTC date `2012-02-07 11:22:33 UTC` into Ephemeris Time. SPICE responds with `381885819.18493587`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to `381885819.18493646`, which is an error of **596.05 nanoseconds**.
-
-## Case 2
-In SPICE, we chose to convert the UTC date `2002-02-07 00:00:00.000 UTC` into Ephemeris Time. SPICE responds with `66312064.18493876`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **633.29 nanoseconds**.
-
-## Case 3
-This tests that we can correctly compute TDB time which will have a negative number of days because the UTC input is prior to J2000 TT.
-In SPICE, we chose to convert the UTC date `1996-02-07 11:22:33 UTC` into Ephemeris Time. SPICE responds with `-123035784.81506048`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **640.74 nanoseconds**.
-
-## Case 4
-In SPICE, we chose to convert the UTC date `2015-02-07 00:00:00.000 UTC` into Ephemeris Time. SPICE responds with `476580220.1849411`.
-Initializing the same UTC date in hifitime and requesting the TDB leads to a difference **655.65 nanoseconds**.
-
-## Case 5
-In SPICE, we chose to convert the TDB Julian Date in days `2452312.500372511` into Ephemeris Time, and initialize a Hifitime Epoch with that result (`66312032.18493909`).
-We then convert that epoch back into **days** of Julian Date TDB and Julian Date ET, which lead a difference **below machine precision** for the TDB computation and **0.46 nanoseconds** for the ET computation on a 64-bit floating point (f64/double).
-
 # Notes
 
-Please report and bugs by [clicking here](https://github.com/nyx-space/hifitime/issues/new).
+Please report any bugs by [clicking here](https://github.com/nyx-space/hifitime/issues/new).
 
 ### Leap second support
 Each time computing library may decide when the extra leap second exists as explained
@@ -207,9 +175,17 @@ day computations for [2015-06-30 23:59:59](https://heasarc.gsfc.nasa.gov/cgi-bin
 [2015-06-30 23:59:60](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A60&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes) and [2015-07-01 00:00:00](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-07-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes).
 
 ### Ephemeris Time vs Dynamic Barycentric Time (TDB)
-ET and TDB should now be identical. However, hifitime uses the European Space Agency's definition of TDB, detailed [here](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB). It seems that SPICE uses the older definition which has a fixed offset from TDT of 0.000935 seconds. This difference is more prominent around the TDB epoch of 01 January 2000.
+ET and TDB should now be identical. _However_, NASA NAIF leap seconds files (e.g. [naif00012.tls](./naif00012.tls)) uses a simplified algorithm to compute the TDB:
+> Equation [4], which ignores small-period fluctuations, is accurate to about 0.000030 seconds.
+
+In order to provide full interoperability with NAIF, hifitime uses the NAIF algorithm for "ephemeris time" and the [ESA algorithm](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) for "dynamical barycentric time." Hence, if exact NAIF behavior is needed, use all of the functions marked as `et` instead of the `tdb` functions.
+
 
 # Changelog
+
+## 3.4.0
++ Ephemeris Time and Dynamical Barycentric Time fixed to use the J2000 reference epoch instead of the J1900 reference epoch. This is a **potentially breaking change** if you relied on the previous one century error when converting from/to ET/TDB into/from UTC _and storing the data as a string_. There is **no difference** if the original representation was used.
++ Ephemeris Time now **strcitly** matches NAIF SPICE: **the error between SPICE and hifitime is now zero nanoseconds.**
 
 ## 3.3.0
 + Formal verification of the normalization operation on `Duration`, which in turn guarantees that `Epoch` operations cannot panic, cf. [#127](https://github.com/nyx-space/hifitime/issues/127)

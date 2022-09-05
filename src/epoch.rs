@@ -22,6 +22,15 @@ use std::time::SystemTime;
 const TT_OFFSET_MS: i64 = 32_184;
 const ET_OFFSET_US: i64 = 32_184_935;
 
+/// NAIF leap second kernel data for M_0 used to calculate the mean anomaly of the heliocentric orbit of the Earth-Moon barycenter.
+pub const NAIF_M0: f64 = 6.239996;
+/// NAIF leap second kernel data for M_1 used to calculate the mean anomaly of the heliocentric orbit of the Earth-Moon barycenter.
+pub const NAIF_M1: f64 = 1.99096871e-7;
+/// NAIF leap second kernel data for EB used to calculate the eccentric anomaly of the heliocentric orbit of the Earth-Moon barycenter.
+pub const NAIF_EB: f64 = 1.671e-2;
+/// NAIF leap second kernel data used to calculate the difference between ET and TAI.
+pub const NAIF_K: f64 = 1.657e-3;
+
 /// From https://www.ietf.org/timezones/data/leap-seconds.list .
 const LEAP_SECONDS: [f64; 28] = [
     2_272_060_800.0, //	10	# 1 Jan 1972
@@ -149,95 +158,95 @@ impl AddAssign<Duration> for Epoch {
     }
 }
 
-// impl Epoch {
-//     pub fn from_et_seconds_spice(seconds: f64) -> Self {
-//         // WRT to J2000: offset to apply to TAI to give ET
-//         let delta_et_tai = Self::spice_delta_et_tai(seconds);
-//         // Offset back to J1900
-//         Self((seconds - delta_et_tai) * Unit::Second + SPICE_OFFSET)
-//     }
+impl Epoch {
+    //     pub fn from_et_seconds_spice(seconds: f64) -> Self {
+    //         // WRT to J2000: offset to apply to TAI to give ET
+    //         let delta_et_tai = Self::spice_delta_et_tai(seconds);
+    //         // Offset back to J1900
+    //         Self((seconds - delta_et_tai) * Unit::Second + SPICE_OFFSET)
+    //     }
 
-//     pub fn from_et_seconds_esa(seconds: f64) -> Self {
-//         let gamma = Self::esa_gamma(seconds);
+    //     pub fn from_et_seconds_esa(seconds: f64) -> Self {
+    //         let gamma = Self::esa_gamma(seconds);
 
-//         let delta_tdb_tai = gamma + 32.184;
+    //         let delta_tdb_tai = gamma + 32.184;
 
-//         Self((seconds - delta_tdb_tai) * Unit::Second + SPICE_OFFSET)
-//     }
+    //         Self((seconds - delta_tdb_tai) * Unit::Second + SPICE_OFFSET)
+    //     }
 
-//     pub fn to_seconds_et_esa(&self) -> f64 {
-//         // Run a Newton Raphston to convert find the correct value of the
-//         let mut seconds = (self.0 - SPICE_OFFSET).in_seconds();
-//         let mut delta = 1e-6; // Large number.
-//         for _ in 0..10 {
-//             let next = seconds - Self::esa_gamma(seconds);
-//             let new_delta = (next - seconds).abs();
-//             if (new_delta - delta).abs() < 1e-10 {
-//                 break;
-//             }
-//             seconds = next; // Loop
-//             delta = new_delta;
-//         }
+    //     pub fn to_seconds_et_esa(&self) -> f64 {
+    //         // Run a Newton Raphston to convert find the correct value of the
+    //         let mut seconds = (self.0 - SPICE_OFFSET).in_seconds();
+    //         let mut delta = 1e-6; // Large number.
+    //         for _ in 0..10 {
+    //             let next = seconds - Self::esa_gamma(seconds);
+    //             let new_delta = (next - seconds).abs();
+    //             if (new_delta - delta).abs() < 1e-10 {
+    //                 break;
+    //             }
+    //             seconds = next; // Loop
+    //             delta = new_delta;
+    //         }
 
-//         // At this point, we have a good estimate of the number of seconds of this epoch.
-//         // Reverse the algorithm:
-//         let gamma = Self::esa_gamma(seconds + 32.184);
-//         let delta_tdb_tai = gamma + 32.184;
+    //         // At this point, we have a good estimate of the number of seconds of this epoch.
+    //         // Reverse the algorithm:
+    //         let gamma = Self::esa_gamma(seconds + 32.184);
+    //         let delta_tdb_tai = gamma + 32.184;
 
-//         let rslt = (self.0 + delta_tdb_tai * Unit::Second - SPICE_OFFSET).in_seconds();
-//         println!("[esa] {rslt} vs {seconds}");
-//         rslt
-//     }
+    //         let rslt = (self.0 + delta_tdb_tai * Unit::Second - SPICE_OFFSET).in_seconds();
+    //         println!("[esa] {rslt} vs {seconds}");
+    //         rslt
+    //     }
 
-//     pub fn to_seconds_et_spice(&self) -> f64 {
-//         // Calculate M, the mean anomaly.
-//         let m0 = 6.239996;
-//         let m1 = 1.99096871e-7;
-//         // Calculate eccentric anomaly
-//         let eb = 1.671e-2;
-//         let delta_t_a = 32.184;
-//         let k = 1.657e-3;
+    //     pub fn to_seconds_et_spice(&self) -> f64 {
+    //         // Calculate M, the mean anomaly.
+    //         let m0 = 6.239996;
+    //         let m1 = 1.99096871e-7;
+    //         // Calculate eccentric anomaly
+    //         let eb = 1.671e-2;
+    //         let delta_t_a = 32.184;
+    //         let k = 1.657e-3;
 
-//         // Run a Newton Raphston to convert find the correct value of the
-//         let mut seconds = (self.0 - SPICE_OFFSET).in_seconds();
-//         let mut delta = 1e6; // Large number.
-//         for _ in 0..3 {
-//             // let next = seconds - Self::spice_delta_et_tai(seconds);
+    //         // Run a Newton Raphston to convert find the correct value of the
+    //         let mut seconds = (self.0 - SPICE_OFFSET).in_seconds();
+    //         let mut delta = 1e6; // Large number.
+    //         for _ in 0..3 {
+    //             // let next = seconds - Self::spice_delta_et_tai(seconds);
 
-//             seconds = seconds - k * (m0 + m1 * seconds + eb * (m0 + m1 * seconds).sin()).sin();
+    //             seconds = seconds - k * (m0 + m1 * seconds + eb * (m0 + m1 * seconds).sin()).sin();
 
-//             // let new_delta = (next - seconds).abs();
-//             // if (new_delta - delta).abs() < 1e-10 {
-//             //     break;
-//             // }
-//             // seconds = next; // Loop
-//             // delta = new_delta;
-//         }
+    //             // let new_delta = (next - seconds).abs();
+    //             // if (new_delta - delta).abs() < 1e-10 {
+    //             //     break;
+    //             // }
+    //             // seconds = next; // Loop
+    //             // delta = new_delta;
+    //         }
 
-//         // At this point, we have a good estimate of the number of seconds of this epoch.
-//         // Reverse the algorithm:
-//         let delta_et_tai = Self::spice_delta_et_tai(seconds + 32.184);
+    //         // At this point, we have a good estimate of the number of seconds of this epoch.
+    //         // Reverse the algorithm:
+    //         let delta_et_tai = Self::spice_delta_et_tai(seconds + 32.184);
 
-//         let rslt = (self.0 + delta_et_tai * Unit::Second - SPICE_OFFSET).in_seconds();
-//         println!("[spice] {rslt} vs {seconds}");
-//         rslt
-//     }
+    //         let rslt = (self.0 + delta_et_tai * Unit::Second - SPICE_OFFSET).in_seconds();
+    //         println!("[spice] {rslt} vs {seconds}");
+    //         rslt
+    //     }
 
-//     fn spice_delta_et_tai(seconds: f64) -> f64 {
-//         // Calculate M, the mean anomaly.
-//         let m0 = 6.239996;
-//         let m1 = 1.99096871e-7;
-//         let m = m0 + seconds * m1;
-//         // Calculate eccentric anomaly
-//         let eb = 1.671e-2;
-//         let e = m + eb * m.sin();
+    fn spice_delta_et_tai(seconds: f64) -> f64 {
+        // Calculate M, the mean anomaly.
+        let m0 = 6.239996;
+        let m1 = 1.99096871e-7;
+        let m = m0 + seconds * m1;
+        // Calculate eccentric anomaly
+        let eb = 1.671e-2;
+        let e = m + eb * m.sin();
 
-//         let delta_t_a = 32.184;
-//         let k = 1.657e-3;
-//         // WRT to J2000: offset to apply to TAI to give ET
-//         delta_t_a + k * e.sin()
-//     }
-// }
+        let delta_t_a = 32.184;
+        let k = 1.657e-3;
+        // WRT to J2000: offset to apply to TAI to give ET
+        delta_t_a + k * e.sin()
+    }
+}
 
 impl Epoch {
     #[must_use]
@@ -360,14 +369,21 @@ impl Epoch {
         Self::from_tai_seconds(seconds) - Unit::Millisecond * TT_OFFSET_MS
     }
 
-    #[deprecated(
-        since = "3.4",
-        note = "Ephemeris Time (ET) and Dynamical Barycentric Time (TDB) are now identical"
-    )]
     #[must_use]
     /// Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)
     pub fn from_et_seconds(seconds_j2000: f64) -> Epoch {
-        Self::from_tdb_seconds(seconds_j2000)
+        Self::from_et_duration(seconds_j2000 * Unit::Second)
+    }
+
+    #[must_use]
+    pub fn from_et_duration(duration_since_j2000: Duration) -> Self {
+        // WRT to J2000: offset to apply to TAI to give ET
+        let delta_et_tai = Self::delta_et_tai(duration_since_j2000.in_seconds());
+        // Offset back to J1900
+        Self(
+            (duration_since_j2000.in_seconds() - delta_et_tai) * Unit::Second
+                + J2000_TO_J1900_OFFSET,
+        )
     }
 
     #[must_use]
@@ -383,8 +399,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI if J2K is set to true.
-    /// Otherwise, it uses the J1900 reference epoch
+    /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI.
     fn from_tdb_seconds_d(duration: Duration) -> Epoch {
         let gamma = Self::inner_g(duration.in_seconds());
 
@@ -884,38 +899,62 @@ impl Epoch {
         self.as_unix(Unit::Day)
     }
 
-    #[deprecated(
-        since = "3.4",
-        note = "Ephemeris Time (ET) and Dynamical Barycentric Time (TDB) are now identical"
-    )]
     #[must_use]
     /// Returns the Ephemeris Time seconds past epoch
     pub fn as_et_seconds(&self) -> f64 {
-        self.as_tdb_duration().in_seconds()
+        self.as_et_duration().in_seconds()
     }
 
-    #[deprecated(
-        since = "3.4",
-        note = "Ephemeris Time (ET) and Dynamical Barycentric Time (TDB) are now identical"
-    )]
     #[must_use]
     pub fn as_et_duration(&self) -> Duration {
-        self.as_tdb_duration()
+        // Run a Newton Raphston to convert find the correct value of the
+        let mut seconds = (self.0 - J2000_TO_J1900_OFFSET).in_seconds();
+        for _ in 0..3 {
+            seconds = seconds
+                - NAIF_K
+                    * (NAIF_M0 + NAIF_M1 * seconds + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds).sin())
+                        .sin();
+        }
+
+        // At this point, we have a good estimate of the number of seconds of this epoch.
+        // Reverse the algorithm:
+        let delta_et_tai =
+            Self::spice_delta_et_tai(seconds + (TT_OFFSET_MS * Unit::Microsecond).in_seconds());
+
+        self.0 + delta_et_tai * Unit::Second - J2000_TO_J1900_OFFSET
+    }
+
+    fn delta_et_tai(seconds: f64) -> f64 {
+        // Calculate M, the mean anomaly.4
+        let m = NAIF_M0 + seconds * NAIF_M1;
+        // Calculate eccentric anomaly
+        let e = m + NAIF_EB * m.sin();
+        (TT_OFFSET_MS * Unit::Microsecond).in_seconds() + NAIF_K * e.sin()
     }
 
     #[must_use]
     /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration
     ///
     /// ## Algorithm
-    /// TODO -- Must also specify that in the markdown docs.
+    /// Given the embedded sine functinos in the equationto compute the difference between TDB and TAI from the number of TDB seconds
+    /// past J2000, one cannot solve the revert the operation analytically. Instead, we iterate until the value no longer changes.
+    ///
+    /// 1. Assume that the TAI duration is in fact the TDB seconds frin J2000.
+    /// 2. Offset to J2000 because `Epoch` stores everything in the J1900 but the TDB duration is in J2000.
+    /// 3. Compute the offset `g` due to the TDB computation with the current value of the TDB seconds (defined in step 1).
+    /// 4. Subtract that offset to the latest TDB seconds and store this as a new candidate for the true TDB seconds value.
+    /// 5. Compute the difference between this candidtae and the previous one. If the difference is less than one nanosecond, stop iteration.
+    /// 6. Set the new candidate as the TDB seconds since J2000 and loop until step 5 breaks the loop, or we've done five iterations.
+    /// 7. At this stage, we have a good approximation of the TDB seconds since J2000.
+    /// 8. Reverse the algorithm given that approximation: compute the `g` offset, compute the difference between TDB and TAI, add the TT offset (32.184 s), and offset by the difference between J1900 and J2000.
     pub fn as_tdb_duration(&self) -> Duration {
-        // Run a Newton Raphston to convert find the correct value of the
+        // Iterate to convert find the correct value of the
         let mut seconds = (self.0 - J2000_TO_J1900_OFFSET).in_seconds();
-        let mut delta = 1e8; // Arbitrary large number.
+        let mut delta = 1e8; // Arbitrary large number, greater than first step of Newton Raphson.
         for _ in 0..5 {
             let next = seconds - Self::inner_g(seconds);
             let new_delta = (next - seconds).abs();
-            if (new_delta - delta).abs() < 1e-10 {
+            if (new_delta - delta).abs() < 1e-9 {
                 break;
             }
             seconds = next; // Loop
@@ -955,6 +994,7 @@ impl Epoch {
         1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
     }
 
+    #[deprecated]
     fn inner_g_rad(&self) -> f64 {
         use core::f64::consts::PI;
         let g_rad = (PI / 180.0) * (357.528 + 35_999.050 * self.as_tt_centuries_j2k());
