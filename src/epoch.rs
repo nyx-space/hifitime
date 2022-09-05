@@ -1,7 +1,7 @@
 use crate::duration::{Duration, Unit};
 use crate::{
     Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET,
-    J2000_TO_J1900_OFFSET, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64,
+    J2000_TO_J1900_DURATION, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64,
     SECONDS_PER_DAY, UNIX_REF_EPOCH,
 };
 use core::fmt;
@@ -252,8 +252,12 @@ impl Epoch {
 impl Epoch {
     #[must_use]
     /// Get the accumulated number of leap seconds up to this Epoch.
+    ///
+    /// ## Notes
+    /// Before the leap seconds were published by IERS, the difference between UTC and TAI was exactly nine (9) seconds.
+    /// This is best shown in the naif_spice_et_tdb_verification test.
     pub fn get_num_leap_seconds(&self) -> i32 {
-        let mut cnt = 0;
+        let mut cnt = 9;
         for tai_ts in LEAP_SECONDS.iter() {
             if self.0.in_seconds() >= *tai_ts {
                 if cnt == 0 {
@@ -383,7 +387,7 @@ impl Epoch {
         // Offset back to J1900
         Self(
             (duration_since_j2000.in_seconds() - delta_et_tai) * Unit::Second
-                + J2000_TO_J1900_OFFSET,
+                + J2000_TO_J1900_DURATION,
         )
     }
 
@@ -406,7 +410,7 @@ impl Epoch {
 
         let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
 
-        Self(duration - delta_tdb_tai + J2000_TO_J1900_OFFSET)
+        Self(duration - delta_tdb_tai + J2000_TO_J1900_DURATION)
     }
 
     #[must_use]
@@ -540,7 +544,9 @@ impl Epoch {
             TimeSystem::ET => Self(
                 duration_wrt_1900 + Unit::Second * ET_EPOCH_S - Unit::Microsecond * ET_OFFSET_US,
             ),
-            TimeSystem::TDB => Self::from_tdb_seconds_d(duration_wrt_1900 + J2000_TO_J1900_OFFSET),
+            TimeSystem::TDB => {
+                Self::from_tdb_seconds_d(duration_wrt_1900 + J2000_TO_J1900_DURATION)
+            }
             TimeSystem::UTC => panic!("use maybe_from_gregorian_utc for UTC time system"),
         })
     }
@@ -909,8 +915,8 @@ impl Epoch {
     #[must_use]
     pub fn as_et_duration(&self) -> Duration {
         // Run a Newton Raphston to convert find the correct value of the
-        let mut seconds = (self.0 - J2000_TO_J1900_OFFSET).in_seconds();
-        for _ in 0..3 {
+        let mut seconds = (self.0 - J2000_TO_J1900_DURATION).in_seconds();
+        for _ in 0..5 {
             seconds -= -NAIF_K
                 * (NAIF_M0 + NAIF_M1 * seconds + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds).sin())
                     .sin();
@@ -921,7 +927,7 @@ impl Epoch {
         let delta_et_tai =
             Self::delta_et_tai(seconds + (TT_OFFSET_MS * Unit::Millisecond).in_seconds());
 
-        self.0 + delta_et_tai * Unit::Second - J2000_TO_J1900_OFFSET
+        self.0 + delta_et_tai * Unit::Second - J2000_TO_J1900_DURATION
     }
 
     fn delta_et_tai(seconds: f64) -> f64 {
@@ -950,7 +956,7 @@ impl Epoch {
     /// 8. Reverse the algorithm given that approximation: compute the `g` offset, compute the difference between TDB and TAI, add the TT offset (32.184 s), and offset by the difference between J1900 and J2000.
     pub fn as_tdb_duration(&self) -> Duration {
         // Iterate to convert find the correct value of the
-        let mut seconds = (self.0 - J2000_TO_J1900_OFFSET).in_seconds();
+        let mut seconds = (self.0 - J2000_TO_J1900_DURATION).in_seconds();
         let mut delta = 1e8; // Arbitrary large number, greater than first step of Newton Raphson.
         for _ in 0..5 {
             let next = seconds - Self::inner_g(seconds);
@@ -967,7 +973,7 @@ impl Epoch {
         let gamma = Self::inner_g(seconds + (TT_OFFSET_MS * Unit::Millisecond).in_seconds());
         let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
 
-        self.0 + delta_tdb_tai - J2000_TO_J1900_OFFSET
+        self.0 + delta_tdb_tai - J2000_TO_J1900_DURATION
     }
 
     #[must_use]
@@ -979,7 +985,7 @@ impl Epoch {
     #[must_use]
     /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration with reference epoch of 2000 JAN 01 at noon (SPICE format)
     pub fn as_tdb_duration_j2k(&self) -> Duration {
-        self.as_tdb_duration() - J2000_TO_J1900_OFFSET
+        self.as_tdb_duration() - J2000_TO_J1900_DURATION
     }
 
     #[must_use]
@@ -995,14 +1001,6 @@ impl Epoch {
         1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
     }
 
-    #[deprecated]
-    fn inner_g_rad(&self) -> f64 {
-        use core::f64::consts::PI;
-        let g_rad = (PI / 180.0) * (357.528 + 35_999.050 * self.as_tt_centuries_j2k());
-
-        g_rad + 0.0167 * g_rad.sin()
-    }
-
     #[must_use]
     /// Returns the Ephemeris Time JDE past epoch
     pub fn as_jde_et_days(&self) -> f64 {
@@ -1011,7 +1009,7 @@ impl Epoch {
 
     #[must_use]
     pub fn as_jde_et_duration(&self) -> Duration {
-        self.as_jde_tt_duration() + Unit::Microsecond * 935
+        self.as_et_duration() + Unit::Day * (J1900_OFFSET + MJD_OFFSET) + J2000_TO_J1900_DURATION
     }
 
     #[must_use]
@@ -1021,9 +1019,7 @@ impl Epoch {
 
     #[must_use]
     pub fn as_jde_tdb_duration(&self) -> Duration {
-        let inner = self.inner_g_rad();
-        let tdb_delta = (0.001_658 * inner.sin()) * Unit::Second;
-        self.as_jde_tt_duration() + tdb_delta
+        self.as_tdb_duration() + Unit::Day * (J1900_OFFSET + MJD_OFFSET) + J2000_TO_J1900_DURATION
     }
 
     #[must_use]

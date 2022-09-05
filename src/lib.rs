@@ -57,7 +57,7 @@ pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
 });
 
 /// The duration between J2000 and J1900: one century **minus** twelve hours. J1900 starts at  _noon_ but J2000 is at midnight.
-pub const J2000_TO_J1900_OFFSET: Duration = Duration {
+pub const J2000_TO_J1900_DURATION: Duration = Duration {
     centuries: 0,
     nanoseconds: 3155716800000000000,
 };
