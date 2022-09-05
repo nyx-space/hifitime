@@ -294,7 +294,7 @@ impl Epoch {
     /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
     pub fn from_utc_seconds(seconds: f64) -> Self {
         let mut e = Self::from_tai_seconds(seconds);
-        // Compute the TAI to UTC offset at this time.
+        // Compute the TAI to UTC` offset at this time.
         let cnt = e.get_num_leap_seconds();
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
@@ -524,7 +524,7 @@ impl Epoch {
             TimeSystem::ET => Self(
                 duration_wrt_1900 + Unit::Second * ET_EPOCH_S - Unit::Microsecond * ET_OFFSET_US,
             ),
-            TimeSystem::TDB => Self::from_tdb_seconds_d(duration_wrt_1900 - J2000_TO_J1900_OFFSET),
+            TimeSystem::TDB => Self::from_tdb_seconds_d(duration_wrt_1900 + J2000_TO_J1900_OFFSET),
             TimeSystem::UTC => panic!("use maybe_from_gregorian_utc for UTC time system"),
         })
     }
@@ -911,7 +911,7 @@ impl Epoch {
     pub fn as_tdb_duration(&self) -> Duration {
         // Run a Newton Raphston to convert find the correct value of the
         let mut seconds = (self.0 - J2000_TO_J1900_OFFSET).in_seconds();
-        let mut delta = 1e-8; // Arbitrary large number.
+        let mut delta = 1e8; // Arbitrary large number.
         for _ in 0..5 {
             let next = seconds - Self::inner_g(seconds);
             let new_delta = (next - seconds).abs();
