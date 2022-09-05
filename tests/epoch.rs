@@ -423,16 +423,30 @@ fn naif_spice_et_tdb_verification() {
     // The maximum error due to small perturbations accounted for in ESA algorithm but not SPICE algorithm.
     let max_tdb_et_err = 30 * Unit::Microsecond;
     let test_function = |epoch: Epoch, et_s: f64, jde_d: f64| {
+        // Test reciprocity
+        assert!(
+            (Epoch::from_et_seconds(et_s).as_et_seconds() - et_s).abs() < EPSILON,
+            "{} failed ET reciprocity test",
+            epoch
+        );
+        assert!(
+            (Epoch::from_tdb_seconds(et_s).as_tdb_seconds() - et_s).abs() < EPSILON,
+            "{} failed TDB reciprocity test",
+            epoch
+        );
+        // Test ET computation
         assert!(
             dbg!(epoch.as_et_seconds() - et_s).abs() < EPSILON,
             "{} failed ET test",
             epoch
         );
+        // Test TDB computation
         assert!(
             (epoch.as_tdb_duration() - et_s * Unit::Second).abs() > max_tdb_et_err,
             "{} failed TDB test",
             epoch
         );
+        // TEST JDE computation
         assert!(
             (dbg!(epoch.as_jde_et_days()) - jde_d).abs() < EPSILON,
             "{} failed JDE test",
@@ -441,23 +455,29 @@ fn naif_spice_et_tdb_verification() {
     };
 
     // sp.utc2et('1900-01-09 00:17:15.0 UTC')
-    // test_function(
-    //     Epoch::from_gregorian_utc(1900, 1, 9, 0, 17, 15, 0),
-    //     -3155024523.8157988,
-    //     0.0,
-    // )
+    test_function(
+        Epoch::from_gregorian_utc(1900, 1, 9, 0, 17, 15, 0),
+        -3155024523.8157988,
+        0.0,
+    );
 
     // sp.utc2et('1920-07-23 14:39:29.0 UTC')
     test_function(
         Epoch::from_gregorian_utc(1920, 7, 23, 14, 39, 29, 0),
         -2506972789.816543,
         0.0,
-    )
+    );
+
+    // sp.utc2et('1954-12-24 06:06:31.0 UTC')
+    test_function(
+        Epoch::from_gregorian_utc(1954, 12, 24, 6, 6, 31, 0),
+        -1420782767.8162904,
+        0.0,
+    );
 }
 
 #[test]
 fn spice_et_tdb() {
-    use hifitime::J2000_NAIF;
     // The maximum error due to small perturbations accounted for in ESA algorithm but not SPICE algorithm.
     let max_tdb_et_err = 30 * Unit::Microsecond;
     // The maximum precision that spiceypy/SPICE allow when calling `utc2et`
@@ -476,11 +496,6 @@ fn spice_et_tdb() {
     let from_et_s = Epoch::from_tdb_seconds(expected_et_s);
     assert!((from_et_s.as_tdb_seconds() - expected_et_s).abs() < EPSILON);
     // Validate UTC to ET when initialization from UTC
-    println!(
-        "{}, {}",
-        sp_ex.as_et_duration() - expected_et_s * Unit::Second,
-        (sp_ex.as_et_seconds() - expected_et_s) * Unit::Second
-    );
     assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < max_prec.in_seconds());
     assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.in_seconds());
     assert!(dbg!(sp_ex.as_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
@@ -489,7 +504,8 @@ fn spice_et_tdb() {
     // Second example
     let sp_ex = Epoch::from_gregorian_utc_at_midnight(2002, 2, 7);
     let expected_et_s = 66_312_064.184_938_76;
-    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
+    assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < max_prec.in_seconds());
+    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.in_seconds());
     assert!(
         (sp_ex.as_tai_seconds() - Epoch::from_tdb_seconds(expected_et_s).as_tai_seconds()).abs()
             < 1e-5
@@ -498,7 +514,8 @@ fn spice_et_tdb() {
     // Third example
     let sp_ex = Epoch::from_gregorian_utc_hms(1996, 2, 7, 11, 22, 33);
     let expected_et_s = -123_035_784.815_060_48;
-    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
+    assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < max_prec.in_seconds());
+    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.in_seconds());
     assert!(
         dbg!(sp_ex.as_tai_seconds() - Epoch::from_tdb_seconds(expected_et_s).as_tai_seconds())
             .abs()
@@ -516,7 +533,8 @@ fn spice_et_tdb() {
     */
     let sp_ex = Epoch::from_gregorian_utc_hms(2015, 2, 7, 11, 22, 33);
     let expected_et_s = 476580220.1849411;
-    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
+    assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < max_prec.in_seconds());
+    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.in_seconds());
     assert!((sp_ex.as_jde_utc_days() - 2457060.9739931).abs() < 1e-7);
 
     // JDE TDB tests
@@ -535,11 +553,6 @@ fn spice_et_tdb() {
     let sp_ex = Epoch::from_tdb_seconds(381_885_753.003_859_5);
     assert!((2455964.9739931 - sp_ex.as_jde_et_days()).abs() < 4.7e-10);
     assert!((2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < EPSILON);
-
-    let sp_ex = Epoch::from_tdb_seconds(0.0);
-    assert!(sp_ex.as_tdb_seconds() < EPSILON);
-    assert!((J2000_NAIF - sp_ex.as_jde_et_days()).abs() < EPSILON);
-    assert!((J2000_NAIF - sp_ex.as_jde_tdb_days()).abs() < 1e-7);
 }
 
 #[cfg(feature = "std")]

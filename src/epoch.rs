@@ -232,20 +232,20 @@ impl Epoch {
     //         rslt
     //     }
 
-    fn spice_delta_et_tai(seconds: f64) -> f64 {
-        // Calculate M, the mean anomaly.
-        let m0 = 6.239996;
-        let m1 = 1.99096871e-7;
-        let m = m0 + seconds * m1;
-        // Calculate eccentric anomaly
-        let eb = 1.671e-2;
-        let e = m + eb * m.sin();
+    // fn spice_delta_et_tai(seconds: f64) -> f64 {
+    //     // Calculate M, the mean anomaly.
+    //     let m0 = 6.239996;
+    //     let m1 = 1.99096871e-7;
+    //     let m = m0 + seconds * m1;
+    //     // Calculate eccentric anomaly
+    //     let eb = 1.671e-2;
+    //     let e = m + eb * m.sin();
 
-        let delta_t_a = 32.184;
-        let k = 1.657e-3;
-        // WRT to J2000: offset to apply to TAI to give ET
-        delta_t_a + k * e.sin()
-    }
+    //     let delta_t_a = 32.184;
+    //     let k = 1.657e-3;
+    //     // WRT to J2000: offset to apply to TAI to give ET
+    //     delta_t_a + k * e.sin()
+    // }
 }
 
 impl Epoch {
@@ -371,8 +371,8 @@ impl Epoch {
 
     #[must_use]
     /// Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)
-    pub fn from_et_seconds(seconds_j2000: f64) -> Epoch {
-        Self::from_et_duration(seconds_j2000 * Unit::Second)
+    pub fn from_et_seconds(seconds_since_j2000: f64) -> Epoch {
+        Self::from_et_duration(seconds_since_j2000 * Unit::Second)
     }
 
     #[must_use]
@@ -910,16 +910,15 @@ impl Epoch {
         // Run a Newton Raphston to convert find the correct value of the
         let mut seconds = (self.0 - J2000_TO_J1900_OFFSET).in_seconds();
         for _ in 0..3 {
-            seconds = seconds
-                - NAIF_K
-                    * (NAIF_M0 + NAIF_M1 * seconds + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds).sin())
-                        .sin();
+            seconds -= -NAIF_K
+                * (NAIF_M0 + NAIF_M1 * seconds + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds).sin())
+                    .sin();
         }
 
         // At this point, we have a good estimate of the number of seconds of this epoch.
         // Reverse the algorithm:
         let delta_et_tai =
-            Self::spice_delta_et_tai(seconds + (TT_OFFSET_MS * Unit::Microsecond).in_seconds());
+            Self::delta_et_tai(seconds + (TT_OFFSET_MS * Unit::Millisecond).in_seconds());
 
         self.0 + delta_et_tai * Unit::Second - J2000_TO_J1900_OFFSET
     }
@@ -929,7 +928,8 @@ impl Epoch {
         let m = NAIF_M0 + seconds * NAIF_M1;
         // Calculate eccentric anomaly
         let e = m + NAIF_EB * m.sin();
-        (TT_OFFSET_MS * Unit::Microsecond).in_seconds() + NAIF_K * e.sin()
+
+        (TT_OFFSET_MS * Unit::Millisecond).in_seconds() + NAIF_K * e.sin()
     }
 
     #[must_use]
