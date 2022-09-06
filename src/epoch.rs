@@ -32,50 +32,51 @@ pub const NAIF_EB: f64 = 1.671e-2;
 pub const NAIF_K: f64 = 1.657e-3;
 
 /// List of leap seconds from https://www.ietf.org/timezones/data/leap-seconds.list .
-/// This list corresponds the number of seconds in TAI to the UTC offset
+/// This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
+/// The unannoucned leap seconds come from dat.c in the SOFA library.
 const LEAP_SECONDS: [(f64, f64, bool); 42] = [
-    (1_893_369_600.0, 1.417818, false),
-    (1_924_992_000.0, 1.422818, false),
-    (1_943_308_800.0, 1.372818, false),
-    (1_956_528_000.0, 1.845858, false),
-    (2_014_329_600.0, 1.945858, false),
-    (2_019_600_000.0, 3.24013, false),
-    (2_027_462_400.0, 3.34013, false),
-    (2_040_681_600.0, 3.44013, false),
-    (2_051_222_400.0, 3.54013, false),
-    (2_056_320_000.0, 3.64013, false),
-    (2_066_860_800.0, 3.74013, false),
-    (2_072_217_600.0, 3.84013, false),
-    (2_082_758_400.0, 4.31317, false),
-    (2_148_508_800.0, 4.21317, false),
-    (2_272_060_800.0, 10.0, true), // # 1 Jan 1972
-    (2_287_785_600.0, 11.0, true), // # 1 Jul 1972
-    (2_303_683_200.0, 12.0, true), // # 1 Jan 1973
-    (2_335_219_200.0, 13.0, true), // # 1 Jan 1974
-    (2_366_755_200.0, 14.0, true), // # 1 Jan 1975
-    (2_398_291_200.0, 15.0, true), // # 1 Jan 1976
-    (2_429_913_600.0, 16.0, true), // # 1 Jan 1977
-    (2_461_449_600.0, 17.0, true), // # 1 Jan 1978
-    (2_492_985_600.0, 18.0, true), // # 1 Jan 1979
-    (2_524_521_600.0, 19.0, true), // # 1 Jan 1980
-    (2_571_782_400.0, 20.0, true), // # 1 Jul 1981
-    (2_603_318_400.0, 21.0, true), // # 1 Jul 1982
-    (2_634_854_400.0, 22.0, true), // # 1 Jul 1983
-    (2_698_012_800.0, 23.0, true), // # 1 Jul 1985
-    (2_776_982_400.0, 24.0, true), // # 1 Jan 1988
-    (2_840_140_800.0, 25.0, true), // # 1 Jan 1990
-    (2_871_676_800.0, 26.0, true), // # 1 Jan 1991
-    (2_918_937_600.0, 27.0, true), // # 1 Jul 1992
-    (2_950_473_600.0, 28.0, true), // # 1 Jul 1993
-    (2_982_009_600.0, 29.0, true), // # 1 Jul 1994
-    (3_029_443_200.0, 30.0, true), // # 1 Jan 1996
-    (3_076_704_000.0, 31.0, true), // # 1 Jul 1997
-    (3_124_137_600.0, 32.0, true), // # 1 Jan 1999
-    (3_345_062_400.0, 33.0, true), // # 1 Jan 2006
-    (3_439_756_800.0, 34.0, true), // # 1 Jan 2009
-    (3_550_089_600.0, 35.0, true), // # 1 Jul 2012
-    (3_644_697_600.0, 36.0, true), // # 1 Jul 2015
-    (3_692_217_600.0, 37.0, true), // # 1 Jan 2017
+    (1_893_369_600.0, 1.417818, false), // SOFA: 01 Jan 1960
+    (1_924_992_000.0, 1.422818, false), // SOFA: 01 Jan 1961
+    (1_943_308_800.0, 1.372818, false), // SOFA: 01 Aug 1961
+    (1_956_528_000.0, 1.845858, false), // SOFA: 01 Jan 1962
+    (2_014_329_600.0, 1.945858, false), // SOFA: 01 Jan 1963
+    (2_019_600_000.0, 3.24013, false),  // SOFA: 01 Jan 1964
+    (2_027_462_400.0, 3.34013, false),  // SOFA: 01 Apr 1964
+    (2_040_681_600.0, 3.44013, false),  // SOFA: 01 Sep 1964
+    (2_051_222_400.0, 3.54013, false),  // SOFA: 01 Jan 1965
+    (2_056_320_000.0, 3.64013, false),  // SOFA: 01 Mar 1965
+    (2_066_860_800.0, 3.74013, false),  // SOFA: 01 Jul 1965
+    (2_072_217_600.0, 3.84013, false),  // SOFA: 01 Sep 1965
+    (2_082_758_400.0, 4.31317, false),  // SOFA: 01 Jan 1966
+    (2_148_508_800.0, 4.21317, false),  // SOFA: 01 Feb 1968
+    (2_272_060_800.0, 10.0, true),      // IERS: 01 Jan 1972
+    (2_287_785_600.0, 11.0, true),      // IERS: 01 Jul 1972
+    (2_303_683_200.0, 12.0, true),      // IERS: 01 Jan 1973
+    (2_335_219_200.0, 13.0, true),      // IERS: 01 Jan 1974
+    (2_366_755_200.0, 14.0, true),      // IERS: 01 Jan 1975
+    (2_398_291_200.0, 15.0, true),      // IERS: 01 Jan 1976
+    (2_429_913_600.0, 16.0, true),      // IERS: 01 Jan 1977
+    (2_461_449_600.0, 17.0, true),      // IERS: 01 Jan 1978
+    (2_492_985_600.0, 18.0, true),      // IERS: 01 Jan 1979
+    (2_524_521_600.0, 19.0, true),      // IERS: 01 Jan 1980
+    (2_571_782_400.0, 20.0, true),      // IERS: 01 Jul 1981
+    (2_603_318_400.0, 21.0, true),      // IERS: 01 Jul 1982
+    (2_634_854_400.0, 22.0, true),      // IERS: 01 Jul 1983
+    (2_698_012_800.0, 23.0, true),      // IERS: 01 Jul 1985
+    (2_776_982_400.0, 24.0, true),      // IERS: 01 Jan 1988
+    (2_840_140_800.0, 25.0, true),      // IERS: 01 Jan 1990
+    (2_871_676_800.0, 26.0, true),      // IERS: 01 Jan 1991
+    (2_918_937_600.0, 27.0, true),      // IERS: 01 Jul 1992
+    (2_950_473_600.0, 28.0, true),      // IERS: 01 Jul 1993
+    (2_982_009_600.0, 29.0, true),      // IERS: 01 Jul 1994
+    (3_029_443_200.0, 30.0, true),      // IERS: 01 Jan 1996
+    (3_076_704_000.0, 31.0, true),      // IERS: 01 Jul 1997
+    (3_124_137_600.0, 32.0, true),      // IERS: 01 Jan 1999
+    (3_345_062_400.0, 33.0, true),      // IERS: 01 Jan 2006
+    (3_439_756_800.0, 34.0, true),      // IERS: 01 Jan 2009
+    (3_550_089_600.0, 35.0, true),      // IERS: 01 Jul 2012
+    (3_644_697_600.0, 36.0, true),      // IERS: 01 Jul 2015
+    (3_692_217_600.0, 37.0, true),      // IERS: 01 Jan 2017
 ];
 
 /// Years when January had the leap second
@@ -201,7 +202,7 @@ impl Epoch {
     /// This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960.
     pub fn leap_seconds(&self, iers_only: bool) -> Option<f64> {
         for (tai_ts, delta_at, announced) in LEAP_SECONDS.iter().rev() {
-            if self.0.in_seconds() >= *tai_ts && ((iers_only && *announced) || !iers_only) {
+            if self.0.in_seconds() >= *tai_ts && (!iers_only || *announced) {
                 return Some(*delta_at);
             }
         }
@@ -244,12 +245,11 @@ impl Epoch {
     /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
     pub fn from_utc_seconds(seconds: f64) -> Self {
         let mut e = Self::from_tai_seconds(seconds);
-        // Compute the TAI to UTC` offset at this time.
-        let cnt = e.get_num_leap_seconds();
+        // Compute the TAI to UTC offset at this time.
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.0 += i64::from(cnt) * Unit::Second;
+        e.0 += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         e
     }
 
@@ -258,11 +258,10 @@ impl Epoch {
     pub fn from_utc_days(days: f64) -> Self {
         let mut e = Self::from_tai_days(days);
         // Compute the TAI to UTC offset at this time.
-        let cnt = e.get_num_leap_seconds();
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.0 += i64::from(cnt) * Unit::Second;
+        e.0 += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         e
     }
 
@@ -279,7 +278,7 @@ impl Epoch {
     pub fn from_mjd_utc(days: f64) -> Self {
         let mut e = Self::from_mjd_tai(days);
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.0 += i64::from(e.get_num_leap_seconds()) * Unit::Second;
+        e.0 += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         e
     }
 
@@ -296,7 +295,7 @@ impl Epoch {
     pub fn from_jde_utc(days: f64) -> Self {
         let mut e = Self::from_jde_tai(days);
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.0 += i64::from(e.get_num_leap_seconds()) * Unit::Second;
+        e.0 += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         e
     }
 
@@ -544,11 +543,10 @@ impl Epoch {
         let mut if_tai =
             Self::maybe_from_gregorian_tai(year, month, day, hour, minute, second, nanos)?;
         // Compute the TAI to UTC offset at this time.
-        let cnt = if_tai.get_num_leap_seconds();
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        if_tai.0 += i64::from(cnt) * Unit::Second;
+        if_tai.0 += if_tai.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         Ok(if_tai)
     }
 
@@ -635,9 +633,9 @@ impl Epoch {
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in UTC
     pub fn as_utc_duration(&self) -> Duration {
-        let cnt = self.get_num_leap_seconds();
+        // let cnt = self.get_num_leap_seconds();
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        self.0 + i64::from(-cnt) * Unit::Second
+        self.0 - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second
     }
 
     #[must_use]
@@ -813,9 +811,10 @@ impl Epoch {
     #[must_use]
     ///Returns the Duration since the UNIX epoch UTC midnight 01 Jan 1970.
     fn as_unix_duration(&self) -> Duration {
-        let cnt = self.get_num_leap_seconds();
         // TAI = UNIX + leap_seconds + UNIX_OFFSET_UTC_SECONDS <=> UNIX = TAI - leap_seconds - UNIX_OFFSET_UTC_SECONDS
-        self.0 + i64::from(-cnt) * Unit::Second - UNIX_REF_EPOCH.as_utc_duration()
+        self.0
+            - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second
+            - UNIX_REF_EPOCH.as_utc_duration()
     }
 
     #[must_use]
@@ -942,7 +941,7 @@ impl Epoch {
 
     fn inner_g(seconds: f64) -> f64 {
         use core::f64::consts::TAU;
-        let g = TAU / 360.0 * 357.528 + 1.990_910_018_065_731e-07 * seconds;
+        let g = TAU / 360.0 * 357.528 + 1.990_910_018_065_731e-7 * seconds;
         // Return gamma
         1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
     }

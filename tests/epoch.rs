@@ -366,6 +366,26 @@ fn gpst() {
 
 #[test]
 fn unix() {
+    // Continuous check that the system time as reported by this machine is within millisecond accuracy of what we compute
+    #[cfg(feature = "std")]
+    {
+        use std::time::SystemTime;
+
+        let std_unix_time_s = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs_f64();
+
+        let epoch_unix_time_s = Epoch::now().unwrap().as_unix_seconds();
+
+        assert!(
+            (std_unix_time_s - epoch_unix_time_s).abs() < 1e-5,
+            "hifitime and std differ in UNIX by more than 10 microseconds: hifitime = {}\tstd = {}",
+            epoch_unix_time_s,
+            std_unix_time_s
+        );
+    }
+
     let now = Epoch::from_gregorian_utc_hms(2022, 5, 2, 10, 39, 15);
     assert!((now.as_unix_seconds() - 1651487955.0_f64).abs() < EPSILON);
     assert!((now.as_unix_milliseconds() - 1651487955000.0_f64).abs() < EPSILON);
