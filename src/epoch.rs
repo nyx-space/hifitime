@@ -31,43 +31,60 @@ pub const NAIF_EB: f64 = 1.671e-2;
 /// NAIF leap second kernel data used to calculate the difference between ET and TAI.
 pub const NAIF_K: f64 = 1.657e-3;
 
-/// From https://www.ietf.org/timezones/data/leap-seconds.list .
-const LEAP_SECONDS: [f64; 28] = [
-    2_272_060_800.0, //	10	# 1 Jan 1972
-    2_287_785_600.0, //	11	# 1 Jul 1972
-    2_303_683_200.0, //	12	# 1 Jan 1973
-    2_335_219_200.0, //	13	# 1 Jan 1974
-    2_366_755_200.0, //	14	# 1 Jan 1975
-    2_398_291_200.0, //	15	# 1 Jan 1976
-    2_429_913_600.0, //	16	# 1 Jan 1977
-    2_461_449_600.0, //	17	# 1 Jan 1978
-    2_492_985_600.0, //	18	# 1 Jan 1979
-    2_524_521_600.0, //	19	# 1 Jan 1980
-    2_571_782_400.0, //	20	# 1 Jul 1981
-    2_603_318_400.0, //	21	# 1 Jul 1982
-    2_634_854_400.0, //	22	# 1 Jul 1983
-    2_698_012_800.0, //	23	# 1 Jul 1985
-    2_776_982_400.0, //	24	# 1 Jan 1988
-    2_840_140_800.0, //	25	# 1 Jan 1990
-    2_871_676_800.0, //	26	# 1 Jan 1991
-    2_918_937_600.0, //	27	# 1 Jul 1992
-    2_950_473_600.0, //	28	# 1 Jul 1993
-    2_982_009_600.0, //	29	# 1 Jul 1994
-    3_029_443_200.0, //	30	# 1 Jan 1996
-    3_076_704_000.0, //	31	# 1 Jul 1997
-    3_124_137_600.0, //	32	# 1 Jan 1999
-    3_345_062_400.0, //	33	# 1 Jan 2006
-    3_439_756_800.0, //	34	# 1 Jan 2009
-    3_550_089_600.0, //	35	# 1 Jul 2012
-    3_644_697_600.0, //	36	# 1 Jul 2015
-    3_692_217_600.0, //	37	# 1 Jan 2017
+/// List of leap seconds from https://www.ietf.org/timezones/data/leap-seconds.list .
+/// This list corresponds the number of seconds in TAI to the UTC offset
+const LEAP_SECONDS: [(f64, f64, bool); 42] = [
+    (1_893_369_600.0, 1.417818, false),
+    (1_924_992_000.0, 1.422818, false),
+    (1_943_308_800.0, 1.372818, false),
+    (1_956_528_000.0, 1.845858, false),
+    (2_014_329_600.0, 1.945858, false),
+    (2_019_600_000.0, 3.24013, false),
+    (2_027_462_400.0, 3.34013, false),
+    (2_040_681_600.0, 3.44013, false),
+    (2_051_222_400.0, 3.54013, false),
+    (2_056_320_000.0, 3.64013, false),
+    (2_066_860_800.0, 3.74013, false),
+    (2_072_217_600.0, 3.84013, false),
+    (2_082_758_400.0, 4.31317, false),
+    (2_148_508_800.0, 4.21317, false),
+    (2_272_060_800.0, 10.0, true), // # 1 Jan 1972
+    (2_287_785_600.0, 11.0, true), // # 1 Jul 1972
+    (2_303_683_200.0, 12.0, true), // # 1 Jan 1973
+    (2_335_219_200.0, 13.0, true), // # 1 Jan 1974
+    (2_366_755_200.0, 14.0, true), // # 1 Jan 1975
+    (2_398_291_200.0, 15.0, true), // # 1 Jan 1976
+    (2_429_913_600.0, 16.0, true), // # 1 Jan 1977
+    (2_461_449_600.0, 17.0, true), // # 1 Jan 1978
+    (2_492_985_600.0, 18.0, true), // # 1 Jan 1979
+    (2_524_521_600.0, 19.0, true), // # 1 Jan 1980
+    (2_571_782_400.0, 20.0, true), // # 1 Jul 1981
+    (2_603_318_400.0, 21.0, true), // # 1 Jul 1982
+    (2_634_854_400.0, 22.0, true), // # 1 Jul 1983
+    (2_698_012_800.0, 23.0, true), // # 1 Jul 1985
+    (2_776_982_400.0, 24.0, true), // # 1 Jan 1988
+    (2_840_140_800.0, 25.0, true), // # 1 Jan 1990
+    (2_871_676_800.0, 26.0, true), // # 1 Jan 1991
+    (2_918_937_600.0, 27.0, true), // # 1 Jul 1992
+    (2_950_473_600.0, 28.0, true), // # 1 Jul 1993
+    (2_982_009_600.0, 29.0, true), // # 1 Jul 1994
+    (3_029_443_200.0, 30.0, true), // # 1 Jan 1996
+    (3_076_704_000.0, 31.0, true), // # 1 Jul 1997
+    (3_124_137_600.0, 32.0, true), // # 1 Jan 1999
+    (3_345_062_400.0, 33.0, true), // # 1 Jan 2006
+    (3_439_756_800.0, 34.0, true), // # 1 Jan 2009
+    (3_550_089_600.0, 35.0, true), // # 1 Jul 2012
+    (3_644_697_600.0, 36.0, true), // # 1 Jul 2015
+    (3_692_217_600.0, 37.0, true), // # 1 Jan 2017
 ];
 
+/// Years when January had the leap second
 const JANUARY_YEARS: [i32; 17] = [
     1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1988, 1990, 1991, 1996, 1999, 2006, 2009,
     2017,
 ];
 
+/// Years when July had the leap second
 const JULY_YEARS: [i32; 11] = [
     1972, 1981, 1982, 1983, 1985, 1992, 1993, 1994, 1997, 2012, 2015,
 ];
@@ -161,25 +178,34 @@ impl AddAssign<Duration> for Epoch {
 
 impl Epoch {
     #[must_use]
-    /// Get the accumulated number of leap seconds up to this Epoch.
-    ///
-    /// ## Notes
-    /// Before the leap seconds were published by IERS, the difference between UTC and TAI was exactly nine (9) seconds.
-    /// This is best shown in the naif_spice_et_tdb_verification test.
+    /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
+    /// For the leap seconds _and_ the scaling in "prehistoric" times from 1960 to 1972, use `leap_seconds()`.
+    #[deprecated(note = "Prefer leap_seconds_iers or leap_seconds", since = "3.4.0")]
     pub fn get_num_leap_seconds(&self) -> i32 {
-        let mut cnt = 0;
-        for tai_ts in LEAP_SECONDS.iter() {
-            if self.0.in_seconds() >= *tai_ts {
-                if cnt == 0 {
-                    cnt = 10;
-                } else {
-                    cnt += 1;
-                }
-            } else {
-                break; // No more leap seconds to process
+        self.leap_seconds_iers()
+    }
+
+    #[must_use]
+    /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
+    pub fn leap_seconds_iers(&self) -> i32 {
+        match self.leap_seconds(true) {
+            Some(v) => v as i32,
+            None => 0,
+        }
+    }
+
+    /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds and the SOFA scaling from 1960 to 1972, depending on flag.
+    /// Returns None if the epoch is before 1960, year at which UTC was defined.
+    ///
+    /// # Why does this function return an `Option` when the other returns a value
+    /// This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960.
+    pub fn leap_seconds(&self, iers_only: bool) -> Option<f64> {
+        for (tai_ts, delta_at, announced) in LEAP_SECONDS.iter().rev() {
+            if self.0.in_seconds() >= *tai_ts && ((iers_only && *announced) || !iers_only) {
+                return Some(*delta_at);
             }
         }
-        cnt
+        None
     }
 
     #[must_use]
@@ -1611,4 +1637,30 @@ fn deser_test() {
 
     // println!("{:?}", (1 * Unit::Century + 12 * Unit::Hour).to_parts())
     println!("{}", (1 * Unit::Century + 12 * Unit::Hour).in_seconds());
+}
+
+#[test]
+fn delme() {
+    let jan72 = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
+    println!("{}", jan72.as_tai_seconds());
+
+    for (year, month, value) in &[
+        (1960, 1, 1.4178180),
+        (1961, 1, 1.4228180),
+        (1961, 8, 1.3728180),
+        (1962, 1, 1.8458580),
+        (1963, 11, 1.9458580),
+        (1964, 1, 3.2401300),
+        (1964, 4, 3.3401300),
+        (1964, 9, 3.4401300),
+        (1965, 1, 3.5401300),
+        (1965, 3, 3.6401300),
+        (1965, 7, 3.7401300),
+        (1965, 9, 3.8401300),
+        (1966, 1, 4.3131700),
+        (1968, 2, 4.2131700),
+    ] {
+        let e = Epoch::from_gregorian_tai_at_midnight(*year, *month, 1);
+        println!("({}, {value})", e.as_tai_seconds());
+    }
 }

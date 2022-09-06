@@ -439,13 +439,13 @@ fn naif_spice_et_tdb_verification() {
         //     epoch
         // );
         // Test ET computation
-        let extra_seconds = if epoch.get_num_leap_seconds() == 0 {
+        let extra_seconds = if epoch.leap_seconds_iers() == 0 {
             spice_utc_tai_ls_err
         } else {
             0.0
         };
         assert!(
-            (epoch.as_et_seconds() - et_s + extra_seconds).abs() < EPSILON,
+            dbg!(epoch.as_et_seconds() - et_s + extra_seconds).abs() < EPSILON,
             "{} failed ET test",
             epoch
         );
@@ -485,6 +485,13 @@ fn naif_spice_et_tdb_verification() {
         -1420782767.8162904,
         2435100.7545255,
     );
+
+    // Test prior to official leap seconds but with some scaling, valid from 1960 to 1972 according to IAU SOFA.
+    // test_function(
+    //     Epoch::from_gregorian_utc(1960, 2, 14, 6, 6, 31, 0),
+    //     -1258523567.8148985,
+    //     2436978.7545255,
+    // );
 
     // First test with some leap seconds
     // sp.utc2et('1983 APR 13 12:09:14.274')
@@ -710,21 +717,21 @@ fn regression_test_gh_85() {
 }
 
 #[test]
-fn test_get_num_leap_seconds() {
+fn test_leap_seconds_iers() {
     // Just before the very first leap second.
     let epoch_from_utc_greg = Epoch::from_gregorian_tai_hms(1971, 12, 31, 23, 59, 59);
     // Just after it.
     let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 0);
-    assert_eq!(epoch_from_utc_greg.get_num_leap_seconds(), 0);
+    assert_eq!(epoch_from_utc_greg.leap_seconds_iers(), 0);
     // The first leap second is special; it adds 10 seconds.
-    assert_eq!(epoch_from_utc_greg1.get_num_leap_seconds(), 10);
+    assert_eq!(epoch_from_utc_greg1.leap_seconds_iers(), 10);
 
     // Just before the second leap second.
     let epoch_from_utc_greg = Epoch::from_gregorian_tai_hms(1972, 6, 30, 23, 59, 59);
     // Just after it.
     let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 7, 1, 0, 0, 0);
-    assert_eq!(epoch_from_utc_greg.get_num_leap_seconds(), 10);
-    assert_eq!(epoch_from_utc_greg1.get_num_leap_seconds(), 11);
+    assert_eq!(epoch_from_utc_greg.leap_seconds_iers(), 10);
+    assert_eq!(epoch_from_utc_greg1.leap_seconds_iers(), 11);
 }
 
 #[cfg(feature = "std")]
