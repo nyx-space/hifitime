@@ -916,7 +916,7 @@ impl Epoch {
 
     fn inner_g(seconds: f64) -> f64 {
         use core::f64::consts::TAU;
-        let g = TAU / 360.0 * 357.528 + 1.990910018065731e-07 * seconds;
+        let g = TAU / 360.0 * 357.528 + 1.990_910_018_065_731e-07 * seconds;
         // Return gamma
         1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
     }
