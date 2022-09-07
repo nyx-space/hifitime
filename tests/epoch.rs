@@ -446,18 +446,28 @@ fn naif_spice_et_tdb_verification() {
     // Prior to 01 JAN 1972, UNIX claims that there is no leap second at all but SPICE claims that there are nine leap seconds
     // between TAI and UTC. Hifitime also claims that there are zero leap seconds (to ensure correct computation of UNIX time).
     let spice_utc_tai_ls_err = 9.0;
-    let test_function = |epoch: Epoch, et_s: f64, jde_d: f64| {
+    let spice_precision = 1e-7;
+    // We allow for 2 microseconds of error in the reciprocity because the input is in microseconds.
+    let recip_err_s = 2e-6;
+    let test_function = |epoch: Epoch, et_s: f64, utc_jde_d: f64| {
         // Test reciprocity
-        // assert!(
-        //     (Epoch::from_et_seconds(et_s).as_et_seconds() - et_s).abs() < EPSILON,
-        //     "{} failed ET reciprocity test",
-        //     epoch
-        // );
-        // assert!(
-        //     (Epoch::from_tdb_seconds(et_s).as_tdb_seconds() - et_s).abs() < EPSILON,
-        //     "{} failed TDB reciprocity test",
-        //     epoch
-        // );
+        assert!(
+            (Epoch::from_et_seconds(et_s).as_et_seconds() - et_s).abs() < recip_err_s,
+            "{} failed ET reciprocity test:\nwant: {}\tgot: {}\nerror: {} ns",
+            epoch,
+            et_s,
+            Epoch::from_et_seconds(et_s).as_et_seconds(),
+            (et_s - Epoch::from_et_seconds(et_s).as_et_seconds()).abs() * 1e9
+        );
+        assert!(
+            (Epoch::from_tdb_seconds(et_s).as_tdb_seconds() - et_s).abs() < recip_err_s,
+            "{} failed TDB reciprocity test:\nwant: {}\tgot: {}\nerror: {} ns",
+            epoch,
+            et_s,
+            Epoch::from_tdb_seconds(et_s).as_tdb_seconds(),
+            (et_s - Epoch::from_tdb_seconds(et_s).as_et_seconds()).abs() * 1e9
+        );
+
         // Test ET computation
         let extra_seconds = if epoch.leap_seconds_iers() == 0 {
             spice_utc_tai_ls_err
@@ -465,10 +475,11 @@ fn naif_spice_et_tdb_verification() {
             0.0
         };
         assert!(
-            dbg!(epoch.as_et_seconds() - et_s + extra_seconds).abs() < EPSILON,
+            (epoch.as_et_seconds() - et_s + extra_seconds).abs() < EPSILON,
             "{} failed ET test",
             epoch
         );
+
         // Test TDB computation
         assert!(
             (epoch.as_tdb_duration() - et_s * Unit::Second + extra_seconds * Unit::Second).abs()
@@ -476,13 +487,16 @@ fn naif_spice_et_tdb_verification() {
             "{} failed TDB test",
             epoch
         );
+
         // TEST JDE computation
-        // assert!(
-        //     dbg!(epoch.as_jde_et_days() - jde_d).abs() < EPSILON,
-        //     "{} failed JDE test",
-        //     epoch
-        // );
-        dbg!(epoch.as_jde_et_days() - jde_d)
+        assert!(
+            (epoch.as_jde_utc_days() - utc_jde_d).abs() < spice_precision,
+            "{} failed JDE UTC days test:\nwant: {}\tgot: {}\nerror = {} days",
+            epoch,
+            utc_jde_d,
+            epoch.as_jde_utc_days(),
+            (epoch.as_jde_utc_days() - utc_jde_d).abs()
+        );
     };
 
     // sp.utc2et('1900-01-09 00:17:15.0 UTC')
@@ -492,7 +506,7 @@ fn naif_spice_et_tdb_verification() {
         2415028.5119792,
     );
 
-    // // sp.utc2et('1920-07-23 14:39:29.0 UTC')
+    // sp.utc2et('1920-07-23 14:39:29.0 UTC')
     test_function(
         Epoch::from_gregorian_utc(1920, 7, 23, 14, 39, 29, 0),
         -2506972789.816543,
@@ -507,11 +521,11 @@ fn naif_spice_et_tdb_verification() {
     );
 
     // Test prior to official leap seconds but with some scaling, valid from 1960 to 1972 according to IAU SOFA.
-    // test_function(
-    //     Epoch::from_gregorian_utc(1960, 2, 14, 6, 6, 31, 0),
-    //     -1258523567.8148985,
-    //     2436978.7545255,
-    // );
+    test_function(
+        Epoch::from_gregorian_utc(1960, 2, 14, 6, 6, 31, 0),
+        -1258523567.8148985,
+        2436978.7545255,
+    );
 
     // First test with some leap seconds
     // sp.utc2et('1983 APR 13 12:09:14.274')

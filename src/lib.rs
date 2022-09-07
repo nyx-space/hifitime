@@ -22,6 +22,8 @@ pub const JDE_OFFSET_DAYS: f64 = J1900_OFFSET + MJD_OFFSET;
 pub const JDE_OFFSET_SECONDS: f64 = JDE_OFFSET_DAYS * SECONDS_PER_DAY;
 /// `DAYS_PER_YEAR` corresponds to the number of days per year in the Julian calendar.
 pub const DAYS_PER_YEAR: f64 = 365.25;
+/// `DAYS_PER_YEAR_NLD` corresponds to the number of days per year **without leap days**.
+pub const DAYS_PER_YEAR_NLD: f64 = 365.0;
 /// `DAYS_PER_CENTURY` corresponds to the number of days per centuy in the Julian calendar.
 pub const DAYS_PER_CENTURY: f64 = 36525.0;
 pub const DAYS_PER_CENTURY_I64: i64 = 36525;

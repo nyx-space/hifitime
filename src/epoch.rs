@@ -1,8 +1,8 @@
 use crate::duration::{Duration, Unit};
 use crate::{
-    Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET,
-    J2000_TO_J1900_DURATION, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64,
-    SECONDS_PER_DAY, UNIX_REF_EPOCH,
+    Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR_NLD, ET_EPOCH_S, J1900_OFFSET,
+    J2000_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET,
+    SECONDS_GPS_TAI_OFFSET_I64, SECONDS_PER_DAY, UNIX_REF_EPOCH,
 };
 use core::fmt;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
@@ -1058,7 +1058,8 @@ impl Epoch {
     }
 
     fn compute_gregorian(absolute_seconds: f64) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let (mut year, mut year_fraction) = div_rem_f64(absolute_seconds, 365.0 * SECONDS_PER_DAY);
+        let (mut year, mut year_fraction) =
+            div_rem_f64(absolute_seconds, DAYS_PER_YEAR_NLD * SECONDS_PER_DAY);
         // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
         year += 1900;
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
@@ -1634,32 +1635,5 @@ fn deser_test() {
         pub _e: Epoch,
     }
 
-    // println!("{:?}", (1 * Unit::Century + 12 * Unit::Hour).to_parts())
     println!("{}", (1 * Unit::Century + 12 * Unit::Hour).in_seconds());
-}
-
-#[test]
-fn delme() {
-    let jan72 = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
-    println!("{}", jan72.as_tai_seconds());
-
-    for (year, month, value) in &[
-        (1960, 1, 1.4178180),
-        (1961, 1, 1.4228180),
-        (1961, 8, 1.3728180),
-        (1962, 1, 1.8458580),
-        (1963, 11, 1.9458580),
-        (1964, 1, 3.2401300),
-        (1964, 4, 3.3401300),
-        (1964, 9, 3.4401300),
-        (1965, 1, 3.5401300),
-        (1965, 3, 3.6401300),
-        (1965, 7, 3.7401300),
-        (1965, 9, 3.8401300),
-        (1966, 1, 4.3131700),
-        (1968, 2, 4.2131700),
-    ] {
-        let e = Epoch::from_gregorian_tai_at_midnight(*year, *month, 1);
-        println!("({}, {value})", e.as_tai_seconds());
-    }
 }

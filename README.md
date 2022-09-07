@@ -178,7 +178,7 @@ day computations for [2015-06-30 23:59:59](https://heasarc.gsfc.nasa.gov/cgi-bin
 
 ## Ephemeris Time vs Dynamic Barycentric Time (TDB)
 ET and TDB should now be identical. _However_, NASA NAIF leap seconds files (e.g. [naif00012.tls](./naif00012.tls)) uses a simplified algorithm to compute the TDB:
-> Equation [4], which ignores small-period fluctuations, is accurate to about 0.000030 seconds.
+> Equation \[4\], which ignores small-period fluctuations, is accurate to about 0.000030 seconds.
 
 In order to provide full interoperability with NAIF, hifitime uses the NAIF algorithm for "ephemeris time" and the [ESA algorithm](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) for "dynamical barycentric time." Hence, if exact NAIF behavior is needed, use all of the functions marked as `et` instead of the `tdb` functions.
 
