@@ -20,15 +20,21 @@ Formally verified to not crash on operations on epochs and durations using the [
  * [x] UTC representation with ISO8601 formatting
  * [x] Trivial support of time arithmetic: addition (e.g. `2.hours() + 3.seconds()`), subtraction (e.g. `2.hours() - 3.seconds()`), round/floor/ceil operations (e.g. `2.hours().round(3.seconds())`)
  * [x] Supports ranges of Epochs and TimeSeries (linspace of `Epoch`s and `Duration`s)
- * [x] Trivial conversion between the time systems TAI, TT, ET, TDB, GPS, and UNIX.
+ * [x] Trivial conversion between many time systems
  * [x] High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
  * [x] Julian dates and Modified Julian dates
  * [x] Embedded device friendly: `no-std` and `const fn` where possible
- * [ ] Support for custom representations of time (e.g. NASA GMAT Modified Julian Date)
- * [ ] Trivial support of other time representations, such as TDT (cf #44)
 
-Almost all examples are validated with external references, as detailed on a test-by-test basis.
+This library is validated against NASA/NAIF SPICE for the Ephemeris Time to Universal Coordinated Time computations: there are exactly zero nanoseconds of difference between SPICE and hifitime for the computation of ET and UTC after 01 January 1972. Refer to the [leap second](#leap-second-support) section for details. Other examples are validated with external references, as detailed on a test-by-test basis.
 
+## Supported time systems
+
++ Temps Atomique International (TAI)
++ Universal Coordinated Time (UTC)
++ Terrestrial Time (TT)
++ Ephemeris Time (ET) without the small perturbations as per NASA/NAIF SPICE leap seconds kernel
++ Dynamic Barycentric Time (TDB), a higher fidelity ephemeris time
++ Global Positioning System (GPS), and UNIX
 ## Non-features
 * Time-agnostic / date-only epochs. Hifitime only supports the combination of date and time, but the `Epoch::{at_midnight, at_noon}` is provided as a helper function.
 
@@ -92,7 +98,9 @@ assert_eq!(format!("{}", dt), "2017-01-14T00:31:55 UTC".to_string());
 }
 ```
 ### Time differences, time unit, and duration handling
+
 Comparing times will lead to a Duration type. Printing that will automatically select the unit.
+
 ```rust
 use hifitime::{Epoch, Unit, Duration, TimeUnits};
 
@@ -102,8 +110,6 @@ assert_eq!(at_noon - at_midnight, 12 * Unit::Hour);
 assert_eq!(at_noon - at_midnight, 1 * Unit::Day / 2);
 assert_eq!(at_midnight - at_noon, -1.days() / 2);
 
-#[cfg(feature = "std")]
-{
 let delta_time = at_noon - at_midnight;
 assert_eq!(format!("{}", delta_time), "12 h".to_string());
 // And we can multiply durations by a scalar...
@@ -116,7 +122,6 @@ assert_eq!(format!("{}", delta2 / 2.0), "12 h".to_string());
 let at_midnight_utc = Epoch::from_gregorian_utc_at_midnight(2020, 11, 2);
 let at_noon_tai = Epoch::from_gregorian_tai_at_noon(2020, 11, 2);
 assert_eq!(format!("{}", at_noon_tai - at_midnight_utc), "11 h 59 min 23 s".to_string());
-}
 ```
 
 Timeunits and frequency units are trivially supported. Hifitime only supports up to nanosecond precision (but guarantees it for 64 millenia), so any duration less than one nanosecond is truncated.
@@ -161,20 +166,79 @@ for epoch in time_series {
 // including start and end times.
 assert_eq!(cnt, 7)
 ```
-# Notes
 
-Please report any bugs by [clicking here](https://github.com/nyx-space/hifitime/issues/new).
+# Design
+No software is perfect, so please report any issue or bugs on [Github](https://github.com/nyx-space/hifitime/issues/new).
+
+## Duration
+Under the hood, a Duration is represented as a 16 bit signed integer of centuries (`i16`) and a 64 bit unsigned integer (`u64`) of the nanoseconds past that century. The overflowing and underflowing of nanoseconds is handled by changing the number of centuries such that the nanoseconds number never represents more than one century (just over four centuries can be stored in 64 bits).
+
+Advantages:
+1. Exact precision of a duration: using a floating point value would cause large durations (e.g. Julian Dates) to have less precision than smaller durations. Durations in hifitime have exactly one nanosecond of precision for 65,536 years.
+2. Skipping floating point operations allows this library to be used in embedded devices without a floating point unit.
+3. Duration arithmetics are exact, e.g. one third of an hour is exactly twenty minutes and not "0.33333 hours."
+
+Disadvantages:
+1. Most astrodynamics applications require the computation of a duration in floating point value such as to query an ephemeris. This design leads to an overhead there.
+
+### Printing
+
+When Durations are printed, only the units whose value is non-zero is printed. For example, `5.hours() + 256.0.milliseconds() + 1.0.nanoseconds()` will be printed as "5 h 256 ms 1 ns".
+
+```rust
+use hifitime::{Duration, TimeUnits};
+
+assert_eq!(
+    format!(
+        "{}",
+        5.hours() + 256.0.milliseconds() + 1.0.nanoseconds()
+    ),
+    "5 h 256 ms 1 ns"
+);
+```
+
+## Epoch
+The Epoch is simply a wrapper around a Duration. All epochs are stored in TAI duration with respect to 01 January 1900 at noon (the official TAI epoch). The choice of TAI meets the [Standard of Fundamental Astronomy (SOFA)](https://www.iausofa.org/) recommendation of opting for a glitch-free time scale (i.e. without discontinuities like leap seconds or non-uniform seconds like TDB).
+
+### Printing and formatting
+
+Epochs can be formatted in the following time systems:
+
++ UTC: `{epoch}`
++ TAI: `{epoch:x}`
++ TT: `{epoch:X}`
++ TDB: `{epoch:e}`
++ ET: `{epoch:E}`
++ UNIX: `{epoch:p}`
++ GPS: `{epoch:o}`
+
+```rust
+use hifitime::Epoch;
+
+let epoch = Epoch::from_gregorian_utc_hms(2022, 9, 6, 23, 24, 29);
+
+assert_eq!(format!("{epoch}"), "2022-09-06T23:24:29 UTC");
+assert_eq!(format!("{epoch:x}"), "2022-09-06T23:25:06 TAI");
+assert_eq!(format!("{epoch:X}"), "2022-09-06T23:25:38.184000015 TT");
+assert_eq!(format!("{epoch:e}"), "2022-09-06T23:25:38.182541370 TDB");
+assert_eq!(format!("{epoch:E}"), "2022-09-06T23:25:38.182538986 ET");
+assert_eq!(format!("{epoch:p}"), "1662506669"); // UNIX seconds
+assert_eq!(format!("{epoch:o}"), "1346541887000000000"); // GPS nanoseconds
+```
 
 ## Leap second support
 Each time computing library may decide when the extra leap second exists as explained
 in the [IETF leap second reference](https://www.ietf.org/timezones/data/leap-seconds.list).
 To ease computation, `hifitime` decides that second is the 60th of a UTC date, if such exists.
-Note that this second exists at a different time than defined on NASA HEASARC. That tool is
-used for validation of Julian dates. As an example of how this is handled, check the Julian
+Note that this second exists at a different time than defined on NASA HEASARC, which is
+used for validation of Julian dates in addition to SPICE's `et2utc` function. As an example of how this is handled, check the Julian
 day computations for [2015-06-30 23:59:59](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A59&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes),
 [2015-06-30 23:59:60](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A60&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes) and [2015-07-01 00:00:00](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-07-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes).
 
-**Important:** there is a nine (9) second difference between NAIF SPICE and hifitime in the computation of ET/TDB times _prior_ to 01 January 1972 (date of the first leap second). NAIF assumes that because IERS did not publish leap seconds before that epoch, then the difference between TAI and UTC is fixed to nine seconds. Instead, hifitime claims that the number of leap seconds before that time is strictly zero, which allows the computation of UNIX time to be a specific offset of TAI, and follows the [IETF leap second list](https://www.ietf.org/timezones/data/leap-seconds.list) precisely.
+### Important
+There is a nine (9) second difference between NAIF SPICE and hifitime in the computation of ET/TDB times _prior_ to 01 January 1972 (date of the first leap second). NAIF assumes that because IERS did not publish leap seconds before that epoch, then the difference between TAI and UTC is fixed to nine seconds. Instead, hifitime claims that the number of leap seconds before that time is strictly zero, which allows the computation of UNIX time to be a specific offset of TAI, and follows the [IETF leap second list](https://www.ietf.org/timezones/data/leap-seconds.list) precisely.
+
+Prior to the first leap second, NAIF SPICE claims that there were nine seconds of difference between TAI and UTC: this is different from the [Standard of Fundamental Astronomy (SOFA)](https://www.iausofa.org/). SOFA's `iauDat` function will return non-integer leap seconds from 1960 to 1972. It will return an error for dates prior to 1960. Hifitime **only accounts for leap seconds announced by IERS** in its computations: there is a ten (10) second jump between TAI and UTC on 01 January 1972. However, the prehistoric (pre-1972) leap seconds as returned by SOFA are available in the `leap_seconds()` method of an epoch if the `iers_only` parameter is set to false.
 
 ## Ephemeris Time vs Dynamic Barycentric Time (TDB)
 ET and TDB should now be identical. _However_, NASA NAIF leap seconds files (e.g. [naif00012.tls](./naif00012.tls)) uses a simplified algorithm to compute the TDB:

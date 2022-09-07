@@ -848,6 +848,18 @@ impl Epoch {
     }
 
     #[must_use]
+    /// Returns the Ephemeris Time seconds past epoch whose epoch is 2000 JAN 01 noon
+    pub fn as_et_seconds_j2k(&self) -> f64 {
+        self.as_et_duration_j2k().in_seconds()
+    }
+
+    #[must_use]
+    /// Returns the Ephemeris Time past epoch whose epoch is 2000 JAN 01 noon
+    pub fn as_et_duration_j2k(&self) -> Duration {
+        self.as_et_duration() + J2000_TO_J1900_DURATION
+    }
+
+    #[must_use]
     /// Returns the duration between J2000 and the current epoch as per NAIF SPICE.
     ///
     /// # Warning
@@ -871,7 +883,6 @@ impl Epoch {
             Self::delta_et_tai(seconds + (TT_OFFSET_MS * Unit::Millisecond).in_seconds());
 
         // Match SPICE by changing the UTC definition.
-
         self.0 + delta_et_tai * Unit::Second - J2000_TO_J1900_DURATION
     }
 
@@ -930,7 +941,7 @@ impl Epoch {
     #[must_use]
     /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration with reference epoch of 2000 JAN 01 at noon (SPICE format)
     pub fn as_tdb_duration_j2k(&self) -> Duration {
-        self.as_tdb_duration() - J2000_TO_J1900_DURATION
+        self.as_tdb_duration() + J2000_TO_J1900_DURATION
     }
 
     #[must_use]
@@ -1461,7 +1472,7 @@ impl fmt::LowerExp for Epoch {
     /// Prints the Epoch in TDB
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeSystem::TDB;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_tdb_seconds());
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_tdb_seconds_j2k());
         if nanos == 0 {
             write!(
                 f,
@@ -1482,7 +1493,7 @@ impl fmt::UpperExp for Epoch {
     /// Prints the Epoch in ET
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeSystem::ET;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_tdb_seconds());
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_et_seconds_j2k());
         if nanos == 0 {
             write!(
                 f,
