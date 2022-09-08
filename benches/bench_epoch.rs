@@ -8,12 +8,12 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("TBD seconds and JDE ET", |b| {
         b.iter(|| {
             let e = Epoch::from_gregorian_utc_hms(2015, 2, 7, 11, 22, 33);
-            e.as_tdb_seconds();
-            e.as_jde_et_days();
+            black_box(Epoch::from_tdb_seconds(e.as_tdb_seconds()));
+            black_box(Epoch::from_jde_et(e.as_jde_et_days()));
 
             let f: Epoch = e + black_box(50) * Unit::Second;
-            f.as_tdb_seconds();
-            f.as_jde_et_days();
+            black_box(f.as_tdb_seconds());
+            black_box(f.as_jde_et_days());
         })
     });
 

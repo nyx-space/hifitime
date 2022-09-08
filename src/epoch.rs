@@ -1,7 +1,8 @@
 use crate::duration::{Duration, Unit};
 use crate::{
-    Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, ET_EPOCH_S, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
-    SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64, SECONDS_PER_DAY, UNIX_REF_EPOCH,
+    Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR_NLD, ET_EPOCH_S, J1900_OFFSET,
+    J2000_TO_J1900_DURATION, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64,
+    SECONDS_PER_DAY, UNIX_REF_EPOCH,
 };
 use core::fmt;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
@@ -21,43 +22,70 @@ use std::time::SystemTime;
 const TT_OFFSET_MS: i64 = 32_184;
 const ET_OFFSET_US: i64 = 32_184_935;
 
-/// From https://www.ietf.org/timezones/data/leap-seconds.list .
-const LEAP_SECONDS: [f64; 28] = [
-    2_272_060_800.0, //	10	# 1 Jan 1972
-    2_287_785_600.0, //	11	# 1 Jul 1972
-    2_303_683_200.0, //	12	# 1 Jan 1973
-    2_335_219_200.0, //	13	# 1 Jan 1974
-    2_366_755_200.0, //	14	# 1 Jan 1975
-    2_398_291_200.0, //	15	# 1 Jan 1976
-    2_429_913_600.0, //	16	# 1 Jan 1977
-    2_461_449_600.0, //	17	# 1 Jan 1978
-    2_492_985_600.0, //	18	# 1 Jan 1979
-    2_524_521_600.0, //	19	# 1 Jan 1980
-    2_571_782_400.0, //	20	# 1 Jul 1981
-    2_603_318_400.0, //	21	# 1 Jul 1982
-    2_634_854_400.0, //	22	# 1 Jul 1983
-    2_698_012_800.0, //	23	# 1 Jul 1985
-    2_776_982_400.0, //	24	# 1 Jan 1988
-    2_840_140_800.0, //	25	# 1 Jan 1990
-    2_871_676_800.0, //	26	# 1 Jan 1991
-    2_918_937_600.0, //	27	# 1 Jul 1992
-    2_950_473_600.0, //	28	# 1 Jul 1993
-    2_982_009_600.0, //	29	# 1 Jul 1994
-    3_029_443_200.0, //	30	# 1 Jan 1996
-    3_076_704_000.0, //	31	# 1 Jul 1997
-    3_124_137_600.0, //	32	# 1 Jan 1999
-    3_345_062_400.0, //	33	# 1 Jan 2006
-    3_439_756_800.0, //	34	# 1 Jan 2009
-    3_550_089_600.0, //	35	# 1 Jul 2012
-    3_644_697_600.0, //	36	# 1 Jul 2015
-    3_692_217_600.0, //	37	# 1 Jan 2017
+/// NAIF leap second kernel data for M_0 used to calculate the mean anomaly of the heliocentric orbit of the Earth-Moon barycenter.
+pub const NAIF_M0: f64 = 6.239996;
+/// NAIF leap second kernel data for M_1 used to calculate the mean anomaly of the heliocentric orbit of the Earth-Moon barycenter.
+pub const NAIF_M1: f64 = 1.99096871e-7;
+/// NAIF leap second kernel data for EB used to calculate the eccentric anomaly of the heliocentric orbit of the Earth-Moon barycenter.
+pub const NAIF_EB: f64 = 1.671e-2;
+/// NAIF leap second kernel data used to calculate the difference between ET and TAI.
+pub const NAIF_K: f64 = 1.657e-3;
+
+/// List of leap seconds from https://www.ietf.org/timezones/data/leap-seconds.list .
+/// This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
+/// The unannoucned leap seconds come from dat.c in the SOFA library.
+const LEAP_SECONDS: [(f64, f64, bool); 42] = [
+    (1_893_369_600.0, 1.417818, false), // SOFA: 01 Jan 1960
+    (1_924_992_000.0, 1.422818, false), // SOFA: 01 Jan 1961
+    (1_943_308_800.0, 1.372818, false), // SOFA: 01 Aug 1961
+    (1_956_528_000.0, 1.845858, false), // SOFA: 01 Jan 1962
+    (2_014_329_600.0, 1.945858, false), // SOFA: 01 Jan 1963
+    (2_019_600_000.0, 3.24013, false),  // SOFA: 01 Jan 1964
+    (2_027_462_400.0, 3.34013, false),  // SOFA: 01 Apr 1964
+    (2_040_681_600.0, 3.44013, false),  // SOFA: 01 Sep 1964
+    (2_051_222_400.0, 3.54013, false),  // SOFA: 01 Jan 1965
+    (2_056_320_000.0, 3.64013, false),  // SOFA: 01 Mar 1965
+    (2_066_860_800.0, 3.74013, false),  // SOFA: 01 Jul 1965
+    (2_072_217_600.0, 3.84013, false),  // SOFA: 01 Sep 1965
+    (2_082_758_400.0, 4.31317, false),  // SOFA: 01 Jan 1966
+    (2_148_508_800.0, 4.21317, false),  // SOFA: 01 Feb 1968
+    (2_272_060_800.0, 10.0, true),      // IERS: 01 Jan 1972
+    (2_287_785_600.0, 11.0, true),      // IERS: 01 Jul 1972
+    (2_303_683_200.0, 12.0, true),      // IERS: 01 Jan 1973
+    (2_335_219_200.0, 13.0, true),      // IERS: 01 Jan 1974
+    (2_366_755_200.0, 14.0, true),      // IERS: 01 Jan 1975
+    (2_398_291_200.0, 15.0, true),      // IERS: 01 Jan 1976
+    (2_429_913_600.0, 16.0, true),      // IERS: 01 Jan 1977
+    (2_461_449_600.0, 17.0, true),      // IERS: 01 Jan 1978
+    (2_492_985_600.0, 18.0, true),      // IERS: 01 Jan 1979
+    (2_524_521_600.0, 19.0, true),      // IERS: 01 Jan 1980
+    (2_571_782_400.0, 20.0, true),      // IERS: 01 Jul 1981
+    (2_603_318_400.0, 21.0, true),      // IERS: 01 Jul 1982
+    (2_634_854_400.0, 22.0, true),      // IERS: 01 Jul 1983
+    (2_698_012_800.0, 23.0, true),      // IERS: 01 Jul 1985
+    (2_776_982_400.0, 24.0, true),      // IERS: 01 Jan 1988
+    (2_840_140_800.0, 25.0, true),      // IERS: 01 Jan 1990
+    (2_871_676_800.0, 26.0, true),      // IERS: 01 Jan 1991
+    (2_918_937_600.0, 27.0, true),      // IERS: 01 Jul 1992
+    (2_950_473_600.0, 28.0, true),      // IERS: 01 Jul 1993
+    (2_982_009_600.0, 29.0, true),      // IERS: 01 Jul 1994
+    (3_029_443_200.0, 30.0, true),      // IERS: 01 Jan 1996
+    (3_076_704_000.0, 31.0, true),      // IERS: 01 Jul 1997
+    (3_124_137_600.0, 32.0, true),      // IERS: 01 Jan 1999
+    (3_345_062_400.0, 33.0, true),      // IERS: 01 Jan 2006
+    (3_439_756_800.0, 34.0, true),      // IERS: 01 Jan 2009
+    (3_550_089_600.0, 35.0, true),      // IERS: 01 Jul 2012
+    (3_644_697_600.0, 36.0, true),      // IERS: 01 Jul 2015
+    (3_692_217_600.0, 37.0, true),      // IERS: 01 Jan 2017
 ];
 
+/// Years when January had the leap second
 const JANUARY_YEARS: [i32; 17] = [
     1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1988, 1990, 1991, 1996, 1999, 2006, 2009,
     2017,
 ];
 
+/// Years when July had the leap second
 const JULY_YEARS: [i32; 11] = [
     1972, 1981, 1982, 1983, 1985, 1992, 1993, 1994, 1997, 2012, 2015,
 ];
@@ -68,6 +96,7 @@ const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time systems or representations.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(C)]
 pub struct Epoch(Duration);
 
 impl Sub for Epoch {
@@ -150,21 +179,34 @@ impl AddAssign<Duration> for Epoch {
 
 impl Epoch {
     #[must_use]
-    /// Get the accumulated number of leap seconds up to this Epoch.
+    /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
+    /// For the leap seconds _and_ the scaling in "prehistoric" times from 1960 to 1972, use `leap_seconds()`.
+    #[deprecated(note = "Prefer leap_seconds_iers or leap_seconds", since = "3.4.0")]
     pub fn get_num_leap_seconds(&self) -> i32 {
-        let mut cnt = 0;
-        for tai_ts in LEAP_SECONDS.iter() {
-            if self.0.in_seconds() >= *tai_ts {
-                if cnt == 0 {
-                    cnt = 10;
-                } else {
-                    cnt += 1;
-                }
-            } else {
-                break; // No more leap seconds to process
+        self.leap_seconds_iers()
+    }
+
+    #[must_use]
+    /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
+    pub fn leap_seconds_iers(&self) -> i32 {
+        match self.leap_seconds(true) {
+            Some(v) => v as i32,
+            None => 0,
+        }
+    }
+
+    /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds and the SOFA scaling from 1960 to 1972, depending on flag.
+    /// Returns None if the epoch is before 1960, year at which UTC was defined.
+    ///
+    /// # Why does this function return an `Option` when the other returns a value
+    /// This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960.
+    pub fn leap_seconds(&self, iers_only: bool) -> Option<f64> {
+        for (tai_ts, delta_at, announced) in LEAP_SECONDS.iter().rev() {
+            if self.0.in_seconds() >= *tai_ts && (!iers_only || *announced) {
+                return Some(*delta_at);
             }
         }
-        cnt
+        None
     }
 
     #[must_use]
@@ -204,11 +246,10 @@ impl Epoch {
     pub fn from_utc_seconds(seconds: f64) -> Self {
         let mut e = Self::from_tai_seconds(seconds);
         // Compute the TAI to UTC offset at this time.
-        let cnt = e.get_num_leap_seconds();
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.0 += i64::from(cnt) * Unit::Second;
+        e.0 += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         e
     }
 
@@ -217,11 +258,10 @@ impl Epoch {
     pub fn from_utc_days(days: f64) -> Self {
         let mut e = Self::from_tai_days(days);
         // Compute the TAI to UTC offset at this time.
-        let cnt = e.get_num_leap_seconds();
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.0 += i64::from(cnt) * Unit::Second;
+        e.0 += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         e
     }
 
@@ -238,7 +278,7 @@ impl Epoch {
     pub fn from_mjd_utc(days: f64) -> Self {
         let mut e = Self::from_mjd_tai(days);
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.0 += i64::from(e.get_num_leap_seconds()) * Unit::Second;
+        e.0 += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         e
     }
 
@@ -255,7 +295,7 @@ impl Epoch {
     pub fn from_jde_utc(days: f64) -> Self {
         let mut e = Self::from_jde_tai(days);
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.0 += i64::from(e.get_num_leap_seconds()) * Unit::Second;
+        e.0 += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         e
     }
 
@@ -270,44 +310,47 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Initialized from the Ephemeris Time seconds
-    pub fn from_et_seconds(seconds: f64) -> Epoch {
+    /// Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)
+    pub fn from_et_seconds(seconds_since_j2000: f64) -> Epoch {
+        Self::from_et_duration(seconds_since_j2000 * Unit::Second)
+    }
+
+    #[must_use]
+    pub fn from_et_duration(duration_since_j2000: Duration) -> Self {
+        // WRT to J2000: offset to apply to TAI to give ET
+        let delta_et_tai = Self::delta_et_tai(duration_since_j2000.in_seconds());
+        // Offset back to J1900
+        Self(
+            (duration_since_j2000.in_seconds() - delta_et_tai) * Unit::Second
+                + J2000_TO_J1900_DURATION,
+        )
+    }
+
+    #[must_use]
+    /// Initialize an Epoch from Dynamic Barycentric Time (TDB) seconds past 2000 JAN 01 midnight (difference than SPICE)
+    /// NOTE: This uses the ESA algorithm, which is a notch more complicaste than the SPICE algorithm, but more precise.
+    /// In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ESA algorithm should be exactly correct.
+    pub fn from_tdb_seconds(seconds_j2000: f64) -> Epoch {
         assert!(
-            seconds.is_finite(),
+            seconds_j2000.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self::from_tai_seconds(seconds) + Unit::Second * ET_EPOCH_S
-            - Unit::Microsecond * (ET_OFFSET_US)
+        Self::from_tdb_duration(seconds_j2000 * Unit::Second)
     }
 
     #[must_use]
-    /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI
-    pub fn from_tdb_seconds(seconds: f64) -> Epoch {
-        assert!(
-            seconds.is_finite(),
-            "Attempted to initialize Epoch with non finite number"
-        );
-        Self::from_tdb_seconds_d(seconds * Unit::Second)
+    /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI.
+    fn from_tdb_duration(duration_j2k: Duration) -> Epoch {
+        let gamma = Self::inner_g(duration_j2k.in_seconds());
+
+        let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
+
+        // Offset back to J1900.
+        Self(duration_j2k - delta_tdb_tai + J2000_TO_J1900_DURATION)
     }
 
     #[must_use]
-    /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI
-    fn from_tdb_seconds_d(duration: Duration) -> Epoch {
-        use core::f64::consts::PI;
-        let tt_duration = duration - Unit::Millisecond * TT_OFFSET_MS;
-
-        let tt_centuries_j2k = (tt_duration - Unit::Second * ET_EPOCH_S).in_unit(Unit::Century);
-
-        let g_rad = (PI / 180.0) * (357.528 + 35_999.050 * tt_centuries_j2k);
-
-        // Decimal does not provide trig functions, so let's define the parts of the trig separately.
-        let inner = g_rad + 0.0167 * g_rad.sin();
-
-        Self(tt_duration + ((ET_EPOCH_S as f64) - (0.001_658 * inner.sin())) * Unit::Second)
-    }
-
-    #[must_use]
-    /// Initialize from the JDE dayes
+    /// Initialize from the JDE days
     pub fn from_jde_et(days: f64) -> Self {
         assert!(
             days.is_finite(),
@@ -388,6 +431,7 @@ impl Epoch {
     }
 
     /// Attempts to build an Epoch from the provided Gregorian date and time in the provided time system.
+    /// NOTE: If the timesystem is TDB, this function assumes that the SPICE format is used
     #[allow(clippy::too_many_arguments)]
     pub fn maybe_from_gregorian(
         year: i32,
@@ -403,23 +447,23 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let mut seconds_wrt_1900 = Unit::Day * i64::from(365 * (year - 1900).abs());
+        let mut duration_wrt_1900 = Unit::Day * i64::from(365 * (year - 1900).abs());
         // Now add the seconds for all the years prior to the current year
         for year in 1900..year {
             if is_leap_year(year) {
-                seconds_wrt_1900 += Unit::Day;
+                duration_wrt_1900 += Unit::Day;
             }
         }
         // Add the seconds for the months prior to the current month
         for month in 0..month - 1 {
-            seconds_wrt_1900 += Unit::Day * i64::from(USUAL_DAYS_PER_MONTH[(month) as usize]);
+            duration_wrt_1900 += Unit::Day * i64::from(USUAL_DAYS_PER_MONTH[(month) as usize]);
         }
         if is_leap_year(year) && month > 2 {
             // NOTE: If on 29th of February, then the day is not finished yet, and therefore
             // the extra seconds are added below as per a normal day.
-            seconds_wrt_1900 += Unit::Day;
+            duration_wrt_1900 += Unit::Day;
         }
-        seconds_wrt_1900 += Unit::Day * i64::from(day - 1)
+        duration_wrt_1900 += Unit::Day * i64::from(day - 1)
             + Unit::Hour * i64::from(hour)
             + Unit::Minute * i64::from(minute)
             + Unit::Second * i64::from(second)
@@ -427,16 +471,15 @@ impl Epoch {
         if second == 60 {
             // Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
             // same number of second afters J1900.0.
-            seconds_wrt_1900 -= Unit::Second;
+            duration_wrt_1900 -= Unit::Second;
         }
 
+        // NOTE: For ET and TDB, we make sure to offset the duration back to J2000 since those functions expect a J2000 input.
         Ok(match ts {
-            TimeSystem::TAI => Self(seconds_wrt_1900),
-            TimeSystem::TT => Self(seconds_wrt_1900 - Unit::Millisecond * TT_OFFSET_MS),
-            TimeSystem::ET => Self(
-                seconds_wrt_1900 + Unit::Second * ET_EPOCH_S - Unit::Microsecond * ET_OFFSET_US,
-            ),
-            TimeSystem::TDB => Self::from_tdb_seconds_d(seconds_wrt_1900),
+            TimeSystem::TAI => Self(duration_wrt_1900),
+            TimeSystem::TT => Self(duration_wrt_1900 - Unit::Millisecond * TT_OFFSET_MS),
+            TimeSystem::ET => Self::from_et_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
+            TimeSystem::TDB => Self::from_tdb_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
             TimeSystem::UTC => panic!("use maybe_from_gregorian_utc for UTC time system"),
         })
     }
@@ -498,11 +541,10 @@ impl Epoch {
         let mut if_tai =
             Self::maybe_from_gregorian_tai(year, month, day, hour, minute, second, nanos)?;
         // Compute the TAI to UTC offset at this time.
-        let cnt = if_tai.get_num_leap_seconds();
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        if_tai.0 += i64::from(cnt) * Unit::Second;
+        if_tai.0 += if_tai.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         Ok(if_tai)
     }
 
@@ -589,9 +631,9 @@ impl Epoch {
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in UTC
     pub fn as_utc_duration(&self) -> Duration {
-        let cnt = self.get_num_leap_seconds();
+        // let cnt = self.get_num_leap_seconds();
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        self.0 + i64::from(-cnt) * Unit::Second
+        self.0 - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second
     }
 
     #[must_use]
@@ -767,9 +809,10 @@ impl Epoch {
     #[must_use]
     ///Returns the Duration since the UNIX epoch UTC midnight 01 Jan 1970.
     fn as_unix_duration(&self) -> Duration {
-        let cnt = self.get_num_leap_seconds();
         // TAI = UNIX + leap_seconds + UNIX_OFFSET_UTC_SECONDS <=> UNIX = TAI - leap_seconds - UNIX_OFFSET_UTC_SECONDS
-        self.0 + i64::from(-cnt) * Unit::Second - UNIX_REF_EPOCH.as_utc_duration()
+        self.0
+            - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second
+            - UNIX_REF_EPOCH.as_utc_duration()
     }
 
     #[must_use]
@@ -797,39 +840,109 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Returns the Ephemeris Time seconds past epoch
+    /// Returns the Ephemeris Time seconds past 2000 JAN 01 midnight, matches NASA/NAIF SPICE.
     pub fn as_et_seconds(&self) -> f64 {
         self.as_et_duration().in_seconds()
     }
 
     #[must_use]
-    pub fn as_et_duration(&self) -> Duration {
-        self.as_tai_duration() + Unit::Microsecond * ET_OFFSET_US - Unit::Second * ET_EPOCH_S
+    /// Returns the Ephemeris Time in duration past 1900 JAN 01 at noon.
+    /// **Only** use this if the subsequent computation expect J1900 seconds.
+    pub fn as_et_duration_since_j1900(&self) -> Duration {
+        self.as_et_duration() + J2000_TO_J1900_DURATION
     }
 
     #[must_use]
-    /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration
-    pub fn as_tdb_duration(&self) -> Duration {
-        let inner = self.inner_g_rad();
+    /// Returns the duration between J2000 and the current epoch as per NAIF SPICE.
+    ///
+    /// # Warning
+    /// The et2utc function of NAIF SPICE will assume that there are 9 leap seconds before 01 JAN 1972,
+    /// as this date introduces 10 leap seconds. At the time of writing, this does _not_ seem to be in
+    /// line with IERS and the documentation in the leap seconds list.
+    ///
+    /// In order to match SPICE, the as_et_duration() function will manually get rid of that difference.
+    pub fn as_et_duration(&self) -> Duration {
+        // Run a Newton Raphston to convert find the correct value of the
+        let mut seconds = (self.0 - J2000_TO_J1900_DURATION).in_seconds();
+        for _ in 0..5 {
+            seconds -= -NAIF_K
+                * (NAIF_M0 + NAIF_M1 * seconds + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds).sin())
+                    .sin();
+        }
 
-        self.as_tt_duration() - (ET_EPOCH_S * Unit::Second)
-            + (0.001_658 * inner.sin()) * Unit::Second
+        // At this point, we have a good estimate of the number of seconds of this epoch.
+        // Reverse the algorithm:
+        let delta_et_tai =
+            Self::delta_et_tai(seconds + (TT_OFFSET_MS * Unit::Millisecond).in_seconds());
+
+        // Match SPICE by changing the UTC definition.
+        self.0 + delta_et_tai * Unit::Second - J2000_TO_J1900_DURATION
+    }
+
+    fn delta_et_tai(seconds: f64) -> f64 {
+        // Calculate M, the mean anomaly.4
+        let m = NAIF_M0 + seconds * NAIF_M1;
+        // Calculate eccentric anomaly
+        let e = m + NAIF_EB * m.sin();
+
+        (TT_OFFSET_MS * Unit::Millisecond).in_seconds() + NAIF_K * e.sin()
+    }
+
+    #[must_use]
+    /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration since J2000
+    ///
+    /// ## Algorithm
+    /// Given the embedded sine functinos in the equationto compute the difference between TDB and TAI from the number of TDB seconds
+    /// past J2000, one cannot solve the revert the operation analytically. Instead, we iterate until the value no longer changes.
+    ///
+    /// 1. Assume that the TAI duration is in fact the TDB seconds frin J2000.
+    /// 2. Offset to J2000 because `Epoch` stores everything in the J1900 but the TDB duration is in J2000.
+    /// 3. Compute the offset `g` due to the TDB computation with the current value of the TDB seconds (defined in step 1).
+    /// 4. Subtract that offset to the latest TDB seconds and store this as a new candidate for the true TDB seconds value.
+    /// 5. Compute the difference between this candidtae and the previous one. If the difference is less than one nanosecond, stop iteration.
+    /// 6. Set the new candidate as the TDB seconds since J2000 and loop until step 5 breaks the loop, or we've done five iterations.
+    /// 7. At this stage, we have a good approximation of the TDB seconds since J2000.
+    /// 8. Reverse the algorithm given that approximation: compute the `g` offset, compute the difference between TDB and TAI, add the TT offset (32.184 s), and offset by the difference between J1900 and J2000.
+    pub fn as_tdb_duration(&self) -> Duration {
+        // Iterate to convert find the correct value of the
+        let mut seconds = (self.0 - J2000_TO_J1900_DURATION).in_seconds();
+        let mut delta = 1e8; // Arbitrary large number, greater than first step of Newton Raphson.
+        for _ in 0..5 {
+            let next = seconds - Self::inner_g(seconds);
+            let new_delta = (next - seconds).abs();
+            if (new_delta - delta).abs() < 1e-9 {
+                break;
+            }
+            seconds = next; // Loop
+            delta = new_delta;
+        }
+
+        // At this point, we have a good estimate of the number of seconds of this epoch.
+        // Reverse the algorithm:
+        let gamma = Self::inner_g(seconds + (TT_OFFSET_MS * Unit::Millisecond).in_seconds());
+        let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
+
+        self.0 + delta_tdb_tai - J2000_TO_J1900_DURATION
     }
 
     #[must_use]
     /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. <https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB>)
     pub fn as_tdb_seconds(&self) -> f64 {
-        // Note that we redo the calculation of as_tdb_duration to save computational cost
-        let inner = self.inner_g_rad();
-        self.as_tt_seconds() - (ET_EPOCH_S as f64) + (0.001_658 * inner.sin())
+        self.as_tdb_duration().in_seconds()
     }
 
-    /// For TDB computation, we're using f64 only because BigDecimal is far too slow for Nyx (uses FromStr).
-    fn inner_g_rad(&self) -> f64 {
-        use core::f64::consts::PI;
-        let g_rad = (PI / 180.0) * (357.528 + 35_999.050 * self.as_tt_centuries_j2k());
+    #[must_use]
+    /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration with reference epoch of 1900 JAN 01 at noon.
+    /// **Only** use this if the subsequent computation expect J1900 seconds.
+    pub fn as_tdb_duration_since_j1900(&self) -> Duration {
+        self.as_tdb_duration() + J2000_TO_J1900_DURATION
+    }
 
-        g_rad + 0.0167 * g_rad.sin()
+    fn inner_g(seconds: f64) -> f64 {
+        use core::f64::consts::TAU;
+        let g = TAU / 360.0 * 357.528 + 1.990_910_018_065_731e-7 * seconds;
+        // Return gamma
+        1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
     }
 
     #[must_use]
@@ -840,7 +953,7 @@ impl Epoch {
 
     #[must_use]
     pub fn as_jde_et_duration(&self) -> Duration {
-        self.as_jde_tt_duration() + Unit::Microsecond * 935
+        self.as_et_duration() + Unit::Day * (J1900_OFFSET + MJD_OFFSET) + J2000_TO_J1900_DURATION
     }
 
     #[must_use]
@@ -850,9 +963,7 @@ impl Epoch {
 
     #[must_use]
     pub fn as_jde_tdb_duration(&self) -> Duration {
-        let inner = self.inner_g_rad();
-        let tdb_delta = (0.001_658 * inner.sin()) * Unit::Second;
-        self.as_jde_tt_duration() + tdb_delta
+        self.as_tdb_duration() + Unit::Day * (J1900_OFFSET + MJD_OFFSET) + J2000_TO_J1900_DURATION
     }
 
     #[must_use]
@@ -862,39 +973,41 @@ impl Epoch {
     }
 
     #[must_use]
+    #[deprecated(note = "Prefer as_tdb_duration", since = "3.4.0")]
     /// Returns the duration since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
     pub fn as_tdb_duration_since_j2000(&self) -> Duration {
-        self.as_jde_tdb_duration() - MJD_OFFSET * Unit::Day - J2000_OFFSET * Unit::Day
+        self.as_tdb_duration()
     }
 
     #[must_use]
     /// Returns the number of days since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
     pub fn as_tdb_days_since_j2000(&self) -> f64 {
-        self.as_tdb_duration_since_j2000().in_unit(Unit::Day)
+        self.as_tdb_duration().in_unit(Unit::Day)
     }
 
     #[must_use]
     /// Returns the number of centuries since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
     pub fn as_tdb_centuries_since_j2000(&self) -> f64 {
-        self.as_tdb_duration_since_j2000().in_unit(Unit::Century)
+        self.as_tdb_duration().in_unit(Unit::Century)
     }
 
     #[must_use]
+    #[deprecated(note = "Prefer as_et_duration", since = "3.4.0")]
     /// Returns the duration since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
     pub fn as_et_duration_since_j2000(&self) -> Duration {
-        self.as_jde_et_duration() - MJD_OFFSET * Unit::Day - J2000_OFFSET * Unit::Day
+        self.as_et_duration()
     }
 
     #[must_use]
     /// Returns the number of days since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
     pub fn as_et_days_since_j2000(&self) -> f64 {
-        self.as_et_duration_since_j2000().in_unit(Unit::Day)
+        self.as_et_duration().in_unit(Unit::Day)
     }
 
     #[must_use]
     /// Returns the number of centuries since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
     pub fn as_et_centuries_since_j2000(&self) -> f64 {
-        self.as_et_duration_since_j2000().in_unit(Unit::Century)
+        self.as_et_duration().in_unit(Unit::Century)
     }
 
     #[must_use]
@@ -945,8 +1058,9 @@ impl Epoch {
         Self::compute_gregorian(self.as_tai_seconds())
     }
 
-    fn compute_gregorian(absolute_seconds: f64) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let (mut year, mut year_fraction) = div_rem_f64(absolute_seconds, 365.0 * SECONDS_PER_DAY);
+    fn compute_gregorian(absolute_seconds_j1900: f64) -> (i32, u8, u8, u8, u8, u8, u32) {
+        let (mut year, mut year_fraction) =
+            div_rem_f64(absolute_seconds_j1900, DAYS_PER_YEAR_NLD * SECONDS_PER_DAY);
         // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
         year += 1900;
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
@@ -1147,7 +1261,7 @@ impl Epoch {
                         }
                     }
                     None => {
-                        // Asumme UTC
+                        // Assume UTC
                         Self::maybe_from_gregorian_utc(
                             cap[1].to_owned().parse::<i32>()?,
                             cap[2].to_owned().parse::<u8>()?,
@@ -1180,10 +1294,10 @@ impl Epoch {
     /// Converts the Epoch to Gregorian in the provided time system and in the ISO8601 format with the time system appended to the string
     pub fn as_gregorian_str(&self, ts: TimeSystem) -> String {
         let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(match ts {
-            TimeSystem::ET => self.as_et_seconds(),
             TimeSystem::TT => self.as_tt_seconds(),
             TimeSystem::TAI => self.as_tai_seconds(),
-            TimeSystem::TDB => self.as_tdb_seconds(),
+            TimeSystem::ET => self.as_et_duration_since_j1900().in_seconds(),
+            TimeSystem::TDB => self.as_tdb_duration_since_j1900().in_seconds(),
             TimeSystem::UTC => self.as_utc_seconds(),
         });
         if nanos == 0 {
@@ -1350,7 +1464,8 @@ impl fmt::LowerExp for Epoch {
     /// Prints the Epoch in TDB
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeSystem::TDB;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_tdb_seconds());
+        let (y, mm, dd, hh, min, s, nanos) =
+            Self::compute_gregorian(self.as_tdb_duration_since_j1900().in_seconds());
         if nanos == 0 {
             write!(
                 f,
@@ -1371,7 +1486,8 @@ impl fmt::UpperExp for Epoch {
     /// Prints the Epoch in ET
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeSystem::ET;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_et_seconds());
+        let (y, mm, dd, hh, min, s, nanos) =
+            Self::compute_gregorian(self.as_et_duration_since_j1900().in_seconds());
         if nanos == 0 {
             write!(
                 f,
@@ -1488,8 +1604,8 @@ fn test_days_tdb_j2000() {
     let e = Epoch(Duration::from_parts(1, 723038437000000000));
     let days_d = e.as_tdb_days_since_j2000();
     let centuries_t = e.as_tdb_centuries_since_j2000();
-    assert!((days_d - 8369.000800729867).abs() < f64::EPSILON);
-    assert!((centuries_t - 0.22913075429787455).abs() < f64::EPSILON);
+    assert!((days_d - 8369.000800729798).abs() < f64::EPSILON);
+    assert!((centuries_t - 0.22913075429787266).abs() < f64::EPSILON);
 }
 
 #[test]
@@ -1515,20 +1631,6 @@ fn leap_year() {
     }
 }
 
-#[test]
-fn et_init() {
-    // Test for https://github.com/nyx-space/hifitime/issues/106
-    // NOTE: The printing is in TAI (not ET) hence the ~32 seconds of difference with the print from SPICE
-
-    // CAL-ET 2053 OCT 09 00:00:00.000
-    let present = Epoch::from_tdb_seconds(1696852800.0);
-    assert_eq!(present.0.decompose().1 / 365, 153); // Should be the year 2053, or 153 years after J1900
-
-    // CAL-ET 1899 JUL 29 00:00:00.000
-    let past = Epoch::from_tdb_seconds(-3169195200.0);
-    assert_eq!(past.0.decompose().1, 156); // There are 156 days between 29 July and 01 January
-}
-
 #[cfg(feature = "std")]
 #[test]
 fn deser_test() {
@@ -1537,4 +1639,6 @@ fn deser_test() {
     struct _D {
         pub _e: Epoch,
     }
+
+    println!("{}", (1 * Unit::Century + 12 * Unit::Hour).in_seconds());
 }

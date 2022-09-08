@@ -366,6 +366,26 @@ fn gpst() {
 
 #[test]
 fn unix() {
+    // Continuous check that the system time as reported by this machine is within millisecond accuracy of what we compute
+    #[cfg(feature = "std")]
+    {
+        use std::time::SystemTime;
+
+        let std_unix_time_s = SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_secs_f64();
+
+        let epoch_unix_time_s = Epoch::now().unwrap().as_unix_seconds();
+
+        assert!(
+            (std_unix_time_s - epoch_unix_time_s).abs() < 1e-5,
+            "hifitime and std differ in UNIX by more than 10 microseconds: hifitime = {}\tstd = {}",
+            epoch_unix_time_s,
+            std_unix_time_s
+        );
+    }
+
     let now = Epoch::from_gregorian_utc_hms(2022, 5, 2, 10, 39, 15);
     assert!((now.as_unix_seconds() - 1651487955.0_f64).abs() < EPSILON);
     assert!((now.as_unix_milliseconds() - 1651487955000.0_f64).abs() < EPSILON);
@@ -415,9 +435,149 @@ fn unix() {
     );
 }
 
+/// This test has a series of verifications between NAIF SPICE and hifitime.
+/// All of the test cases were create using spiceypy and cover a range of values from J1900 to J2100.
+/// All of the test cases include the UTC conversion, the JDE computation, and the reciprocity within hifitime.
+/// To compute the JD date, the following function is used: sp.et2utc(sp.utc2et(date_str), "J", 9)
+#[test]
+fn naif_spice_et_tdb_verification() {
+    // The maximum error due to small perturbations accounted for in ESA algorithm but not SPICE algorithm.
+    let max_tdb_et_err = 32 * Unit::Microsecond;
+    // Prior to 01 JAN 1972, IERS claims that there is no leap second at all but SPICE claims that there are nine (9) leap seconds
+    // between TAI and UTC. Hifitime also claims that there are zero leap seconds (to ensure correct computation of UNIX time at its reference time).
+    let spice_utc_tai_ls_err = 9.0;
+    // SPICE will only output up to 6 digits for the JDE computation. This is likely due to the precision limitation of the `double`s type.
+    // This means that a SPICE JDE is precise to 0.008 seconds, whereas a JDE in Hifitime maintains its nanosecond precision.
+    let spice_jde_precision = 1e-7;
+    // We allow for 2 microseconds of error in the reciprocity because the SPICE input is in microseconds as well.
+    let recip_err_s = 2e-6;
+
+    // The general test function used throughout this verification.
+    let spice_verif_func = |epoch: Epoch, et_s: f64, utc_jde_d: f64| {
+        // Test reciprocity
+        assert!(
+            (Epoch::from_et_seconds(et_s).as_et_seconds() - et_s).abs() < recip_err_s,
+            "{} failed ET reciprocity test:\nwant: {}\tgot: {}\nerror: {} ns",
+            epoch,
+            et_s,
+            Epoch::from_et_seconds(et_s).as_et_seconds(),
+            (et_s - Epoch::from_et_seconds(et_s).as_et_seconds()).abs() * 1e9
+        );
+        assert!(
+            (Epoch::from_tdb_seconds(et_s).as_tdb_seconds() - et_s).abs() < recip_err_s,
+            "{} failed TDB reciprocity test:\nwant: {}\tgot: {}\nerror: {} ns",
+            epoch,
+            et_s,
+            Epoch::from_tdb_seconds(et_s).as_tdb_seconds(),
+            (et_s - Epoch::from_tdb_seconds(et_s).as_et_seconds()).abs() * 1e9
+        );
+
+        // Test ET computation
+        let extra_seconds = if epoch.leap_seconds_iers() == 0 {
+            spice_utc_tai_ls_err
+        } else {
+            0.0
+        };
+        assert!(
+            (epoch.as_et_seconds() - et_s + extra_seconds).abs() < EPSILON,
+            "{} failed ET test",
+            epoch
+        );
+
+        // Test TDB computation
+        assert!(
+            (epoch.as_tdb_duration() - et_s * Unit::Second + extra_seconds * Unit::Second).abs()
+                <= max_tdb_et_err,
+            "{} failed TDB test",
+            epoch
+        );
+
+        // TEST JDE computation
+        assert!(
+            (epoch.as_jde_utc_days() - utc_jde_d).abs() < spice_jde_precision,
+            "{} failed JDE UTC days test:\nwant: {}\tgot: {}\nerror = {} days",
+            epoch,
+            utc_jde_d,
+            epoch.as_jde_utc_days(),
+            (epoch.as_jde_utc_days() - utc_jde_d).abs()
+        );
+    };
+
+    // sp.utc2et('1900-01-09 00:17:15.0 UTC')
+    spice_verif_func(
+        Epoch::from_gregorian_utc(1900, 1, 9, 0, 17, 15, 0),
+        -3155024523.8157988,
+        2415028.5119792,
+    );
+
+    // sp.utc2et('1920-07-23 14:39:29.0 UTC')
+    spice_verif_func(
+        Epoch::from_gregorian_utc(1920, 7, 23, 14, 39, 29, 0),
+        -2506972789.816543,
+        2422529.1107523,
+    );
+
+    // sp.utc2et('1954-12-24 06:06:31.0 UTC')
+    spice_verif_func(
+        Epoch::from_gregorian_utc(1954, 12, 24, 6, 6, 31, 0),
+        -1420782767.8162904,
+        2435100.7545255,
+    );
+
+    // Test prior to official leap seconds but with some scaling, valid from 1960 to 1972 according to IAU SOFA.
+    spice_verif_func(
+        Epoch::from_gregorian_utc(1960, 2, 14, 6, 6, 31, 0),
+        -1258523567.8148985,
+        2436978.7545255,
+    );
+
+    // First test with some leap seconds
+    // sp.utc2et('1983 APR 13 12:09:14.274')
+    spice_verif_func(
+        Epoch::from_gregorian_utc(1983, 4, 13, 12, 9, 14, 274_000_000),
+        -527644192.54036534,
+        2445438.0064152,
+    );
+
+    // Once every 400 years, there is a leap day on the new century! Joyeux anniversaire, Papa!
+    // sp.utc2et('2000-02-29 14:57:29.0')
+    spice_verif_func(
+        Epoch::from_gregorian_utc(2000, 2, 29, 14, 57, 29, 0),
+        5108313.185383182,
+        2451604.1232523,
+    );
+
+    // sp.utc2et('2022-11-29 07:58:49.782')
+    spice_verif_func(
+        Epoch::from_gregorian_utc(2022, 11, 29, 7, 58, 49, 782_000_000),
+        722980798.9650334,
+        2459912.8325206,
+    );
+
+    // sp.utc2et('2044-06-06 12:18:54.0')
+    spice_verif_func(
+        Epoch::from_gregorian_utc(2044, 6, 6, 12, 18, 54, 0),
+        1402100403.1847699,
+        2467773.0131250,
+    );
+
+    // sp.utc2et('2075-04-30 23:59:54.0')
+    spice_verif_func(
+        Epoch::from_gregorian_utc(2075, 4, 30, 23, 59, 54, 0),
+        2377166463.185493,
+        2479058.4999306,
+    );
+}
+
 #[test]
 fn spice_et_tdb() {
-    use hifitime::J2000_NAIF;
+    // NOTE: This test has been mostly superseded by the much more thorough `naif_spice_et_tdb_verification`.
+    // But it is kept for posteriority.
+
+    // The maximum error due to small perturbations accounted for in ESA algorithm but not SPICE algorithm.
+    let max_tdb_et_err = 30 * Unit::Microsecond;
+    // The maximum precision that spiceypy/SPICE allow when calling `utc2et`
+    let max_prec = 10 * Unit::Nanosecond;
     /*
     >>> sp.str2et("2012-02-07 11:22:33 UTC")
     381885819.18493587
@@ -429,29 +589,32 @@ fn spice_et_tdb() {
     let sp_ex = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33);
     let expected_et_s = 381_885_819.184_935_87;
     // Check reciprocity
-    let from_et_s = Epoch::from_et_seconds(expected_et_s);
-    assert!((from_et_s.as_et_seconds() - expected_et_s).abs() < EPSILON);
+    let from_et_s = Epoch::from_tdb_seconds(expected_et_s);
+    assert!((from_et_s.as_tdb_seconds() - expected_et_s).abs() < EPSILON);
     // Validate UTC to ET when initialization from UTC
-    assert!((sp_ex.as_et_seconds() - expected_et_s).abs() < 1e-6); // -8.940696716308594e-7 s <=> -894 ns error
-    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6); // 5.960464477539063e-7 s <=> 596 ns error
-    assert!((sp_ex.as_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
-    assert!((sp_ex.as_tai_seconds() - from_et_s.as_tai_seconds()).abs() < 1e-6);
+    assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < max_prec.in_seconds());
+    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.in_seconds());
+    assert!(dbg!(sp_ex.as_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
+    assert!(dbg!(sp_ex.as_tai_seconds() - from_et_s.as_tai_seconds()).abs() < 3e-6);
 
     // Second example
     let sp_ex = Epoch::from_gregorian_utc_at_midnight(2002, 2, 7);
     let expected_et_s = 66_312_064.184_938_76;
-    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
+    assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < max_prec.in_seconds());
+    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.in_seconds());
     assert!(
-        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expected_et_s).as_tai_seconds()).abs()
+        (sp_ex.as_tai_seconds() - Epoch::from_tdb_seconds(expected_et_s).as_tai_seconds()).abs()
             < 1e-5
     );
 
     // Third example
     let sp_ex = Epoch::from_gregorian_utc_hms(1996, 2, 7, 11, 22, 33);
     let expected_et_s = -123_035_784.815_060_48;
-    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
+    assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < max_prec.in_seconds());
+    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.in_seconds());
     assert!(
-        (sp_ex.as_tai_seconds() - Epoch::from_et_seconds(expected_et_s).as_tai_seconds()).abs()
+        dbg!(sp_ex.as_tai_seconds() - Epoch::from_tdb_seconds(expected_et_s).as_tai_seconds())
+            .abs()
             < 1e-5
     );
     // Fourth example
@@ -466,7 +629,8 @@ fn spice_et_tdb() {
     */
     let sp_ex = Epoch::from_gregorian_utc_hms(2015, 2, 7, 11, 22, 33);
     let expected_et_s = 476580220.1849411;
-    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-6);
+    assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < max_prec.in_seconds());
+    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.in_seconds());
     assert!((sp_ex.as_jde_utc_days() - 2457060.9739931).abs() < 1e-7);
 
     // JDE TDB tests
@@ -475,21 +639,16 @@ fn spice_et_tdb() {
     66312032.18493909
     */
     // 2002-02-07T00:00:00.4291 TAI
-    let sp_ex = Epoch::from_et_seconds(66_312_032.184_939_09);
+    let sp_ex = Epoch::from_tdb_seconds(66_312_032.184_939_09);
     assert!((2452312.500372511 - sp_ex.as_jde_et_days()).abs() < EPSILON);
     assert!((2452312.500372511 - sp_ex.as_jde_tdb_days()).abs() < EPSILON);
     // Confirm that they are _not_ equal, only that the number of days in f64 is equal
     assert_ne!(sp_ex.as_jde_et_duration(), sp_ex.as_jde_tdb_duration());
 
     // 2012-02-07T11:22:00.818924427 TAI
-    let sp_ex = Epoch::from_et_seconds(381_885_753.003_859_5);
-    assert!((2455964.9739931 - sp_ex.as_jde_et_days()).abs() < 4.7e-10);
-    assert!((2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < EPSILON);
-
-    let sp_ex = Epoch::from_et_seconds(0.0);
-    assert!(sp_ex.as_et_seconds() < EPSILON);
-    assert!((J2000_NAIF - sp_ex.as_jde_et_days()).abs() < EPSILON);
-    assert!((J2000_NAIF - sp_ex.as_jde_tdb_days()).abs() < 1e-7);
+    let sp_ex = Epoch::from_tdb_seconds(381_885_753.003_859_5);
+    assert!((2455964.9739931 - sp_ex.as_jde_et_days()).abs() < EPSILON);
+    assert!((2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < max_tdb_et_err.in_seconds());
 }
 
 #[cfg(feature = "std")]
@@ -538,13 +697,43 @@ fn test_from_str() {
 
     // Check reciprocity of string
     let greg = "2020-01-31T00:00:00 UTC";
-    assert_eq!(greg, Epoch::from_str(greg).unwrap().as_gregorian_utc_str());
+    assert_eq!(
+        greg,
+        Epoch::from_str(greg)
+            .unwrap()
+            .as_gregorian_str(TimeSystem::UTC)
+    );
     let greg = "2020-01-31T00:00:00 TAI";
-    assert_eq!(greg, Epoch::from_str(greg).unwrap().as_gregorian_tai_str());
-    // This imprecision is driving me nuts... I just cannot seem to represent TDB better than before with f64...
+    assert_eq!(
+        greg,
+        Epoch::from_str(greg)
+            .unwrap()
+            .as_gregorian_str(TimeSystem::TAI)
+    );
     let greg = "2020-01-31T00:00:00 TDB";
     assert_eq!(
-        "2020-01-30T23:59:59.999961853 TDB",
+        greg,
+        Epoch::from_str(greg)
+            .unwrap()
+            .as_gregorian_str(TimeSystem::TDB)
+    );
+    let greg = "2020-01-31T00:00:00 ET";
+    assert_eq!(
+        greg,
+        Epoch::from_str(greg)
+            .unwrap()
+            .as_gregorian_str(TimeSystem::ET)
+    );
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn test_from_str_tdb() {
+    use std::str::FromStr;
+
+    let greg = "2020-01-31T00:00:00 TDB";
+    assert_eq!(
+        greg,
         Epoch::from_str(greg)
             .unwrap()
             .as_gregorian_str(TimeSystem::TDB)
@@ -552,13 +741,31 @@ fn test_from_str() {
 }
 
 #[test]
+fn test_format() {
+    use hifitime::Epoch;
+
+    let epoch = Epoch::from_gregorian_utc_hms(2022, 9, 6, 23, 24, 29);
+
+    // Check the ET computation once more
+    assert!((epoch.as_et_seconds() - 715778738.1825389).abs() < EPSILON);
+
+    assert_eq!(format!("{epoch}"), "2022-09-06T23:24:29 UTC");
+    assert_eq!(format!("{epoch:x}"), "2022-09-06T23:25:06 TAI");
+    assert_eq!(format!("{epoch:X}"), "2022-09-06T23:25:38.184000015 TT");
+    assert_eq!(format!("{epoch:E}"), "2022-09-06T23:25:38.182538986 ET");
+    assert_eq!(format!("{epoch:e}"), "2022-09-06T23:25:38.182541370 TDB");
+    assert_eq!(format!("{epoch:p}"), "1662506669"); // UNIX seconds
+    assert_eq!(format!("{epoch:o}"), "1346541887000000000"); // GPS nanoseconds
+}
+
+#[test]
 fn ops() {
     // Test adding a second
     let sp_ex: Epoch = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33) + Unit::Second * 1.0;
     let expected_et_s = 381_885_819.184_935_87;
-    assert!((sp_ex.as_tdb_seconds() - expected_et_s - 1.0).abs() < 1e-5);
+    assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s - 1.0).abs() < 2.6e-6);
     let sp_ex: Epoch = sp_ex - Unit::Second * 1.0;
-    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 1e-5);
+    assert!((sp_ex.as_tdb_seconds() - expected_et_s).abs() < 2.6e-6);
 }
 
 #[test]
@@ -585,21 +792,21 @@ fn regression_test_gh_85() {
 }
 
 #[test]
-fn test_get_num_leap_seconds() {
+fn test_leap_seconds_iers() {
     // Just before the very first leap second.
     let epoch_from_utc_greg = Epoch::from_gregorian_tai_hms(1971, 12, 31, 23, 59, 59);
     // Just after it.
     let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 0);
-    assert_eq!(epoch_from_utc_greg.get_num_leap_seconds(), 0);
+    assert_eq!(epoch_from_utc_greg.leap_seconds_iers(), 0);
     // The first leap second is special; it adds 10 seconds.
-    assert_eq!(epoch_from_utc_greg1.get_num_leap_seconds(), 10);
+    assert_eq!(epoch_from_utc_greg1.leap_seconds_iers(), 10);
 
     // Just before the second leap second.
     let epoch_from_utc_greg = Epoch::from_gregorian_tai_hms(1972, 6, 30, 23, 59, 59);
     // Just after it.
     let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 7, 1, 0, 0, 0);
-    assert_eq!(epoch_from_utc_greg.get_num_leap_seconds(), 10);
-    assert_eq!(epoch_from_utc_greg1.get_num_leap_seconds(), 11);
+    assert_eq!(epoch_from_utc_greg.leap_seconds_iers(), 10);
+    assert_eq!(epoch_from_utc_greg1.leap_seconds_iers(), 11);
 }
 
 #[cfg(feature = "std")]

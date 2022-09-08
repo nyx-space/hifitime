@@ -61,7 +61,6 @@ fn time_unit() {
     assert!((sum.in_unit(Unit::Minute) + 35.0).abs() < EPSILON);
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn duration_print() {
     // Check printing adds precision

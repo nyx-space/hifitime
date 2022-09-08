@@ -22,6 +22,8 @@ pub const JDE_OFFSET_DAYS: f64 = J1900_OFFSET + MJD_OFFSET;
 pub const JDE_OFFSET_SECONDS: f64 = JDE_OFFSET_DAYS * SECONDS_PER_DAY;
 /// `DAYS_PER_YEAR` corresponds to the number of days per year in the Julian calendar.
 pub const DAYS_PER_YEAR: f64 = 365.25;
+/// `DAYS_PER_YEAR_NLD` corresponds to the number of days per year **without leap days**.
+pub const DAYS_PER_YEAR_NLD: f64 = 365.0;
 /// `DAYS_PER_CENTURY` corresponds to the number of days per centuy in the Julian calendar.
 pub const DAYS_PER_CENTURY: f64 = 36525.0;
 pub const DAYS_PER_CENTURY_I64: i64 = 36525;
@@ -50,11 +52,17 @@ pub const SECONDS_GPS_TAI_OFFSET_I64: i64 =
 /// epoch (UTC midnight of January 6th 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)
 pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
 
-/// The UNIX reference epoch of 1970-01-01.
+/// The UNIX reference epoch of 1970-01-01 in TAI duration, accounting only for IERS leap seconds.
 pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
     nanoseconds: 2_208_988_800_000_000_000,
 });
+
+/// The duration between J2000 and J1900: one century **minus** twelve hours. J1900 starts at  _noon_ but J2000 is at midnight.
+pub const J2000_TO_J1900_DURATION: Duration = Duration {
+    centuries: 0,
+    nanoseconds: 3155716800000000000,
+};
 
 mod epoch;
 
