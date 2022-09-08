@@ -52,7 +52,7 @@ pub const SECONDS_GPS_TAI_OFFSET_I64: i64 =
 /// epoch (UTC midnight of January 6th 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)
 pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
 
-/// The UNIX reference epoch of 1970-01-01 in TAI duration, accounting for SOFA leap seconds.
+/// The UNIX reference epoch of 1970-01-01 in TAI duration, accounting only for IERS leap seconds.
 pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
     nanoseconds: 2_208_988_800_000_000_000,

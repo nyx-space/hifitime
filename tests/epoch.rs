@@ -443,13 +443,17 @@ fn unix() {
 fn naif_spice_et_tdb_verification() {
     // The maximum error due to small perturbations accounted for in ESA algorithm but not SPICE algorithm.
     let max_tdb_et_err = 32 * Unit::Microsecond;
-    // Prior to 01 JAN 1972, UNIX claims that there is no leap second at all but SPICE claims that there are nine leap seconds
-    // between TAI and UTC. Hifitime also claims that there are zero leap seconds (to ensure correct computation of UNIX time).
+    // Prior to 01 JAN 1972, IERS claims that there is no leap second at all but SPICE claims that there are nine (9) leap seconds
+    // between TAI and UTC. Hifitime also claims that there are zero leap seconds (to ensure correct computation of UNIX time at its reference time).
     let spice_utc_tai_ls_err = 9.0;
-    let spice_precision = 1e-7;
-    // We allow for 2 microseconds of error in the reciprocity because the input is in microseconds.
+    // SPICE will only output up to 6 digits for the JDE computation. This is likely due to the precision limitation of the `double`s type.
+    // This means that a SPICE JDE is precise to 0.008 seconds, whereas a JDE in Hifitime maintains its nanosecond precision.
+    let spice_jde_precision = 1e-7;
+    // We allow for 2 microseconds of error in the reciprocity because the SPICE input is in microseconds as well.
     let recip_err_s = 2e-6;
-    let test_function = |epoch: Epoch, et_s: f64, utc_jde_d: f64| {
+
+    // The general test function used throughout this verification.
+    let spice_verif_func = |epoch: Epoch, et_s: f64, utc_jde_d: f64| {
         // Test reciprocity
         assert!(
             (Epoch::from_et_seconds(et_s).as_et_seconds() - et_s).abs() < recip_err_s,
@@ -490,7 +494,7 @@ fn naif_spice_et_tdb_verification() {
 
         // TEST JDE computation
         assert!(
-            (epoch.as_jde_utc_days() - utc_jde_d).abs() < spice_precision,
+            (epoch.as_jde_utc_days() - utc_jde_d).abs() < spice_jde_precision,
             "{} failed JDE UTC days test:\nwant: {}\tgot: {}\nerror = {} days",
             epoch,
             utc_jde_d,
@@ -500,28 +504,28 @@ fn naif_spice_et_tdb_verification() {
     };
 
     // sp.utc2et('1900-01-09 00:17:15.0 UTC')
-    test_function(
+    spice_verif_func(
         Epoch::from_gregorian_utc(1900, 1, 9, 0, 17, 15, 0),
         -3155024523.8157988,
         2415028.5119792,
     );
 
     // sp.utc2et('1920-07-23 14:39:29.0 UTC')
-    test_function(
+    spice_verif_func(
         Epoch::from_gregorian_utc(1920, 7, 23, 14, 39, 29, 0),
         -2506972789.816543,
         2422529.1107523,
     );
 
     // sp.utc2et('1954-12-24 06:06:31.0 UTC')
-    test_function(
+    spice_verif_func(
         Epoch::from_gregorian_utc(1954, 12, 24, 6, 6, 31, 0),
         -1420782767.8162904,
         2435100.7545255,
     );
 
     // Test prior to official leap seconds but with some scaling, valid from 1960 to 1972 according to IAU SOFA.
-    test_function(
+    spice_verif_func(
         Epoch::from_gregorian_utc(1960, 2, 14, 6, 6, 31, 0),
         -1258523567.8148985,
         2436978.7545255,
@@ -529,7 +533,7 @@ fn naif_spice_et_tdb_verification() {
 
     // First test with some leap seconds
     // sp.utc2et('1983 APR 13 12:09:14.274')
-    test_function(
+    spice_verif_func(
         Epoch::from_gregorian_utc(1983, 4, 13, 12, 9, 14, 274_000_000),
         -527644192.54036534,
         2445438.0064152,
@@ -537,28 +541,28 @@ fn naif_spice_et_tdb_verification() {
 
     // Once every 400 years, there is a leap day on the new century! Joyeux anniversaire, Papa!
     // sp.utc2et('2000-02-29 14:57:29.0')
-    test_function(
+    spice_verif_func(
         Epoch::from_gregorian_utc(2000, 2, 29, 14, 57, 29, 0),
         5108313.185383182,
         2451604.1232523,
     );
 
     // sp.utc2et('2022-11-29 07:58:49.782')
-    test_function(
+    spice_verif_func(
         Epoch::from_gregorian_utc(2022, 11, 29, 7, 58, 49, 782_000_000),
         722980798.9650334,
         2459912.8325206,
     );
 
     // sp.utc2et('2044-06-06 12:18:54.0')
-    test_function(
+    spice_verif_func(
         Epoch::from_gregorian_utc(2044, 6, 6, 12, 18, 54, 0),
         1402100403.1847699,
         2467773.0131250,
     );
 
     // sp.utc2et('2075-04-30 23:59:54.0')
-    test_function(
+    spice_verif_func(
         Epoch::from_gregorian_utc(2075, 4, 30, 23, 59, 54, 0),
         2377166463.185493,
         2479058.4999306,
@@ -567,6 +571,9 @@ fn naif_spice_et_tdb_verification() {
 
 #[test]
 fn spice_et_tdb() {
+    // NOTE: This test has been mostly superseded by the much more thorough `naif_spice_et_tdb_verification`.
+    // But it is kept for posteriority.
+
     // The maximum error due to small perturbations accounted for in ESA algorithm but not SPICE algorithm.
     let max_tdb_et_err = 30 * Unit::Microsecond;
     // The maximum precision that spiceypy/SPICE allow when calling `utc2et`
@@ -588,7 +595,7 @@ fn spice_et_tdb() {
     assert!(dbg!(sp_ex.as_et_seconds() - expected_et_s).abs() < max_prec.in_seconds());
     assert!(dbg!(sp_ex.as_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.in_seconds());
     assert!(dbg!(sp_ex.as_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
-    // assert!(dbg!(sp_ex.as_tai_seconds() - from_et_s.as_tai_seconds()).abs() < 1e-6);
+    assert!(dbg!(sp_ex.as_tai_seconds() - from_et_s.as_tai_seconds()).abs() < 3e-6);
 
     // Second example
     let sp_ex = Epoch::from_gregorian_utc_at_midnight(2002, 2, 7);
