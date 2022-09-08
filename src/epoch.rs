@@ -1,8 +1,8 @@
 use crate::duration::{Duration, Unit};
 use crate::{
     Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR_NLD, ET_EPOCH_S, J1900_OFFSET,
-    J2000_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET,
-    SECONDS_GPS_TAI_OFFSET_I64, SECONDS_PER_DAY, UNIX_REF_EPOCH,
+    J2000_TO_J1900_DURATION, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64,
+    SECONDS_PER_DAY, UNIX_REF_EPOCH,
 };
 use core::fmt;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
@@ -889,7 +889,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration
+    /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration since J2000
     ///
     /// ## Algorithm
     /// Given the embedded sine functinos in the equationto compute the difference between TDB and TAI from the number of TDB seconds
@@ -973,39 +973,41 @@ impl Epoch {
     }
 
     #[must_use]
+    #[deprecated(note = "Prefer as_tdb_duration", since = "3.4.0")]
     /// Returns the duration since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
     pub fn as_tdb_duration_since_j2000(&self) -> Duration {
-        self.as_jde_tdb_duration() - MJD_OFFSET * Unit::Day - J2000_OFFSET * Unit::Day
+        self.as_tdb_duration()
     }
 
     #[must_use]
     /// Returns the number of days since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
     pub fn as_tdb_days_since_j2000(&self) -> f64 {
-        self.as_tdb_duration_since_j2000().in_unit(Unit::Day)
+        self.as_tdb_duration().in_unit(Unit::Day)
     }
 
     #[must_use]
     /// Returns the number of centuries since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
     pub fn as_tdb_centuries_since_j2000(&self) -> f64 {
-        self.as_tdb_duration_since_j2000().in_unit(Unit::Century)
+        self.as_tdb_duration().in_unit(Unit::Century)
     }
 
     #[must_use]
+    #[deprecated(note = "Prefer as_et_duration", since = "3.4.0")]
     /// Returns the duration since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
     pub fn as_et_duration_since_j2000(&self) -> Duration {
-        self.as_jde_et_duration() - MJD_OFFSET * Unit::Day - J2000_OFFSET * Unit::Day
+        self.as_et_duration()
     }
 
     #[must_use]
     /// Returns the number of days since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
     pub fn as_et_days_since_j2000(&self) -> f64 {
-        self.as_et_duration_since_j2000().in_unit(Unit::Day)
+        self.as_et_duration().in_unit(Unit::Day)
     }
 
     #[must_use]
     /// Returns the number of centuries since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
     pub fn as_et_centuries_since_j2000(&self) -> f64 {
-        self.as_et_duration_since_j2000().in_unit(Unit::Century)
+        self.as_et_duration().in_unit(Unit::Century)
     }
 
     #[must_use]
@@ -1463,7 +1465,7 @@ impl fmt::LowerExp for Epoch {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeSystem::TDB;
         let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.as_tdb_seconds() + J2000_TO_J1900_DURATION.in_seconds());
+            Self::compute_gregorian(self.as_tdb_duration_since_j1900().in_seconds());
         if nanos == 0 {
             write!(
                 f,
@@ -1485,7 +1487,7 @@ impl fmt::UpperExp for Epoch {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeSystem::ET;
         let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.as_et_seconds() + J2000_TO_J1900_DURATION.in_seconds());
+            Self::compute_gregorian(self.as_et_duration_since_j1900().in_seconds());
         if nanos == 0 {
             write!(
                 f,
