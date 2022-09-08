@@ -690,16 +690,32 @@ fn test_from_str() {
 
     // Check reciprocity of string
     let greg = "2020-01-31T00:00:00 UTC";
-    assert_eq!(greg, Epoch::from_str(greg).unwrap().as_gregorian_utc_str());
+    assert_eq!(
+        greg,
+        Epoch::from_str(greg)
+            .unwrap()
+            .as_gregorian_str(TimeSystem::UTC)
+    );
     let greg = "2020-01-31T00:00:00 TAI";
-    assert_eq!(greg, Epoch::from_str(greg).unwrap().as_gregorian_tai_str());
-    // This imprecision is driving me nuts... I just cannot seem to represent TDB better than before with f64...
+    assert_eq!(
+        greg,
+        Epoch::from_str(greg)
+            .unwrap()
+            .as_gregorian_str(TimeSystem::TAI)
+    );
     let greg = "2020-01-31T00:00:00 TDB";
     assert_eq!(
         greg,
         Epoch::from_str(greg)
             .unwrap()
             .as_gregorian_str(TimeSystem::TDB)
+    );
+    let greg = "2020-01-31T00:00:00 ET";
+    assert_eq!(
+        greg,
+        Epoch::from_str(greg)
+            .unwrap()
+            .as_gregorian_str(TimeSystem::ET)
     );
 }
 
@@ -715,6 +731,24 @@ fn test_from_str_tdb() {
             .unwrap()
             .as_gregorian_str(TimeSystem::TDB)
     );
+}
+
+#[test]
+fn test_format() {
+    use hifitime::Epoch;
+
+    let epoch = Epoch::from_gregorian_utc_hms(2022, 9, 6, 23, 24, 29);
+
+    // Check the ET computation once more
+    assert!((epoch.as_et_seconds() - 715778738.1825389).abs() < EPSILON);
+
+    assert_eq!(format!("{epoch}"), "2022-09-06T23:24:29 UTC");
+    assert_eq!(format!("{epoch:x}"), "2022-09-06T23:25:06 TAI");
+    assert_eq!(format!("{epoch:X}"), "2022-09-06T23:25:38.184000015 TT");
+    assert_eq!(format!("{epoch:E}"), "2022-09-06T23:25:38.182538986 ET");
+    assert_eq!(format!("{epoch:e}"), "2022-09-06T23:25:38.182541370 TDB");
+    assert_eq!(format!("{epoch:p}"), "1662506669"); // UNIX seconds
+    assert_eq!(format!("{epoch:o}"), "1346541887000000000"); // GPS nanoseconds
 }
 
 #[test]

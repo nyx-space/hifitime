@@ -335,17 +335,18 @@ impl Epoch {
             seconds_j2000.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self::from_tdb_seconds_d(seconds_j2000 * Unit::Second)
+        Self::from_tdb_duration(seconds_j2000 * Unit::Second)
     }
 
     #[must_use]
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI.
-    fn from_tdb_seconds_d(duration: Duration) -> Epoch {
-        let gamma = Self::inner_g(duration.in_seconds());
+    fn from_tdb_duration(duration_j2k: Duration) -> Epoch {
+        let gamma = Self::inner_g(duration_j2k.in_seconds());
 
         let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
 
-        Self(duration - delta_tdb_tai + J2000_TO_J1900_DURATION)
+        // Offset back to J1900.
+        Self(duration_j2k - delta_tdb_tai + J2000_TO_J1900_DURATION)
     }
 
     #[must_use]
@@ -473,15 +474,12 @@ impl Epoch {
             duration_wrt_1900 -= Unit::Second;
         }
 
+        // NOTE: For ET and TDB, we make sure to offset the duration back to J2000 since those functions expect a J2000 input.
         Ok(match ts {
             TimeSystem::TAI => Self(duration_wrt_1900),
             TimeSystem::TT => Self(duration_wrt_1900 - Unit::Millisecond * TT_OFFSET_MS),
-            TimeSystem::ET => Self(
-                duration_wrt_1900 + Unit::Second * ET_EPOCH_S - Unit::Microsecond * ET_OFFSET_US,
-            ),
-            TimeSystem::TDB => {
-                Self::from_tdb_seconds_d(duration_wrt_1900 + J2000_TO_J1900_DURATION)
-            }
+            TimeSystem::ET => Self::from_et_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
+            TimeSystem::TDB => Self::from_tdb_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
             TimeSystem::UTC => panic!("use maybe_from_gregorian_utc for UTC time system"),
         })
     }
@@ -842,20 +840,15 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Returns the Ephemeris Time seconds past epoch
+    /// Returns the Ephemeris Time seconds past 2000 JAN 01 midnight, matches NASA/NAIF SPICE.
     pub fn as_et_seconds(&self) -> f64 {
         self.as_et_duration().in_seconds()
     }
 
     #[must_use]
-    /// Returns the Ephemeris Time seconds past epoch whose epoch is 2000 JAN 01 noon
-    pub fn as_et_seconds_j2k(&self) -> f64 {
-        self.as_et_duration_j2k().in_seconds()
-    }
-
-    #[must_use]
-    /// Returns the Ephemeris Time past epoch whose epoch is 2000 JAN 01 noon
-    pub fn as_et_duration_j2k(&self) -> Duration {
+    /// Returns the Ephemeris Time in duration past 1900 JAN 01 at noon.
+    /// **Only** use this if the subsequent computation expect J1900 seconds.
+    pub fn as_et_duration_since_j1900(&self) -> Duration {
         self.as_et_duration() + J2000_TO_J1900_DURATION
     }
 
@@ -939,15 +932,10 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration with reference epoch of 2000 JAN 01 at noon (SPICE format)
-    pub fn as_tdb_duration_j2k(&self) -> Duration {
+    /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration with reference epoch of 1900 JAN 01 at noon.
+    /// **Only** use this if the subsequent computation expect J1900 seconds.
+    pub fn as_tdb_duration_since_j1900(&self) -> Duration {
         self.as_tdb_duration() + J2000_TO_J1900_DURATION
-    }
-
-    #[must_use]
-    /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. <https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB>)
-    pub fn as_tdb_seconds_j2k(&self) -> f64 {
-        self.as_tdb_duration_j2k().in_seconds()
     }
 
     fn inner_g(seconds: f64) -> f64 {
@@ -1068,9 +1056,9 @@ impl Epoch {
         Self::compute_gregorian(self.as_tai_seconds())
     }
 
-    fn compute_gregorian(absolute_seconds: f64) -> (i32, u8, u8, u8, u8, u8, u32) {
+    fn compute_gregorian(absolute_seconds_j1900: f64) -> (i32, u8, u8, u8, u8, u8, u32) {
         let (mut year, mut year_fraction) =
-            div_rem_f64(absolute_seconds, DAYS_PER_YEAR_NLD * SECONDS_PER_DAY);
+            div_rem_f64(absolute_seconds_j1900, DAYS_PER_YEAR_NLD * SECONDS_PER_DAY);
         // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
         year += 1900;
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
@@ -1271,7 +1259,7 @@ impl Epoch {
                         }
                     }
                     None => {
-                        // Asumme UTC
+                        // Assume UTC
                         Self::maybe_from_gregorian_utc(
                             cap[1].to_owned().parse::<i32>()?,
                             cap[2].to_owned().parse::<u8>()?,
@@ -1306,7 +1294,8 @@ impl Epoch {
         let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(match ts {
             TimeSystem::TT => self.as_tt_seconds(),
             TimeSystem::TAI => self.as_tai_seconds(),
-            TimeSystem::TDB | TimeSystem::ET => self.as_tdb_seconds_j2k(),
+            TimeSystem::ET => self.as_et_duration_since_j1900().in_seconds(),
+            TimeSystem::TDB => self.as_tdb_duration_since_j1900().in_seconds(),
             TimeSystem::UTC => self.as_utc_seconds(),
         });
         if nanos == 0 {
@@ -1381,7 +1370,8 @@ impl FromStr for Epoch {
                         },
                         "SEC" => match ts {
                             TimeSystem::TAI => Ok(Self::from_tai_seconds(value)),
-                            TimeSystem::TDB | TimeSystem::ET => Ok(Self::from_tdb_seconds(value)),
+                            TimeSystem::ET => Ok(Self::from_et_seconds(value)),
+                            TimeSystem::TDB => Ok(Self::from_tdb_seconds(value)),
                             TimeSystem::TT => Ok(Self::from_tt_seconds(value)),
                             TimeSystem::UTC => Ok(Self::from_utc_seconds(value)),
                         },
@@ -1472,7 +1462,8 @@ impl fmt::LowerExp for Epoch {
     /// Prints the Epoch in TDB
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeSystem::TDB;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_tdb_seconds_j2k());
+        let (y, mm, dd, hh, min, s, nanos) =
+            Self::compute_gregorian(self.as_tdb_seconds() + J2000_TO_J1900_DURATION.in_seconds());
         if nanos == 0 {
             write!(
                 f,
@@ -1493,7 +1484,8 @@ impl fmt::UpperExp for Epoch {
     /// Prints the Epoch in ET
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeSystem::ET;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_et_seconds_j2k());
+        let (y, mm, dd, hh, min, s, nanos) =
+            Self::compute_gregorian(self.as_et_seconds() + J2000_TO_J1900_DURATION.in_seconds());
         if nanos == 0 {
             write!(
                 f,

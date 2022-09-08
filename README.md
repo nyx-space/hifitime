@@ -220,8 +220,8 @@ let epoch = Epoch::from_gregorian_utc_hms(2022, 9, 6, 23, 24, 29);
 assert_eq!(format!("{epoch}"), "2022-09-06T23:24:29 UTC");
 assert_eq!(format!("{epoch:x}"), "2022-09-06T23:25:06 TAI");
 assert_eq!(format!("{epoch:X}"), "2022-09-06T23:25:38.184000015 TT");
-assert_eq!(format!("{epoch:e}"), "2022-09-06T23:25:38.182541370 TDB");
 assert_eq!(format!("{epoch:E}"), "2022-09-06T23:25:38.182538986 ET");
+assert_eq!(format!("{epoch:e}"), "2022-09-06T23:25:38.182541370 TDB");
 assert_eq!(format!("{epoch:p}"), "1662506669"); // UNIX seconds
 assert_eq!(format!("{epoch:o}"), "1346541887000000000"); // GPS nanoseconds
 ```
