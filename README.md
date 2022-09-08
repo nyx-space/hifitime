@@ -179,7 +179,7 @@ Advantages:
 3. Duration arithmetics are exact, e.g. one third of an hour is exactly twenty minutes and not "0.33333 hours."
 
 Disadvantages:
-1. Most astrodynamics applications require the computation of a duration in floating point value such as to query an ephemeris. This design leads to an overhead there.
+1. Most astrodynamics applications require the computation of a duration in floating point values such as when querying an ephemeris. This design leads to an overhead of about 500 nanoseconds according to the benchmarks. You may run the benchmarks with `cargo bench`.
 
 ### Printing
 
@@ -194,6 +194,14 @@ assert_eq!(
         5.hours() + 256.0.milliseconds() + 1.0.nanoseconds()
     ),
     "5 h 256 ms 1 ns"
+);
+
+assert_eq!(
+    format!(
+        "{}",
+        5.days() + 1.0.nanoseconds()
+    ),
+    "5 days 1 ns"
 );
 ```
 
@@ -227,24 +235,19 @@ assert_eq!(format!("{epoch:o}"), "1346541887000000000"); // GPS nanoseconds
 ```
 
 ## Leap second support
-Each time computing library may decide when the extra leap second exists as explained
-in the [IETF leap second reference](https://www.ietf.org/timezones/data/leap-seconds.list).
-To ease computation, `hifitime` decides that second is the 60th of a UTC date, if such exists.
-Note that this second exists at a different time than defined on NASA HEASARC, which is
-used for validation of Julian dates in addition to SPICE's `et2utc` function. As an example of how this is handled, check the Julian
-day computations for [2015-06-30 23:59:59](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A59&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes),
-[2015-06-30 23:59:60](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A60&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes) and [2015-07-01 00:00:00](https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-07-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes).
+
+Leap seconds allow TAI (the absolute time reference) and UTC (the civil time reference) to not drift too much. In short, UTC allows humans to see the sun at zenith at noon, whereas TAI does not worry about that. Leap seconds are introduced to allow for UTC to catch up with the absolute time reference of TAI. Specifically, UTC clocks are "stopped" for one second to make up for the accumulated difference between TAI and UTC. These leap seconds are announced several months in advance by IERS, cf. in the [IETF leap second reference](https://www.ietf.org/timezones/data/leap-seconds.list).
+
+The "placement" of these leap seconds in the formatting of a UTC date is left up to the software: there is no common way to handle this. Some software prevents a second tick, i.e. at 23:59:59 the UTC clock will tick for _two seconds_ (instead of one) before hoping to 00:00:00. Some software, like hifitime, allow UTC dates to be formatted as 23:59:60 on strictly the days when a leap second is inserted. For example, the date `2016-12-31 23:59:60 UTC` is a valid date in hifitime because a leap second was inserted on 01 Jan 2017.
 
 ### Important
-There is a nine (9) second difference between NAIF SPICE and hifitime in the computation of ET/TDB times _prior_ to 01 January 1972 (date of the first leap second). NAIF assumes that because IERS did not publish leap seconds before that epoch, then the difference between TAI and UTC is fixed to nine seconds. Instead, hifitime claims that the number of leap seconds before that time is strictly zero, which allows the computation of UNIX time to be a specific offset of TAI, and follows the [IETF leap second list](https://www.ietf.org/timezones/data/leap-seconds.list) precisely.
-
-Prior to the first leap second, NAIF SPICE claims that there were nine seconds of difference between TAI and UTC: this is different from the [Standard of Fundamental Astronomy (SOFA)](https://www.iausofa.org/). SOFA's `iauDat` function will return non-integer leap seconds from 1960 to 1972. It will return an error for dates prior to 1960. Hifitime **only accounts for leap seconds announced by IERS** in its computations: there is a ten (10) second jump between TAI and UTC on 01 January 1972. However, the prehistoric (pre-1972) leap seconds as returned by SOFA are available in the `leap_seconds()` method of an epoch if the `iers_only` parameter is set to false.
+Prior to the first leap second, NAIF SPICE claims that there were nine seconds of difference between TAI and UTC: this is different from the [Standard of Fundamental Astronomy (SOFA)](https://www.iausofa.org/). SOFA's `iauDat` function will return non-integer leap seconds from 1960 to 1972. It will return an error for dates prior to 1960. **Hifitime only accounts for leap seconds announced by [IERS](https://www.ietf.org/timezones/data/leap-seconds.list)** in its computations: there is a ten (10) second jump between TAI and UTC on 01 January 1972. This allows the computation of UNIX time to be a specific offset of TAI in hifitime. However, the prehistoric (pre-1972) leap seconds as returned by SOFA are available in the `leap_seconds()` method of an epoch if the `iers_only` parameter is set to false.
 
 ## Ephemeris Time vs Dynamic Barycentric Time (TDB)
-ET and TDB should now be identical. _However_, NASA NAIF leap seconds files (e.g. [naif00012.tls](./naif00012.tls)) uses a simplified algorithm to compute the TDB:
+In theory, as of January 2000, ET and TDB should now be identical. _However_, the NASA NAIF leap seconds files (e.g. [naif00012.tls](./naif00012.tls)) use a simplified algorithm to compute the TDB:
 > Equation \[4\], which ignores small-period fluctuations, is accurate to about 0.000030 seconds.
 
-In order to provide full interoperability with NAIF, hifitime uses the NAIF algorithm for "ephemeris time" and the [ESA algorithm](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) for "dynamical barycentric time." Hence, if exact NAIF behavior is needed, use all of the functions marked as `et` instead of the `tdb` functions.
+In order to provide full interoperability with NAIF, hifitime uses the NAIF algorithm for "ephemeris time" and the [ESA algorithm](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) for "dynamical barycentric time." Hence, if exact NAIF behavior is needed, use all of the functions marked as `et` instead of the `tdb` functions, such as `epoch.as_et_seconds()` instead of `epoch.as_tdb_seconds()`.
 
 
 # Changelog
@@ -253,6 +256,7 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 + Ephemeris Time and Dynamical Barycentric Time fixed to use the J2000 reference epoch instead of the J1900 reference epoch. This is a **potentially breaking change** if you relied on the previous one century error when converting from/to ET/TDB into/from UTC _and storing the data as a string_. There is **no difference** if the original representation was used.
 + Ephemeris Time now **strictly** matches NAIF SPICE: **the error between SPICE and hifitime is now zero nanoseconds.** after the introduction of the first leap second. Prior to the first leap second, NAIF SPICE claims that there were nine seconds of difference between TAI and UTC: this is different from SOFA. Hifitime instead does not account for leap seconds in prehistoric (pre-1972) computations at all.
 + The [_Standard of Fundamentals of Astronomy_ (SOFA)](https://www.iausofa.org/2021_0512_C.html) leap seconds from 1960 to 1972 are now available with the `leap_seconds() -> Option<f64>` function on an instance of Epoch. **Importantly**, no difference in the behavior of hifitime should be noticed here: the prehistoric leap seconds are ignored in all calculations in hifitime and only provided to meet the SOFA calculations.
++ Epoch and Duration now have the C memory representation to allow for hifitime to be embedded in C more easily.
 
 ## 3.3.0
 + Formal verification of the normalization operation on `Duration`, which in turn guarantees that `Epoch` operations cannot panic, cf. [#127](https://github.com/nyx-space/hifitime/issues/127)
