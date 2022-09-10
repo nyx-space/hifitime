@@ -45,6 +45,9 @@ jobs:
       
       - name: Test (no default features)
         run: cargo test --no-default-features
+      
+      - name: Test (asn1der)
+        run: cargo test --features asn1der
 
   formal-verif:
     name: Formal Verification
