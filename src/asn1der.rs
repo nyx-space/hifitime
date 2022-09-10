@@ -20,7 +20,16 @@ impl Epoch {
     /// Enables the encoding of an epoch into ASN1 provided the time system to use for serialization.
     /// Epoch will always be serialized in a high fidelity duration.
     ///
-    /// ## Layout and size
+    /// ## Layout
+    /// Once encoded, the data is stored as follows, where the upper column represents the length in octets.
+    /// ```text
+    ///
+    /// |  1  |  1  |     1     |  1  |  1  |  11   |
+    /// | TAG | LEN | CENTURIES | TAG | LEN | NANOS |
+    ///
+    /// ```
+    ///
+    /// ## Size
     /// Although the data itself fits in 11 octets (1 for the time system and 10 for the duration),
     /// ASN1 is a variable size encoding with tags. For an epoch that's +/-7 centuries around its
     /// reference epoch, the ASN1 DER encoding will take up 16 octets. For durations further away
@@ -67,36 +76,54 @@ impl From<Asn1Epoch> for Epoch {
 impl Default for Asn1Epoch {
     fn default() -> Self {
         Self {
-            duration: Duration::ZERO,
+            duration: Duration::default(),
             time_system: TimeSystem::TAI,
         }
     }
 }
 
-impl Encode for Asn1Epoch {
+/// A duration is encoded with the centuries first followed by the nanoseconds.
+impl Encode for Duration {
     fn encoded_len(&self) -> der::Result<der::Length> {
-        let (centuries, nanoseconds) = self.duration.to_parts();
-        let ts: u8 = self.time_system.into();
-        ts.encoded_len()? + centuries.encoded_len()? + nanoseconds.encoded_len()?
+        let (centuries, nanoseconds) = self.to_parts();
+        centuries.encoded_len()? + nanoseconds.encoded_len()?
     }
 
     fn encode(&self, encoder: &mut dyn Writer) -> der::Result<()> {
-        let (centuries, nanoseconds) = self.duration.to_parts();
+        let (centuries, nanoseconds) = self.to_parts();
+        centuries.encode(encoder)?;
+        nanoseconds.encode(encoder)
+    }
+}
+
+impl<'a> Decode<'a> for Duration {
+    fn decode<R: Reader<'a>>(decoder: &mut R) -> der::Result<Self> {
+        let centuries = decoder.decode()?;
+        let nanoseconds = decoder.decode()?;
+        Ok(Duration::from_parts(centuries, nanoseconds))
+    }
+}
+
+/// An Epoch is encoded with time system first followed by the duration structure.
+impl Encode for Asn1Epoch {
+    fn encoded_len(&self) -> der::Result<der::Length> {
+        let ts: u8 = self.time_system.into();
+        ts.encoded_len()? + self.duration.encoded_len()?
+    }
+
+    fn encode(&self, encoder: &mut dyn Writer) -> der::Result<()> {
         let ts: u8 = self.time_system.into();
 
         ts.encode(encoder)?;
-        centuries.encode(encoder)?;
-        nanoseconds.encode(encoder)
+        self.duration.encode(encoder)
     }
 }
 
 impl<'a> Decode<'a> for Asn1Epoch {
     fn decode<R: Reader<'a>>(decoder: &mut R) -> der::Result<Self> {
         let ts: u8 = decoder.decode()?;
-        let centuries = decoder.decode()?;
-        let nanoseconds = decoder.decode()?;
+        let duration = decoder.decode()?;
         let time_system: TimeSystem = TimeSystem::from(ts);
-        let duration = Duration::from_parts(centuries, nanoseconds);
         Ok(Self {
             duration,
             time_system,
@@ -104,6 +131,7 @@ impl<'a> Decode<'a> for Asn1Epoch {
     }
 }
 
+// Testing the encoding and decoding of an Epoch inherently also tests the encoding and decoding of a Duration
 #[test]
 fn test_encdec() {
     let epoch = Epoch::from_gregorian_utc_hms(2022, 9, 6, 23, 24, 29);

@@ -24,7 +24,7 @@ default-features = false
 criterion = "0.3.5"
 
 [features]
-default = ["std", "asn1der"]
+default = ["std"]
 std = ["regex", "serde", "serde_derive"]
 asn1der = ["der"]
 

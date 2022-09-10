@@ -75,6 +75,12 @@ impl PartialEq for Duration {
     }
 }
 
+impl Default for Duration {
+    fn default() -> Self {
+        Duration::ZERO
+    }
+}
+
 impl Duration {
     fn normalize(&mut self) {
         let extra_centuries = self.nanoseconds.div_euclid(NANOSECONDS_PER_CENTURY);
