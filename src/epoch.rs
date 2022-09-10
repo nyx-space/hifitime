@@ -1675,7 +1675,6 @@ fn formal_utc_epoch() {
     kani::assume(minute < 60);
     let second: u8 = kani::any();
     kani::assume(second < 60); // We don't check for leap seconds here
-    let nanos: u32 = kani::any();
 
-    let _e = Epoch::from_gregorian_utc(year.into(), month, day, hour, minute, second, nanos);
+    let _e = Epoch::from_gregorian_utc_hms(year.into(), month, day, hour, minute, second);
 }
