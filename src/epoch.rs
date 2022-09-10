@@ -1658,23 +1658,3 @@ fn deser_test() {
 
     println!("{}", (1 * Unit::Century + 12 * Unit::Hour).in_seconds());
 }
-
-#[cfg(kani)]
-#[kani::proof]
-fn formal_utc_epoch() {
-    // Bound the year to +32,768
-    let year: u16 = kani::any();
-    kani::assume(year < 32_768);
-    let month: u8 = kani::any();
-    kani::assume(month < 13);
-    let day: u8 = kani::any();
-    kani::assume(day < 28); // There are for sure 28 days every month
-    let hour: u8 = kani::any();
-    kani::assume(hour < 24);
-    let minute: u8 = kani::any();
-    kani::assume(minute < 60);
-    let second: u8 = kani::any();
-    kani::assume(second < 60); // We don't check for leap seconds here
-
-    let _e = Epoch::from_gregorian_utc_hms(year.into(), month, day, hour, minute, second);
-}
