@@ -1,3 +1,13 @@
+/*
+ * Hifitime, part of the Nyx Space tools
+ * Copyright (C) 2022 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. AUTHORS.md)
+ * This Source Code Form is subject to the terms of the Apache
+ * v. 2.0. If a copy of the Apache License was not distributed with this
+ * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Documentation: https://nyxspace.com/
+ */
+
 use crate::duration::{Duration, Unit};
 use crate::{
     Errors, TimeSystem, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR_NLD, ET_EPOCH_S, J1900_OFFSET,
@@ -97,7 +107,7 @@ const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 
 /// Refer to the appropriate functions for initializing this Epoch from different time systems or representations.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(C)]
-pub struct Epoch(Duration);
+pub struct Epoch(pub(crate) Duration);
 
 impl Sub for Epoch {
     type Output = Duration;
@@ -306,7 +316,13 @@ impl Epoch {
             seconds.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self::from_tai_seconds(seconds) - Unit::Millisecond * TT_OFFSET_MS
+        Self::from_tt_duration(seconds * Unit::Second)
+    }
+
+    #[must_use]
+    /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
+    pub(crate) fn from_tt_duration(duration: Duration) -> Self {
+        Self(duration) - Unit::Millisecond * TT_OFFSET_MS
     }
 
     #[must_use]
@@ -340,7 +356,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI.
-    fn from_tdb_duration(duration_j2k: Duration) -> Epoch {
+    pub(crate) fn from_tdb_duration(duration_j2k: Duration) -> Epoch {
         let gamma = Self::inner_g(duration_j2k.in_seconds());
 
         let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;

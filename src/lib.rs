@@ -1,6 +1,16 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(feature = "std"), no_std)]
 
+/*
+ * Hifitime, part of the Nyx Space tools
+ * Copyright (C) 2022 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. AUTHORS.md)
+ * This Source Code Form is subject to the terms of the Apache
+ * v. 2.0. If a copy of the Apache License was not distributed with this
+ * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Documentation: https://nyxspace.com/
+ */
+
 pub const J1900_NAIF: f64 = 2_415_020.0;
 pub const J2000_NAIF: f64 = 2_451_545.0;
 /// `J1900_OFFSET` determines the offset in julian days between 01 Jan 1900 at midnight and the
@@ -78,6 +88,9 @@ pub use timeseries::*;
 pub mod prelude {
     pub use {Duration, Epoch, Freq, Frequencies, TimeSeries, TimeUnits, Unit};
 }
+
+#[cfg(feature = "asn1der")]
+pub mod asn1der;
 
 extern crate num_traits;
 
@@ -168,6 +181,34 @@ pub enum TimeSystem {
     UTC,
 }
 
+/// Allows conversion of a TimeSystem into a u8
+/// Mapping: TAI: 0; TT: 1; ET: 2; TDB: 3; UTC: 4.
+impl From<TimeSystem> for u8 {
+    fn from(ts: TimeSystem) -> Self {
+        match ts {
+            TimeSystem::TAI => 0,
+            TimeSystem::TT => 1,
+            TimeSystem::ET => 2,
+            TimeSystem::TDB => 3,
+            TimeSystem::UTC => 4,
+        }
+    }
+}
+
+/// Allows conversion of a u8 into a TimeSystem.
+/// Mapping: 1: TT; 2: ET; 3: TDB; 4: UTC; anything else: TAI
+impl From<u8> for TimeSystem {
+    fn from(val: u8) -> Self {
+        match val {
+            1 => TimeSystem::TT,
+            2 => TimeSystem::ET,
+            3 => TimeSystem::TDB,
+            4 => TimeSystem::UTC,
+            _ => TimeSystem::TAI,
+        }
+    }
+}
+
 impl FromStr for TimeSystem {
     type Err = Errors;
 
@@ -198,5 +239,18 @@ mod tests {
         assert!(Errors::Carry == Errors::Carry);
         assert!(ParsingErrors::ParseIntError == ParsingErrors::ParseIntError);
         assert!(TimeSystem::ET == TimeSystem::ET);
+    }
+}
+
+#[test]
+fn test_ts() {
+    for ts_u8 in 0..u8::MAX {
+        let ts = TimeSystem::from(ts_u8);
+        let ts_u8_back: u8 = ts.into();
+        if ts_u8 < 5 {
+            // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
+            // This may therefore be a different u8 than in ts_u8.
+            assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
+        }
     }
 }

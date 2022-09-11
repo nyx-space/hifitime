@@ -45,24 +45,9 @@ jobs:
       
       - name: Test (no default features)
         run: cargo test --no-default-features
-
-  formal-verif:
-    name: Formal Verification
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout sources
-        uses: actions/checkout@v2
-      - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      - name: Install Kani
-        run: cargo install --locked kani-verifier && cargo-kani setup
       
-      - name: Run Kani
-        run: cargo kani
+      - name: Test (asn1der)
+        run: cargo test --features asn1der
 
   lints:
     name: Lints
