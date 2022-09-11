@@ -242,15 +242,15 @@ mod tests {
     }
 }
 
-#[cfg(kani)]
-#[kani::proof]
-fn formal_ts_u8() {
-    let ts_u8: u8 = kani::any();
-    let ts = TimeSystem::from(ts_u8);
-    let ts_u8_back: u8 = ts.into();
-    if ts_u8_back < 5 {
-        // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
-        // This may therefore be a different u8 than in ts_u8.
-        assert_eq!(ts_u8_back, ts_u8);
+#[test]
+fn test_ts() {
+    for ts_u8 in 0..u8::MAX {
+        let ts = TimeSystem::from(ts_u8);
+        let ts_u8_back: u8 = ts.into();
+        if ts_u8 < 5 {
+            // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
+            // This may therefore be a different u8 than in ts_u8.
+            assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
+        }
     }
 }
