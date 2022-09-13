@@ -29,6 +29,9 @@ use super::serde::{de, Deserialize, Deserializer};
 #[cfg(feature = "std")]
 use std::str::FromStr;
 
+#[cfg(not(feature = "std"))]
+use num_traits::Float;
+
 pub const DAYS_PER_CENTURY_U64: u64 = 36_525;
 pub const NANOSECONDS_PER_MICROSECOND: u64 = 1_000;
 pub const NANOSECONDS_PER_MILLISECOND: u64 = 1_000 * NANOSECONDS_PER_MICROSECOND;

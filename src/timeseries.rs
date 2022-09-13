@@ -9,6 +9,9 @@
  */
 
 use super::{Duration, Epoch};
+#[cfg(not(feature = "std"))]
+use num_traits::Float;
+
 /*
 
 NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/itertools_num/linspace.rs.html#78-93 .

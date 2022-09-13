@@ -4,7 +4,7 @@ on:
     branches:
       - master
 
-name: Test Workflow
+name: Formal Verification Workflow
 
 jobs:
 
