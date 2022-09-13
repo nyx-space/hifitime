@@ -50,7 +50,7 @@ jobs:
         run: cargo test --features asn1der
 
   test_no_std:
-    name: no-std Nightly Test Suite
+    name: no-std build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
