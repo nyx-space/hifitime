@@ -1,6 +1,7 @@
 [package]
 name = "hifitime"
 version = "3.4.0"
+resolver = "2"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
 description = "Ultra-precise date and time handling in Rust for scientific applications with leap second support"
 homepage = "https://nyxspace.com/MathSpec/time/"
