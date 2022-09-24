@@ -161,3 +161,56 @@ impl Unit {
         1.0 / self.in_seconds()
     }
 }
+
+/// Allows conversion of a Unit into a u8 with the following mapping.
+/// 0: Second; 1: Nanosecond; 2: Microsecond; 3: Millisecond; 4: Minute; 5: Hour; 6: Day; 7: Century
+impl From<Unit> for u8 {
+    fn from(unit: Unit) -> Self {
+        match unit {
+            Unit::Nanosecond => 1,
+            Unit::Microsecond => 2,
+            Unit::Millisecond => 3,
+            Unit::Minute => 4,
+            Unit::Hour => 5,
+            Unit::Day => 6,
+            Unit::Century => 7,
+            Unit::Second => 0,
+        }
+    }
+}
+
+impl From<&Unit> for u8 {
+    fn from(unit: &Unit) -> Self {
+        u8::from(*unit)
+    }
+}
+
+/// Allows conversion of a u8 into a Unit. Defaults to Second if the u8 is not a valid Unit representation.
+impl From<u8> for Unit {
+    fn from(val: u8) -> Self {
+        match val {
+            1 => Unit::Nanosecond,
+            2 => Unit::Microsecond,
+            3 => Unit::Millisecond,
+            4 => Unit::Minute,
+            5 => Unit::Hour,
+            6 => Unit::Day,
+            7 => Unit::Century,
+            _ => Unit::Second,
+        }
+    }
+}
+
+#[test]
+fn test_unit_conversion() {
+    for unit_u8 in 0..u8::MAX {
+        let unit = Unit::from(unit_u8);
+        let unit_u8_back: u8 = unit.into();
+        // If the u8 is greater than 8, it isn't valid and necessarily encoded as Second.
+        if unit_u8 < 8 {
+            assert_eq!(unit_u8_back, unit_u8, "got {unit_u8_back} want {unit_u8}");
+        } else {
+            assert_eq!(unit, Unit::Second);
+        }
+    }
+}

@@ -26,7 +26,7 @@ features = ["libm"]
 criterion = "0.4.0"
 
 [features]
-default = ["std"]
+default = ["std", "asn1der"]
 std = ["regex", "serde", "serde_derive"]
 asn1der = ["der"]
 

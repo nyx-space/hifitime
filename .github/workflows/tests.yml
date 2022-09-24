@@ -42,12 +42,9 @@ jobs:
 
       - name: Test (default features)
         run: cargo test
-      
+
       - name: Test (no default features)
         run: cargo test --no-default-features
-
-      - name: Test (asn1der)
-        run: cargo test --features asn1der
 
   test_no_std:
     name: no-std build
@@ -66,7 +63,7 @@ jobs:
 
       - name: Build (nightly + no default features + no_std target)
         run: cargo build --no-default-features --target=aarch64-unknown-none -Z build-std=core
-      
+
   lints:
     name: Lints
     runs-on: ubuntu-latest
