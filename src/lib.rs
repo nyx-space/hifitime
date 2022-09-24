@@ -79,8 +79,10 @@ mod epoch;
 pub use epoch::*;
 
 mod duration;
-
 pub use duration::*;
+
+mod timeunits;
+pub use timeunits::*;
 
 mod timeseries;
 pub use timeseries::*;
