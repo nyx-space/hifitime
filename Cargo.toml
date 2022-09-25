@@ -33,3 +33,7 @@ asn1der = ["der"]
 [[bench]]
 name = "bench_epoch"
 harness = false
+
+[[bench]]
+name = "bench_duration"
+harness = false
