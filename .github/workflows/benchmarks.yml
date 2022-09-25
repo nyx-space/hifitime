@@ -26,20 +26,20 @@ jobs:
       - name: Bench (with default features)
         run: cargo bench --no-default-features --bench bench_duration
     
-    epoch:
-      name: Benchmark epoch
-      runs-on: ubuntu-latest
-      steps:
-        - name: Checkout sources
-          uses: actions/checkout@v2
-        - name: Install stable toolchain
-          uses: actions-rs/toolchain@v1
-          with:
-            toolchain: stable
-            override: true
+  epoch:
+    name: Benchmark epoch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
 
-        - name: Bench (with default features)
-          run: cargo bench --bench bench_epoch
-        
-        - name: Bench (with default features)
-          run: cargo bench --no-default-features --bench bench_epoch
+      - name: Bench (with default features)
+        run: cargo bench --bench bench_epoch
+      
+      - name: Bench (with default features)
+        run: cargo bench --no-default-features --bench bench_epoch
