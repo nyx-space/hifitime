@@ -23,7 +23,7 @@ jobs:
       - name: Bench (with default features)
         run: cargo bench --bench bench_duration
       
-      - name: Bench (with default features)
+      - name: Bench (no default features)
         run: cargo bench --no-default-features --bench bench_duration
     
   epoch:
@@ -41,5 +41,5 @@ jobs:
       - name: Bench (with default features)
         run: cargo bench --bench bench_epoch
       
-      - name: Bench (with default features)
+      - name: Bench (no default features)
         run: cargo bench --no-default-features --bench bench_epoch
