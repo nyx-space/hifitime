@@ -10,10 +10,19 @@
 
 use core::ops::{Add, Mul, Sub};
 
-use crate::{Duration, DAYS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
+#[cfg(feature = "python")]
+use pyo3::prelude::*;
+
+use crate::{
+    Duration, DAYS_PER_CENTURY, NANOSECONDS_PER_CENTURY, NANOSECONDS_PER_DAY, NANOSECONDS_PER_HOUR,
+    NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_MINUTE,
+    NANOSECONDS_PER_SECOND, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE,
+};
 
 /// An Enum to perform time unit conversions.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
+#[cfg(feature = "python")]
+#[pyclass]
 pub enum Unit {
     Nanosecond,
     Microsecond,
@@ -141,6 +150,7 @@ impl Sub for Unit {
     }
 }
 
+#[pymethods]
 impl Unit {
     #[must_use]
     pub fn in_seconds(&self) -> f64 {
@@ -159,6 +169,21 @@ impl Unit {
     #[must_use]
     pub fn from_seconds(&self) -> f64 {
         1.0 / self.in_seconds()
+    }
+
+    #[cfg(feature = "python")]
+    fn __add__(&self, other: Self) -> Duration {
+        *self + other
+    }
+
+    #[cfg(feature = "python")]
+    fn __sub__(&self, other: Self) -> Duration {
+        *self - other
+    }
+
+    #[cfg(feature = "python")]
+    fn __mul__(&self, other: f64) -> Duration {
+        *self * other
     }
 }
 
@@ -197,6 +222,54 @@ impl From<u8> for Unit {
             6 => Unit::Day,
             7 => Unit::Century,
             _ => Unit::Second,
+        }
+    }
+}
+
+impl Mul<i64> for Unit {
+    type Output = Duration;
+
+    /// Converts the input values to i128 and creates a duration from that
+    /// This method will necessarily ignore durations below nanoseconds
+    fn mul(self, q: i64) -> Duration {
+        let total_ns = match self {
+            Unit::Century => q * (NANOSECONDS_PER_CENTURY as i64),
+            Unit::Day => q * (NANOSECONDS_PER_DAY as i64),
+            Unit::Hour => q * (NANOSECONDS_PER_HOUR as i64),
+            Unit::Minute => q * (NANOSECONDS_PER_MINUTE as i64),
+            Unit::Second => q * (NANOSECONDS_PER_SECOND as i64),
+            Unit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as i64),
+            Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as i64),
+            Unit::Nanosecond => q,
+        };
+        if total_ns.abs() < (i64::MAX as i64) {
+            Duration::from_truncated_nanoseconds(total_ns as i64)
+        } else {
+            Duration::from_total_nanoseconds(total_ns as i128)
+        }
+    }
+}
+
+impl Mul<f64> for Unit {
+    type Output = Duration;
+
+    /// Converts the input values to i128 and creates a duration from that
+    /// This method will necessarily ignore durations below nanoseconds
+    fn mul(self, q: f64) -> Duration {
+        let total_ns = match self {
+            Unit::Century => q * (NANOSECONDS_PER_CENTURY as f64),
+            Unit::Day => q * (NANOSECONDS_PER_DAY as f64),
+            Unit::Hour => q * (NANOSECONDS_PER_HOUR as f64),
+            Unit::Minute => q * (NANOSECONDS_PER_MINUTE as f64),
+            Unit::Second => q * (NANOSECONDS_PER_SECOND as f64),
+            Unit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as f64),
+            Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as f64),
+            Unit::Nanosecond => q,
+        };
+        if total_ns.abs() < (i64::MAX as f64) {
+            Duration::from_truncated_nanoseconds(total_ns as i64)
+        } else {
+            Duration::from_total_nanoseconds(total_ns as i128)
         }
     }
 }

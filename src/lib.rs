@@ -88,11 +88,20 @@ mod timeseries;
 pub use timeseries::*;
 
 pub mod prelude {
-    pub use {Duration, Epoch, Freq, Frequencies, TimeSeries, TimeUnits, Unit};
+    pub use {Duration, Epoch, Errors, Freq, Frequencies, TimeSeries, TimeSystem, TimeUnits, Unit};
 }
 
 #[cfg(feature = "asn1der")]
 pub mod asn1der;
+
+#[cfg(feature = "python")]
+pub mod python;
+
+#[cfg(feature = "python")]
+extern crate pyo3;
+
+#[cfg(feature = "python")]
+use pyo3::prelude::*;
 
 extern crate num_traits;
 
@@ -170,6 +179,8 @@ impl Error for Errors {}
 
 /// Enum of the different time systems available
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[cfg(feature = "python")]
+#[pyclass]
 pub enum TimeSystem {
     /// Ephemeris Time as defined by SPICE (slightly different from true TDB)
     ET,

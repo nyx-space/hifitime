@@ -28,6 +28,9 @@ use super::serde::{de, Deserialize, Deserializer};
 #[cfg(feature = "std")]
 use std::str::FromStr;
 
+#[cfg(feature = "python")]
+use pyo3::prelude::*;
+
 #[cfg(not(feature = "std"))]
 use num_traits::Float;
 
@@ -51,6 +54,8 @@ pub const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_
 /// 2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
 #[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
 #[repr(C)]
+#[cfg(feature = "python")]
+#[pyclass]
 pub struct Duration {
     pub(crate) centuries: i16,
     pub(crate) nanoseconds: u64,
@@ -83,6 +88,108 @@ impl Default for Duration {
     }
 }
 
+// Defines the methods that are only available from Rust
+impl Duration {
+    /// Builds a new duration from the number of centuries and the number of nanoseconds
+    #[must_use]
+    pub fn new(centuries: i16, nanoseconds: u64) -> Self {
+        let mut out = Self {
+            centuries,
+            nanoseconds,
+        };
+        out.normalize();
+        out
+    }
+
+    #[must_use]
+    /// Create a normalized duration from its parts
+    pub fn from_parts(centuries: i16, nanoseconds: u64) -> Self {
+        let mut me = Self {
+            centuries,
+            nanoseconds,
+        };
+        me.normalize();
+        me
+    }
+
+    #[must_use]
+    /// Converts the total nanoseconds as i128 into this Duration (saving 48 bits)
+    pub fn from_total_nanoseconds(nanos: i128) -> Self {
+        // In this function, we simply check that the input data can be casted. The `normalize` function will check whether more work needs to be done.
+        if nanos == 0 {
+            Self::ZERO
+        } else {
+            let centuries_i128 = nanos.div_euclid(NANOSECONDS_PER_CENTURY.into());
+            let remaining_nanos_i128 = nanos.rem_euclid(NANOSECONDS_PER_CENTURY.into());
+            if centuries_i128 > i16::MAX.into() {
+                Self::MAX
+            } else if centuries_i128 < i16::MIN.into() {
+                Self::MIN
+            } else {
+                // We know that the centuries fit, and we know that the nanos are less than the number
+                // of nanos per centuries, and rem_euclid guarantees that it's positive, so the
+                // casting will work fine every time.
+                Self::from_parts(centuries_i128 as i16, remaining_nanos_i128 as u64)
+            }
+        }
+    }
+
+    #[must_use]
+    /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
+    pub fn from_truncated_nanoseconds(nanos: i64) -> Self {
+        if nanos < 0 {
+            let ns = nanos.unsigned_abs();
+            let extra_centuries = ns.div_euclid(NANOSECONDS_PER_CENTURY);
+            if extra_centuries > i16::MAX as u64 {
+                Self::MIN
+            } else {
+                let rem_nanos = ns.rem_euclid(NANOSECONDS_PER_CENTURY);
+                Self::from_parts(
+                    -1 - (extra_centuries as i16),
+                    NANOSECONDS_PER_CENTURY - rem_nanos,
+                )
+            }
+        } else {
+            Self::from_parts(0, nanos.unsigned_abs())
+        }
+    }
+
+    /// Creates a new duration from the provided unit
+    #[must_use]
+    pub fn from_f64(value: f64, unit: Unit) -> Self {
+        unit * value
+    }
+
+    /// Creates a new duration from its parts
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn compose(
+        sign: i8,
+        days: u64,
+        hours: u64,
+        minutes: u64,
+        seconds: u64,
+        milliseconds: u64,
+        microseconds: u64,
+        nanoseconds: u64,
+    ) -> Self {
+        let me: Self = (days as i64).days()
+            + (hours as i64).hours()
+            + (minutes as i64).minutes()
+            + (seconds as i64).seconds()
+            + (milliseconds as i64).seconds()
+            + (microseconds as i64).microseconds()
+            + (nanoseconds as i64).nanoseconds();
+        if sign == -1 {
+            -me
+        } else {
+            me
+        }
+    }
+}
+
+#[cfg(feature = "python")]
+#[pymethods]
 impl Duration {
     fn normalize(&mut self) {
         let extra_centuries = self.nanoseconds.div_euclid(NANOSECONDS_PER_CENTURY);
@@ -123,43 +230,10 @@ impl Duration {
     }
 
     #[must_use]
-    /// Create a normalized duration from its parts
-    pub fn from_parts(centuries: i16, nanoseconds: u64) -> Self {
-        let mut me = Self {
-            centuries,
-            nanoseconds,
-        };
-        me.normalize();
-        me
-    }
-
-    #[must_use]
     /// Returns the centuries and nanoseconds of this duration
     /// NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly.
     pub const fn to_parts(&self) -> (i16, u64) {
         (self.centuries, self.nanoseconds)
-    }
-
-    #[must_use]
-    /// Converts the total nanoseconds as i128 into this Duration (saving 48 bits)
-    pub fn from_total_nanoseconds(nanos: i128) -> Self {
-        // In this function, we simply check that the input data can be casted. The `normalize` function will check whether more work needs to be done.
-        if nanos == 0 {
-            Self::ZERO
-        } else {
-            let centuries_i128 = nanos.div_euclid(NANOSECONDS_PER_CENTURY.into());
-            let remaining_nanos_i128 = nanos.rem_euclid(NANOSECONDS_PER_CENTURY.into());
-            if centuries_i128 > i16::MAX.into() {
-                Self::MAX
-            } else if centuries_i128 < i16::MIN.into() {
-                Self::MIN
-            } else {
-                // We know that the centuries fit, and we know that the nanos are less than the number
-                // of nanos per centuries, and rem_euclid guarantees that it's positive, so the
-                // casting will work fine every time.
-                Self::from_parts(centuries_i128 as i16, remaining_nanos_i128 as u64)
-            }
-        }
     }
 
     /// Returns the total nanoseconds in a signed 128 bit integer
@@ -215,32 +289,6 @@ impl Duration {
         }
     }
 
-    #[must_use]
-    /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
-    pub fn from_truncated_nanoseconds(nanos: i64) -> Self {
-        if nanos < 0 {
-            let ns = nanos.unsigned_abs();
-            let extra_centuries = ns.div_euclid(NANOSECONDS_PER_CENTURY);
-            if extra_centuries > i16::MAX as u64 {
-                Self::MIN
-            } else {
-                let rem_nanos = ns.rem_euclid(NANOSECONDS_PER_CENTURY);
-                Self::from_parts(
-                    -1 - (extra_centuries as i16),
-                    NANOSECONDS_PER_CENTURY - rem_nanos,
-                )
-            }
-        } else {
-            Self::from_parts(0, nanos.unsigned_abs())
-        }
-    }
-
-    /// Creates a new duration from the provided unit
-    #[must_use]
-    pub fn from_f64(value: f64, unit: Unit) -> Self {
-        unit * value
-    }
-
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     #[must_use]
@@ -271,17 +319,6 @@ impl Duration {
         } else {
             *self
         }
-    }
-
-    /// Builds a new duration from the number of centuries and the number of nanoseconds
-    #[must_use]
-    pub fn new(centuries: i16, nanoseconds: u64) -> Self {
-        let mut out = Self {
-            centuries,
-            nanoseconds,
-        };
-        out.normalize();
-        out
     }
 
     /// Returns the sign of this duration
@@ -346,33 +383,6 @@ impl Duration {
                     ns_left.try_into().unwrap(),
                 )
             }
-        }
-    }
-
-    /// Creates a new duration from its parts
-    #[allow(clippy::too_many_arguments)]
-    #[must_use]
-    pub fn compose(
-        sign: i8,
-        days: u64,
-        hours: u64,
-        minutes: u64,
-        seconds: u64,
-        milliseconds: u64,
-        microseconds: u64,
-        nanoseconds: u64,
-    ) -> Self {
-        let me: Self = (days as i64).days()
-            + (hours as i64).hours()
-            + (minutes as i64).minutes()
-            + (seconds as i64).seconds()
-            + (milliseconds as i64).seconds()
-            + (microseconds as i64).microseconds()
-            + (nanoseconds as i64).nanoseconds();
-        if sign == -1 {
-            -me
-        } else {
-            me
         }
     }
 
@@ -480,6 +490,83 @@ impl Duration {
         centuries: -1,
         nanoseconds: NANOSECONDS_PER_CENTURY - 1,
     };
+
+    // Python helpers
+
+    #[cfg(feature = "python")]
+    #[new]
+    fn new_py(string_repr: String) -> PyResult<Self> {
+        match Self::from_str(&string_repr) {
+            Ok(d) => Ok(d),
+            Err(e) => Err(PyErr::from(e)),
+        }
+    }
+
+    #[cfg(feature = "python")]
+    fn __str__(&self) -> String {
+        format!("{self}")
+    }
+
+    #[cfg(feature = "python")]
+    fn __repr__(&self) -> String {
+        format!("{self}")
+    }
+
+    #[cfg(feature = "python")]
+    fn __add__(&self, other: Self) -> Duration {
+        *self + other
+    }
+
+    #[cfg(feature = "python")]
+    fn __sub__(&self, other: Self) -> Duration {
+        *self - other
+    }
+
+    #[cfg(feature = "python")]
+    fn __mul__(&self, other: f64) -> Duration {
+        *self * other
+    }
+
+    #[cfg(feature = "python")]
+    fn __div__(&self, other: f64) -> Duration {
+        *self / other
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    fn zero() -> Duration {
+        Duration::ZERO
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    fn epsilon() -> Duration {
+        Duration::EPSILON
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    fn max() -> Duration {
+        Duration::MAX
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    fn min() -> Duration {
+        Duration::MIN
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    fn min_positive() -> Duration {
+        Duration::MIN_POSITIVE
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    fn min_negative() -> Duration {
+        Duration::MIN_NEGATIVE
+    }
 }
 
 #[cfg(feature = "std")]
@@ -527,54 +614,6 @@ impl Mul<f64> for Duration {
                 .saturating_mul(new_val as i128)
                 .saturating_div(10_i128.pow(p.try_into().unwrap())),
         )
-    }
-}
-
-impl Mul<i64> for Unit {
-    type Output = Duration;
-
-    /// Converts the input values to i128 and creates a duration from that
-    /// This method will necessarily ignore durations below nanoseconds
-    fn mul(self, q: i64) -> Duration {
-        let total_ns = match self {
-            Unit::Century => q * (NANOSECONDS_PER_CENTURY as i64),
-            Unit::Day => q * (NANOSECONDS_PER_DAY as i64),
-            Unit::Hour => q * (NANOSECONDS_PER_HOUR as i64),
-            Unit::Minute => q * (NANOSECONDS_PER_MINUTE as i64),
-            Unit::Second => q * (NANOSECONDS_PER_SECOND as i64),
-            Unit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as i64),
-            Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as i64),
-            Unit::Nanosecond => q,
-        };
-        if total_ns.abs() < (i64::MAX as i64) {
-            Duration::from_truncated_nanoseconds(total_ns as i64)
-        } else {
-            Duration::from_total_nanoseconds(total_ns as i128)
-        }
-    }
-}
-
-impl Mul<f64> for Unit {
-    type Output = Duration;
-
-    /// Converts the input values to i128 and creates a duration from that
-    /// This method will necessarily ignore durations below nanoseconds
-    fn mul(self, q: f64) -> Duration {
-        let total_ns = match self {
-            Unit::Century => q * (NANOSECONDS_PER_CENTURY as f64),
-            Unit::Day => q * (NANOSECONDS_PER_DAY as f64),
-            Unit::Hour => q * (NANOSECONDS_PER_HOUR as f64),
-            Unit::Minute => q * (NANOSECONDS_PER_MINUTE as f64),
-            Unit::Second => q * (NANOSECONDS_PER_SECOND as f64),
-            Unit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as f64),
-            Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as f64),
-            Unit::Nanosecond => q,
-        };
-        if total_ns.abs() < (i64::MAX as f64) {
-            Duration::from_truncated_nanoseconds(total_ns as i64)
-        } else {
-            Duration::from_total_nanoseconds(total_ns as i128)
-        }
     }
 }
 

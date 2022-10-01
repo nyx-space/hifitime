@@ -12,11 +12,17 @@ categories = ["date-and-time"]
 readme = "README.md"
 license = "Apache-2.0"
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "hifitime"
+
 [dependencies]
 serde = {version = "1.0.137", optional = true}
 regex = {version = "1.5.5", optional = true}
 serde_derive = {version = "1.0.137", optional = true}
 der = {version = "0.6.0", features = ["derive", "real"], optional = true}
+pyo3 = { version = "0.17.1", features = ["extension-module", "multiple-pymethods"], optional = true}
+
 [dependencies.num-traits]
 version = "0.2"
 default-features = false
@@ -26,9 +32,10 @@ features = ["libm"]
 criterion = "0.4.0"
 
 [features]
-default = ["std", "asn1der"]
+default = ["std", "asn1der", "python"]
 std = ["regex", "serde", "serde_derive"]
 asn1der = ["der"]
+python = ["std", "asn1der", "pyo3"]
 
 [[bench]]
 name = "bench_epoch"

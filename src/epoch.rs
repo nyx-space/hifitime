@@ -24,6 +24,8 @@ use crate::ParsingErrors;
 use super::regex::Regex;
 #[cfg(feature = "std")]
 use super::serde::{de, Deserialize, Deserializer};
+#[cfg(feature = "python")]
+use pyo3::prelude::*;
 #[cfg(feature = "std")]
 use std::str::FromStr;
 #[cfg(feature = "std")]
@@ -110,6 +112,8 @@ const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 
 /// Refer to the appropriate functions for initializing this Epoch from different time systems or representations.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(C)]
+#[cfg(feature = "python")]
+#[pyclass]
 pub struct Epoch(pub(crate) Duration);
 
 impl Sub for Epoch {
@@ -190,6 +194,7 @@ impl AddAssign<Duration> for Epoch {
     }
 }
 
+// #[pymethods]
 impl Epoch {
     #[must_use]
     /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
