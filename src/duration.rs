@@ -87,7 +87,7 @@ impl Default for Duration {
     }
 }
 
-// Defines the methods that are only available from Rust
+// Defines the methods that should be staticmethods in Python, but must be redefined as per https://github.com/PyO3/pyo3/issues/1003#issuecomment-844433346
 impl Duration {
     /// Builds a new duration from the number of centuries and the number of nanoseconds
     #[must_use]
@@ -227,11 +227,24 @@ impl Duration {
         }
     }
 
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Create a normalized duration from its parts
+    pub fn from_parts_py(centuries: i16, nanoseconds: u64) -> Self {
+        Self::from_parts(centuries, nanoseconds)
+    }
+
     #[must_use]
     /// Returns the centuries and nanoseconds of this duration
     /// NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly.
     pub const fn to_parts(&self) -> (i16, u64) {
         (self.centuries, self.nanoseconds)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    pub fn from_total_nanoseconds_py(nanos: i128) -> Self {
+        Self::from_total_nanoseconds(nanos)
     }
 
     /// Returns the total nanoseconds in a signed 128 bit integer
@@ -247,6 +260,13 @@ impl Duration {
             i128::from(self.centuries + 1) * i128::from(NANOSECONDS_PER_CENTURY)
                 + i128::from(self.nanoseconds)
         }
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
+    pub fn from_truncated_nanoseconds_py(nanos: i64) -> Self {
+        Self::from_truncated_nanoseconds(nanos)
     }
 
     /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.
@@ -323,6 +343,33 @@ impl Duration {
     #[must_use]
     pub const fn signum(&self) -> i8 {
         self.centuries.signum() as i8
+    }
+
+    /// Creates a new duration from its parts
+    #[allow(clippy::too_many_arguments)]
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    #[must_use]
+    pub fn compose_py(
+        sign: i8,
+        days: u64,
+        hours: u64,
+        minutes: u64,
+        seconds: u64,
+        milliseconds: u64,
+        microseconds: u64,
+        nanoseconds: u64,
+    ) -> Self {
+        Self::compose(
+            sign,
+            days,
+            hours,
+            minutes,
+            seconds,
+            milliseconds,
+            microseconds,
+            nanoseconds,
+        )
     }
 
     /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns

@@ -18,9 +18,6 @@ impl std::convert::From<Errors> for PyErr {
     }
 }
 
-/// Stored the Python methods related to Epoch
-mod epoch;
-
 #[pymodule]
 fn hifitime(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Epoch>()?;

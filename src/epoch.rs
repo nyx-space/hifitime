@@ -193,39 +193,8 @@ impl AddAssign<Duration> for Epoch {
     }
 }
 
-// #[pymethods]
+// Defines the methods that should be staticmethods in Python, but must be redefined as per https://github.com/PyO3/pyo3/issues/1003#issuecomment-844433346
 impl Epoch {
-    #[must_use]
-    /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
-    /// For the leap seconds _and_ the scaling in "prehistoric" times from 1960 to 1972, use `leap_seconds()`.
-    #[deprecated(note = "Prefer leap_seconds_iers or leap_seconds", since = "3.4.0")]
-    pub fn get_num_leap_seconds(&self) -> i32 {
-        self.leap_seconds_iers()
-    }
-
-    #[must_use]
-    /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
-    pub fn leap_seconds_iers(&self) -> i32 {
-        match self.leap_seconds(true) {
-            Some(v) => v as i32,
-            None => 0,
-        }
-    }
-
-    /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds and the SOFA scaling from 1960 to 1972, depending on flag.
-    /// Returns None if the epoch is before 1960, year at which UTC was defined.
-    ///
-    /// # Why does this function return an `Option` when the other returns a value
-    /// This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960.
-    pub fn leap_seconds(&self, iers_only: bool) -> Option<f64> {
-        for (tai_ts, delta_at, announced) in LEAP_SECONDS.iter().rev() {
-            if self.0.in_seconds() >= *tai_ts && (!iers_only || *announced) {
-                return Some(*delta_at);
-            }
-        }
-        None
-    }
-
     #[must_use]
     /// Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch.
     pub const fn from_tai_duration(duration: Duration) -> Self {
@@ -328,7 +297,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
-    pub(crate) fn from_tt_duration(duration: Duration) -> Self {
+    pub fn from_tt_duration(duration: Duration) -> Self {
         Self(duration) - Unit::Millisecond * TT_OFFSET_MS
     }
 
@@ -363,7 +332,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI.
-    pub(crate) fn from_tdb_duration(duration_j2k: Duration) -> Epoch {
+    pub fn from_tdb_duration(duration_j2k: Duration) -> Epoch {
         let gamma = Self::inner_g(duration_j2k.in_seconds());
 
         let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
@@ -615,6 +584,424 @@ impl Epoch {
             .expect("invalid Gregorian date")
     }
 
+    fn delta_et_tai(seconds: f64) -> f64 {
+        // Calculate M, the mean anomaly.4
+        let m = NAIF_M0 + seconds * NAIF_M1;
+        // Calculate eccentric anomaly
+        let e = m + NAIF_EB * m.sin();
+
+        (TT_OFFSET_MS * Unit::Millisecond).in_seconds() + NAIF_K * e.sin()
+    }
+
+    fn inner_g(seconds: f64) -> f64 {
+        use core::f64::consts::TAU;
+        let g = TAU / 360.0 * 357.528 + 1.990_910_018_065_731e-7 * seconds;
+        // Return gamma
+        1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
+    }
+
+    fn compute_gregorian(absolute_seconds_j1900: f64) -> (i32, u8, u8, u8, u8, u8, u32) {
+        let (mut year, mut year_fraction) =
+            div_rem_f64(absolute_seconds_j1900, DAYS_PER_YEAR_NLD * SECONDS_PER_DAY);
+        // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
+        year += 1900;
+        // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
+        // between 1900 and `year`
+        for year in 1900..year {
+            if is_leap_year(year) {
+                year_fraction -= SECONDS_PER_DAY;
+            }
+        }
+
+        // Get the month from the exact number of seconds between the start of the year and now
+        let mut seconds_til_this_month = 0.0;
+        let mut month = 1;
+        if year_fraction < 0.0 {
+            month = 12;
+            year -= 1;
+        } else {
+            loop {
+                seconds_til_this_month +=
+                    SECONDS_PER_DAY * f64::from(USUAL_DAYS_PER_MONTH[(month - 1) as usize]);
+                if is_leap_year(year) && month == 2 {
+                    seconds_til_this_month += SECONDS_PER_DAY;
+                }
+                if seconds_til_this_month > year_fraction {
+                    break;
+                }
+                month += 1;
+            }
+        }
+        let mut days_this_month = USUAL_DAYS_PER_MONTH[(month - 1) as usize];
+        if month == 2 && is_leap_year(year) {
+            days_this_month += 1;
+        }
+        // Get the month fraction by the number of seconds in this month from the number of
+        // seconds since the start of this month.
+        let (_, month_fraction) = div_rem_f64(
+            year_fraction - seconds_til_this_month,
+            f64::from(days_this_month) * SECONDS_PER_DAY,
+        );
+        // Get the day by the exact number of seconds in a day
+        let (mut day, day_fraction) = div_rem_f64(month_fraction, SECONDS_PER_DAY);
+        if day < 0 {
+            // Overflow backwards (this happens for end of year calculations)
+            month -= 1;
+            if month == 0 {
+                month = 12;
+                year -= 1;
+            }
+            day = USUAL_DAYS_PER_MONTH[(month - 1) as usize] as i32;
+        }
+        day += 1; // Otherwise the day count starts at 0
+                  // Get the hours by the exact number of seconds in an hour
+        let (hours, hours_fraction) = div_rem_f64(day_fraction, 60.0 * 60.0);
+        // Get the minutes and seconds by the exact number of seconds in a minute
+        let (mins, secs) = div_rem_f64(hours_fraction, 60.0);
+        let nanos = (div_rem_f64(secs, 1.0).1 * 1e9) as u32;
+        (
+            year,
+            month as u8,
+            day as u8,
+            hours as u8,
+            mins as u8,
+            secs as u8,
+            nanos,
+        )
+    }
+}
+
+#[cfg_attr(feature = "python", pymethods)]
+impl Epoch {
+    #[must_use]
+    /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
+    /// For the leap seconds _and_ the scaling in "prehistoric" times from 1960 to 1972, use `leap_seconds()`.
+    #[deprecated(note = "Prefer leap_seconds_iers or leap_seconds", since = "3.4.0")]
+    pub fn get_num_leap_seconds(&self) -> i32 {
+        self.leap_seconds_iers()
+    }
+
+    #[must_use]
+    /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
+    pub fn leap_seconds_iers(&self) -> i32 {
+        match self.leap_seconds(true) {
+            Some(v) => v as i32,
+            None => 0,
+        }
+    }
+
+    /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds and the SOFA scaling from 1960 to 1972, depending on flag.
+    /// Returns None if the epoch is before 1960, year at which UTC was defined.
+    ///
+    /// # Why does this function return an `Option` when the other returns a value
+    /// This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960.
+    pub fn leap_seconds(&self, iers_only: bool) -> Option<f64> {
+        for (tai_ts, delta_at, announced) in LEAP_SECONDS.iter().rev() {
+            if self.0.in_seconds() >= *tai_ts && (!iers_only || *announced) {
+                return Some(*delta_at);
+            }
+        }
+        None
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch.
+    pub const fn from_tai_duration_py(duration: Duration) -> Self {
+        Self::from_tai_duration(duration)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch.
+    pub fn from_tai_parts_py(centuries: i16, nanoseconds: u64) -> Self {
+        Self::from_tai_parts(centuries, nanoseconds)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
+    pub fn from_tai_seconds_py(seconds: f64) -> Self {
+        Self::from_tai_seconds(seconds)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight
+    pub fn from_tai_days_py(days: f64) -> Self {
+        Self::from_tai_days(days)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
+    pub fn from_utc_seconds_py(seconds: f64) -> Self {
+        Self::from_utc_seconds(seconds)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight
+    pub fn from_utc_days_py(days: f64) -> Self {
+        Self::from_utc_days(days)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    pub fn from_mjd_tai_py(days: f64) -> Self {
+        Self::from_mjd_tai(days)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    pub fn from_mjd_utc_py(days: f64) -> Self {
+        Self::from_mjd_utc(days)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    pub fn from_jde_tai_py(days: f64) -> Self {
+        Self::from_jde_tai(days)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    pub fn from_jde_utc_py(days: f64) -> Self {
+        Self::from_jde_utc(days)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
+    pub fn from_tt_seconds_py(seconds: f64) -> Self {
+        Self::from_tt_seconds(seconds)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
+    pub fn from_tt_duration_py(duration: Duration) -> Self {
+        Self::from_tt_duration(duration)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)
+    pub fn from_et_seconds_py(seconds_since_j2000: f64) -> Epoch {
+        Self::from_et_seconds(seconds_since_j2000)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    pub fn from_et_duration_py(duration_since_j2000: Duration) -> Self {
+        Self::from_et_duration(duration_since_j2000)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from Dynamic Barycentric Time (TDB) seconds past 2000 JAN 01 midnight (difference than SPICE)
+    /// NOTE: This uses the ESA algorithm, which is a notch more complicated than the SPICE algorithm, but more precise.
+    /// In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ESA algorithm should be exactly correct.
+    pub fn from_tdb_seconds_py(seconds_j2000: f64) -> Epoch {
+        Self::from_tdb_seconds(seconds_j2000)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI.
+    pub fn from_tdb_duration_py(duration_j2k: Duration) -> Epoch {
+        Self::from_tdb_duration(duration_j2k)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize from the JDE days
+    pub fn from_jde_et_py(days: f64) -> Self {
+        Self::from_jde_et(days)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days
+    pub fn from_jde_tdb_py(days: f64) -> Self {
+        Self::from_jde_tdb(days)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the number of seconds since the GPS Time Epoch,
+    /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    pub fn from_gpst_seconds_py(seconds: f64) -> Self {
+        Self::from_gpst_seconds(seconds)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the number of days since the GPS Time Epoch,
+    /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    pub fn from_gpst_days_py(days: f64) -> Self {
+        Self::from_gpst_days(days)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
+    /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    /// This may be useful for time keeping devices that use GPS as a time source.
+    pub fn from_gpst_nanoseconds_py(nanoseconds: u64) -> Self {
+        Self::from_gpst_nanoseconds(nanoseconds)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01.
+    pub fn from_unix_seconds_py(seconds: f64) -> Self {
+        Self::from_unix_seconds(seconds)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01.
+    pub fn from_unix_milliseconds_py(milliseconds: f64) -> Self {
+        Self::from_unix_milliseconds(milliseconds)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Attempts to build an Epoch from the provided Gregorian date and time in TAI.
+    pub fn maybe_from_gregorian_tai_py(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        nanos: u32,
+    ) -> Result<Self, Errors> {
+        Self::maybe_from_gregorian_tai(year, month, day, hour, minute, second, nanos)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Attempts to build an Epoch from the provided Gregorian date and time in the provided time system.
+    /// NOTE: If the timesystem is TDB, this function assumes that the SPICE format is used
+    #[allow(clippy::too_many_arguments)]
+    pub fn maybe_from_gregorian_py(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        nanos: u32,
+        ts: TimeSystem,
+    ) -> Result<Self, Errors> {
+        Self::maybe_from_gregorian(year, month, day, hour, minute, second, nanos, ts)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
+    /// Use maybe_from_gregorian_tai if unsure.
+    pub fn from_gregorian_tai_py(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        nanos: u32,
+    ) -> Self {
+        Self::from_gregorian_tai(year, month, day, hour, minute, second, nanos)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize from the Gregoerian date at midnight in TAI.
+    pub fn from_gregorian_tai_at_midnight_py(year: i32, month: u8, day: u8) -> Self {
+        Self::from_gregorian_tai_at_midnight(year, month, day)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize from the Gregorian date at noon in TAI
+    pub fn from_gregorian_tai_at_noon_py(year: i32, month: u8, day: u8) -> Self {
+        Self::from_gregorian_tai_at_noon(year, month, day)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize from the Gregorian date and time (without the nanoseconds) in TAI
+    pub fn from_gregorian_tai_hms_py(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+    ) -> Self {
+        Self::from_gregorian_tai_hms(year, month, day, hour, minute, second)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Attempts to build an Epoch from the provided Gregorian date and time in UTC.
+    pub fn maybe_from_gregorian_utc_py(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        nanos: u32,
+    ) -> Result<Self, Errors> {
+        Self::maybe_from_gregorian_utc(year, month, day, hour, minute, second, nanos)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
+    /// Use maybe_from_gregorian_tai if unsure.
+    pub fn from_gregorian_utc_py(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        nanos: u32,
+    ) -> Self {
+        Self::from_gregorian_utc(year, month, day, hour, minute, second, nanos)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize from Gregorian date in UTC at midnight
+    pub fn from_gregorian_utc_at_midnight_py(year: i32, month: u8, day: u8) -> Self {
+        Self::from_gregorian_utc_at_midnight(year, month, day)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize from Gregorian date in UTC at noon
+    pub fn from_gregorian_utc_at_noon_py(year: i32, month: u8, day: u8) -> Self {
+        Self::from_gregorian_utc_at_noon(year, month, day)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize from the Gregorian date and time (without the nanoseconds) in UTC
+    pub fn from_gregorian_utc_hms_py(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+    ) -> Self {
+        Self::from_gregorian_utc_hms(year, month, day, hour, minute, second)
+    }
+
     #[must_use]
     /// Returns the number of TAI seconds since J1900
     pub fn as_tai_seconds(&self) -> f64 {
@@ -654,7 +1041,6 @@ impl Epoch {
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in UTC
     pub fn as_utc_duration(&self) -> Duration {
-        // let cnt = self.get_num_leap_seconds();
         // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
         self.0 - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second
     }
@@ -902,15 +1288,6 @@ impl Epoch {
         self.0 + delta_et_tai * Unit::Second - J2000_TO_J1900_DURATION
     }
 
-    fn delta_et_tai(seconds: f64) -> f64 {
-        // Calculate M, the mean anomaly.4
-        let m = NAIF_M0 + seconds * NAIF_M1;
-        // Calculate eccentric anomaly
-        let e = m + NAIF_EB * m.sin();
-
-        (TT_OFFSET_MS * Unit::Millisecond).in_seconds() + NAIF_K * e.sin()
-    }
-
     #[must_use]
     /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration since J2000
     ///
@@ -959,13 +1336,6 @@ impl Epoch {
     /// **Only** use this if the subsequent computation expect J1900 seconds.
     pub fn as_tdb_duration_since_j1900(&self) -> Duration {
         self.as_tdb_duration() + J2000_TO_J1900_DURATION
-    }
-
-    fn inner_g(seconds: f64) -> f64 {
-        use core::f64::consts::TAU;
-        let g = TAU / 360.0 * 357.528 + 1.990_910_018_065_731e-7 * seconds;
-        // Return gamma
-        1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
     }
 
     #[must_use]
@@ -1081,76 +1451,6 @@ impl Epoch {
         Self::compute_gregorian(self.as_tai_seconds())
     }
 
-    fn compute_gregorian(absolute_seconds_j1900: f64) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let (mut year, mut year_fraction) =
-            div_rem_f64(absolute_seconds_j1900, DAYS_PER_YEAR_NLD * SECONDS_PER_DAY);
-        // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
-        year += 1900;
-        // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
-        // between 1900 and `year`
-        for year in 1900..year {
-            if is_leap_year(year) {
-                year_fraction -= SECONDS_PER_DAY;
-            }
-        }
-
-        // Get the month from the exact number of seconds between the start of the year and now
-        let mut seconds_til_this_month = 0.0;
-        let mut month = 1;
-        if year_fraction < 0.0 {
-            month = 12;
-            year -= 1;
-        } else {
-            loop {
-                seconds_til_this_month +=
-                    SECONDS_PER_DAY * f64::from(USUAL_DAYS_PER_MONTH[(month - 1) as usize]);
-                if is_leap_year(year) && month == 2 {
-                    seconds_til_this_month += SECONDS_PER_DAY;
-                }
-                if seconds_til_this_month > year_fraction {
-                    break;
-                }
-                month += 1;
-            }
-        }
-        let mut days_this_month = USUAL_DAYS_PER_MONTH[(month - 1) as usize];
-        if month == 2 && is_leap_year(year) {
-            days_this_month += 1;
-        }
-        // Get the month fraction by the number of seconds in this month from the number of
-        // seconds since the start of this month.
-        let (_, month_fraction) = div_rem_f64(
-            year_fraction - seconds_til_this_month,
-            f64::from(days_this_month) * SECONDS_PER_DAY,
-        );
-        // Get the day by the exact number of seconds in a day
-        let (mut day, day_fraction) = div_rem_f64(month_fraction, SECONDS_PER_DAY);
-        if day < 0 {
-            // Overflow backwards (this happens for end of year calculations)
-            month -= 1;
-            if month == 0 {
-                month = 12;
-                year -= 1;
-            }
-            day = USUAL_DAYS_PER_MONTH[(month - 1) as usize] as i32;
-        }
-        day += 1; // Otherwise the day count starts at 0
-                  // Get the hours by the exact number of seconds in an hour
-        let (hours, hours_fraction) = div_rem_f64(day_fraction, 60.0 * 60.0);
-        // Get the minutes and seconds by the exact number of seconds in a minute
-        let (mins, secs) = div_rem_f64(hours_fraction, 60.0);
-        let nanos = (div_rem_f64(secs, 1.0).1 * 1e9) as u32;
-        (
-            year,
-            month as u8,
-            day as u8,
-            hours as u8,
-            mins as u8,
-            secs as u8,
-            nanos,
-        )
-    }
-
     /// Floors this epoch to the closest provided duration
     ///
     /// # Example
@@ -1197,6 +1497,21 @@ impl Epoch {
     /// ```
     pub fn round(&self, duration: Duration) -> Self {
         Self(self.0.round(duration))
+    }
+
+    #[cfg(feature = "python")]
+    #[new]
+    fn new_py(string_repr: String) -> PyResult<Self> {
+        match Self::from_str(&string_repr) {
+            Ok(d) => Ok(d),
+            Err(e) => Err(PyErr::from(e)),
+        }
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    pub fn now_py() -> Result<Self, Errors> {
+        Self::now()
     }
 }
 
