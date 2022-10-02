@@ -1499,6 +1499,8 @@ impl Epoch {
         Self(self.0.round(duration))
     }
 
+    // Python helpers
+
     #[cfg(feature = "python")]
     #[new]
     fn new_py(string_repr: String) -> PyResult<Self> {
@@ -1512,6 +1514,26 @@ impl Epoch {
     #[staticmethod]
     pub fn now_py() -> Result<Self, Errors> {
         Self::now()
+    }
+
+    #[cfg(feature = "python")]
+    fn __str__(&self) -> String {
+        format!("{self}")
+    }
+
+    #[cfg(feature = "python")]
+    fn __repr__(&self) -> String {
+        format!("{self}")
+    }
+
+    #[cfg(feature = "python")]
+    fn __add__(&self, duration: Duration) -> Self {
+        *self + duration
+    }
+
+    #[cfg(feature = "python")]
+    fn __sub__(&self, duration: Duration) -> Self {
+        *self - duration
     }
 }
 

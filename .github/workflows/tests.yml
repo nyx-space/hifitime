@@ -43,6 +43,9 @@ jobs:
       - name: Test (default features)
         run: cargo test
 
+      - name: Test (ASN1)
+        run: cargo test --features asn1der
+
       - name: Test (no default features)
         run: cargo test --no-default-features
 
