@@ -271,8 +271,8 @@ impl Duration {
 
     /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.
     pub fn try_truncated_nanoseconds(&self) -> Result<i64, Errors> {
-        // If it fits, we know that the nanoseconds also fit
-        if self.centuries.abs() >= 3 {
+        // If it fits, we know that the nanoseconds also fit. abs() will fail if the centuries are min'ed out.
+        if self.centuries == i16::MIN || self.centuries.abs() >= 3 {
             Err(Errors::Overflow)
         } else if self.centuries == -1 {
             Ok(-((NANOSECONDS_PER_CENTURY - self.nanoseconds) as i64))

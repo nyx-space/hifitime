@@ -1535,6 +1535,24 @@ impl Epoch {
     fn __sub__(&self, duration: Duration) -> Self {
         *self - duration
     }
+
+    #[cfg(feature = "python")]
+    /// Converts the Epoch to UTC Gregorian in the ISO8601 format.
+    pub fn as_gregorian_utc_py(&self) -> String {
+        self.as_gregorian_utc_str()
+    }
+
+    #[cfg(feature = "python")]
+    /// Converts the Epoch to TAI Gregorian in the ISO8601 format.
+    pub fn as_gregorian_tai_py(&self) -> String {
+        self.as_gregorian_tai_str()
+    }
+
+    #[cfg(feature = "python")]
+    /// Converts the Epoch to Gregorian in the ISO8601 format in the provided TimeSystem
+    pub fn as_gregorian_py(&self, ts: TimeSystem) -> String {
+        self.as_gregorian_str(ts)
+    }
 }
 
 #[cfg(feature = "std")]

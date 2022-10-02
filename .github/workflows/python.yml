@@ -8,6 +8,18 @@ on:
   pull_request:
 
 jobs:
+  example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: messense/maturin-action@v1
+        with:
+          manylinux: auto
+          command: build
+          args: --develop -F python
+      - name: Run example
+        run: python examples/python/main.py
+
   linux:
     runs-on: ubuntu-latest
     steps:

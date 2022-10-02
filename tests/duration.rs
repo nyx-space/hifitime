@@ -152,6 +152,9 @@ fn duration_print() {
     let delta = sum.in_unit(Unit::Millisecond).floor() - sum.in_unit(Unit::Second).floor() * 1000.0;
     assert_eq!(delta * -1.0, 0.0);
     assert_eq!(format!("{}", sum), "-35 min");
+
+    assert_eq!(format!("{}", Duration::MAX), "1196851200 days");
+    assert_eq!(format!("{}", Duration::MIN), "-1196778150 days");
 }
 
 #[test]
