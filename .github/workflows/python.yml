@@ -19,7 +19,7 @@ jobs:
           args: --release --sdist -o dist --find-interpreter -F python
 
       - name: Run example
-        run: python examples/python/main.py
+        run: maturin develop -F python && python examples/python/main.py
 
       - name: Upload wheels
         uses: actions/upload-artifact@v2
