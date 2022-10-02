@@ -16,7 +16,7 @@ jobs:
         with:
           manylinux: auto
           command: build
-          args: --develop -F python
+          args: develop -F python
       - name: Run example
         run: python examples/python/main.py
 

@@ -200,12 +200,6 @@ mod tests {
 
         let mut count = 0;
         let time_series = TimeSeries::exclusive(start, end, step);
-
-        assert_eq!(
-            format!("{}", time_series),
-            "TimeSeries [2017-01-14T00:00:00 UTC : 2017-01-14T10:00:00 UTC : 2 h]"
-        );
-
         for epoch in time_series {
             if count == 0 {
                 assert_eq!(
@@ -224,12 +218,6 @@ mod tests {
 
         count = 0;
         let time_series = TimeSeries::inclusive(start, end, step);
-
-        assert_eq!(
-            format!("{}", time_series),
-            "TimeSeries [2017-01-14T00:00:00 UTC : 2017-01-14T12:00:00 UTC : 2 h]"
-        );
-
         for epoch in time_series {
             if count == 0 {
                 assert_eq!(
