@@ -179,8 +179,7 @@ impl Error for Errors {}
 
 /// Enum of the different time systems available
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-#[cfg(feature = "python")]
-#[pyclass]
+#[cfg_attr(feature = "python", pyclass)]
 pub enum TimeSystem {
     /// Ephemeris Time as defined by SPICE (slightly different from true TDB)
     ET,

@@ -21,8 +21,7 @@ use crate::{
 
 /// An Enum to perform time unit conversions.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
-#[cfg(feature = "python")]
-#[pyclass]
+#[cfg_attr(feature = "python", pyclass)]
 pub enum Unit {
     Nanosecond,
     Microsecond,
@@ -150,7 +149,7 @@ impl Sub for Unit {
     }
 }
 
-#[pymethods]
+#[cfg_attr(feature = "python", pymethods)]
 impl Unit {
     #[must_use]
     pub fn in_seconds(&self) -> f64 {

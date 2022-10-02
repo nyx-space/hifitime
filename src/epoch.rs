@@ -112,8 +112,7 @@ const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 
 /// Refer to the appropriate functions for initializing this Epoch from different time systems or representations.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(C)]
-#[cfg(feature = "python")]
-#[pyclass]
+#[cfg_attr(feature = "python", pyclass)]
 pub struct Epoch(pub(crate) Duration);
 
 impl Sub for Epoch {

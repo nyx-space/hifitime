@@ -54,8 +54,7 @@ pub const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_
 /// 2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
 #[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
 #[repr(C)]
-#[cfg(feature = "python")]
-#[pyclass]
+#[cfg_attr(feature = "python", pyclass)]
 pub struct Duration {
     pub(crate) centuries: i16,
     pub(crate) nanoseconds: u64,
@@ -188,8 +187,7 @@ impl Duration {
     }
 }
 
-#[cfg(feature = "python")]
-#[pymethods]
+#[cfg_attr(feature = "python", pymethods)]
 impl Duration {
     fn normalize(&mut self) {
         let extra_centuries = self.nanoseconds.div_euclid(NANOSECONDS_PER_CENTURY);
