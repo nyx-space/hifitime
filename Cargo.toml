@@ -1,6 +1,6 @@
 [package]
 name = "hifitime"
-version = "3.4.0"
+version = "3.4.1"
 resolver = "2"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
 description = "Ultra-precise date and time handling in Rust for scientific applications with leap second support"
@@ -11,12 +11,19 @@ keywords = ["date", "time", "science", "leap-second", "no-std"]
 categories = ["date-and-time"]
 readme = "README.md"
 license = "Apache-2.0"
+exclude = ["*.tar.gz"]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+name = "hifitime"
 
 [dependencies]
 serde = {version = "1.0.137", optional = true}
 regex = {version = "1.5.5", optional = true}
 serde_derive = {version = "1.0.137", optional = true}
 der = {version = "0.6.0", features = ["derive", "real"], optional = true}
+pyo3 = { version = "0.17.1", features = ["extension-module"], optional = true}
+
 [dependencies.num-traits]
 version = "0.2"
 default-features = false
@@ -29,7 +36,12 @@ criterion = "0.4.0"
 default = ["std"]
 std = ["regex", "serde", "serde_derive"]
 asn1der = ["der"]
+python = ["std", "asn1der", "pyo3"]
 
 [[bench]]
 name = "bench_epoch"
+harness = false
+
+[[bench]]
+name = "bench_duration"
 harness = false

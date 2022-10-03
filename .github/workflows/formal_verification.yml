@@ -7,7 +7,6 @@ on:
 name: Formal Verification Workflow
 
 jobs:
-
   formal-verif:
     name: Formal Verification
     runs-on: ubuntu-latest
@@ -21,7 +20,12 @@ jobs:
           override: true
 
       - name: Install Kani
-        run: cargo install --locked kani-verifier && cargo-kani setup
-      
+        run: |
+          cargo install --locked kani-verifier
+          cargo-kani setup
+
       - name: Run Kani
-        run: cargo kani
+        run: |
+          # Remove `cdylib` from targets in Cargo.toml because it confuses Kani
+          sed -i s/'"cdylib", "rlib"'/'"rlib"'/ Cargo.toml
+          cargo kani

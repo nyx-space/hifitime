@@ -27,8 +27,11 @@ jobs:
           command: check
 
   test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     name: Test Suite
-    runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
         uses: actions/checkout@v2
@@ -42,12 +45,23 @@ jobs:
 
       - name: Test (default features)
         run: cargo test
-      
+
+      - name: Test (ASN1)
+        run: cargo test --features asn1der
+
       - name: Test (no default features)
         run: cargo test --no-default-features
 
-      - name: Test (asn1der)
-        run: cargo test --features asn1der
+      # - uses: actions/setup-python@v2
+      #   with:
+      #     python-version: "3.7"
+      # - name: Python unit tests
+      #   run: |
+      #     python3 -m venv venv3
+      #     source venv3/bin/activate
+      #     python3 -m pip install maturin numpy
+      #     maturin develop
+      #     python3 examples/python/main.py
 
   test_no_std:
     name: no-std build
@@ -66,7 +80,7 @@ jobs:
 
       - name: Build (nightly + no default features + no_std target)
         run: cargo build --no-default-features --target=aarch64-unknown-none -Z build-std=core
-      
+
   lints:
     name: Lints
     runs-on: ubuntu-latest

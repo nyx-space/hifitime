@@ -10,6 +10,8 @@
 
 extern crate der;
 
+use crate::Unit;
+
 use super::{Duration, Epoch, TimeSystem};
 
 use self::der::{Decode, Encode, Reader, Writer};
@@ -128,6 +130,26 @@ impl<'a> Decode<'a> for Asn1Epoch {
             duration,
             time_system,
         })
+    }
+}
+
+/// An Epoch is encoded with time system first followed by the duration structure.
+impl Encode for Unit {
+    fn encoded_len(&self) -> der::Result<der::Length> {
+        let converted: u8 = self.into();
+        converted.encoded_len()
+    }
+
+    fn encode(&self, encoder: &mut dyn Writer) -> der::Result<()> {
+        let converted: u8 = self.into();
+        converted.encode(encoder)
+    }
+}
+
+impl<'a> Decode<'a> for Unit {
+    fn decode<R: Reader<'a>>(decoder: &mut R) -> der::Result<Self> {
+        let converted: u8 = decoder.decode()?;
+        Ok(Self::from(converted))
     }
 }
 

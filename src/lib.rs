@@ -79,18 +79,29 @@ mod epoch;
 pub use epoch::*;
 
 mod duration;
-
 pub use duration::*;
+
+mod timeunits;
+pub use timeunits::*;
 
 mod timeseries;
 pub use timeseries::*;
 
 pub mod prelude {
-    pub use {Duration, Epoch, Freq, Frequencies, TimeSeries, TimeUnits, Unit};
+    pub use {Duration, Epoch, Errors, Freq, Frequencies, TimeSeries, TimeSystem, TimeUnits, Unit};
 }
 
 #[cfg(feature = "asn1der")]
 pub mod asn1der;
+
+#[cfg(feature = "python")]
+pub mod python;
+
+#[cfg(feature = "python")]
+extern crate pyo3;
+
+#[cfg(feature = "python")]
+use pyo3::prelude::*;
 
 extern crate num_traits;
 
@@ -168,6 +179,7 @@ impl Error for Errors {}
 
 /// Enum of the different time systems available
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "python", pyclass)]
 pub enum TimeSystem {
     /// Ephemeris Time as defined by SPICE (slightly different from true TDB)
     ET,
@@ -247,10 +259,11 @@ fn test_ts() {
     for ts_u8 in 0..u8::MAX {
         let ts = TimeSystem::from(ts_u8);
         let ts_u8_back: u8 = ts.into();
+        // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
         if ts_u8 < 5 {
-            // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
-            // This may therefore be a different u8 than in ts_u8.
             assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
+        } else {
+            assert_eq!(ts, TimeSystem::TAI);
         }
     }
 }

@@ -9,9 +9,14 @@
  */
 
 use super::{Duration, Epoch};
+
+use core::fmt;
+
 #[cfg(not(feature = "std"))]
 use num_traits::Float;
 
+#[cfg(feature = "python")]
+use pyo3::prelude::*;
 /*
 
 NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/itertools_num/linspace.rs.html#78-93 .
@@ -19,7 +24,8 @@ NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/iter
 */
 
 /// An iterator of a sequence of evenly spaced Epochs.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "python", pyclass)]
 pub struct TimeSeries {
     start: Epoch,
     end: Epoch,
@@ -79,6 +85,55 @@ impl TimeSeries {
             cur: start - step,
             incl: true,
         }
+    }
+}
+
+impl fmt::Display for TimeSeries {
+    // Prints this duration with automatic selection of the units, i.e. everything that isn't zero is ignored
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "TimeSeries [{} : {} : {}]",
+            self.start,
+            if self.incl {
+                self.end
+            } else {
+                self.end - self.step
+            },
+            self.step
+        )
+    }
+}
+
+#[cfg(feature = "python")]
+#[pymethods]
+impl TimeSeries {
+    #[new]
+    /// Return an iterator of evenly spaced Epochs
+    /// If inclusive is set to true, this iterator is inclusive on start **and** on end.
+    /// If inclusive is set to false, only the start epoch is included in the iteration.
+    fn new_py(start: Epoch, end: Epoch, step: Duration, inclusive: bool) -> Self {
+        if inclusive {
+            Self::inclusive(start, end, step)
+        } else {
+            Self::exclusive(start, end, step)
+        }
+    }
+
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<'_, Self>) -> Option<Epoch> {
+        slf.next()
+    }
+
+    fn __str__(&self) -> String {
+        format!("{self}")
+    }
+
+    fn __repr__(&self) -> String {
+        format!("{self}")
     }
 }
 
