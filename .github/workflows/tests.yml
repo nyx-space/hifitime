@@ -52,16 +52,16 @@ jobs:
       - name: Test (no default features)
         run: cargo test --no-default-features
 
-      - uses: actions/setup-python@v2
-        with:
-          python-version: "3.7"
-      - name: Python unit tests
-        run: |
-          python3 -m venv venv3
-          source venv3/bin/activate
-          python3 -m pip install maturin numpy
-          maturin develop
-          python3 examples/python/main.py
+      # - uses: actions/setup-python@v2
+      #   with:
+      #     python-version: "3.7"
+      # - name: Python unit tests
+      #   run: |
+      #     python3 -m venv venv3
+      #     source venv3/bin/activate
+      #     python3 -m pip install maturin numpy
+      #     maturin develop
+      #     python3 examples/python/main.py
 
   test_no_std:
     name: no-std build
