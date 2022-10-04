@@ -256,6 +256,8 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 + Python package available on PyPI! To build the Python package, you must first install `maturin` and then build with the `python` feature flag. For example, `maturin develop -F python && python` will build the Python package in debug mode and start a new shell where the package can be imported.
 + Fix bug when printing Duration::MIN (or any duration whose centuries are minimizing the number of centuries).
 + TimeSeries can now be formatted
++ Epoch can now be `ceil`-ed, `floor`-ed, and `round`-ed in specific time systems using `ceil_in_timesystem`, `floor_in_timesystem`, and `round_in_timesystem` respectively, cf. [#127](https://github.com/nyx-space/hifitime/issues/145)
++ Epoch can now be initialized from Gregorian when specifying the time system: `from_gregorian`, `from_gregorian_hms`, `from_gregorian_at_noon`, `from_gregorian_at_midnight`.
 
 ## 3.4.0
 + Ephemeris Time and Dynamical Barycentric Time fixed to use the J2000 reference epoch instead of the J1900 reference epoch. This is a **potentially breaking change** if you relied on the previous one century error when converting from/to ET/TDB into/from UTC _and storing the data as a string_. There is **no difference** if the original representation was used.

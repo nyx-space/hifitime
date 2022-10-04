@@ -3,8 +3,8 @@ extern crate core;
 extern crate hifitime;
 
 use hifitime::{
-    is_gregorian_valid, Duration, Epoch, TimeSystem, Unit, DAYS_GPS_TAI_OFFSET, J1900_OFFSET,
-    J2000_OFFSET, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_PER_DAY,
+    is_gregorian_valid, Duration, Epoch, TimeSystem, TimeUnits, Unit, DAYS_GPS_TAI_OFFSET,
+    J1900_OFFSET, J2000_OFFSET, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
 #[cfg(feature = "std")]
@@ -855,4 +855,72 @@ fn test_ord() {
     assert_eq!(epoch1.max(epoch2), epoch2);
     assert_eq!(epoch2.min(epoch1), epoch1);
     assert_eq!(epoch1.cmp(&epoch1), core::cmp::Ordering::Equal);
+}
+
+#[test]
+fn regression_test_gh_145() {
+    // Ceil and floor in the TAI time system
+    let e = Epoch::from_gregorian_tai(2022, 10, 3, 17, 44, 29, 898032665);
+    assert_eq!(
+        e.floor(3.minutes()),
+        Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 42, 0)
+    );
+
+    assert_eq!(
+        e.ceil(3.minutes()),
+        Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 45, 0)
+    );
+
+    assert_eq!(
+        e.round(3.minutes()),
+        Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 45, 0)
+    );
+
+    // Same in UTC
+    let e = Epoch::from_gregorian_utc(2022, 10, 3, 17, 44, 29, 898032665);
+    assert_eq!(
+        e.floor_in_timesystem(3.minutes(), TimeSystem::UTC),
+        Epoch::from_gregorian_utc_hms(2022, 10, 3, 17, 42, 0)
+    );
+
+    assert_eq!(
+        e.ceil_in_timesystem(3.minutes(), TimeSystem::UTC),
+        Epoch::from_gregorian_utc_hms(2022, 10, 3, 17, 45, 0)
+    );
+
+    // Same in TT
+    let e = Epoch::from_gregorian(2022, 10, 3, 17, 44, 29, 898032665, TimeSystem::TT);
+    assert_eq!(
+        e.floor_in_timesystem(3.minutes(), TimeSystem::TT),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 42, 0, TimeSystem::TT)
+    );
+
+    assert_eq!(
+        e.ceil_in_timesystem(3.minutes(), TimeSystem::TT),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeSystem::TT)
+    );
+
+    // Same in TDB
+    let e = Epoch::from_gregorian(2022, 10, 3, 17, 44, 29, 898032665, TimeSystem::TDB);
+    assert_eq!(
+        e.floor_in_timesystem(3.minutes(), TimeSystem::TDB),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 42, 0, TimeSystem::TDB)
+    );
+
+    assert_eq!(
+        e.ceil_in_timesystem(3.minutes(), TimeSystem::TDB),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeSystem::TDB)
+    );
+
+    // Same in ET
+    let e = Epoch::from_gregorian(2022, 10, 3, 17, 44, 29, 898032665, TimeSystem::ET);
+    assert_eq!(
+        e.floor_in_timesystem(3.minutes(), TimeSystem::ET),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 42, 0, TimeSystem::ET)
+    );
+
+    assert_eq!(
+        e.ceil_in_timesystem(3.minutes(), TimeSystem::ET),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeSystem::ET)
+    );
 }
