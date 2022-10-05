@@ -271,6 +271,8 @@ fn duration_floor_ceil_round() {
     assert_eq!(d.floor(6.seconds()), 5.minutes() + 6.seconds());
     assert_eq!(d.floor(-6.seconds()), 5.minutes() + 6.seconds());
     assert_eq!(d.ceil(6.seconds()), 5.minutes() + 12.seconds());
+    println!("{}", d.ceil(-6.seconds()));
+    println!("{}", 5.minutes() + 12.seconds());
     assert_eq!(d.ceil(-6.seconds()), 5.minutes() + 12.seconds());
 
     let d = 3.minutes() + 73.671.seconds();

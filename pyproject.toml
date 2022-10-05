@@ -11,3 +11,8 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
     "Intended Audience :: Science%2FResearch",
 ]
+
+[tool.yapf]
+based_on_style = "google"
+spaces_before_comment = 4
+column_limit = 100

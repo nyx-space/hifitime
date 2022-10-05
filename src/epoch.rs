@@ -229,8 +229,8 @@ impl Epoch {
 
     #[must_use]
     /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
-    pub fn from_utc_seconds(seconds: f64) -> Self {
-        let mut e = Self::from_tai_seconds(seconds);
+    pub fn from_utc_duration(duration: Duration) -> Self {
+        let mut e = Self::from_tai_duration(duration);
         // Compute the TAI to UTC offset at this time.
         // We have the time in TAI. But we were given UTC.
         // Hence, we need to _add_ the leap seconds to get the actual TAI time.
@@ -240,15 +240,15 @@ impl Epoch {
     }
 
     #[must_use]
+    /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
+    pub fn from_utc_seconds(seconds: f64) -> Self {
+        Self::from_utc_duration(seconds * Unit::Second)
+    }
+
+    #[must_use]
     /// Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight
     pub fn from_utc_days(days: f64) -> Self {
-        let mut e = Self::from_tai_days(days);
-        // Compute the TAI to UTC offset at this time.
-        // We have the time in TAI. But we were given UTC.
-        // Hence, we need to _add_ the leap seconds to get the actual TAI time.
-        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.0 += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
-        e
+        Self::from_utc_duration(days * Unit::Day)
     }
 
     #[must_use]
@@ -541,8 +541,8 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
-    /// Use maybe_from_gregorian_tai if unsure.
+    /// Builds an Epoch from the provided Gregorian date and time in UTC. If invalid date is provided, this function will panic.
+    /// Use maybe_from_gregorian_utc if unsure.
     pub fn from_gregorian_utc(
         year: i32,
         month: u8,
@@ -581,6 +581,53 @@ impl Epoch {
         second: u8,
     ) -> Self {
         Self::maybe_from_gregorian_utc(year, month, day, hour, minute, second, 0)
+            .expect("invalid Gregorian date")
+    }
+
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    /// Builds an Epoch from the provided Gregorian date and time in the provided time system. If invalid date is provided, this function will panic.
+    /// Use maybe_from_gregorian if unsure.
+    pub fn from_gregorian(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        nanos: u32,
+        ts: TimeSystem,
+    ) -> Self {
+        Self::maybe_from_gregorian(year, month, day, hour, minute, second, nanos, ts)
+            .expect("invalid Gregorian date")
+    }
+
+    #[must_use]
+    /// Initialize from Gregorian date in UTC at midnight
+    pub fn from_gregorian_at_midnight(year: i32, month: u8, day: u8, ts: TimeSystem) -> Self {
+        Self::maybe_from_gregorian(year, month, day, 0, 0, 0, 0, ts)
+            .expect("invalid Gregorian date")
+    }
+
+    #[must_use]
+    /// Initialize from Gregorian date in UTC at noon
+    pub fn from_gregorian_at_noon(year: i32, month: u8, day: u8, ts: TimeSystem) -> Self {
+        Self::maybe_from_gregorian(year, month, day, 12, 0, 0, 0, ts)
+            .expect("invalid Gregorian date")
+    }
+
+    #[must_use]
+    /// Initialize from the Gregorian date and time (without the nanoseconds) in UTC
+    pub fn from_gregorian_hms(
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        ts: TimeSystem,
+    ) -> Self {
+        Self::maybe_from_gregorian(year, month, day, hour, minute, second, 0, ts)
             .expect("invalid Gregorian date")
     }
 
@@ -1462,12 +1509,46 @@ impl Epoch {
     ///     e.floor(1.hours()),
     ///     Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 0, 0)
     /// );
+    ///
+    /// let e = Epoch::from_gregorian_tai(2022, 10, 3, 17, 44, 29, 898032665);
+    /// assert_eq!(
+    ///     e.floor(3.minutes()),
+    ///     Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 42, 0)
+    /// );
     /// ```
     pub fn floor(&self, duration: Duration) -> Self {
         Self(self.0.floor(duration))
     }
 
-    /// Ceils this epoch to the closest provided duration
+    /// Floors this epoch to the closest provided duration
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Epoch, TimeSystem, TimeUnits};
+    ///
+    /// let e = Epoch::from_gregorian_utc_hms(2022, 5, 20, 17, 57, 43);
+    /// assert_eq!(
+    ///     e.floor_in_timesystem(1.hours(), TimeSystem::UTC),
+    ///     Epoch::from_gregorian_utc_hms(2022, 5, 20, 17, 0, 0)
+    /// );
+    ///
+    /// let e = Epoch::from_gregorian_utc(2022, 10, 3, 17, 44, 29, 898032665);
+    /// assert_eq!(
+    ///     e.floor_in_timesystem(3.minutes(), TimeSystem::UTC),
+    ///     Epoch::from_gregorian_utc_hms(2022, 10, 3, 17, 42, 0)
+    /// );
+    /// ```
+    pub fn floor_in_timesystem(&self, duration: Duration, ts: TimeSystem) -> Self {
+        match ts {
+            TimeSystem::TAI => self.floor(duration),
+            TimeSystem::UTC => Self::from_utc_duration(self.as_utc_duration().floor(duration)),
+            TimeSystem::ET => Self::from_et_duration(self.as_et_duration().floor(duration)),
+            TimeSystem::TDB => Self::from_tdb_duration(self.as_tdb_duration().floor(duration)),
+            TimeSystem::TT => Self::from_tt_duration(self.as_tt_duration().floor(duration)),
+        }
+    }
+
+    /// Ceils this epoch to the closest provided duration in the TAI time system
     ///
     /// # Example
     /// ```
@@ -1478,12 +1559,47 @@ impl Epoch {
     ///     e.ceil(1.hours()),
     ///     Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
     /// );
+    ///
+    /// // 45 minutes is a multiple of 3 minutes, hence this result
+    /// let e = Epoch::from_gregorian_tai(2022, 10, 3, 17, 44, 29, 898032665);
+    /// assert_eq!(
+    ///     e.ceil(3.minutes()),
+    ///     Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 45, 0)
+    /// );
     /// ```
     pub fn ceil(&self, duration: Duration) -> Self {
         Self(self.0.ceil(duration))
     }
 
-    /// Rounds this epoch to the closest provided duration
+    /// Ceils this epoch to the closest provided duration in the provided time system
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Epoch, TimeSystem, TimeUnits};
+    ///
+    /// let e = Epoch::from_gregorian_utc_hms(2022, 5, 20, 17, 57, 43);
+    /// assert_eq!(
+    ///     e.ceil_in_timesystem(1.hours(), TimeSystem::UTC),
+    ///     Epoch::from_gregorian_utc_hms(2022, 5, 20, 18, 0, 0)
+    /// );
+    ///
+    /// let e = Epoch::from_gregorian_tai(2022, 10, 3, 17, 44, 29, 898032665);
+    /// assert_eq!(
+    ///     e.ceil_in_timesystem(3.minutes(), TimeSystem::UTC),
+    ///     Epoch::from_gregorian_utc_hms(2022, 10, 3, 17, 45, 0)
+    /// );
+    /// ```
+    pub fn ceil_in_timesystem(&self, duration: Duration, ts: TimeSystem) -> Self {
+        match ts {
+            TimeSystem::TAI => self.ceil(duration),
+            TimeSystem::UTC => Self::from_utc_duration(self.as_utc_duration().ceil(duration)),
+            TimeSystem::ET => Self::from_et_duration(self.as_et_duration().ceil(duration)),
+            TimeSystem::TDB => Self::from_tdb_duration(self.as_tdb_duration().ceil(duration)),
+            TimeSystem::TT => Self::from_tt_duration(self.as_tt_duration().ceil(duration)),
+        }
+    }
+
+    /// Rounds this epoch to the closest provided duration in TAI
     ///
     /// # Example
     /// ```
@@ -1497,6 +1613,28 @@ impl Epoch {
     /// ```
     pub fn round(&self, duration: Duration) -> Self {
         Self(self.0.round(duration))
+    }
+
+    /// Rounds this epoch to the closest provided duration in the provided time system
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Epoch, TimeSystem, TimeUnits};
+    ///
+    /// let e = Epoch::from_gregorian_utc_hms(2022, 5, 20, 17, 57, 43);
+    /// assert_eq!(
+    ///     e.round_in_timesystem(1.hours(), TimeSystem::UTC),
+    ///     Epoch::from_gregorian_utc_hms(2022, 5, 20, 18, 0, 0)
+    /// );
+    /// ```
+    pub fn round_in_timesystem(&self, duration: Duration, ts: TimeSystem) -> Self {
+        match ts {
+            TimeSystem::TAI => self.round(duration),
+            TimeSystem::UTC => Self::from_utc_duration(self.as_utc_duration().round(duration)),
+            TimeSystem::ET => Self::from_et_duration(self.as_et_duration().round(duration)),
+            TimeSystem::TDB => Self::from_tdb_duration(self.as_tdb_duration().round(duration)),
+            TimeSystem::TT => Self::from_tt_duration(self.as_tt_duration().round(duration)),
+        }
     }
 
     // Python helpers
