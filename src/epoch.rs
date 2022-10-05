@@ -754,93 +754,93 @@ impl Epoch {
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch.
-    pub const fn from_tai_duration_py(duration: Duration) -> Self {
+    pub const fn init_from_tai_duration(duration: Duration) -> Self {
         Self::from_tai_duration(duration)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch.
-    pub fn from_tai_parts_py(centuries: i16, nanoseconds: u64) -> Self {
+    pub fn init_from_tai_parts(centuries: i16, nanoseconds: u64) -> Self {
         Self::from_tai_parts(centuries, nanoseconds)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
-    pub fn from_tai_seconds_py(seconds: f64) -> Self {
+    pub fn init_from_tai_seconds(seconds: f64) -> Self {
         Self::from_tai_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight
-    pub fn from_tai_days_py(days: f64) -> Self {
+    pub fn init_from_tai_days(days: f64) -> Self {
         Self::from_tai_days(days)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
-    pub fn from_utc_seconds_py(seconds: f64) -> Self {
+    pub fn init_from_utc_seconds(seconds: f64) -> Self {
         Self::from_utc_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight
-    pub fn from_utc_days_py(days: f64) -> Self {
+    pub fn init_from_utc_days(days: f64) -> Self {
         Self::from_utc_days(days)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    pub fn from_mjd_tai_py(days: f64) -> Self {
+    pub fn init_from_mjd_tai(days: f64) -> Self {
         Self::from_mjd_tai(days)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    pub fn from_mjd_utc_py(days: f64) -> Self {
+    pub fn init_from_mjd_utc(days: f64) -> Self {
         Self::from_mjd_utc(days)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    pub fn from_jde_tai_py(days: f64) -> Self {
+    pub fn init_from_jde_tai(days: f64) -> Self {
         Self::from_jde_tai(days)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    pub fn from_jde_utc_py(days: f64) -> Self {
+    pub fn init_from_jde_utc(days: f64) -> Self {
         Self::from_jde_utc(days)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
-    pub fn from_tt_seconds_py(seconds: f64) -> Self {
+    pub fn init_from_tt_seconds(seconds: f64) -> Self {
         Self::from_tt_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
-    pub fn from_tt_duration_py(duration: Duration) -> Self {
+    pub fn init_from_tt_duration(duration: Duration) -> Self {
         Self::from_tt_duration(duration)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)
-    pub fn from_et_seconds_py(seconds_since_j2000: f64) -> Epoch {
+    pub fn init_from_et_seconds(seconds_since_j2000: f64) -> Epoch {
         Self::from_et_seconds(seconds_since_j2000)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    pub fn from_et_duration_py(duration_since_j2000: Duration) -> Self {
+    pub fn init_from_et_duration(duration_since_j2000: Duration) -> Self {
         Self::from_et_duration(duration_since_j2000)
     }
 
@@ -849,28 +849,28 @@ impl Epoch {
     /// Initialize an Epoch from Dynamic Barycentric Time (TDB) seconds past 2000 JAN 01 midnight (difference than SPICE)
     /// NOTE: This uses the ESA algorithm, which is a notch more complicated than the SPICE algorithm, but more precise.
     /// In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ESA algorithm should be exactly correct.
-    pub fn from_tdb_seconds_py(seconds_j2000: f64) -> Epoch {
+    pub fn init_from_tdb_seconds(seconds_j2000: f64) -> Epoch {
         Self::from_tdb_seconds(seconds_j2000)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI.
-    pub fn from_tdb_duration_py(duration_j2k: Duration) -> Epoch {
+    pub fn init_from_tdb_duration(duration_j2k: Duration) -> Epoch {
         Self::from_tdb_duration(duration_j2k)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize from the JDE days
-    pub fn from_jde_et_py(days: f64) -> Self {
+    pub fn init_from_jde_et(days: f64) -> Self {
         Self::from_jde_et(days)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days
-    pub fn from_jde_tdb_py(days: f64) -> Self {
+    pub fn init_from_jde_tdb(days: f64) -> Self {
         Self::from_jde_tdb(days)
     }
 
@@ -878,7 +878,7 @@ impl Epoch {
     #[staticmethod]
     /// Initialize an Epoch from the number of seconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
-    pub fn from_gpst_seconds_py(seconds: f64) -> Self {
+    pub fn init_from_gpst_seconds(seconds: f64) -> Self {
         Self::from_gpst_seconds(seconds)
     }
 
@@ -886,7 +886,7 @@ impl Epoch {
     #[staticmethod]
     /// Initialize an Epoch from the number of days since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
-    pub fn from_gpst_days_py(days: f64) -> Self {
+    pub fn init_from_gpst_days(days: f64) -> Self {
         Self::from_gpst_days(days)
     }
 
@@ -895,28 +895,28 @@ impl Epoch {
     /// Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use GPS as a time source.
-    pub fn from_gpst_nanoseconds_py(nanoseconds: u64) -> Self {
+    pub fn init_from_gpst_nanoseconds(nanoseconds: u64) -> Self {
         Self::from_gpst_nanoseconds(nanoseconds)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01.
-    pub fn from_unix_seconds_py(seconds: f64) -> Self {
+    pub fn init_from_unix_seconds(seconds: f64) -> Self {
         Self::from_unix_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01.
-    pub fn from_unix_milliseconds_py(milliseconds: f64) -> Self {
+    pub fn init_from_unix_milliseconds(milliseconds: f64) -> Self {
         Self::from_unix_milliseconds(milliseconds)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Attempts to build an Epoch from the provided Gregorian date and time in TAI.
-    pub fn maybe_from_gregorian_tai_py(
+    pub fn maybe_init_from_gregorian_tai(
         year: i32,
         month: u8,
         day: u8,
@@ -933,7 +933,7 @@ impl Epoch {
     /// Attempts to build an Epoch from the provided Gregorian date and time in the provided time system.
     /// NOTE: If the timesystem is TDB, this function assumes that the SPICE format is used
     #[allow(clippy::too_many_arguments)]
-    pub fn maybe_from_gregorian_py(
+    pub fn maybe_init_from_gregorian(
         year: i32,
         month: u8,
         day: u8,
@@ -950,7 +950,7 @@ impl Epoch {
     #[staticmethod]
     /// Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian_tai if unsure.
-    pub fn from_gregorian_tai_py(
+    pub fn init_from_gregorian_tai(
         year: i32,
         month: u8,
         day: u8,
@@ -965,21 +965,21 @@ impl Epoch {
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize from the Gregoerian date at midnight in TAI.
-    pub fn from_gregorian_tai_at_midnight_py(year: i32, month: u8, day: u8) -> Self {
+    pub fn init_from_gregorian_tai_at_midnight(year: i32, month: u8, day: u8) -> Self {
         Self::from_gregorian_tai_at_midnight(year, month, day)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize from the Gregorian date at noon in TAI
-    pub fn from_gregorian_tai_at_noon_py(year: i32, month: u8, day: u8) -> Self {
+    pub fn init_from_gregorian_tai_at_noon(year: i32, month: u8, day: u8) -> Self {
         Self::from_gregorian_tai_at_noon(year, month, day)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize from the Gregorian date and time (without the nanoseconds) in TAI
-    pub fn from_gregorian_tai_hms_py(
+    pub fn init_from_gregorian_tai_hms(
         year: i32,
         month: u8,
         day: u8,
@@ -993,7 +993,7 @@ impl Epoch {
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Attempts to build an Epoch from the provided Gregorian date and time in UTC.
-    pub fn maybe_from_gregorian_utc_py(
+    pub fn maybe_init_from_gregorian_utc(
         year: i32,
         month: u8,
         day: u8,
@@ -1009,7 +1009,7 @@ impl Epoch {
     #[staticmethod]
     /// Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian_tai if unsure.
-    pub fn from_gregorian_utc_py(
+    pub fn init_from_gregorian_utc(
         year: i32,
         month: u8,
         day: u8,
@@ -1024,21 +1024,21 @@ impl Epoch {
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize from Gregorian date in UTC at midnight
-    pub fn from_gregorian_utc_at_midnight_py(year: i32, month: u8, day: u8) -> Self {
+    pub fn init_from_gregorian_utc_at_midnight(year: i32, month: u8, day: u8) -> Self {
         Self::from_gregorian_utc_at_midnight(year, month, day)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize from Gregorian date in UTC at noon
-    pub fn from_gregorian_utc_at_noon_py(year: i32, month: u8, day: u8) -> Self {
+    pub fn init_from_gregorian_utc_at_noon(year: i32, month: u8, day: u8) -> Self {
         Self::from_gregorian_utc_at_noon(year, month, day)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize from the Gregorian date and time (without the nanoseconds) in UTC
-    pub fn from_gregorian_utc_hms_py(
+    pub fn init_from_gregorian_utc_hms(
         year: i32,
         month: u8,
         day: u8,
@@ -1650,7 +1650,7 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    pub fn now_py() -> Result<Self, Errors> {
+    pub fn system_now() -> Result<Self, Errors> {
         Self::now()
     }
 
@@ -1676,19 +1676,19 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     /// Converts the Epoch to UTC Gregorian in the ISO8601 format.
-    pub fn as_gregorian_utc_py(&self) -> String {
+    pub fn to_gregorian_utc(&self) -> String {
         self.as_gregorian_utc_str()
     }
 
     #[cfg(feature = "python")]
     /// Converts the Epoch to TAI Gregorian in the ISO8601 format.
-    pub fn as_gregorian_tai_py(&self) -> String {
+    pub fn to_gregorian_tai(&self) -> String {
         self.as_gregorian_tai_str()
     }
 
     #[cfg(feature = "python")]
     /// Converts the Epoch to Gregorian in the ISO8601 format in the provided TimeSystem
-    pub fn as_gregorian_py(&self, ts: TimeSystem) -> String {
+    pub fn to_gregorian(&self, ts: TimeSystem) -> String {
         self.as_gregorian_str(ts)
     }
 }

@@ -230,7 +230,7 @@ impl Duration {
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Create a normalized duration from its parts
-    pub fn from_parts_py(centuries: i16, nanoseconds: u64) -> Self {
+    pub fn init_from_parts(centuries: i16, nanoseconds: u64) -> Self {
         Self::from_parts(centuries, nanoseconds)
     }
 
@@ -243,7 +243,7 @@ impl Duration {
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    pub fn from_total_nanoseconds_py(nanos: i128) -> Self {
+    pub fn init_from_total_nanoseconds(nanos: i128) -> Self {
         Self::from_total_nanoseconds(nanos)
     }
 
@@ -265,7 +265,7 @@ impl Duration {
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
-    pub fn from_truncated_nanoseconds_py(nanos: i64) -> Self {
+    pub fn init_from_truncated_nanoseconds(nanos: i64) -> Self {
         Self::from_truncated_nanoseconds(nanos)
     }
 
@@ -350,7 +350,7 @@ impl Duration {
     #[cfg(feature = "python")]
     #[staticmethod]
     #[must_use]
-    pub fn compose_py(
+    pub fn init_from_all_parts(
         sign: i8,
         days: u64,
         hours: u64,

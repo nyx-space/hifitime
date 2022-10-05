@@ -12,18 +12,18 @@ from hifitime import Duration, Epoch, TimeSeries, TimeSystem, Unit
 
 if __name__ == "__main__":
     # All of the functions available in Rust are also available in Python.
-    # However, some add to be suffixed with `_py` because of a limitation of the feature functionalities in Rust.
+    # However, functions that initialize a new Epoch or Duration had to be renamed: `Epoch::from_blah` becomes `Epoch.init_from_blah` in Python.
 
     # Let's start by getting the system time.
-    e = Epoch.now_py()
+    e = Epoch.system_now()
     # By default, it'll be printed in UTC
     print(f"UTC epoch: {e}")
     # But we can also print it in TAI
-    print(f"TAI epoch: {e.as_gregorian_tai_py()}")
+    print(f"TAI epoch: {e.to_gregorian_tai()}")
 
     # Or we can print it in a specific time system
-    print(f"ET epoch: {e.as_gregorian_py(TimeSystem.ET)}")
-    print(f"TDB epoch: {e.as_gregorian_py(TimeSystem.TDB)}")
+    print(f"ET epoch: {e.to_gregorian(TimeSystem.ET)}")
+    print(f"TDB epoch: {e.to_gregorian(TimeSystem.TDB)}")
 
     # Hifitime mainly allows for nanosecond precision of durations for 64 centuries (centered on J1900).
     print(f"min negative = {Duration.min_negative()}")
@@ -40,7 +40,7 @@ if __name__ == "__main__":
 
     # You can also get all of the epochs between two different epochs at a specific step size.
     # This is like numpy's `linspace` with high fidelity durations
-    time_series = TimeSeries(Epoch.now_py(), Epoch.now_py() + Unit.Day * 0.3, Unit.Hour * 0.5, inclusive=True)
+    time_series = TimeSeries(Epoch.system_now(), Epoch.system_now() + Unit.Day * 0.3, Unit.Hour * 0.5, inclusive=True)
     print(time_series)
     for (num, epoch) in enumerate(time_series):
         print(f"#{num}:\t{epoch}")
