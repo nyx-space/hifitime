@@ -88,7 +88,9 @@ mod timeseries;
 pub use timeseries::*;
 
 pub mod prelude {
-    pub use {Duration, Epoch, Errors, Freq, Frequencies, TimeSeries, TimeSystem, TimeUnits, Unit};
+    pub use crate::{
+        Duration, Epoch, Errors, Freq, Frequencies, TimeSeries, TimeSystem, TimeUnits, Unit,
+    };
 }
 
 #[cfg(feature = "asn1der")]
@@ -98,15 +100,7 @@ pub mod asn1der;
 pub mod python;
 
 #[cfg(feature = "python")]
-extern crate pyo3;
-
-#[cfg(feature = "python")]
 use pyo3::prelude::*;
-
-extern crate num_traits;
-
-#[cfg(feature = "std")]
-extern crate serde;
 
 #[cfg(feature = "std")]
 extern crate core;
@@ -116,10 +110,6 @@ use core::fmt;
 use core::num::ParseIntError;
 use core::str::FromStr;
 
-#[cfg(feature = "std")]
-extern crate regex;
-#[cfg(feature = "std")]
-extern crate serde_derive;
 #[cfg(feature = "std")]
 use std::error::Error;
 

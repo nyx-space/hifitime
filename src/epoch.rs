@@ -20,12 +20,12 @@ use core::ops::{Add, AddAssign, Sub, SubAssign};
 #[cfg(feature = "std")]
 use crate::ParsingErrors;
 
-#[cfg(feature = "std")]
-use super::regex::Regex;
-#[cfg(feature = "std")]
-use super::serde::{de, Deserialize, Deserializer};
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
+#[cfg(feature = "std")]
+use regex::Regex;
+#[cfg(feature = "std")]
+use serde::{de, Deserialize, Deserializer};
 #[cfg(feature = "std")]
 use std::str::FromStr;
 #[cfg(feature = "std")]

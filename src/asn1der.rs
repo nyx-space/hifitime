@@ -8,13 +8,11 @@
  * Documentation: https://nyxspace.com/
  */
 
-extern crate der;
-
 use crate::Unit;
 
 use super::{Duration, Epoch, TimeSystem};
 
-use self::der::{Decode, Encode, Reader, Writer};
+use der::{Decode, Encode, Reader, Writer};
 
 use core::convert::From;
 

@@ -22,9 +22,9 @@ use core::fmt;
 use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 #[cfg(feature = "std")]
-use super::regex::Regex;
+use regex::Regex;
 #[cfg(feature = "std")]
-use super::serde::{de, Deserialize, Deserializer};
+use serde::{de, Deserialize, Deserializer};
 #[cfg(feature = "std")]
 use std::str::FromStr;
 
