@@ -31,7 +31,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
         rust:
-          - { version: "1.56.0", name: MSRV }
+          - { version: "1.56.1", name: MSRV }
           - { version: stable, name: stable }
 
     runs-on: ${{ matrix.os }}
@@ -60,10 +60,6 @@ jobs:
     strategy:
       matrix:
         target: [aarch64-unknown-none, thumbv6m-none-eabi]
-        rust:
-          - { version: "1.56.0", name: MSRV }
-          - { version: stable, name: stable }
-          - { version: nightly, name: nightly }
     name: no-std build
     runs-on: ubuntu-latest
     steps:
@@ -74,7 +70,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: ${{ matrix.rust.version }}
+          toolchain: nightly
           override: true
           components: rust-src
 
