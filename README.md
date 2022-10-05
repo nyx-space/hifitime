@@ -6,6 +6,7 @@ Formally verified to not crash on operations on epochs and durations using the [
 [![hifitime on crates.io][cratesio-image]][cratesio]
 [![Build Status](https://github.com/nyx-space/hifitime/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/nyx-space/hifitime/actions)
 [![hifitime on docs.rs][docsrs-image]][docsrs]
+[![minimum rustc: 1.58](https://img.shields.io/badge/minimum%20rustc-1.58-yellowgreen?logo=rust)](https://www.whatrustisit.com)
 
 [cratesio-image]: https://img.shields.io/crates/v/hifitime.svg
 [cratesio]: https://crates.io/crates/hifitime

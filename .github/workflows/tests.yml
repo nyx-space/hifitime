@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
@@ -30,17 +30,21 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        rust:
+          - { version: "1.58", name: MSRV }
+          - { version: stable, name: stable }
+
     runs-on: ${{ matrix.os }}
-    name: Test Suite
+    name: Test Suite (${{ matrix.os }}, ${{ matrix.rust.name }})
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
-      - name: Install stable toolchain
+      - name: Install ${{ matrix.rust.name }} toolchain
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: stable
+          toolchain: ${{ matrix.rust.version }}
           override: true
 
       - name: Test (default features)
@@ -52,23 +56,15 @@ jobs:
       - name: Test (no default features)
         run: cargo test --no-default-features
 
-      # - uses: actions/setup-python@v2
-      #   with:
-      #     python-version: "3.7"
-      # - name: Python unit tests
-      #   run: |
-      #     python3 -m venv venv3
-      #     source venv3/bin/activate
-      #     python3 -m pip install maturin numpy
-      #     maturin develop
-      #     python3 examples/python/main.py
-
   test_no_std:
+    strategy:
+      matrix:
+        target: [aarch64-unknown-none, thumbv6m-none-eabi]
     name: no-std build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install nightly toolchain
         uses: actions-rs/toolchain@v1
@@ -78,15 +74,15 @@ jobs:
           override: true
           components: rust-src
 
-      - name: Build (nightly + no default features + no_std target)
-        run: cargo build --no-default-features --target=aarch64-unknown-none -Z build-std=core
+      - name: Build no default features + no_std target ${{ matrix.target }}
+        run: cargo build --no-default-features --target=${{ matrix.target }} -Z build-std=core
 
   lints:
     name: Lints
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
@@ -107,3 +103,36 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Generate coverage report
+        run: |
+          cargo llvm-cov clean --workspace
+          cargo llvm-cov test --no-report --all-features -- --test-threads=1
+          cargo llvm-cov test --no-report --tests --all-features -- compile_fail
+          cargo llvm-cov report --lcov > lcov.txt
+        env:
+          RUSTFLAGS: --cfg __ui_tests
+
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./lcov.txt

@@ -1,6 +1,5 @@
 #[cfg(feature = "std")]
 extern crate core;
-extern crate hifitime;
 
 use hifitime::{
     is_gregorian_valid, Duration, Epoch, TimeSystem, TimeUnits, Unit, DAYS_GPS_TAI_OFFSET,

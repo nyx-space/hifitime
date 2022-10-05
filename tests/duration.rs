@@ -1,4 +1,3 @@
-extern crate hifitime;
 use hifitime::{Duration, Freq, TimeUnits, Unit, NANOSECONDS_PER_MINUTE};
 
 #[cfg(feature = "std")]
