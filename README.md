@@ -254,10 +254,12 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 # Changelog
 
 ## 3.5.0 (unreleased)
++ Epoch now store the time scale that they were defined in: this allows durations to be added in their respective time scales. For example, adding 36 hours to 1971-12-31 at noon when the Epoch is initialized in UTC will lead to a different epoch than adding that same duration to an epoch initialized at the same time in TAI (because the first leap second announced by IERS was on 1972-01-01), cf. the `test_add_durations_over_leap_seconds` test.
++ RFC3339 and ISO8601 fully supported for initialization of an Epoch, including the offset, e.g. `Epoch::from_str("1994-11-05T08:15:30-05:00")`, cf. [#73](https://github.com/nyx-space/hifitime/issues/73).
 + Python package available on PyPI! To build the Python package, you must first install `maturin` and then build with the `python` feature flag. For example, `maturin develop -F python && python` will build the Python package in debug mode and start a new shell where the package can be imported.
 + Fix bug when printing Duration::MIN (or any duration whose centuries are minimizing the number of centuries).
 + TimeSeries can now be formatted
-+ Epoch can now be `ceil`-ed, `floor`-ed, and `round`-ed in specific time systems using `ceil_in_timesystem`, `floor_in_timesystem`, and `round_in_timesystem` respectively, cf. [#127](https://github.com/nyx-space/hifitime/issues/145)
++ Epoch can now be `ceil`-ed, `floor`-ed, and `round`-ed according to the time scale they were initialized in, cf. [#127](https://github.com/nyx-space/hifitime/issues/145).
 + Epoch can now be initialized from Gregorian when specifying the time system: `from_gregorian`, `from_gregorian_hms`, `from_gregorian_at_noon`, `from_gregorian_at_midnight`.
 
 ## 3.4.0

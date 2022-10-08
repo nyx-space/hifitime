@@ -108,14 +108,16 @@ const JULY_YEARS: [i32; 11] = [
 
 const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
 
-/// Defines an Epoch in TAI (temps atomique international) in seconds past 1900 January 01 at midnight (like the Network Time Protocol).
+/// Defines a nanosecond-precision Epoch.
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time systems or representations.
-#[derive(Copy, Clone, Debug, Eq)]
+#[derive(Copy, Clone, Eq)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
 pub struct Epoch {
+    /// An Epoch is always stored as the duration of since J1900 in the TAI time scale.
     pub duration_since_j1900_tai: Duration,
+    /// Time scale used during the initialization of this Epoch.
     pub time_scale: TimeScale,
 }
 
@@ -1135,15 +1137,18 @@ impl Epoch {
     }
 
     /// Returns this epoch with respect to the time scale this epoch was created in.
-    /// This is needed to correctly perform duration convertions in dynamical time scales (e.g. TDB).
+    /// This is needed to correctly perform duration conversions in dynamical time scales (e.g. TDB).
     ///
     /// # Examples
     /// 1. If an epoch was initialized as Epoch::from_..._utc(...) then the duration will be the UTC duration from J1900.
+    /// 2. If an epoch was initialized as Epoch::from_..._tdb(...) then the duration will be the UTC duration from J2000 because the TDB reference epoch is J2000.
     #[must_use]
     pub fn as_duration(&self) -> Duration {
         self.as_duration_in_time_scale(self.time_scale)
     }
 
+    /// Returns this epoch with respect to the provided time scale.
+    /// This is needed to correctly perform duration conversions in dynamical time scales (e.g. TDB).
     #[must_use]
     pub fn as_duration_in_time_scale(&self, time_scale: TimeScale) -> Duration {
         match time_scale {
@@ -1151,6 +1156,24 @@ impl Epoch {
             TimeScale::TAI => self.duration_since_j1900_tai,
             TimeScale::TT => self.as_tt_duration(),
             TimeScale::TDB => self.as_tdb_duration(),
+            TimeScale::UTC => self.as_utc_duration(),
+        }
+    }
+
+    /// Returns this epoch in duration since J1900 in the time scale this epoch was created in.
+    #[must_use]
+    pub fn as_duration_since_j1900(&self) -> Duration {
+        self.as_duration_in_time_scale(self.time_scale)
+    }
+
+    /// Returns this epoch in duration since J1900 with respect to the provided time scale.
+    #[must_use]
+    pub fn as_duration_since_j1900_in_time_scale(&self, time_scale: TimeScale) -> Duration {
+        match time_scale {
+            TimeScale::ET => self.as_et_duration_since_j1900(),
+            TimeScale::TAI => self.duration_since_j1900_tai,
+            TimeScale::TT => self.as_tt_duration(),
+            TimeScale::TDB => self.as_tdb_duration_since_j1900(),
             TimeScale::UTC => self.as_utc_duration(),
         }
     }
@@ -1698,6 +1721,13 @@ impl Epoch {
         }
     }
 
+    /// Copies this epoch and sets it to the new time scale provided.
+    pub fn in_time_scale(&self, new_time_scale: TimeScale) -> Self {
+        let mut me = *self;
+        me.time_scale = new_time_scale;
+        me
+    }
+
     // Python helpers
 
     #[cfg(feature = "python")]
@@ -2004,6 +2034,27 @@ impl<'de> Deserialize<'de> for Epoch {
     {
         let s = String::deserialize(deserializer)?;
         FromStr::from_str(&s).map_err(de::Error::custom)
+    }
+}
+
+impl fmt::Debug for Epoch {
+    /// Print this epoch in Gregorian in the time scale used at initialization
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let (y, mm, dd, hh, min, s, nanos) =
+            Self::compute_gregorian(self.as_duration_since_j1900().in_seconds());
+        if nanos == 0 {
+            write!(
+                f,
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {:?}",
+                y, mm, dd, hh, min, s, self.time_scale
+            )
+        } else {
+            write!(
+                f,
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
+                y, mm, dd, hh, min, s, nanos, self.time_scale
+            )
+        }
     }
 }
 

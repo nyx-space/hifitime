@@ -87,9 +87,11 @@ pub use timeunits::*;
 mod timeseries;
 pub use timeseries::*;
 
+#[allow(deprecated)]
 pub mod prelude {
     pub use crate::{
-        Duration, Epoch, Errors, Freq, Frequencies, TimeScale, TimeSeries, TimeUnits, Unit,
+        Duration, Epoch, Errors, Freq, Frequencies, TimeScale, TimeSeries, TimeSystem, TimeUnits,
+        Unit,
     };
 }
 

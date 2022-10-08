@@ -92,7 +92,11 @@ fn test_encdec() {
     for ts_u8 in 0..5 {
         let ts: TimeScale = ts_u8.into();
 
-        let epoch = Epoch::from_gregorian_hms(2022, 9, 6, 23, 24, 29, ts);
+        let epoch = if ts == TimeScale::UTC {
+            Epoch::from_gregorian_utc_hms(2022, 9, 6, 23, 24, 29)
+        } else {
+            Epoch::from_gregorian_hms(2022, 9, 6, 23, 24, 29, ts)
+        };
 
         let duration = match ts {
             TimeScale::TAI => epoch.as_tai_duration(),
@@ -112,17 +116,15 @@ fn test_encdec() {
         epoch.encode_to_slice(&mut buf).unwrap();
         // Decode
         let encdec_epoch = Epoch::from_der(&buf).unwrap();
+        // Check that the duration in J1900 TAI is the same
         assert_eq!(
-            encdec_epoch.duration_since_j1900_tai, duration,
-            "Decoded duration incorrect ({ts:?}):\ngot: {}\nexp: {duration}",
-            encdec_epoch.duration_since_j1900_tai
+            encdec_epoch.duration_since_j1900_tai, epoch.duration_since_j1900_tai,
+            "Decoded epoch incorrect ({ts:?}):\ngot: {encdec_epoch}\nexp: {epoch}",
         );
+        // Check that the time scale used is preserved
         assert_eq!(
             encdec_epoch.time_scale, ts,
             "Decoded time system incorrect {ts:?}"
         );
-        // Convert into Epoch
-        let epoch_out: Epoch = encdec_epoch.into();
-        assert_eq!(epoch_out, epoch);
     }
 }

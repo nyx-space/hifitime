@@ -742,37 +742,35 @@ fn test_from_str_tdb() {
 #[cfg(feature = "std")]
 #[test]
 fn test_rfc3339() {
-    // assert_eq!(
-    //     Epoch::from_gregorian_utc_hms(1994, 11, 5, 13, 15, 30),
-    //     Epoch::from_gregorian_str("1994-11-05T08:15:30-05:00").unwrap()
-    // );
-    // assert_eq!(
-    //     Epoch::from_gregorian_utc_hms(1994, 11, 5, 13, 15, 30),
-    //     Epoch::from_gregorian_str("1994-11-05T13:15:30Z").unwrap()
-    // );
-    // // Same test with different time systems
-    // // TAI
-    // assert_eq!(
-    //     Epoch::from_gregorian_tai_hms(1994, 11, 5, 13, 15, 30),
-    //     Epoch::from_gregorian_str("1994-11-05T08:15:30-05:00 TAI").unwrap()
-    // );
-    // assert_eq!(
-    //     Epoch::from_gregorian_tai_hms(1994, 11, 5, 13, 15, 30),
-    //     Epoch::from_gregorian_str("1994-11-05T13:15:30Z TAI").unwrap()
-    // );
+    use std::str::FromStr;
+
+    assert_eq!(
+        Epoch::from_gregorian_utc_hms(1994, 11, 5, 13, 15, 30),
+        Epoch::from_str("1994-11-05T08:15:30-05:00").unwrap()
+    );
+    assert_eq!(
+        Epoch::from_gregorian_utc_hms(1994, 11, 5, 13, 15, 30),
+        Epoch::from_str("1994-11-05T13:15:30Z").unwrap()
+    );
+    // Same test with different time systems
+    // TAI
+    assert_eq!(
+        Epoch::from_gregorian_tai_hms(1994, 11, 5, 13, 15, 30),
+        Epoch::from_str("1994-11-05T08:15:30-05:00 TAI").unwrap()
+    );
+    assert_eq!(
+        Epoch::from_gregorian_tai_hms(1994, 11, 5, 13, 15, 30),
+        Epoch::from_str("1994-11-05T13:15:30Z TAI").unwrap()
+    );
     // TDB
-    println!(
-        "{:e}",
-        Epoch::from_gregorian_str("2022-11-05T08:15:30 TDB").unwrap() - 5 * Unit::Hour
+    assert_eq!(
+        Epoch::from_gregorian_hms(1994, 11, 5, 13, 15, 30, TimeScale::TDB),
+        Epoch::from_str("1994-11-05T08:15:30-05:00 TDB").unwrap()
     );
     assert_eq!(
         Epoch::from_gregorian_hms(1994, 11, 5, 13, 15, 30, TimeScale::TDB),
-        Epoch::from_gregorian_str("1994-11-05T08:15:30-05:00 TDB").unwrap()
+        Epoch::from_str("1994-11-05T13:15:30Z TDB").unwrap()
     );
-    // assert_eq!(
-    //     Epoch::from_gregorian_hms(1994, 11, 5, 13, 15, 30, TimeSystem::TDB),
-    //     Epoch::from_gregorian_str("1994-11-05T13:15:30Z TDB").unwrap()
-    // );
 }
 #[test]
 fn test_format() {
@@ -1026,4 +1024,22 @@ fn test_timescale_recip() {
     recip_func(Epoch::from_gregorian_utc(2044, 6, 6, 12, 18, 54, 0));
 
     recip_func(Epoch::from_gregorian_utc(2075, 4, 30, 23, 59, 54, 0));
+}
+
+/// Tests that the time scales are included when performing operations on Epochs.
+#[test]
+fn test_add_durations_over_leap_seconds() {
+    // Noon UTC after the first leap second is in fact ten seconds _after_ noon TAI.
+    // Hence, there are as many TAI seconds since Epoch between UTC Noon and TAI Noon + 10s.
+    let pre_ls_utc = Epoch::from_gregorian_utc_at_noon(1971, 12, 31);
+    let pre_ls_tai = pre_ls_utc.in_time_scale(TimeScale::TAI);
+
+    // Before the first leap second, there is no time difference between both epochs (because only IERS announced leap seconds are accounted for by default).
+    assert_eq!(pre_ls_utc - pre_ls_tai, Duration::ZERO);
+    // When add 36 hours to either of the them, the UTC initialized epoch will increase the duration by 36 hours in UTC, which will cause a leap second jump.
+    // Therefore the difference between both epochs then becomes 10 seconds.
+    assert_eq!(
+        (pre_ls_utc + 1 * Unit::Day) - (pre_ls_tai + 1 * Unit::Day),
+        10 * Unit::Second
+    );
 }
