@@ -1163,7 +1163,7 @@ impl Epoch {
     /// Returns this epoch in duration since J1900 in the time scale this epoch was created in.
     #[must_use]
     pub fn as_duration_since_j1900(&self) -> Duration {
-        self.as_duration_in_time_scale(self.time_scale)
+        self.as_duration_since_j1900_in_time_scale(self.time_scale)
     }
 
     /// Returns this epoch in duration since J1900 with respect to the provided time scale.

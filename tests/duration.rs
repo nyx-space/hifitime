@@ -61,7 +61,7 @@ fn time_unit() {
 }
 
 #[test]
-fn duration_print() {
+fn duration_format() {
     // Check printing adds precision
     assert_eq!(
         format!("{}", Unit::Day * 10.0 + Unit::Hour * 5),
@@ -133,6 +133,11 @@ fn duration_print() {
         "14889 days 23 h 47 min 34 s 123 ns"
     );
 
+    assert_eq!(
+        arbitrary,
+        Duration::compose(0, 14889, 23, 47, 34, 0, 0, 123)
+    );
+
     // Test fractional
     let quarter_hour = 0.25 * Unit::Hour;
     let third_hour = (1.0 / 3.0) * Unit::Hour;
@@ -153,7 +158,15 @@ fn duration_print() {
     assert_eq!(format!("{}", sum), "-35 min");
 
     assert_eq!(format!("{}", Duration::MAX), "1196851200 days");
-    assert_eq!(format!("{}", Duration::MIN), "-1196778150 days");
+    assert_eq!(format!("{}", Duration::MIN), "-1196887725 days");
+    assert_eq!(format!("{}", Duration::ZERO), "0 ns");
+
+    // The `e` format will print this as a floating point value.
+    let mut sum2 = sum;
+    sum2 -= 1 * Unit::Nanosecond;
+    assert_eq!(sum2, sum - 1 * Unit::Nanosecond);
+    assert_eq!(sum2, sum - Unit::Nanosecond);
+    assert_eq!(format!("{:e}", sum2), "-35.00000000001667 min");
 }
 
 #[test]
@@ -253,6 +266,8 @@ fn duration_enum_eq() {
     // Check the equality compiles (if one compiles, then all asserts will work)
     assert!(Freq::GigaHertz == Freq::GigaHertz);
     assert!(Unit::Century == Unit::Century);
+    assert!(1 * Unit::Century == Unit::Century);
+    assert!(1 * Unit::Century > Unit::Day);
 }
 
 #[test]
@@ -261,6 +276,42 @@ fn duration_enum_orq() {
     assert!(Unit::Century > Unit::Day);
     // Frequencies are converted to durations, and that's what compared!
     assert!(Freq::GigaHertz < Freq::MegaHertz);
+}
+
+#[test]
+fn freq_mul() {
+    assert_eq!(1_000 * Freq::MegaHertz, Unit::Nanosecond);
+    assert_eq!(1_000 * Freq::KiloHertz, Unit::Microsecond);
+    assert_eq!(1_000 * Freq::Hertz, Unit::Millisecond);
+
+    assert_eq!(Freq::MegaHertz * 1_000, Unit::Nanosecond);
+    assert_eq!(Freq::KiloHertz * 1_000, Unit::Microsecond);
+    assert_eq!(Freq::Hertz * 1_000, Unit::Millisecond);
+}
+
+#[test]
+fn duration_recip() {
+    // Ensure that for arbitrary durations and constant ones, the from and to total nanoseconds is reciprocal.
+    let arbitrary = 14889.days()
+        + 23.hours()
+        + 47.minutes()
+        + 34.seconds()
+        + 0.milliseconds()
+        + 123.nanoseconds();
+
+    for duration in [
+        arbitrary,
+        Duration::ZERO,
+        Duration::MAX,
+        Duration::MIN,
+        Duration::MIN_NEGATIVE,
+        Duration::MIN_POSITIVE,
+    ] {
+        assert_eq!(
+            duration,
+            Duration::from_total_nanoseconds(duration.total_nanoseconds()),
+        );
+    }
 }
 
 #[test]
@@ -276,17 +327,24 @@ fn duration_floor_ceil_round() {
 
     let d = 3.minutes() + 73.671.seconds();
     assert_eq!(d, 4.minutes() + 13.seconds() + 671.milliseconds());
+
+    // Floor
     // Rounding to the closest microsecond should return the same duration
     assert_eq!(d.floor(1.microseconds()), d);
     assert_eq!(d.floor(1.seconds()), 4.minutes() + 13.seconds());
     assert_eq!(d.floor(3.seconds()), 4.minutes() + 12.seconds());
     assert_eq!(d.floor(9.minutes()), 0.minutes());
+    assert_eq!(
+        (Duration::MIN + 10.seconds()).floor(10.seconds()),
+        Duration::MIN
+    );
 
     // Ceil
     assert_eq!(d.ceil(1.minutes()), 5.minutes());
     assert_eq!(d.ceil(30.seconds()), 4.minutes() + 30.seconds());
     assert_eq!(d.ceil(4.minutes()), 8.minutes());
     assert_eq!(d.ceil(1.seconds()), 4.minutes() + 14.seconds());
+    assert_eq!(Duration::MAX.ceil(1.seconds()), Duration::MAX);
 
     // Round
     assert_eq!(d.round(1.minutes()), 4.minutes());

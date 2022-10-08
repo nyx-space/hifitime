@@ -772,6 +772,7 @@ fn test_rfc3339() {
         Epoch::from_str("1994-11-05T13:15:30Z TDB").unwrap()
     );
 }
+
 #[test]
 fn test_format() {
     use hifitime::Epoch;
@@ -781,6 +782,8 @@ fn test_format() {
     // Check the ET computation once more
     assert!((epoch.as_et_seconds() - 715778738.1825389).abs() < EPSILON);
 
+    // This was initialized as UTC, so the debug print is UTC.
+    assert_eq!(format!("{epoch:?}"), "2022-09-06T23:24:29 UTC");
     assert_eq!(format!("{epoch}"), "2022-09-06T23:24:29 UTC");
     assert_eq!(format!("{epoch:x}"), "2022-09-06T23:25:06 TAI");
     assert_eq!(format!("{epoch:X}"), "2022-09-06T23:25:38.184000015 TT");
@@ -788,6 +791,28 @@ fn test_format() {
     assert_eq!(format!("{epoch:e}"), "2022-09-06T23:25:38.182541370 TDB");
     assert_eq!(format!("{epoch:p}"), "1662506669"); // UNIX seconds
     assert_eq!(format!("{epoch:o}"), "1346541887000000000"); // GPS nanoseconds
+
+    // Ensure that the appropriate time system is used in the debug print.
+    for ts_u8 in 0..5 {
+        let ts: TimeScale = ts_u8.into();
+
+        let epoch = if ts == TimeScale::UTC {
+            Epoch::from_gregorian_utc_hms(2022, 9, 6, 23, 24, 29)
+        } else {
+            Epoch::from_gregorian_hms(2022, 9, 6, 23, 24, 29, ts)
+        };
+
+        assert_eq!(
+            format!("{epoch:?}"),
+            match ts {
+                TimeScale::TAI => format!("{epoch:x}"),
+                TimeScale::ET => format!("{epoch:E}"),
+                TimeScale::TDB => format!("{epoch:e}"),
+                TimeScale::TT => format!("{epoch:X}"),
+                TimeScale::UTC => format!("{epoch}"),
+            }
+        );
+    }
 }
 
 #[test]
@@ -849,14 +874,6 @@ fn test_utc_str() {
     let (centuries, nanos) = dt.as_tai_duration().to_parts();
     assert_eq!(centuries, 1);
     assert_eq!(nanos, 537582752000000000);
-}
-
-#[cfg(feature = "std")]
-#[test]
-fn test_now() {
-    // Simply ensure that this call does not panic
-    let now = Epoch::now().unwrap();
-    println!("{now}");
 }
 
 #[test]
@@ -1036,10 +1053,23 @@ fn test_add_durations_over_leap_seconds() {
 
     // Before the first leap second, there is no time difference between both epochs (because only IERS announced leap seconds are accounted for by default).
     assert_eq!(pre_ls_utc - pre_ls_tai, Duration::ZERO);
-    // When add 36 hours to either of the them, the UTC initialized epoch will increase the duration by 36 hours in UTC, which will cause a leap second jump.
+    // When add 24 hours to either of the them, the UTC initialized epoch will increase the duration by 36 hours in UTC, which will cause a leap second jump.
     // Therefore the difference between both epochs then becomes 10 seconds.
     assert_eq!(
         (pre_ls_utc + 1 * Unit::Day) - (pre_ls_tai + 1 * Unit::Day),
         10 * Unit::Second
     );
+    // Of course this works the same way the other way around
+    let post_ls_utc = pre_ls_utc + Unit::Day;
+    let post_ls_tai = pre_ls_tai + Unit::Day;
+    assert_eq!(
+        (post_ls_utc - 1 * Unit::Day) - (post_ls_tai - 1 * Unit::Day),
+        Duration::ZERO
+    );
+}
+
+#[test]
+fn test_add_f64_seconds() {
+    let e = Epoch::from_gregorian_tai(2044, 6, 6, 12, 18, 54, 0);
+    assert_eq!(e + 159 * Unit::Second, e + 159.0);
 }
