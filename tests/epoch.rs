@@ -925,6 +925,11 @@ fn regression_test_gh_145() {
         Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 45, 0)
     );
 
+    assert_eq!(
+        e.round(3.minutes()),
+        Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 45, 0)
+    );
+
     // Same in UTC
     let e = Epoch::from_gregorian_utc(2022, 10, 3, 17, 44, 29, 898032665);
     assert_eq!(
@@ -934,6 +939,11 @@ fn regression_test_gh_145() {
 
     assert_eq!(
         e.ceil(3.minutes()),
+        Epoch::from_gregorian_utc_hms(2022, 10, 3, 17, 45, 0)
+    );
+
+    assert_eq!(
+        e.round(3.minutes()),
         Epoch::from_gregorian_utc_hms(2022, 10, 3, 17, 45, 0)
     );
 
@@ -949,6 +959,11 @@ fn regression_test_gh_145() {
         Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeScale::TT)
     );
 
+    assert_eq!(
+        e.round(3.minutes()),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeScale::TT)
+    );
+
     // Same in TDB
     let e = Epoch::from_gregorian(2022, 10, 3, 17, 44, 29, 898032665, TimeScale::TDB);
     assert_eq!(
@@ -961,6 +976,11 @@ fn regression_test_gh_145() {
         Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeScale::TDB)
     );
 
+    assert_eq!(
+        e.round(3.minutes()),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeScale::TDB)
+    );
+
     // Same in ET
     let e = Epoch::from_gregorian(2022, 10, 3, 17, 44, 29, 898032665, TimeScale::ET);
     assert_eq!(
@@ -970,6 +990,11 @@ fn regression_test_gh_145() {
 
     assert_eq!(
         e.ceil(3.minutes()),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeScale::ET)
+    );
+
+    assert_eq!(
+        e.round(3.minutes()),
         Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeScale::ET)
     );
 }
@@ -1063,7 +1088,7 @@ fn test_add_durations_over_leap_seconds() {
     let post_ls_utc = pre_ls_utc + Unit::Day;
     let post_ls_tai = pre_ls_tai + Unit::Day;
     assert_eq!(
-        (post_ls_utc - 1 * Unit::Day) - (post_ls_tai - 1 * Unit::Day),
+        (post_ls_utc - Unit::Day) - (post_ls_tai - Unit::Day),
         Duration::ZERO
     );
 }
@@ -1072,4 +1097,52 @@ fn test_add_durations_over_leap_seconds() {
 fn test_add_f64_seconds() {
     let e = Epoch::from_gregorian_tai(2044, 6, 6, 12, 18, 54, 0);
     assert_eq!(e + 159 * Unit::Second, e + 159.0);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_tai_seconds() {
+    let _ = Epoch::from_tai_seconds(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_tai_days() {
+    let _ = Epoch::from_tai_days(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_mjd_tai_days() {
+    let _ = Epoch::from_mjd_tai(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_mjd_utc_days() {
+    let _ = Epoch::from_mjd_utc(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_jde_tai_days() {
+    let _ = Epoch::from_jde_tai(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_jde_et_days() {
+    let _ = Epoch::from_jde_et(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_jde_tdb_days() {
+    let _ = Epoch::from_jde_tdb(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_tdb_seconds() {
+    let _ = Epoch::from_tdb_seconds(f64::NAN);
 }
