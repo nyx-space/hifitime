@@ -355,11 +355,36 @@ impl Epoch {
         Self::from_et_duration(seconds_since_j2000 * Unit::Second)
     }
 
+    /// Initializes an Epoch from the duration between J2000 and the current epoch as per NAIF SPICE.
+    ///
+    /// # Limitation
+    /// This method uses a Newton Raphson iteration to find the appropriate TAI duration. This method is only accuracy to a few nanoseconds.
+    /// Hence, when calling `as_et_duration()` and re-initializing it with `from_et_duration` you may have a few nanoseconds of difference (expect less than 10 ns).
+    ///
+    /// # Warning
+    /// The et2utc function of NAIF SPICE will assume that there are 9 leap seconds before 01 JAN 1972,
+    /// as this date introduces 10 leap seconds. At the time of writing, this does _not_ seem to be in
+    /// line with IERS and the documentation in the leap seconds list.
+    ///
+    /// In order to match SPICE, the as_et_duration() function will manually get rid of that difference.
     #[must_use]
     pub fn from_et_duration(duration_since_j2000: Duration) -> Self {
-        // WRT to J2000: offset to apply to TAI to give ET
-        let delta_et_tai = Self::delta_et_tai(duration_since_j2000.in_seconds());
-        // Offset back to J1900
+        // Run a Newton Raphston to convert find the correct value of the
+        let mut seconds_j2000 = duration_since_j2000.in_seconds();
+        for _ in 0..5 {
+            seconds_j2000 += -NAIF_K
+                * (NAIF_M0
+                    + NAIF_M1 * seconds_j2000
+                    + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds_j2000).sin())
+                .sin();
+        }
+
+        // At this point, we have a good estimate of the number of seconds of this epoch.
+        // Reverse the algorithm:
+        let delta_et_tai =
+            Self::delta_et_tai(seconds_j2000 - (TT_OFFSET_MS * Unit::Millisecond).in_seconds());
+
+        // Match SPICE by changing the UTC definition.
         Self {
             duration_since_j1900_tai: (duration_since_j2000.in_seconds() - delta_et_tai)
                 * Unit::Second

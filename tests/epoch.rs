@@ -975,57 +975,19 @@ fn test_timescale_recip() {
         ] {
             let converted = utc_epoch.as_duration_in_time_scale(*ts);
             let from_dur = Epoch::from_duration(converted, *ts);
-            assert_eq!(utc_epoch, from_dur);
+            if *ts == TimeScale::ET {
+                // There is limitation in the ET scale due to the Newton Raphson iteration.
+                // So let's check for a near equality
+                assert!(
+                    (utc_epoch - from_dur).abs() < 150 * Unit::Nanosecond,
+                    "ET recip error = {} for {}",
+                    utc_epoch - from_dur,
+                    utc_epoch
+                );
+            } else {
+                assert_eq!(utc_epoch, from_dur);
+            }
         }
-
-        // // Test reciprocity
-        // assert!()
-        // assert!(
-        //     (Epoch::from_et_seconds(et_s).as_et_seconds() - et_s).abs() < recip_err_s,
-        //     "{} failed ET reciprocity test:\nwant: {}\tgot: {}\nerror: {} ns",
-        //     epoch,
-        //     et_s,
-        //     Epoch::from_et_seconds(et_s).as_et_seconds(),
-        //     (et_s - Epoch::from_et_seconds(et_s).as_et_seconds()).abs() * 1e9
-        // );
-        // assert!(
-        //     (Epoch::from_tdb_seconds(et_s).as_tdb_seconds() - et_s).abs() < recip_err_s,
-        //     "{} failed TDB reciprocity test:\nwant: {}\tgot: {}\nerror: {} ns",
-        //     epoch,
-        //     et_s,
-        //     Epoch::from_tdb_seconds(et_s).as_tdb_seconds(),
-        //     (et_s - Epoch::from_tdb_seconds(et_s).as_et_seconds()).abs() * 1e9
-        // );
-
-        // // Test ET computation
-        // let extra_seconds = if epoch.leap_seconds_iers() == 0 {
-        //     spice_utc_tai_ls_err
-        // } else {
-        //     0.0
-        // };
-        // assert!(
-        //     (epoch.as_et_seconds() - et_s + extra_seconds).abs() < EPSILON,
-        //     "{} failed ET test",
-        //     epoch
-        // );
-
-        // // Test TDB computation
-        // assert!(
-        //     (epoch.as_tdb_duration() - et_s * Unit::Second + extra_seconds * Unit::Second).abs()
-        //         <= max_tdb_et_err,
-        //     "{} failed TDB test",
-        //     epoch
-        // );
-
-        // // TEST JDE computation
-        // assert!(
-        //     (epoch.as_jde_utc_days() - utc_jde_d).abs() < spice_jde_precision,
-        //     "{} failed JDE UTC days test:\nwant: {}\tgot: {}\nerror = {} days",
-        //     epoch,
-        //     utc_jde_d,
-        //     epoch.as_jde_utc_days(),
-        //     (epoch.as_jde_utc_days() - utc_jde_d).abs()
-        // );
     };
 
     recip_func(Epoch::from_gregorian_utc(1900, 1, 9, 0, 17, 15, 0));
