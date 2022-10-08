@@ -1,4 +1,4 @@
-use hifitime::{Duration, Freq, TimeUnits, Unit, NANOSECONDS_PER_MINUTE};
+use hifitime::{Duration, Freq, Frequencies, TimeUnits, Unit, NANOSECONDS_PER_MINUTE};
 
 #[cfg(feature = "std")]
 extern crate core;
@@ -287,6 +287,10 @@ fn freq_mul() {
     assert_eq!(Freq::MegaHertz * 1_000, Unit::Nanosecond);
     assert_eq!(Freq::KiloHertz * 1_000, Unit::Microsecond);
     assert_eq!(Freq::Hertz * 1_000, Unit::Millisecond);
+
+    assert_eq!(1_000.MHz(), Unit::Nanosecond);
+    assert_eq!(1_000.kHz(), Unit::Microsecond);
+    assert_eq!(1_000.Hz(), Unit::Millisecond);
 }
 
 #[test]
