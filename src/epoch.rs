@@ -12,7 +12,7 @@ use crate::duration::{Duration, Unit};
 use crate::{
     Errors, TimeScale, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR_NLD, ET_EPOCH_S, J1900_OFFSET,
     J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
-    SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64, UNIX_REF_EPOCH,
+    NANOSECONDS_PER_SECOND_U32, SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64, UNIX_REF_EPOCH,
 };
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
@@ -96,17 +96,45 @@ const LEAP_SECONDS: [(f64, f64, bool); 42] = [
 ];
 
 /// Years when January had the leap second
-const JANUARY_YEARS: [i32; 17] = [
-    1972, 1973, 1974, 1975, 1976, 1977, 1978, 1979, 1980, 1988, 1990, 1991, 1996, 1999, 2006, 2009,
-    2017,
-];
+const fn january_years(year: i32) -> bool {
+    matches!(
+        year,
+        1972 | 1973
+            | 1974
+            | 1975
+            | 1976
+            | 1977
+            | 1978
+            | 1979
+            | 1980
+            | 1988
+            | 1990
+            | 1991
+            | 1996
+            | 1999
+            | 2006
+            | 2009
+            | 2017
+    )
+}
 
 /// Years when July had the leap second
-const JULY_YEARS: [i32; 11] = [
-    1972, 1981, 1982, 1983, 1985, 1992, 1993, 1994, 1997, 2012, 2015,
-];
+const fn july_years(year: i32) -> bool {
+    matches!(
+        year,
+        1972 | 1981 | 1982 | 1983 | 1985 | 1992 | 1993 | 1994 | 1997 | 2012 | 2015
+    )
+}
 
-const USUAL_DAYS_PER_MONTH: [u8; 12] = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+// Returns the usual days in a given month (zero indexed, i.e. January is month zero)
+const fn usual_days_per_month(month: u8) -> u8 {
+    match month + 1 {
+        1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
+        4 | 6 | 9 | 11 => 30,
+        2 => 28,
+        _ => unreachable!(),
+    }
+}
 
 /// Defines a nanosecond-precision Epoch.
 ///
@@ -534,7 +562,7 @@ impl Epoch {
         }
         // Add the seconds for the months prior to the current month
         for month in 0..month - 1 {
-            duration_wrt_1900 += Unit::Day * i64::from(USUAL_DAYS_PER_MONTH[(month) as usize]);
+            duration_wrt_1900 += Unit::Day * i64::from(usual_days_per_month(month));
         }
         if is_leap_year(year) && month > 2 {
             // NOTE: If on 29th of February, then the day is not finished yet, and therefore
@@ -757,13 +785,13 @@ impl Epoch {
         if days_in_year < 0.0 {
             month = 12;
             year -= 1;
-            day += USUAL_DAYS_PER_MONTH[11] as f64;
+            day += usual_days_per_month(11) as f64;
             if is_leap_year(year) {
                 day += 1.0;
             }
         } else {
             loop {
-                let mut days_next_month = USUAL_DAYS_PER_MONTH[(month - 1)] as f64;
+                let mut days_next_month = usual_days_per_month(month - 1) as f64;
                 if is_leap_year(year) && month == 2 {
                     days_next_month += 1.0;
                 }
@@ -2202,11 +2230,10 @@ pub fn is_gregorian_valid(
     nanos: u32,
 ) -> bool {
     let max_seconds = if (month == 12 || month == 6)
-        && day == USUAL_DAYS_PER_MONTH[month as usize - 1]
+        && day == usual_days_per_month(month - 1)
         && hour == 23
         && minute == 59
-        && ((month == 6 && JULY_YEARS.contains(&year))
-            || (month == 12 && JANUARY_YEARS.contains(&(year + 1))))
+        && ((month == 6 && july_years(year)) || (month == 12 && january_years(year + 1)))
     {
         60
     } else {
@@ -2220,11 +2247,11 @@ pub fn is_gregorian_valid(
         || hour > 24
         || minute > 59
         || second > max_seconds
-        || f64::from(nanos) > 1e9
+        || nanos > NANOSECONDS_PER_SECOND_U32
     {
         return false;
     }
-    if day > USUAL_DAYS_PER_MONTH[month as usize - 1] && (month != 2 || !is_leap_year(year)) {
+    if day > usual_days_per_month(month - 1) && (month != 2 || !is_leap_year(year)) {
         // Not in February or not a leap year
         return false;
     }
