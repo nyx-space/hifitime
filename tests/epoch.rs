@@ -1031,7 +1031,8 @@ fn test_timescale_recip() {
             }
 
             // RFC3339 test
-            if cfg!(feature = "std") {
+            #[cfg(feature = "std")]
+            {
                 use std::str::FromStr;
 
                 let to_rfc = utc_epoch.to_rfc3339();

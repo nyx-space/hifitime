@@ -1,5 +1,3 @@
-extern crate criterion;
-extern crate hifitime;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use hifitime::{Duration, Unit};
 

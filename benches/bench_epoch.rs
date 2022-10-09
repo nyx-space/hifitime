@@ -1,7 +1,7 @@
-extern crate criterion;
-extern crate hifitime;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use hifitime::{Duration, Epoch, Unit};
+
+use std::str::FromStr;
 
 #[allow(unused_must_use)]
 pub fn criterion_benchmark(c: &mut Criterion) {
@@ -60,6 +60,18 @@ pub fn criterion_benchmark(c: &mut Criterion) {
                 Unit::Nanosecond * black_box(5)
             );
         })
+    });
+
+    c.bench_function("RFC3339 with seconds", |b| {
+        b.iter(|| Epoch::from_str("2018-02-13T23:08:32Z").unwrap());
+    });
+
+    c.bench_function("RFC3339 with milliseconds", |b| {
+        b.iter(|| Epoch::from_str("2018-02-13T23:08:32.123Z").unwrap());
+    });
+
+    c.bench_function("RFC3339 with nanoseconds", |b| {
+        b.iter(|| Epoch::from_str("2018-02-13T23:08:32.123456983Z").unwrap());
     });
 }
 
