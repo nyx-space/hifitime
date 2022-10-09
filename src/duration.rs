@@ -8,7 +8,6 @@
  * Documentation: https://nyxspace.com/
  */
 
-#[cfg(feature = "std")]
 use crate::ParsingErrors;
 use crate::{Errors, SECONDS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 
@@ -22,11 +21,9 @@ use core::fmt;
 use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 #[cfg(feature = "std")]
-use regex::Regex;
-#[cfg(feature = "std")]
 use serde::{de, Deserialize, Deserializer};
-#[cfg(feature = "std")]
-use std::str::FromStr;
+
+use core::str::FromStr;
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
@@ -173,13 +170,38 @@ impl Duration {
         microseconds: u64,
         nanoseconds: u64,
     ) -> Self {
-        let me: Self = (days as i64).days()
-            + (hours as i64).hours()
-            + (minutes as i64).minutes()
-            + (seconds as i64).seconds()
-            + (milliseconds as i64).seconds()
-            + (microseconds as i64).microseconds()
-            + (nanoseconds as i64).nanoseconds();
+        Self::compose_f64(
+            sign,
+            days as f64,
+            hours as f64,
+            minutes as f64,
+            seconds as f64,
+            milliseconds as f64,
+            microseconds as f64,
+            nanoseconds as f64,
+        )
+    }
+
+    /// Creates a new duration from its parts. Set the sign to a negative number for the duration to be negative.
+    #[allow(clippy::too_many_arguments)]
+    #[must_use]
+    pub fn compose_f64(
+        sign: i8,
+        days: f64,
+        hours: f64,
+        minutes: f64,
+        seconds: f64,
+        milliseconds: f64,
+        microseconds: f64,
+        nanoseconds: f64,
+    ) -> Self {
+        let me: Self = days.days()
+            + hours.hours()
+            + minutes.minutes()
+            + seconds.seconds()
+            + milliseconds.milliseconds()
+            + microseconds.microseconds()
+            + nanoseconds.nanoseconds();
         if sign < 0 {
             -me
         } else {
@@ -933,7 +955,6 @@ impl Neg for Duration {
     }
 }
 
-#[cfg(feature = "std")]
 impl FromStr for Duration {
     type Err = Errors;
 
@@ -961,23 +982,57 @@ impl FromStr for Duration {
     /// assert_eq!(Duration::from_str("10.598 nanosecond").unwrap(), Unit::Nanosecond * 10.598);
     /// ```
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let reg = Regex::new(r"^(\d+\.?\d*)\W*(\w+)$").unwrap();
-        match reg.captures(s) {
-            Some(cap) => {
-                let value = cap[1].to_owned().parse::<f64>().unwrap();
-                match cap[2].to_owned().to_lowercase().as_str() {
-                    "d" | "days" | "day" => Ok(Unit::Day * value),
-                    "h" | "hours" | "hour" => Ok(Unit::Hour * value),
-                    "min" | "mins" | "minute" | "minutes" => Ok(Unit::Minute * value),
-                    "s" | "second" | "seconds" => Ok(Unit::Second * value),
-                    "ms" | "millisecond" | "milliseconds" => Ok(Unit::Millisecond * value),
-                    "us" | "microsecond" | "microseconds" => Ok(Unit::Microsecond * value),
-                    "ns" | "nanosecond" | "nanoseconds" => Ok(Unit::Nanosecond * value),
-                    _ => Err(Errors::ParseError(ParsingErrors::UnknownUnit)),
+        // Each part of a duration as days, hours, minutes, seconds, millisecond, microseconds, and nanoseconds
+        let mut decomposed = [0.0_f64; 7];
+
+        let mut prev_idx = 0;
+        let mut seeking_number = true;
+        let mut latest_value = 0.0;
+
+        for (idx, char) in s.chars().enumerate() {
+            if char == ' ' || idx == s.len() - 1 {
+                if seeking_number {
+                    // We've found a new space so let's parse whatever precedes it
+                    match lexical_core::parse(s[prev_idx..idx].as_bytes()) {
+                        Ok(val) => latest_value = val,
+                        Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
+                    }
+                    // We'll now seek a unit
+                    seeking_number = false;
+                } else {
+                    // We're seeking a unit not a number, so let's parse the unit we just found and remember the position.
+                    let end_idx = if idx == s.len() - 1 { idx + 1 } else { idx };
+                    let pos = match &s[prev_idx..end_idx] {
+                        "d" | "days" | "day" => 0,
+                        "h" | "hours" | "hour" => 1,
+                        "min" | "mins" | "minute" | "minutes" => 2,
+                        "s" | "second" | "seconds" => 3,
+                        "ms" | "millisecond" | "milliseconds" => 4,
+                        "us" | "microsecond" | "microseconds" => 5,
+                        "ns" | "nanosecond" | "nanoseconds" => 6,
+                        _ => {
+                            return Err(Errors::ParseError(ParsingErrors::UnknownUnit));
+                        }
+                    };
+                    // Store the value
+                    decomposed[pos] = latest_value;
+                    // Now we switch to seeking a value
+                    seeking_number = true;
                 }
+                prev_idx = idx + 1;
             }
-            None => Err(Errors::ParseError(ParsingErrors::UnknownFormat)),
         }
+
+        Ok(Duration::compose_f64(
+            1,
+            decomposed[0],
+            decomposed[1],
+            decomposed[2],
+            decomposed[3],
+            decomposed[4],
+            decomposed[5],
+            decomposed[6],
+        ))
     }
 }
 

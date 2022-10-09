@@ -182,12 +182,13 @@ Advantages:
 Disadvantages:
 1. Most astrodynamics applications require the computation of a duration in floating point values such as when querying an ephemeris. This design leads to an overhead of about 500 nanoseconds according to the benchmarks. You may run the benchmarks with `cargo bench`.
 
-### Printing
+### Printing and parsing
 
 When Durations are printed, only the units whose value is non-zero is printed. For example, `5.hours() + 256.0.milliseconds() + 1.0.nanoseconds()` will be printed as "5 h 256 ms 1 ns".
 
 ```rust
-use hifitime::{Duration, TimeUnits};
+use hifitime::{Duration, Unit, TimeUnits};
+use core::str::FromStr;
 
 assert_eq!(
     format!(
@@ -203,6 +204,12 @@ assert_eq!(
         5.days() + 1.0.nanoseconds()
     ),
     "5 days 1 ns"
+);
+
+
+assert_eq!(
+    Duration::from_str("5 h 256 ms 1 ns").unwrap(),
+    5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond
 );
 ```
 
