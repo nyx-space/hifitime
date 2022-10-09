@@ -1802,7 +1802,7 @@ impl Epoch {
     #[cfg(feature = "python")]
     /// Converts the Epoch to Gregorian in the RFC3339 format in the provided TimeSystem
     pub fn rfc3339(&self) -> String {
-        self.as_gregorian_str(ts)
+        self.to_rfc3339()
     }
 }
 
