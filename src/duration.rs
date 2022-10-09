@@ -38,6 +38,7 @@ pub const DAYS_PER_CENTURY_U64: u64 = 36_525;
 pub const NANOSECONDS_PER_MICROSECOND: u64 = 1_000;
 pub const NANOSECONDS_PER_MILLISECOND: u64 = 1_000 * NANOSECONDS_PER_MICROSECOND;
 pub const NANOSECONDS_PER_SECOND: u64 = 1_000 * NANOSECONDS_PER_MILLISECOND;
+pub(crate) const NANOSECONDS_PER_SECOND_U32: u32 = 1_000_000_000;
 pub const NANOSECONDS_PER_MINUTE: u64 = 60 * NANOSECONDS_PER_SECOND;
 pub const NANOSECONDS_PER_HOUR: u64 = 60 * NANOSECONDS_PER_MINUTE;
 pub const NANOSECONDS_PER_DAY: u64 = 24 * NANOSECONDS_PER_HOUR;
@@ -159,7 +160,7 @@ impl Duration {
         unit * value
     }
 
-    /// Creates a new duration from its parts
+    /// Creates a new duration from its parts. Set the sign to a negative number for the duration to be negative.
     #[allow(clippy::too_many_arguments)]
     #[must_use]
     pub fn compose(
@@ -179,7 +180,7 @@ impl Duration {
             + (milliseconds as i64).seconds()
             + (microseconds as i64).microseconds()
             + (nanoseconds as i64).nanoseconds();
-        if sign == -1 {
+        if sign < 0 {
             -me
         } else {
             me
@@ -257,8 +258,8 @@ impl Duration {
                 + i128::from(self.nanoseconds)
         } else {
             // Centuries negative by a decent amount
-            i128::from(self.centuries + 1) * i128::from(NANOSECONDS_PER_CENTURY)
-                + i128::from(self.nanoseconds)
+            i128::from(self.centuries) * i128::from(NANOSECONDS_PER_CENTURY)
+                - i128::from(self.nanoseconds)
         }
     }
 
@@ -448,6 +449,14 @@ impl Duration {
     /// ```
     pub fn floor(&self, duration: Self) -> Self {
         // Note that we don't use checked_sub because, at most, this will be zero.
+        // match self
+        //     .total_nanoseconds()
+        //     .checked_sub(self.total_nanoseconds() % duration.abs().total_nanoseconds())
+        // {
+        //     Some(total_ns) => Self::from_total_nanoseconds(total_ns),
+        //     None => Self::MIN,
+        // }
+
         Self::from_total_nanoseconds(
             self.total_nanoseconds() - self.total_nanoseconds() % duration.total_nanoseconds(),
         )

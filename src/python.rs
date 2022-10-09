@@ -21,7 +21,7 @@ impl std::convert::From<Errors> for PyErr {
 #[pymodule]
 fn hifitime(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<Epoch>()?;
-    m.add_class::<TimeSystem>()?;
+    m.add_class::<TimeScale>()?;
     m.add_class::<TimeSeries>()?;
     m.add_class::<Duration>()?;
     m.add_class::<Unit>()?;

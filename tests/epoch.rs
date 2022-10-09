@@ -2,7 +2,7 @@
 extern crate core;
 
 use hifitime::{
-    is_gregorian_valid, Duration, Epoch, TimeSystem, TimeUnits, Unit, DAYS_GPS_TAI_OFFSET,
+    is_gregorian_valid, Duration, Epoch, TimeScale, TimeUnits, Unit, DAYS_GPS_TAI_OFFSET,
     J1900_OFFSET, J2000_OFFSET, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
@@ -327,11 +327,11 @@ fn gpst() {
     #[cfg(feature = "std")]
     {
         assert_eq!(
-            gps_epoch.as_gregorian_str(TimeSystem::UTC),
+            gps_epoch.as_gregorian_str(TimeScale::UTC),
             "1980-01-06T00:00:00 UTC"
         );
         assert_eq!(
-            gps_epoch.as_gregorian_str(TimeSystem::TAI),
+            gps_epoch.as_gregorian_str(TimeScale::TAI),
             "1980-01-06T00:00:19 TAI"
         );
         assert_eq!(format!("{:o}", gps_epoch), "0");
@@ -403,11 +403,11 @@ fn unix() {
     #[cfg(feature = "std")]
     {
         assert_eq!(
-            unix_epoch.as_gregorian_str(TimeSystem::UTC),
+            unix_epoch.as_gregorian_str(TimeScale::UTC),
             "1970-01-01T00:00:00 UTC"
         );
         assert_eq!(
-            unix_epoch.as_gregorian_str(TimeSystem::TAI),
+            unix_epoch.as_gregorian_str(TimeScale::TAI),
             "1970-01-01T00:00:00 TAI"
         );
         // Print as UNIX seconds
@@ -700,28 +700,28 @@ fn test_from_str() {
         greg,
         Epoch::from_str(greg)
             .unwrap()
-            .as_gregorian_str(TimeSystem::UTC)
+            .as_gregorian_str(TimeScale::UTC)
     );
     let greg = "2020-01-31T00:00:00 TAI";
     assert_eq!(
         greg,
         Epoch::from_str(greg)
             .unwrap()
-            .as_gregorian_str(TimeSystem::TAI)
+            .as_gregorian_str(TimeScale::TAI)
     );
     let greg = "2020-01-31T00:00:00 TDB";
     assert_eq!(
         greg,
         Epoch::from_str(greg)
             .unwrap()
-            .as_gregorian_str(TimeSystem::TDB)
+            .as_gregorian_str(TimeScale::TDB)
     );
     let greg = "2020-01-31T00:00:00 ET";
     assert_eq!(
-        greg,
+        "2020-01-31T00:00:00.000000011 ET",
         Epoch::from_str(greg)
             .unwrap()
-            .as_gregorian_str(TimeSystem::ET)
+            .as_gregorian_str(TimeScale::ET)
     );
 }
 
@@ -735,7 +735,41 @@ fn test_from_str_tdb() {
         greg,
         Epoch::from_str(greg)
             .unwrap()
-            .as_gregorian_str(TimeSystem::TDB)
+            .as_gregorian_str(TimeScale::TDB)
+    );
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn test_rfc3339() {
+    use std::str::FromStr;
+
+    assert_eq!(
+        Epoch::from_gregorian_utc_hms(1994, 11, 5, 13, 15, 30),
+        Epoch::from_str("1994-11-05T08:15:30-05:00").unwrap()
+    );
+    assert_eq!(
+        Epoch::from_gregorian_utc_hms(1994, 11, 5, 13, 15, 30),
+        Epoch::from_str("1994-11-05T13:15:30Z").unwrap()
+    );
+    // Same test with different time systems
+    // TAI
+    assert_eq!(
+        Epoch::from_gregorian_tai_hms(1994, 11, 5, 13, 15, 30),
+        Epoch::from_str("1994-11-05T08:15:30-05:00 TAI").unwrap()
+    );
+    assert_eq!(
+        Epoch::from_gregorian_tai_hms(1994, 11, 5, 13, 15, 30),
+        Epoch::from_str("1994-11-05T13:15:30Z TAI").unwrap()
+    );
+    // TDB
+    assert_eq!(
+        Epoch::from_gregorian_hms(1994, 11, 5, 13, 15, 30, TimeScale::TDB),
+        Epoch::from_str("1994-11-05T08:15:30-05:00 TDB").unwrap()
+    );
+    assert_eq!(
+        Epoch::from_gregorian_hms(1994, 11, 5, 13, 15, 30, TimeScale::TDB),
+        Epoch::from_str("1994-11-05T13:15:30Z TDB").unwrap()
     );
 }
 
@@ -748,13 +782,38 @@ fn test_format() {
     // Check the ET computation once more
     assert!((epoch.as_et_seconds() - 715778738.1825389).abs() < EPSILON);
 
+    // This was initialized as UTC, so the debug print is UTC.
+    assert_eq!(format!("{epoch:?}"), "2022-09-06T23:24:29 UTC");
     assert_eq!(format!("{epoch}"), "2022-09-06T23:24:29 UTC");
     assert_eq!(format!("{epoch:x}"), "2022-09-06T23:25:06 TAI");
-    assert_eq!(format!("{epoch:X}"), "2022-09-06T23:25:38.184000015 TT");
-    assert_eq!(format!("{epoch:E}"), "2022-09-06T23:25:38.182538986 ET");
-    assert_eq!(format!("{epoch:e}"), "2022-09-06T23:25:38.182541370 TDB");
+    assert_eq!(format!("{epoch:X}"), "2022-09-06T23:25:38.184000000 TT");
+    assert_eq!(format!("{epoch:E}"), "2022-09-06T23:25:38.182538909 ET");
+    assert_eq!(format!("{epoch:e}"), "2022-09-06T23:25:38.182541259 TDB");
     assert_eq!(format!("{epoch:p}"), "1662506669"); // UNIX seconds
     assert_eq!(format!("{epoch:o}"), "1346541887000000000"); // GPS nanoseconds
+
+    // Ensure that the appropriate time system is used in the debug print.
+    for ts_u8 in 0..5 {
+        let ts: TimeScale = ts_u8.into();
+
+        let epoch = if ts == TimeScale::UTC {
+            Epoch::from_gregorian_utc(2022, 9, 6, 23, 24, 29, 1)
+        } else {
+            // BUG: The 1 nanosecond is gone.
+            Epoch::from_gregorian(2022, 9, 6, 23, 24, 29, 1, ts)
+        };
+
+        assert_eq!(
+            format!("{epoch:?}"),
+            match ts {
+                TimeScale::TAI => format!("{epoch:x}"),
+                TimeScale::ET => format!("{epoch:E}"),
+                TimeScale::TDB => format!("{epoch:e}"),
+                TimeScale::TT => format!("{epoch:X}"),
+                TimeScale::UTC => format!("{epoch}"),
+            }
+        );
+    }
 }
 
 #[test]
@@ -780,9 +839,9 @@ fn test_range() {
 #[test]
 fn regression_test_gh_85() {
     let earlier_epoch =
-        Epoch::maybe_from_gregorian(2020, 1, 8, 16, 1, 17, 100, TimeSystem::TAI).unwrap();
+        Epoch::maybe_from_gregorian(2020, 1, 8, 16, 1, 17, 100, TimeScale::TAI).unwrap();
     let later_epoch =
-        Epoch::maybe_from_gregorian(2020, 1, 8, 16, 1, 17, 200, TimeSystem::TAI).unwrap();
+        Epoch::maybe_from_gregorian(2020, 1, 8, 16, 1, 17, 200, TimeScale::TAI).unwrap();
 
     assert!(
         later_epoch > earlier_epoch,
@@ -818,14 +877,6 @@ fn test_utc_str() {
     assert_eq!(nanos, 537582752000000000);
 }
 
-#[cfg(feature = "std")]
-#[test]
-fn test_now() {
-    // Simply ensure that this call does not panic
-    let now = Epoch::now().unwrap();
-    println!("{now}");
-}
-
 #[test]
 fn test_floor_ceil_round() {
     // NOTE: This test suite is more limited than the Duration equivalent because Epoch uses Durations for these operations.
@@ -848,8 +899,8 @@ fn test_floor_ceil_round() {
 
 #[test]
 fn test_ord() {
-    let epoch1 = Epoch::maybe_from_gregorian(2020, 1, 8, 16, 1, 17, 100, TimeSystem::TAI).unwrap();
-    let epoch2 = Epoch::maybe_from_gregorian(2020, 1, 8, 16, 1, 17, 200, TimeSystem::TAI).unwrap();
+    let epoch1 = Epoch::maybe_from_gregorian(2020, 1, 8, 16, 1, 17, 100, TimeScale::TAI).unwrap();
+    let epoch2 = Epoch::maybe_from_gregorian(2020, 1, 8, 16, 1, 17, 200, TimeScale::TAI).unwrap();
 
     assert_eq!(epoch1.max(epoch2), epoch2);
     assert_eq!(epoch2.min(epoch1), epoch1);
@@ -875,51 +926,239 @@ fn regression_test_gh_145() {
         Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 45, 0)
     );
 
+    assert_eq!(
+        e.round(3.minutes()),
+        Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 45, 0)
+    );
+
     // Same in UTC
     let e = Epoch::from_gregorian_utc(2022, 10, 3, 17, 44, 29, 898032665);
     assert_eq!(
-        e.floor_in_timesystem(3.minutes(), TimeSystem::UTC),
+        e.floor(3.minutes()),
         Epoch::from_gregorian_utc_hms(2022, 10, 3, 17, 42, 0)
     );
 
     assert_eq!(
-        e.ceil_in_timesystem(3.minutes(), TimeSystem::UTC),
+        e.ceil(3.minutes()),
+        Epoch::from_gregorian_utc_hms(2022, 10, 3, 17, 45, 0)
+    );
+
+    assert_eq!(
+        e.round(3.minutes()),
         Epoch::from_gregorian_utc_hms(2022, 10, 3, 17, 45, 0)
     );
 
     // Same in TT
-    let e = Epoch::from_gregorian(2022, 10, 3, 17, 44, 29, 898032665, TimeSystem::TT);
+    let e = Epoch::from_gregorian(2022, 10, 3, 17, 44, 29, 898032665, TimeScale::TT);
     assert_eq!(
-        e.floor_in_timesystem(3.minutes(), TimeSystem::TT),
-        Epoch::from_gregorian_hms(2022, 10, 3, 17, 42, 0, TimeSystem::TT)
+        e.floor(3.minutes()),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 42, 0, TimeScale::TT)
     );
 
     assert_eq!(
-        e.ceil_in_timesystem(3.minutes(), TimeSystem::TT),
-        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeSystem::TT)
+        e.ceil(3.minutes()),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeScale::TT)
+    );
+
+    assert_eq!(
+        e.round(3.minutes()),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeScale::TT)
     );
 
     // Same in TDB
-    let e = Epoch::from_gregorian(2022, 10, 3, 17, 44, 29, 898032665, TimeSystem::TDB);
+    let e = Epoch::from_gregorian(2022, 10, 3, 17, 44, 29, 898032665, TimeScale::TDB);
     assert_eq!(
-        e.floor_in_timesystem(3.minutes(), TimeSystem::TDB),
-        Epoch::from_gregorian_hms(2022, 10, 3, 17, 42, 0, TimeSystem::TDB)
+        e.floor(3.minutes()),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 42, 0, TimeScale::TDB)
     );
 
     assert_eq!(
-        e.ceil_in_timesystem(3.minutes(), TimeSystem::TDB),
-        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeSystem::TDB)
+        e.ceil(3.minutes()),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeScale::TDB)
+    );
+
+    assert_eq!(
+        e.round(3.minutes()),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeScale::TDB)
     );
 
     // Same in ET
-    let e = Epoch::from_gregorian(2022, 10, 3, 17, 44, 29, 898032665, TimeSystem::ET);
+    let e = Epoch::from_gregorian(2022, 10, 3, 17, 44, 29, 898032665, TimeScale::ET);
     assert_eq!(
-        e.floor_in_timesystem(3.minutes(), TimeSystem::ET),
-        Epoch::from_gregorian_hms(2022, 10, 3, 17, 42, 0, TimeSystem::ET)
+        e.floor(3.minutes()),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 42, 0, TimeScale::ET)
     );
 
     assert_eq!(
-        e.ceil_in_timesystem(3.minutes(), TimeSystem::ET),
-        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeSystem::ET)
+        e.ceil(3.minutes()),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeScale::ET)
     );
+
+    assert_eq!(
+        e.round(3.minutes()),
+        Epoch::from_gregorian_hms(2022, 10, 3, 17, 45, 0, TimeScale::ET)
+    );
+}
+
+/// Tests that for a number of epochs covering different leap seconds, creating an Epoch with a given time scale will allow us to retrieve in that same time scale with the same value.
+#[test]
+fn test_timescale_recip() {
+    // The general test function used throughout this verification.
+    let recip_func = |utc_epoch: Epoch| {
+        assert_eq!(utc_epoch, utc_epoch.set(utc_epoch.as_duration()));
+        // Test that we can convert this epoch into another time scale and re-initialize it correctly from that value.
+        for ts in &[
+            // TimeScale::TAI,
+            TimeScale::ET,
+            TimeScale::TDB,
+            TimeScale::TT,
+            TimeScale::UTC,
+        ] {
+            let converted = utc_epoch.as_duration_in_time_scale(*ts);
+            let from_dur = Epoch::from_duration(converted, *ts);
+            if *ts == TimeScale::ET {
+                // There is limitation in the ET scale due to the Newton Raphson iteration.
+                // So let's check for a near equality
+                // TODO: Make this more strict
+                assert!(
+                    (utc_epoch - from_dur).abs() < 150 * Unit::Nanosecond,
+                    "ET recip error = {} for {}",
+                    utc_epoch - from_dur,
+                    utc_epoch
+                );
+            } else {
+                assert_eq!(utc_epoch, from_dur);
+            }
+
+            // RFC3339 test
+            #[cfg(feature = "std")]
+            {
+                use std::str::FromStr;
+
+                let to_rfc = utc_epoch.to_rfc3339();
+                println!("{}", to_rfc);
+                let from_rfc = Epoch::from_str(&to_rfc).unwrap();
+
+                println!("{} for {utc_epoch}", from_rfc - utc_epoch);
+
+                assert_eq!(from_rfc, utc_epoch);
+            }
+        }
+    };
+
+    recip_func(Epoch::from_gregorian_utc(1900, 1, 9, 0, 17, 15, 0));
+
+    recip_func(Epoch::from_gregorian_utc(1920, 7, 23, 14, 39, 29, 0));
+
+    recip_func(Epoch::from_gregorian_utc(1954, 12, 24, 6, 6, 31, 0));
+
+    // Test prior to official leap seconds but with some scaling, valid from 1960 to 1972 according to IAU SOFA.
+    recip_func(Epoch::from_gregorian_utc(1960, 2, 14, 6, 6, 31, 0));
+
+    // First test with some leap seconds
+    recip_func(Epoch::from_gregorian_utc(
+        1983,
+        4,
+        13,
+        12,
+        9,
+        14,
+        274_000_000,
+    ));
+
+    // Once every 400 years, there is a leap day on the new century! Joyeux anniversaire, Papa!
+    recip_func(Epoch::from_gregorian_utc(2000, 2, 29, 14, 57, 29, 0));
+
+    recip_func(Epoch::from_gregorian_utc(
+        2022,
+        11,
+        29,
+        7,
+        58,
+        49,
+        782_000_000,
+    ));
+
+    recip_func(Epoch::from_gregorian_utc(2044, 6, 6, 12, 18, 54, 0));
+
+    recip_func(Epoch::from_gregorian_utc(2075, 4, 30, 23, 59, 54, 0));
+}
+
+/// Tests that the time scales are included when performing operations on Epochs.
+#[test]
+fn test_add_durations_over_leap_seconds() {
+    // Noon UTC after the first leap second is in fact ten seconds _after_ noon TAI.
+    // Hence, there are as many TAI seconds since Epoch between UTC Noon and TAI Noon + 10s.
+    let pre_ls_utc = Epoch::from_gregorian_utc_at_noon(1971, 12, 31);
+    let pre_ls_tai = pre_ls_utc.in_time_scale(TimeScale::TAI);
+
+    // Before the first leap second, there is no time difference between both epochs (because only IERS announced leap seconds are accounted for by default).
+    assert_eq!(pre_ls_utc - pre_ls_tai, Duration::ZERO);
+    // When add 24 hours to either of the them, the UTC initialized epoch will increase the duration by 36 hours in UTC, which will cause a leap second jump.
+    // Therefore the difference between both epochs then becomes 10 seconds.
+    assert_eq!(
+        (pre_ls_utc + 1 * Unit::Day) - (pre_ls_tai + 1 * Unit::Day),
+        10 * Unit::Second
+    );
+    // Of course this works the same way the other way around
+    let post_ls_utc = pre_ls_utc + Unit::Day;
+    let post_ls_tai = pre_ls_tai + Unit::Day;
+    assert_eq!(
+        (post_ls_utc - Unit::Day) - (post_ls_tai - Unit::Day),
+        Duration::ZERO
+    );
+}
+
+#[test]
+fn test_add_f64_seconds() {
+    let e = Epoch::from_gregorian_tai(2044, 6, 6, 12, 18, 54, 0);
+    assert_eq!(e + 159 * Unit::Second, e + 159.0);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_tai_seconds() {
+    let _ = Epoch::from_tai_seconds(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_tai_days() {
+    let _ = Epoch::from_tai_days(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_mjd_tai_days() {
+    let _ = Epoch::from_mjd_tai(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_mjd_utc_days() {
+    let _ = Epoch::from_mjd_utc(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_jde_tai_days() {
+    let _ = Epoch::from_jde_tai(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_jde_et_days() {
+    let _ = Epoch::from_jde_et(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_jde_tdb_days() {
+    let _ = Epoch::from_jde_tdb(f64::NAN);
+}
+
+#[test]
+#[should_panic]
+fn from_infinite_tdb_seconds() {
+    let _ = Epoch::from_tdb_seconds(f64::NAN);
 }
