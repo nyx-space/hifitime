@@ -11,8 +11,8 @@
 use crate::duration::{Duration, Unit};
 use crate::{
     Errors, TimeScale, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR_NLD, ET_EPOCH_S, J1900_OFFSET,
-    J2000_TO_J1900_DURATION, MJD_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64,
-    SECONDS_PER_DAY, UNIX_REF_EPOCH,
+    J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
+    SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64, UNIX_REF_EPOCH,
 };
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
@@ -734,73 +734,61 @@ impl Epoch {
         1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
     }
 
-    fn compute_gregorian(absolute_seconds_j1900: f64) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let (mut year, mut year_fraction) =
-            div_rem_f64(absolute_seconds_j1900, DAYS_PER_YEAR_NLD * SECONDS_PER_DAY);
+    fn compute_gregorian(duration_j1900: Duration) -> (i32, u8, u8, u8, u8, u8, u32) {
+        let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+            duration_j1900.decompose();
+
+        let (mut year, mut days_in_year) = div_rem_f64(days as f64, DAYS_PER_YEAR_NLD);
         // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
         year += 1900;
+
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
         // between 1900 and `year`
         for year in 1900..year {
             if is_leap_year(year) {
-                year_fraction -= SECONDS_PER_DAY;
+                days_in_year -= 1.0;
             }
         }
 
         // Get the month from the exact number of seconds between the start of the year and now
-        let mut seconds_til_this_month = 0.0;
         let mut month = 1;
-        if year_fraction < 0.0 {
+        let mut day = days_in_year;
+
+        if days_in_year < 0.0 {
             month = 12;
             year -= 1;
+            day += USUAL_DAYS_PER_MONTH[11] as f64;
+            if is_leap_year(year) {
+                day += 1.0;
+            }
         } else {
             loop {
-                seconds_til_this_month +=
-                    SECONDS_PER_DAY * f64::from(USUAL_DAYS_PER_MONTH[(month - 1) as usize]);
+                let mut days_next_month = USUAL_DAYS_PER_MONTH[(month - 1)] as f64;
                 if is_leap_year(year) && month == 2 {
-                    seconds_til_this_month += SECONDS_PER_DAY;
+                    days_next_month += 1.0;
                 }
-                if seconds_til_this_month > year_fraction {
+
+                if days_next_month > day {
+                    // We've reached the end of the month
                     break;
                 }
+
+                day -= days_next_month;
+
                 month += 1;
             }
         }
-        let mut days_this_month = USUAL_DAYS_PER_MONTH[(month - 1) as usize];
-        if month == 2 && is_leap_year(year) {
-            days_this_month += 1;
-        }
-        // Get the month fraction by the number of seconds in this month from the number of
-        // seconds since the start of this month.
-        let (_, month_fraction) = div_rem_f64(
-            year_fraction - seconds_til_this_month,
-            f64::from(days_this_month) * SECONDS_PER_DAY,
-        );
-        // Get the day by the exact number of seconds in a day
-        let (mut day, day_fraction) = div_rem_f64(month_fraction, SECONDS_PER_DAY);
-        if day < 0 {
-            // Overflow backwards (this happens for end of year calculations)
-            month -= 1;
-            if month == 0 {
-                month = 12;
-                year -= 1;
-            }
-            day = USUAL_DAYS_PER_MONTH[(month - 1) as usize] as i32;
-        }
-        day += 1; // Otherwise the day count starts at 0
-                  // Get the hours by the exact number of seconds in an hour
-        let (hours, hours_fraction) = div_rem_f64(day_fraction, 60.0 * 60.0);
-        // Get the minutes and seconds by the exact number of seconds in a minute
-        let (mins, secs) = div_rem_f64(hours_fraction, 60.0);
-        let nanos = (div_rem_f64(secs, 1.0).1 * 1e9) as u32;
+
         (
             year,
             month as u8,
-            day as u8,
+            (day + 1.0) as u8,
             hours as u8,
-            mins as u8,
-            secs as u8,
-            nanos,
+            minutes as u8,
+            seconds as u8,
+            (nanos
+                + microseconds * NANOSECONDS_PER_MICROSECOND
+                + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
         )
     }
 }
@@ -1615,7 +1603,7 @@ impl Epoch {
     /// assert_eq!("2017-01-14T00:31:55 UTC", dt.as_gregorian_utc_str().to_owned());
     /// ```
     pub fn as_gregorian_utc(&self) -> (i32, u8, u8, u8, u8, u8, u32) {
-        Self::compute_gregorian(self.as_utc_seconds())
+        Self::compute_gregorian(self.as_utc_duration())
     }
 
     #[must_use]
@@ -1635,7 +1623,7 @@ impl Epoch {
     /// assert_eq!(s, 0);
     /// ```
     pub fn as_gregorian_tai(&self) -> (i32, u8, u8, u8, u8, u8, u32) {
-        Self::compute_gregorian(self.as_tai_seconds())
+        Self::compute_gregorian(self.as_tai_duration())
     }
 
     /// Floors this epoch to the closest provided duration
@@ -1780,6 +1768,12 @@ impl Epoch {
     #[cfg(feature = "python")]
     /// Converts the Epoch to Gregorian in the ISO8601 format in the provided TimeSystem
     pub fn to_gregorian(&self, ts: TimeScale) -> String {
+        self.as_gregorian_str(ts)
+    }
+
+    #[cfg(feature = "python")]
+    /// Converts the Epoch to Gregorian in the RFC3339 format in the provided TimeSystem
+    pub fn rfc3339(&self) -> String {
         self.as_gregorian_str(ts)
     }
 }
@@ -1934,12 +1928,13 @@ impl Epoch {
     /// Converts the Epoch to Gregorian in the provided time system and in the ISO8601 format with the time system appended to the string
     pub fn as_gregorian_str(&self, ts: TimeScale) -> String {
         let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(match ts {
-            TimeScale::TT => self.as_tt_seconds(),
-            TimeScale::TAI => self.as_tai_seconds(),
-            TimeScale::ET => self.as_et_duration_since_j1900().in_seconds(),
-            TimeScale::TDB => self.as_tdb_duration_since_j1900().in_seconds(),
-            TimeScale::UTC => self.as_utc_seconds(),
+            TimeScale::TT => self.as_tt_duration(),
+            TimeScale::TAI => self.as_tai_duration(),
+            TimeScale::ET => self.as_et_duration_since_j1900(),
+            TimeScale::TDB => self.as_tdb_duration_since_j1900(),
+            TimeScale::UTC => self.as_utc_duration(),
         });
+
         if nanos == 0 {
             format!(
                 "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {:?}",
@@ -1947,7 +1942,7 @@ impl Epoch {
             )
         } else {
             format!(
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {:?}",
                 y, mm, dd, hh, min, s, nanos, ts
             )
         }
@@ -1960,6 +1955,22 @@ impl Epoch {
         match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
             Ok(std_duration) => Ok(Self::from_unix_seconds(std_duration.as_secs_f64())),
             Err(_) => Err(Errors::SystemTimeError),
+        }
+    }
+
+    /// Returns this epoch in UTC in the RFC3339 format
+    pub fn to_rfc3339(&self) -> String {
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_utc_duration());
+        if nanos == 0 {
+            format!(
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}+00:00",
+                y, mm, dd, hh, min, s
+            )
+        } else {
+            format!(
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09}+00:00",
+                y, mm, dd, hh, min, s, nanos
+            )
         }
     }
 }
@@ -2041,7 +2052,7 @@ impl fmt::Debug for Epoch {
     /// Print this epoch in Gregorian in the time scale used at initialization
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.as_duration_since_j1900().in_seconds());
+            Self::compute_gregorian(self.as_duration_since_j1900());
         if nanos == 0 {
             write!(
                 f,
@@ -2051,7 +2062,7 @@ impl fmt::Debug for Epoch {
         } else {
             write!(
                 f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {:?}",
                 y, mm, dd, hh, min, s, nanos, self.time_scale
             )
         }
@@ -2062,7 +2073,7 @@ impl fmt::Display for Epoch {
     /// The default format of an epoch is in UTC
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::UTC;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_utc_seconds());
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_utc_duration());
         if nanos == 0 {
             write!(
                 f,
@@ -2072,7 +2083,7 @@ impl fmt::Display for Epoch {
         } else {
             write!(
                 f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {:?}",
                 y, mm, dd, hh, min, s, nanos, ts
             )
         }
@@ -2083,7 +2094,7 @@ impl fmt::LowerHex for Epoch {
     /// Prints the Epoch in TAI
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::TAI;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_tai_seconds());
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_tai_duration());
         if nanos == 0 {
             write!(
                 f,
@@ -2093,7 +2104,7 @@ impl fmt::LowerHex for Epoch {
         } else {
             write!(
                 f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {:?}",
                 y, mm, dd, hh, min, s, nanos, ts
             )
         }
@@ -2104,7 +2115,7 @@ impl fmt::UpperHex for Epoch {
     /// Prints the Epoch in TT
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::TT;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_tt_seconds());
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.as_tt_duration());
         if nanos == 0 {
             write!(
                 f,
@@ -2114,7 +2125,7 @@ impl fmt::UpperHex for Epoch {
         } else {
             write!(
                 f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {:?}",
                 y, mm, dd, hh, min, s, nanos, ts
             )
         }
@@ -2126,7 +2137,7 @@ impl fmt::LowerExp for Epoch {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::TDB;
         let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.as_tdb_duration_since_j1900().in_seconds());
+            Self::compute_gregorian(self.as_tdb_duration_since_j1900());
         if nanos == 0 {
             write!(
                 f,
@@ -2136,7 +2147,7 @@ impl fmt::LowerExp for Epoch {
         } else {
             write!(
                 f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {:?}",
                 y, mm, dd, hh, min, s, nanos, ts
             )
         }
@@ -2148,7 +2159,7 @@ impl fmt::UpperExp for Epoch {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::ET;
         let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.as_et_duration_since_j1900().in_seconds());
+            Self::compute_gregorian(self.as_et_duration_since_j1900());
         if nanos == 0 {
             write!(
                 f,
@@ -2158,7 +2169,7 @@ impl fmt::UpperExp for Epoch {
         } else {
             write!(
                 f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{} {:?}",
+                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {:?}",
                 y, mm, dd, hh, min, s, nanos, ts
             )
         }
@@ -2222,7 +2233,7 @@ pub fn is_gregorian_valid(
 
 /// `is_leap_year` returns whether the provided year is a leap year or not.
 /// Tests for this function are part of the Datetime tests.
-fn is_leap_year(year: i32) -> bool {
+const fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
 }
 
