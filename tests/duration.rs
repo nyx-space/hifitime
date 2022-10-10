@@ -399,3 +399,16 @@ fn duration_from_str() {
         5 * Unit::Day + 1 * Unit::Nanosecond
     );
 }
+
+#[cfg(feature = "std")]
+#[test]
+fn std_time_duration() {
+    use std::time::Duration as StdDuration;
+
+    let hf_duration = 5 * Unit::Day + 1 * Unit::Nanosecond;
+    let std_duration: StdDuration = hf_duration.into();
+    assert_eq!(std_duration, StdDuration::new(432_000, 1));
+
+    let hf_return: Duration = std_duration.into();
+    assert_eq!(hf_return, hf_duration);
+}

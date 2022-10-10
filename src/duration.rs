@@ -1048,6 +1048,38 @@ const fn div_rem_i64(me: i64, rhs: i64) -> (i64, i64) {
 }
 
 #[cfg(feature = "std")]
+impl From<Duration> for std::time::Duration {
+    /// Converts a duration into an std::time::Duration
+    ///
+    /// # Limitations
+    /// 1. If the duration is negative, this will return a std::time::Duration::ZERO.
+    /// 2. If the duration larger than the MAX duration, this will return std::time::Duration::MAX
+    fn from(hf_duration: Duration) -> Self {
+        let (sign, days, hours, minutes, seconds, milli, us, nano) = hf_duration.decompose();
+        if sign < 0 {
+            std::time::Duration::ZERO
+        } else {
+            // Build the seconds separately from the nanos.
+            let above_ns_f64: f64 =
+                Duration::compose(sign, days, hours, minutes, seconds, milli, us, 0).in_seconds();
+            std::time::Duration::new(above_ns_f64 as u64, nano as u32)
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl From<std::time::Duration> for Duration {
+    /// Converts a duration into an std::time::Duration
+    ///
+    /// # Limitations
+    /// 1. If the duration is negative, this will return a std::time::Duration::ZERO.
+    /// 2. If the duration larger than the MAX duration, this will return std::time::Duration::MAX
+    fn from(std_duration: std::time::Duration) -> Self {
+        std_duration.as_secs_f64() * Unit::Second
+    }
+}
+
+#[cfg(feature = "std")]
 #[test]
 fn deser_test() {
     use serde_derive::Deserialize;

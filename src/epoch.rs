@@ -126,13 +126,15 @@ const fn july_years(year: i32) -> bool {
     )
 }
 
+use const_panic::concat_panic;
+
 // Returns the usual days in a given month (zero indexed, i.e. January is month zero)
 const fn usual_days_per_month(month: u8) -> u8 {
     match month + 1 {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
         4 | 6 | 9 | 11 => 30,
         2 => 28,
-        _ => unreachable!(),
+        _ => concat_panic!("invalid month:", month),
     }
 }
 
