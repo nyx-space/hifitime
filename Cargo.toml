@@ -1,6 +1,6 @@
 [package]
 name = "hifitime"
-version = "3.5.0-alpha"
+version = "3.5.0"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
 description = "Ultra-precise date and time handling in Rust for scientific applications with leap second support"
 homepage = "https://nyxspace.com/MathSpec/time/"
@@ -19,7 +19,6 @@ name = "hifitime"
 
 [dependencies]
 serde = {version = "1.0.145", optional = true}
-regex = {version = "1.6.0", optional = true}
 serde_derive = {version = "1.0.145", optional = true}
 der = {version = "0.6.0", features = ["derive", "real"], optional = true}
 pyo3 = { version = "0.17.2", features = ["extension-module"], optional = true}
@@ -31,7 +30,7 @@ criterion = "0.4.0"
 
 [features]
 default = ["std"]
-std = ["regex", "serde", "serde_derive"]
+std = ["serde", "serde_derive"]
 asn1der = ["der"]
 python = ["std", "asn1der", "pyo3"]
 

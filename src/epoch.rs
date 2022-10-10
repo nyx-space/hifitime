@@ -9,6 +9,7 @@
  */
 
 use crate::duration::{Duration, Unit};
+use crate::parser::Token;
 use crate::{
     Errors, TimeScale, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR_NLD, ET_EPOCH_S, J1900_OFFSET,
     J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
@@ -18,17 +19,15 @@ use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
-#[cfg(feature = "std")]
 use crate::ParsingErrors;
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
-#[cfg(feature = "std")]
-use regex::Regex;
+
 #[cfg(feature = "std")]
 use serde::{de, Deserialize, Deserializer};
-#[cfg(feature = "std")]
-use std::str::FromStr;
+
+use core::str::FromStr;
 #[cfg(feature = "std")]
 use std::time::SystemTime;
 
@@ -747,6 +746,155 @@ impl Epoch {
     ) -> Self {
         Self::maybe_from_gregorian(year, month, day, hour, minute, second, 0, ts)
             .expect("invalid Gregorian date")
+    }
+
+    /// Converts a Gregorian date time in ISO8601 or RFC3339 format into an Epoch, accounting for the time zone designator and the time system.
+    ///
+    /// # Definition
+    /// 1. Time Zone Designator: this is either a `Z` (lower or upper case) to specify UTC, or an offset in hours and minutes off of UTC, such as `+01:00` for UTC plus one hour and zero minutes.
+    /// 2. Time system (or time "scale"): UTC, TT, TAI, TDB, ET, etc.
+    ///
+    /// Converts an ISO8601 or RFC3339 datetime representation to an Epoch.
+    /// If no time system is specified, then UTC is assumed.
+    /// A time system may be specified _in addition_ to the format unless
+    /// The `T` which separates the date from the time can be replaced with a single whitespace character (`\W`).
+    /// The offset is also optional, cf. the examples below.
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::Epoch;
+    /// let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
+    /// assert_eq!(
+    ///     dt,
+    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55 UTC").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     dt,
+    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55.0000 UTC").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     dt,
+    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     dt,
+    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55").unwrap()
+    /// );
+    /// // Regression test for #90
+    /// assert_eq!(
+    ///     Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811000000),
+    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55.811 UTC").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811200000),
+    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55.8112 UTC").unwrap()
+    /// );
+    /// // Example from https://www.w3.org/TR/NOTE-datetime
+    /// assert_eq!(
+    ///     Epoch::from_gregorian_utc_hms(1994, 11, 5, 13, 15, 30),
+    ///     Epoch::from_gregorian_str("1994-11-05T13:15:30Z").unwrap()
+    /// );
+    /// assert_eq!(
+    ///     Epoch::from_gregorian_utc_hms(1994, 11, 5, 13, 15, 30),
+    ///     Epoch::from_gregorian_str("1994-11-05T08:15:30-05:00").unwrap()
+    /// );
+    /// ```
+    pub fn from_gregorian_str(s_in: &str) -> Result<Self, Errors> {
+        // All of the integers in a date: year, month, day, hour, minute, second, subsecond, offset hours, offset minutes
+        let mut decomposed = [0_i32; 9];
+        // The parsed time scale, defaults to UTC
+        let mut ts = TimeScale::UTC;
+        // The offset sign, defaults to positive.
+        let mut offset_sign = 1;
+
+        // Previous index of interest in the string
+        let mut prev_idx = 0;
+        let mut cur_token = Token::Year;
+
+        let s = s_in.trim();
+
+        for (idx, char) in s.chars().enumerate() {
+            if !char.is_numeric() || idx == s.len() - 1 {
+                if cur_token == Token::Timescale {
+                    // Then we match the timescale directly.
+                    if idx != s.len() - 1 {
+                        // We have some remaining characters, so let's parse those in the only formats we know.
+                        ts = TimeScale::from_str(&s[idx..].trim())?;
+                    }
+                    break;
+                }
+                let prev_token = cur_token;
+
+                let pos = cur_token.pos();
+
+                let end_idx = if idx != s.len() - 1 || !char.is_numeric() {
+                    // Only advance the token if we aren't at the end of the string
+                    cur_token.advance_with(char)?;
+                    idx
+                } else {
+                    idx + 1
+                };
+
+                match lexical_core::parse(s[prev_idx..end_idx].as_bytes()) {
+                    Ok(val) => {
+                        // Check that this valid is OK for the token we're reading it as.
+                        prev_token.value_ok(val)?;
+                        // If these are the subseconds, we must convert them to nanoseconds
+                        if prev_token == Token::Subsecond {
+                            if end_idx - prev_idx != 9 {
+                                decomposed[pos] =
+                                    val * 10_i32.pow((9 - (end_idx - prev_idx)) as u32);
+                            } else {
+                                decomposed[pos] = val;
+                            }
+                        } else {
+                            decomposed[pos] = val
+                        }
+                    }
+                    Err(_) => return Err(Errors::ParseError(ParsingErrors::ISO8601)),
+                }
+                prev_idx = idx + 1;
+                // If we are about to parse an hours offset, we need to set the sign now.
+                if cur_token == Token::OffsetHours {
+                    if &s[idx..idx + 1] == "-" {
+                        offset_sign = -1;
+                    }
+                    prev_idx += 1;
+                }
+            }
+        }
+
+        let tz = if offset_sign > 0 {
+            // We oppose the sign in the string to undo the offset
+            -(i64::from(decomposed[7]) * Unit::Hour + i64::from(decomposed[8]) * Unit::Minute)
+        } else {
+            i64::from(decomposed[7]) * Unit::Hour + i64::from(decomposed[8]) * Unit::Minute
+        };
+
+        let epoch = if ts == TimeScale::UTC {
+            Self::maybe_from_gregorian_utc(
+                decomposed[0],
+                decomposed[1].try_into().unwrap(),
+                decomposed[2].try_into().unwrap(),
+                decomposed[3].try_into().unwrap(),
+                decomposed[4].try_into().unwrap(),
+                decomposed[5].try_into().unwrap(),
+                decomposed[6].try_into().unwrap(),
+            )
+        } else {
+            Self::maybe_from_gregorian(
+                decomposed[0],
+                decomposed[1].try_into().unwrap(),
+                decomposed[2].try_into().unwrap(),
+                decomposed[3].try_into().unwrap(),
+                decomposed[4].try_into().unwrap(),
+                decomposed[5].try_into().unwrap(),
+                decomposed[6].try_into().unwrap(),
+                ts,
+            )
+        };
+
+        return Ok(epoch? + tz);
     }
 
     fn delta_et_tai(seconds: f64) -> f64 {
@@ -1811,138 +1959,6 @@ impl Epoch {
 
 #[cfg(feature = "std")]
 impl Epoch {
-    /// Converts a Gregorian date time in ISO8601 or RFC3339 format into an Epoch, accounting for the time zone designator and the time system.
-    ///
-    /// # Definition
-    /// 1. Time Zone Designator: this is either a `Z` (lower or upper case) to specify UTC, or an offset in hours and minutes off of UTC, such as `+01:00` for UTC plus one hour and zero minutes.
-    /// 2. Time system (or time "scale"): UTC, TT, TAI, TDB, ET, etc.
-    ///
-    /// Converts an ISO8601 or RFC3339 datetime representation to an Epoch.
-    /// If no time system is specified, then UTC is assumed.
-    /// A time system may be specified _in addition_ to the format unless
-    /// The `T` which separates the date from the time can be replaced with a single whitespace character (`\W`).
-    /// The offset is also optional, cf. the examples below.
-    ///
-    /// # Example
-    /// ```
-    /// use hifitime::Epoch;
-    /// let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
-    /// assert_eq!(
-    ///     dt,
-    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55 UTC").unwrap()
-    /// );
-    /// assert_eq!(
-    ///     dt,
-    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55.0000 UTC").unwrap()
-    /// );
-    /// assert_eq!(
-    ///     dt,
-    ///     Epoch::from_gregorian_str("2017-01-14T00:31:55").unwrap()
-    /// );
-    /// assert_eq!(
-    ///     dt,
-    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55").unwrap()
-    /// );
-    /// // Regression test for #90
-    /// assert_eq!(
-    ///     Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811000000),
-    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55.811 UTC").unwrap()
-    /// );
-    /// assert_eq!(
-    ///     Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811200000),
-    ///     Epoch::from_gregorian_str("2017-01-14 00:31:55.8112 UTC").unwrap()
-    /// );
-    /// // Example from https://www.w3.org/TR/NOTE-datetime
-    /// assert_eq!(
-    ///     Epoch::from_gregorian_utc_hms(1994, 11, 5, 13, 15, 30),
-    ///     Epoch::from_gregorian_str("1994-11-05T13:15:30Z").unwrap()
-    /// );
-    /// assert_eq!(
-    ///     Epoch::from_gregorian_utc_hms(1994, 11, 5, 13, 15, 30),
-    ///     Epoch::from_gregorian_str("1994-11-05T08:15:30-05:00").unwrap()
-    /// );
-    /// ```
-    pub fn from_gregorian_str(s: &str) -> Result<Self, Errors> {
-        let reg: Regex = Regex::new(
-            r"^(\d{4})-(\d{2})-(\d{2})(?:T|\W)(\d{2}):(\d{2}):(\d{2})\.?(\d+)?(((\+|-)(\d{2}):(\d{2}))|Z)?\W?(\w{2,3})?$",
-        )
-        .unwrap();
-        match reg.captures(s) {
-            Some(cap) => {
-                let nanos = match cap.get(7) {
-                    Some(val) => {
-                        let val_str = val.as_str();
-                        let val = val_str.parse::<u32>().unwrap();
-                        if val_str.len() != 9 {
-                            val * 10_u32.pow((9 - val_str.len()) as u32)
-                        } else {
-                            val
-                        }
-                    }
-                    None => 0,
-                };
-
-                let tz = match cap.get(9) {
-                    Some(_) => {
-                        // If Group 8 exists, then it is composed of groups 10 through 12.
-                        let hours = cap[11].parse::<i64>()?;
-                        let minutes = cap[12].parse::<i64>()?;
-                        if cap[10].to_owned() == "+" {
-                            // We oppose the sign in the string to undo the offset
-                            -(hours * Unit::Hour + minutes * Unit::Minute)
-                        } else {
-                            hours * Unit::Hour + minutes * Unit::Minute
-                        }
-                    }
-                    None => Duration::ZERO,
-                };
-
-                let epoch = match cap.get(13) {
-                    Some(ts_str) => {
-                        let ts = TimeScale::from_str(ts_str.as_str())?;
-                        if ts == TimeScale::UTC {
-                            Self::maybe_from_gregorian_utc(
-                                cap[1].to_owned().parse::<i32>()?,
-                                cap[2].to_owned().parse::<u8>()?,
-                                cap[3].to_owned().parse::<u8>()?,
-                                cap[4].to_owned().parse::<u8>()?,
-                                cap[5].to_owned().parse::<u8>()?,
-                                cap[6].to_owned().parse::<u8>()?,
-                                nanos,
-                            )
-                        } else {
-                            Self::maybe_from_gregorian(
-                                cap[1].to_owned().parse::<i32>()?,
-                                cap[2].to_owned().parse::<u8>()?,
-                                cap[3].to_owned().parse::<u8>()?,
-                                cap[4].to_owned().parse::<u8>()?,
-                                cap[5].to_owned().parse::<u8>()?,
-                                cap[6].to_owned().parse::<u8>()?,
-                                nanos,
-                                ts,
-                            )
-                        }
-                    }
-                    None => {
-                        // Assume UTC
-                        Self::maybe_from_gregorian_utc(
-                            cap[1].to_owned().parse::<i32>()?,
-                            cap[2].to_owned().parse::<u8>()?,
-                            cap[3].to_owned().parse::<u8>()?,
-                            cap[4].to_owned().parse::<u8>()?,
-                            cap[5].to_owned().parse::<u8>()?,
-                            cap[6].to_owned().parse::<u8>()?,
-                            nanos,
-                        )
-                    }
-                };
-
-                Ok(epoch? + tz)
-            }
-            None => Err(Errors::ParseError(ParsingErrors::ISO8601)),
-        }
-    }
-
     #[must_use]
     /// Converts the Epoch to UTC Gregorian in the ISO8601 format.
     pub fn as_gregorian_utc_str(&self) -> String {
@@ -2006,7 +2022,6 @@ impl Epoch {
     }
 }
 
-#[cfg(feature = "std")]
 impl FromStr for Epoch {
     type Err = Errors;
 
@@ -2019,7 +2034,7 @@ impl FromStr for Epoch {
     /// # Example
     /// ```
     /// use hifitime::Epoch;
-    /// use std::str::FromStr;
+    /// use core::str::FromStr;
     ///
     /// assert!(Epoch::from_str("JD 2452312.500372511 TDB").is_ok());
     /// assert!(Epoch::from_str("JD 2452312.500372511 ET").is_ok());
@@ -2028,42 +2043,57 @@ impl FromStr for Epoch {
     /// assert!(Epoch::from_str("SEC 0.5 TAI").is_ok());
     /// assert!(Epoch::from_str("SEC 66312032.18493909 TDB").is_ok());
     /// ```
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let reg: Regex = Regex::new(r"^(\w{2,3})\W?(\d+\.?\d+)\W?(\w{2,3})?$").unwrap();
-        // Try to match Gregorian date
-        match Self::from_gregorian_str(s) {
-            Ok(e) => Ok(e),
-            Err(_) => match reg.captures(s) {
-                Some(cap) => {
-                    let format = cap[1].to_owned().parse::<String>().unwrap();
-                    let value = cap[2].to_owned().parse::<f64>().unwrap();
-                    let ts = TimeScale::from_str(&cap[3])?;
+    fn from_str(s_in: &str) -> Result<Self, Self::Err> {
+        let s = s_in.trim();
 
-                    match format.as_str() {
-                        "JD" => match ts {
-                            TimeScale::ET => Ok(Self::from_jde_et(value)),
-                            TimeScale::TAI => Ok(Self::from_jde_tai(value)),
-                            TimeScale::TDB => Ok(Self::from_jde_tdb(value)),
-                            TimeScale::UTC => Ok(Self::from_jde_utc(value)),
-                            _ => Err(Errors::ParseError(ParsingErrors::UnsupportedTimeSystem)),
-                        },
-                        "MJD" => match ts {
-                            TimeScale::TAI => Ok(Self::from_mjd_tai(value)),
-                            TimeScale::UTC => Ok(Self::from_mjd_utc(value)),
-                            _ => Err(Errors::ParseError(ParsingErrors::UnsupportedTimeSystem)),
-                        },
-                        "SEC" => match ts {
-                            TimeScale::TAI => Ok(Self::from_tai_seconds(value)),
-                            TimeScale::ET => Ok(Self::from_et_seconds(value)),
-                            TimeScale::TDB => Ok(Self::from_tdb_seconds(value)),
-                            TimeScale::TT => Ok(Self::from_tt_seconds(value)),
-                            TimeScale::UTC => Ok(Self::from_utc_seconds(value)),
-                        },
-                        _ => Err(Errors::ParseError(ParsingErrors::UnknownFormat)),
-                    }
-                }
-                None => Err(Errors::ParseError(ParsingErrors::UnknownFormat)),
-            },
+        if s.len() < 7 {
+            // We need at least seven characters for a valid epoch
+            return Err(Errors::ParseError(ParsingErrors::UnknownFormat));
+        } else {
+            let format = if &s[..2] == "JD" {
+                "JD"
+            } else if &s[..3] == "MJD" {
+                "MJD"
+            } else if &s[..3] == "SEC" {
+                "SEC"
+            } else {
+                // Not a valid format, hopefully it's a Gregorian date.
+                return Self::from_gregorian_str(s_in);
+            };
+
+            // This is a valid numerical format.
+            // Parse the time scale from the last three characters (TS trims white spaces).
+            let ts = TimeScale::from_str(&s[s.len() - 3..])?;
+            // Iterate through the string to figure out where the numeric data starts and ends.
+            let start_idx = format.len();
+            let num_str = s[start_idx..s.len() - ts.formatted_len()].trim();
+            let value: f64 = match lexical_core::parse(num_str.as_bytes()) {
+                Ok(val) => val,
+                Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
+            };
+
+            match format {
+                "JD" => match ts {
+                    TimeScale::ET => Ok(Self::from_jde_et(value)),
+                    TimeScale::TAI => Ok(Self::from_jde_tai(value)),
+                    TimeScale::TDB => Ok(Self::from_jde_tdb(value)),
+                    TimeScale::UTC => Ok(Self::from_jde_utc(value)),
+                    _ => Err(Errors::ParseError(ParsingErrors::UnsupportedTimeSystem)),
+                },
+                "MJD" => match ts {
+                    TimeScale::TAI => Ok(Self::from_mjd_tai(value)),
+                    TimeScale::UTC => Ok(Self::from_mjd_utc(value)),
+                    _ => Err(Errors::ParseError(ParsingErrors::UnsupportedTimeSystem)),
+                },
+                "SEC" => match ts {
+                    TimeScale::TAI => Ok(Self::from_tai_seconds(value)),
+                    TimeScale::ET => Ok(Self::from_et_seconds(value)),
+                    TimeScale::TDB => Ok(Self::from_tdb_seconds(value)),
+                    TimeScale::TT => Ok(Self::from_tt_seconds(value)),
+                    TimeScale::UTC => Ok(Self::from_utc_seconds(value)),
+                },
+                _ => Err(Errors::ParseError(ParsingErrors::UnknownFormat)),
+            }
         }
     }
 }

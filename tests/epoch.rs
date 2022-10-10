@@ -650,10 +650,9 @@ fn spice_et_tdb() {
     assert!((2455964.9739931 - sp_ex.as_jde_tdb_days()).abs() < max_tdb_et_err.in_seconds());
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn test_from_str() {
-    use std::str::FromStr;
+    use core::str::FromStr;
 
     let dt = Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 0);
     assert_eq!(dt, Epoch::from_str("2017-01-14T00:31:55 UTC").unwrap());
@@ -696,53 +695,39 @@ fn test_from_str() {
 
     // Check reciprocity of string
     let greg = "2020-01-31T00:00:00 UTC";
-    assert_eq!(
-        greg,
-        Epoch::from_str(greg)
-            .unwrap()
-            .as_gregorian_str(TimeScale::UTC)
-    );
+    assert_eq!(greg, format!("{}", Epoch::from_str(greg).unwrap()));
+
     let greg = "2020-01-31T00:00:00 TAI";
-    assert_eq!(
-        greg,
-        Epoch::from_str(greg)
-            .unwrap()
-            .as_gregorian_str(TimeScale::TAI)
-    );
+    assert_eq!(greg, format!("{:x}", Epoch::from_str(greg).unwrap()));
+
     let greg = "2020-01-31T00:00:00 TDB";
-    assert_eq!(
-        greg,
-        Epoch::from_str(greg)
-            .unwrap()
-            .as_gregorian_str(TimeScale::TDB)
-    );
+    assert_eq!(greg, format!("{:e}", Epoch::from_str(greg).unwrap()));
+
+    // Newton Raphson of ET leads to an 11 nanosecond error in this case.
     let greg = "2020-01-31T00:00:00 ET";
     assert_eq!(
         "2020-01-31T00:00:00.000000011 ET",
-        Epoch::from_str(greg)
-            .unwrap()
-            .as_gregorian_str(TimeScale::ET)
+        format!("{:E}", Epoch::from_str(greg).unwrap())
+    );
+
+    // Regression test for #90
+    assert_eq!(
+        Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811000000),
+        Epoch::from_gregorian_str("2017-01-14 00:31:55.811 UTC").unwrap()
     );
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn test_from_str_tdb() {
-    use std::str::FromStr;
+    use core::str::FromStr;
 
     let greg = "2020-01-31T00:00:00 TDB";
-    assert_eq!(
-        greg,
-        Epoch::from_str(greg)
-            .unwrap()
-            .as_gregorian_str(TimeScale::TDB)
-    );
+    assert_eq!(greg, format!("{:e}", Epoch::from_str(greg).unwrap()));
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn test_rfc3339() {
-    use std::str::FromStr;
+    use core::str::FromStr;
 
     assert_eq!(
         Epoch::from_gregorian_utc_hms(1994, 11, 5, 13, 15, 30),
@@ -1033,10 +1018,8 @@ fn test_timescale_recip() {
             // RFC3339 test
             #[cfg(feature = "std")]
             {
-                use std::str::FromStr;
-
+                use core::str::FromStr;
                 let to_rfc = utc_epoch.to_rfc3339();
-                println!("{}", to_rfc);
                 let from_rfc = Epoch::from_str(&to_rfc).unwrap();
 
                 println!("{} for {utc_epoch}", from_rfc - utc_epoch);

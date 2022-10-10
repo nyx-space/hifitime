@@ -1,4 +1,6 @@
-use hifitime::{Duration, Freq, Frequencies, TimeUnits, Unit, NANOSECONDS_PER_MINUTE};
+use hifitime::{
+    Duration, Errors, Freq, Frequencies, ParsingErrors, TimeUnits, Unit, NANOSECONDS_PER_MINUTE,
+};
 
 #[cfg(feature = "std")]
 extern crate core;
@@ -394,9 +396,22 @@ fn duration_from_str() {
         5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond
     );
 
+    // It supports extra white spaces before and after the duration
     assert_eq!(
-        Duration::from_str("5 days 1 ns").unwrap(),
+        Duration::from_str("  5 days 1 ns ").unwrap(),
         5 * Unit::Day + 1 * Unit::Nanosecond
+    );
+
+    assert!(
+        Duration::from_str("5 days 1")
+            == Err(Errors::ParseError(ParsingErrors::UnknownOrMissingUnit)),
+        "should return an unknown unit error"
+    );
+
+    assert!(
+        Duration::from_str("5 days 1 ")
+            == Err(Errors::ParseError(ParsingErrors::UnknownOrMissingUnit)),
+        "should return an unknown unit error"
     );
 }
 

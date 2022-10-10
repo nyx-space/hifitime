@@ -74,12 +74,17 @@ pub const J2000_TO_J1900_DURATION: Duration = Duration {
     nanoseconds: 3155716800000000000,
 };
 
+mod parser;
+
 mod epoch;
 
 pub use epoch::*;
 
 mod duration;
 pub use duration::*;
+
+mod timescale;
+pub use timescale::*;
 
 mod timeunits;
 pub use timeunits::*;
@@ -110,7 +115,6 @@ extern crate core;
 use core::convert;
 use core::fmt;
 use core::num::ParseIntError;
-use core::str::FromStr;
 
 #[cfg(feature = "std")]
 use std::error::Error;
@@ -140,7 +144,7 @@ pub enum ParsingErrors {
     TimeSystem,
     ISO8601,
     UnknownFormat,
-    UnknownUnit,
+    UnknownOrMissingUnit,
     UnsupportedTimeSystem,
 }
 
@@ -169,75 +173,6 @@ impl convert::From<ParseIntError> for Errors {
 
 #[cfg(feature = "std")]
 impl Error for Errors {}
-
-/// Enum of the different time systems available
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "python", pyclass)]
-pub enum TimeScale {
-    /// TAI is the representation of an Epoch internally
-    TAI,
-    /// Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
-    TT,
-    /// Ephemeris Time as defined by SPICE (slightly different from true TDB)
-    ET,
-    /// Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time)
-    TDB,
-    /// Universal Coordinated Time
-    UTC,
-    // GPS Time
-    // GPST // TODO
-}
-
-#[deprecated(since = "3.5.0", note = "TimeSystem has been renamed to TimeScale")]
-pub type TimeSystem = TimeScale;
-
-/// Allows conversion of a TimeSystem into a u8
-/// Mapping: TAI: 0; TT: 1; ET: 2; TDB: 3; UTC: 4.
-impl From<TimeScale> for u8 {
-    fn from(ts: TimeScale) -> Self {
-        match ts {
-            TimeScale::TAI => 0,
-            TimeScale::TT => 1,
-            TimeScale::ET => 2,
-            TimeScale::TDB => 3,
-            TimeScale::UTC => 4,
-        }
-    }
-}
-
-/// Allows conversion of a u8 into a TimeSystem.
-/// Mapping: 1: TT; 2: ET; 3: TDB; 4: UTC; anything else: TAI
-impl From<u8> for TimeScale {
-    fn from(val: u8) -> Self {
-        match val {
-            1 => TimeScale::TT,
-            2 => TimeScale::ET,
-            3 => TimeScale::TDB,
-            4 => TimeScale::UTC,
-            _ => TimeScale::TAI,
-        }
-    }
-}
-
-impl FromStr for TimeScale {
-    type Err = Errors;
-
-    fn from_str(val: &str) -> Result<Self, Self::Err> {
-        if val == "UTC" {
-            Ok(TimeScale::UTC)
-        } else if val == "TT" {
-            Ok(TimeScale::TT)
-        } else if val == "TAI" {
-            Ok(TimeScale::TAI)
-        } else if val == "TDB" {
-            Ok(TimeScale::TDB)
-        } else if val == "ET" {
-            Ok(TimeScale::ET)
-        } else {
-            Err(Errors::ParseError(ParsingErrors::TimeSystem))
-        }
-    }
-}
 
 #[cfg(test)]
 mod tests {
