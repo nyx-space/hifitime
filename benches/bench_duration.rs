@@ -1,3 +1,4 @@
+use core::str::FromStr;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use hifitime::{Duration, Unit};
 
@@ -13,6 +14,12 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             })
         },
     );
+    c.bench_function("Parse easy duration", |b| {
+        b.iter(|| Duration::from_str("15 d").unwrap())
+    });
+    c.bench_function("Parse complex duration", |b| {
+        b.iter(|| Duration::from_str("1 d 15.5 hours 25 ns").unwrap())
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

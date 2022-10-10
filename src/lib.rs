@@ -136,6 +136,7 @@ pub enum Errors {
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ParsingErrors {
     ParseIntError,
+    ValueError,
     TimeSystem,
     ISO8601,
     UnknownFormat,

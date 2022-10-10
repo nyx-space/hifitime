@@ -356,3 +356,59 @@ fn duration_floor_ceil_round() {
     assert_eq!(d.round(4.minutes()), 4.minutes());
     assert_eq!(d.round(1.seconds()), 4.minutes() + 14.seconds());
 }
+
+#[test]
+fn duration_from_str() {
+    use core::str::FromStr;
+    use hifitime::{Duration, Unit};
+
+    assert_eq!(Duration::from_str("1 d").unwrap(), Unit::Day * 1);
+    assert_eq!(
+        Duration::from_str("10.598 days").unwrap(),
+        Unit::Day * 10.598
+    );
+    assert_eq!(
+        Duration::from_str("10.598 min").unwrap(),
+        Unit::Minute * 10.598
+    );
+    assert_eq!(
+        Duration::from_str("10.598 us").unwrap(),
+        Unit::Microsecond * 10.598
+    );
+    assert_eq!(
+        Duration::from_str("10.598 seconds").unwrap(),
+        Unit::Second * 10.598
+    );
+    assert_eq!(
+        Duration::from_str("10.598 nanosecond").unwrap(),
+        Unit::Nanosecond * 10.598
+    );
+
+    assert_eq!(
+        Duration::from_str("1 d 15.5 hours 25 ns").unwrap(),
+        Unit::Day * 1 + 15.5 * Unit::Hour + 25 * Unit::Nanosecond
+    );
+
+    assert_eq!(
+        Duration::from_str("5 h 256 ms 1 ns").unwrap(),
+        5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond
+    );
+
+    assert_eq!(
+        Duration::from_str("5 days 1 ns").unwrap(),
+        5 * Unit::Day + 1 * Unit::Nanosecond
+    );
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn std_time_duration() {
+    use std::time::Duration as StdDuration;
+
+    let hf_duration = 5 * Unit::Day + 1 * Unit::Nanosecond;
+    let std_duration: StdDuration = hf_duration.into();
+    assert_eq!(std_duration, StdDuration::new(432_000, 1));
+
+    let hf_return: Duration = std_duration.into();
+    assert_eq!(hf_return, hf_duration);
+}
