@@ -955,6 +955,7 @@ impl Neg for Duration {
     }
 }
 
+#[cfg(not(kani))]
 impl FromStr for Duration {
     type Err = Errors;
 
