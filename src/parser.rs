@@ -29,35 +29,35 @@ impl Token {
         match &self {
             Token::Year => Ok(()), // No validation on the year
             Token::Month => {
-                if val < 0 || val > 13 {
+                if !(0..=13).contains(&val) {
                     Err(Errors::ParseError(ParsingErrors::ValueError))
                 } else {
                     Ok(())
                 }
             }
             Token::Day => {
-                if val < 0 || val > 31 {
+                if !(0..=31).contains(&val) {
                     Err(Errors::ParseError(ParsingErrors::ValueError))
                 } else {
                     Ok(())
                 }
             }
             Token::Hour | Token::OffsetHours => {
-                if val < 0 || val > 23 {
+                if !(0..=23).contains(&val) {
                     Err(Errors::ParseError(ParsingErrors::ValueError))
                 } else {
                     Ok(())
                 }
             }
             Token::Minute | Token::OffsetMinutes => {
-                if val < 0 || val > 59 {
+                if !(0..=59).contains(&val) {
                     Err(Errors::ParseError(ParsingErrors::ValueError))
                 } else {
                     Ok(())
                 }
             }
             Token::Second => {
-                if val < 0 || val > 60 {
+                if !(0..=60).contains(&val) {
                     Err(Errors::ParseError(ParsingErrors::ValueError))
                 } else {
                     Ok(())

@@ -819,7 +819,7 @@ impl Epoch {
                     // Then we match the timescale directly.
                     if idx != s.len() - 1 {
                         // We have some remaining characters, so let's parse those in the only formats we know.
-                        ts = TimeScale::from_str(&s[idx..].trim())?;
+                        ts = TimeScale::from_str(s[idx..].trim())?;
                     }
                     break;
                 }
@@ -894,7 +894,7 @@ impl Epoch {
             )
         };
 
-        return Ok(epoch? + tz);
+        Ok(epoch? + tz)
     }
 
     fn delta_et_tai(seconds: f64) -> f64 {
@@ -2048,7 +2048,7 @@ impl FromStr for Epoch {
 
         if s.len() < 7 {
             // We need at least seven characters for a valid epoch
-            return Err(Errors::ParseError(ParsingErrors::UnknownFormat));
+            Err(Errors::ParseError(ParsingErrors::UnknownFormat))
         } else {
             let format = if &s[..2] == "JD" {
                 "JD"
