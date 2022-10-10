@@ -6,17 +6,21 @@ on:
 
 name: Formal Verification Workflow
 
+env:
+  RUST_BACKTRACE: 1
+
 jobs:
   formal-verif:
     name: Formal Verification
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.64.0
           override: true
 
       - name: Install Kani
