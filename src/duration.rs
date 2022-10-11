@@ -981,8 +981,9 @@ impl FromStr for Duration {
     /// assert_eq!(Duration::from_str("10.598 us").unwrap(), Unit::Microsecond * 10.598);
     /// assert_eq!(Duration::from_str("10.598 seconds").unwrap(), Unit::Second * 10.598);
     /// assert_eq!(Duration::from_str("10.598 nanosecond").unwrap(), Unit::Nanosecond * 10.598);
+    /// assert_eq!(Duration::from_str("5 h 256 ms 1 ns").unwrap(), 5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond);
     /// ```
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+    fn from_str(s_in: &str) -> Result<Self, Self::Err> {
         // Each part of a duration as days, hours, minutes, seconds, millisecond, microseconds, and nanoseconds
         let mut decomposed = [0.0_f64; 7];
 
@@ -990,9 +991,15 @@ impl FromStr for Duration {
         let mut seeking_number = true;
         let mut latest_value = 0.0;
 
+        let s = s_in.trim();
+
         for (idx, char) in s.chars().enumerate() {
             if char == ' ' || idx == s.len() - 1 {
                 if seeking_number {
+                    if prev_idx == idx {
+                        // We've reached the end of the string and it didn't end with a unit
+                        return Err(Errors::ParseError(ParsingErrors::UnknownOrMissingUnit));
+                    }
                     // We've found a new space so let's parse whatever precedes it
                     match lexical_core::parse(s[prev_idx..idx].as_bytes()) {
                         Ok(val) => latest_value = val,
@@ -1012,7 +1019,7 @@ impl FromStr for Duration {
                         "us" | "microsecond" | "microseconds" => 5,
                         "ns" | "nanosecond" | "nanoseconds" => 6,
                         _ => {
-                            return Err(Errors::ParseError(ParsingErrors::UnknownUnit));
+                            return Err(Errors::ParseError(ParsingErrors::UnknownOrMissingUnit));
                         }
                     };
                     // Store the value

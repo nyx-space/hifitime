@@ -18,17 +18,17 @@ Formally verified to not crash on operations on epochs and durations using the [
 
  * [x] Initialize a high precision Epoch from the system time in UTC
  * [x] Leap seconds (as announced by the IETF on a yearly basis)
- * [x] UTC representation with ISO8601 formatting
+ * [x] UTC representation with ISO8601 and RFC3339 formatting and blazing fast parsing (45 nanoseconds)
  * [x] Trivial support of time arithmetic: addition (e.g. `2.hours() + 3.seconds()`), subtraction (e.g. `2.hours() - 3.seconds()`), round/floor/ceil operations (e.g. `2.hours().round(3.seconds())`)
  * [x] Supports ranges of Epochs and TimeSeries (linspace of `Epoch`s and `Duration`s)
- * [x] Trivial conversion between many time systems
+ * [x] Trivial conversion between many time scales
  * [x] High fidelity Ephemeris Time / Dynamic Barycentric Time (TDB) computations from [ESA's Navipedia](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB)
  * [x] Julian dates and Modified Julian dates
  * [x] Embedded device friendly: `no-std` and `const fn` where possible
 
 This library is validated against NASA/NAIF SPICE for the Ephemeris Time to Universal Coordinated Time computations: there are exactly zero nanoseconds of difference between SPICE and hifitime for the computation of ET and UTC after 01 January 1972. Refer to the [leap second](#leap-second-support) section for details. Other examples are validated with external references, as detailed on a test-by-test basis.
 
-## Supported time systems
+## Supported time scales
 
 + Temps Atomique International (TAI)
 + Universal Coordinated Time (UTC)
@@ -45,23 +45,18 @@ Put this in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hifitime = "3.4"
-```
-
-And add the following to your crate root:
-
-```rust
-extern crate hifitime;
+hifitime = "3.5"
 ```
 
 ## Examples:
 ### Time creation
 ```rust
 use hifitime::{Epoch, Unit, TimeUnits};
+use core::str::FromStr;
 
 #[cfg(feature = "std")]
 {
-// Initialization from system time is only availble when std feature is enabled
+// Initialization from system time is only available when std feature is enabled
 let now = Epoch::now().unwrap();
 println!("{}", now);
 }
@@ -88,15 +83,11 @@ assert_eq!(
     "Could not add one hour to Christmas"
 );
 
-#[cfg(feature = "std")]
-{
-use std::str::FromStr;
 let dt = Epoch::from_gregorian_utc_hms(2017, 1, 14, 0, 31, 55);
 assert_eq!(dt, Epoch::from_str("2017-01-14T00:31:55 UTC").unwrap());
 // And you can print it too, although by default it will print in UTC
-assert_eq!(dt.as_gregorian_utc_str(), "2017-01-14T00:31:55 UTC".to_string());
 assert_eq!(format!("{}", dt), "2017-01-14T00:31:55 UTC".to_string());
-}
+
 ```
 ### Time differences, time unit, and duration handling
 
@@ -119,7 +110,7 @@ assert_eq!(format!("{}", delta2), "1 days".to_string());
 // Or divide them by a scalar.
 assert_eq!(format!("{}", delta2 / 2.0), "12 h".to_string());
 
-// And of course, these comparisons account for differences in time systems
+// And of course, these comparisons account for differences in time scales
 let at_midnight_utc = Epoch::from_gregorian_utc_at_midnight(2020, 11, 2);
 let at_noon_tai = Epoch::from_gregorian_tai_at_noon(2020, 11, 2);
 assert_eq!(format!("{}", at_noon_tai - at_midnight_utc), "11 h 59 min 23 s".to_string());
@@ -180,7 +171,7 @@ Advantages:
 3. Duration arithmetics are exact, e.g. one third of an hour is exactly twenty minutes and not "0.33333 hours."
 
 Disadvantages:
-1. Most astrodynamics applications require the computation of a duration in floating point values such as when querying an ephemeris. This design leads to an overhead of about 500 nanoseconds according to the benchmarks. You may run the benchmarks with `cargo bench`.
+1. Most astrodynamics applications require the computation of a duration in floating point values such as when querying an ephemeris. This design leads to an overhead of about 5.2 nanoseconds according to the benchmarks (`Duration to f64 seconds` benchmark). You may run the benchmarks with `cargo bench`.
 
 ### Printing and parsing
 
@@ -216,9 +207,9 @@ assert_eq!(
 ## Epoch
 The Epoch is simply a wrapper around a Duration. All epochs are stored in TAI duration with respect to 01 January 1900 at noon (the official TAI epoch). The choice of TAI meets the [Standard of Fundamental Astronomy (SOFA)](https://www.iausofa.org/) recommendation of opting for a glitch-free time scale (i.e. without discontinuities like leap seconds or non-uniform seconds like TDB).
 
-### Printing and formatting
+### Printing and parsing
 
-Epochs can be formatted in the following time systems:
+Epochs can be formatted and parsed in the following time scales:
 
 + UTC: `{epoch}`
 + TAI: `{epoch:x}`
@@ -229,7 +220,8 @@ Epochs can be formatted in the following time systems:
 + GPS: `{epoch:o}`
 
 ```rust
-use hifitime::Epoch;
+use hifitime::{Epoch, TimeScale};
+use core::str::FromStr;
 
 let epoch = Epoch::from_gregorian_utc_hms(2022, 9, 6, 23, 24, 29);
 
@@ -240,6 +232,35 @@ assert_eq!(format!("{epoch:E}"), "2022-09-06T23:25:38.182538909 ET");
 assert_eq!(format!("{epoch:e}"), "2022-09-06T23:25:38.182541259 TDB");
 assert_eq!(format!("{epoch:p}"), "1662506669"); // UNIX seconds
 assert_eq!(format!("{epoch:o}"), "1346541887000000000"); // GPS nanoseconds
+
+// RFC3339 parsing with time scales
+assert_eq!(
+    Epoch::from_gregorian_utc_hms(1994, 11, 5, 13, 15, 30),
+    Epoch::from_str("1994-11-05T08:15:30-05:00").unwrap()
+);
+assert_eq!(
+    Epoch::from_gregorian_utc_hms(1994, 11, 5, 13, 15, 30),
+    Epoch::from_str("1994-11-05T13:15:30Z").unwrap()
+);
+// Same test with different time systems
+// TAI
+assert_eq!(
+    Epoch::from_gregorian_tai_hms(1994, 11, 5, 13, 15, 30),
+    Epoch::from_str("1994-11-05T08:15:30-05:00 TAI").unwrap()
+);
+assert_eq!(
+    Epoch::from_gregorian_tai_hms(1994, 11, 5, 13, 15, 30),
+    Epoch::from_str("1994-11-05T13:15:30Z TAI").unwrap()
+);
+// TDB
+assert_eq!(
+    Epoch::from_gregorian_hms(1994, 11, 5, 13, 15, 30, TimeScale::TDB),
+    Epoch::from_str("1994-11-05T08:15:30-05:00 TDB").unwrap()
+);
+assert_eq!(
+    Epoch::from_gregorian_hms(1994, 11, 5, 13, 15, 30, TimeScale::TDB),
+    Epoch::from_str("1994-11-05T13:15:30Z TDB").unwrap()
+);
 ```
 
 ## Leap second support
@@ -263,13 +284,14 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 ## 3.5.0 (unreleased)
 + Epoch now store the time scale that they were defined in: this allows durations to be added in their respective time scales. For example, adding 36 hours to 1971-12-31 at noon when the Epoch is initialized in UTC will lead to a different epoch than adding that same duration to an epoch initialized at the same time in TAI (because the first leap second announced by IERS was on 1972-01-01), cf. the `test_add_durations_over_leap_seconds` test.
 + RFC3339 and ISO8601 fully supported for initialization of an Epoch, including the offset, e.g. `Epoch::from_str("1994-11-05T08:15:30-05:00")`, cf. [#73](https://github.com/nyx-space/hifitime/issues/73).
-+ An Epoch can now be initialized with a named time zone, e.g. `Epoch::from_str("1994-11-05T08:15:30 PST")`, cf. [#73](https://github.com/nyx-space/hifitime/issues/73). This requires the `tz` feature, which adds the `chrono` and `chrono-tz` dependency. _Importantly_ `chrono` is not as precise as `hifitime`, and conversions to/from chrono's `DateTime` may be wrong by hundreds of nanoseconds.
 + Python package available on PyPI! To build the Python package, you must first install `maturin` and then build with the `python` feature flag. For example, `maturin develop -F python && python` will build the Python package in debug mode and start a new shell where the package can be imported.
 + Fix bug when printing Duration::MIN (or any duration whose centuries are minimizing the number of centuries).
 + TimeSeries can now be formatted
 + Epoch can now be `ceil`-ed, `floor`-ed, and `round`-ed according to the time scale they were initialized in, cf. [#127](https://github.com/nyx-space/hifitime/issues/145).
 + Epoch can now be initialized from Gregorian when specifying the time system: `from_gregorian`, `from_gregorian_hms`, `from_gregorian_at_noon`, `from_gregorian_at_midnight`.
 + Fix bug in Duration when performing operations on durations very close to `Duration::MIN` (i.e. minus thirty-two centuries).
++ Duration parsing now supports multiple units in a string and does not use regular expressions. THis allows it to work with `no-std`.
++ Epoch parsing no longer requires `regex`.
 
 ## 3.4.0
 + Ephemeris Time and Dynamical Barycentric Time fixed to use the J2000 reference epoch instead of the J1900 reference epoch. This is a **potentially breaking change** if you relied on the previous one century error when converting from/to ET/TDB into/from UTC _and storing the data as a string_. There is **no difference** if the original representation was used.
