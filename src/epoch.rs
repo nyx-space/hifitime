@@ -555,7 +555,7 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let mut duration_wrt_1900 = Unit::Day * i64::from(365 * (year - 1900).abs());
+        let mut duration_wrt_1900 = Unit::Day * i64::from(365 * (year - 1900));
         // Now add the seconds for all the years prior to the current year
         for year in 1900..year {
             if is_leap_year(year) {
@@ -914,10 +914,16 @@ impl Epoch {
     }
 
     fn compute_gregorian(duration_j1900: Duration) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+        let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
             duration_j1900.decompose();
 
-        let (mut year, mut days_in_year) = div_rem_f64(days as f64, DAYS_PER_YEAR_NLD);
+        let days_f64 = if sign < 0 {
+            -(days as f64)
+        } else {
+            days as f64
+        };
+
+        let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
         // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
         year += 1900;
 
@@ -931,29 +937,29 @@ impl Epoch {
 
         // Get the month from the exact number of seconds between the start of the year and now
         let mut month = 1;
-        let mut day = days_in_year;
+        let day;
 
         if days_in_year < 0.0 {
             month = 12;
             year -= 1;
-            day += usual_days_per_month(11) as f64;
-            if is_leap_year(year) {
-                day += 1.0;
-            }
+            // NOTE: Leap year is already accounted for in the TAI duration when counting backward.
+            day = days_in_year + usual_days_per_month(11) as f64 + 1.0;
         } else {
+            let mut days_so_far = 0.0;
             loop {
                 let mut days_next_month = usual_days_per_month(month - 1) as f64;
-                if is_leap_year(year) && month == 2 {
+                if month == 2 && is_leap_year(year) {
                     days_next_month += 1.0;
                 }
 
-                if days_next_month > day {
-                    // We've reached the end of the month
+                if days_so_far + days_next_month > days_in_year {
+                    // We've found the month and can calculate the days
+                    day = days_in_year - days_so_far + 1.0;
                     break;
                 }
 
-                day -= days_next_month;
-
+                // Otherwise, count up the number of days this year so far and keep track of the month.
+                days_so_far += days_next_month;
                 month += 1;
             }
         }
@@ -961,7 +967,7 @@ impl Epoch {
         (
             year,
             month as u8,
-            (day + 1.0) as u8,
+            day as u8,
             hours as u8,
             minutes as u8,
             seconds as u8,

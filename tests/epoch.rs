@@ -784,8 +784,50 @@ fn test_format() {
         let epoch = if ts == TimeScale::UTC {
             Epoch::from_gregorian_utc(2022, 9, 6, 23, 24, 29, 1)
         } else {
-            // BUG: The 1 nanosecond is gone.
             Epoch::from_gregorian(2022, 9, 6, 23, 24, 29, 1, ts)
+        };
+
+        assert_eq!(
+            format!("{epoch:?}"),
+            match ts {
+                TimeScale::TAI => format!("{epoch:x}"),
+                TimeScale::ET => format!("{epoch:E}"),
+                TimeScale::TDB => format!("{epoch:e}"),
+                TimeScale::TT => format!("{epoch:X}"),
+                TimeScale::UTC => format!("{epoch}"),
+            }
+        );
+    }
+
+    // Try with an epoch before 1900, reference of TAI
+    let epoch = Epoch::from_gregorian_utc_hms(1822, 9, 6, 23, 24, 29);
+
+    assert_eq!(epoch.duration_since_j1900_tai.decompose().0, -1);
+
+    use core::str::FromStr;
+    let rebuilt = Epoch::from_str(&format!("{epoch:?}")).unwrap();
+
+    // This was initialized as UTC, so the debug print is UTC.
+    assert_eq!(
+        format!("{epoch:?}"),
+        "1822-09-06T23:24:29 UTC",
+        "error = {}",
+        rebuilt - epoch
+    );
+    assert_eq!(format!("{epoch}"), "1822-09-06T23:24:29 UTC");
+    assert_eq!(format!("{epoch:x}"), "1822-09-06T23:24:29 TAI");
+    assert_eq!(format!("{epoch:X}"), "1822-09-06T23:24:29 TT");
+    assert_eq!(format!("{epoch:E}"), "1822-09-06T23:24:29 ET");
+    assert_eq!(format!("{epoch:e}"), "1822-09-06T23:24:29 TDB");
+
+    // Ensure that the appropriate time system is used in the debug print.
+    for ts_u8 in 0..5 {
+        let ts: TimeScale = ts_u8.into();
+
+        let epoch = if ts == TimeScale::UTC {
+            Epoch::from_gregorian_utc(1822, 9, 6, 23, 24, 29, 1)
+        } else {
+            Epoch::from_gregorian(1822, 9, 6, 23, 24, 29, 1, ts)
         };
 
         assert_eq!(
@@ -1022,7 +1064,10 @@ fn test_timescale_recip() {
                 let to_rfc = utc_epoch.to_rfc3339();
                 let from_rfc = Epoch::from_str(&to_rfc).unwrap();
 
-                println!("{} for {utc_epoch}", from_rfc - utc_epoch);
+                println!(
+                    "{} for {utc_epoch}\tto = {to_rfc}\tfrom={from_rfc}",
+                    from_rfc - utc_epoch
+                );
 
                 assert_eq!(from_rfc, utc_epoch);
             }
