@@ -20,7 +20,7 @@ jobs:
       - name: Install stable toolchain
         uses: actions-rs/toolchain@v1
         with:
-          toolchain: 1.64.0
+          toolchain: stable
           override: true
 
       - name: Install Kani
