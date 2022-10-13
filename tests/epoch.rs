@@ -715,6 +715,11 @@ fn test_from_str() {
         Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811000000),
         Epoch::from_gregorian_str("2017-01-14 00:31:55.811 UTC").unwrap()
     );
+
+    assert_eq!(
+        Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811000000),
+        Epoch::from_gregorian(2017, 1, 14, 0, 31, 55, 811000000, TimeScale::UTC),
+    );
 }
 
 #[test]
@@ -760,6 +765,7 @@ fn test_rfc3339() {
 
 #[test]
 fn test_format() {
+    use core::str::FromStr;
     use hifitime::Epoch;
 
     let epoch = Epoch::from_gregorian_utc_hms(2022, 9, 6, 23, 24, 29);
@@ -781,44 +787,82 @@ fn test_format() {
     for ts_u8 in 0..5 {
         let ts: TimeScale = ts_u8.into();
 
-        let epoch = if ts == TimeScale::UTC {
-            Epoch::from_gregorian_utc(2022, 9, 6, 23, 24, 29, 1)
-        } else {
-            Epoch::from_gregorian(2022, 9, 6, 23, 24, 29, 1, ts)
-        };
+        let recent = Epoch::from_gregorian(2020, 9, 6, 23, 24, 29, 2, ts);
+        let post_ref = Epoch::from_gregorian_hms(1900, 1, 1, 0, 0, 1, ts);
+        let pre_ref = Epoch::from_gregorian_hms(1899, 12, 31, 23, 59, 59, ts);
+        let way_old = Epoch::from_gregorian(1820, 9, 6, 23, 24, 29, 2, ts);
 
         assert_eq!(
-            format!("{epoch:?}"),
-            match ts {
-                TimeScale::TAI => format!("{epoch:x}"),
-                TimeScale::ET => format!("{epoch:E}"),
-                TimeScale::TDB => format!("{epoch:e}"),
-                TimeScale::TT => format!("{epoch:X}"),
-                TimeScale::UTC => format!("{epoch}"),
-            }
+            post_ref - pre_ref,
+            2 * Unit::Second,
+            "delta time should be 2 s in {ts:?}"
         );
+
+        for (i, epoch) in [recent, post_ref, pre_ref, way_old].iter().enumerate() {
+            assert_eq!(
+                format!("{epoch:?}"),
+                match ts {
+                    TimeScale::TAI => format!("{epoch:x}"),
+                    TimeScale::ET => format!("{epoch:E}"),
+                    TimeScale::TDB => format!("{epoch:e}"),
+                    TimeScale::TT => format!("{epoch:X}"),
+                    TimeScale::UTC => format!("{epoch}"),
+                }
+            );
+
+            // Check that we can correctly parse the date we print.
+            match Epoch::from_str(&format!("{epoch:?}")) {
+                Ok(rebuilt) => assert_eq!(
+                    &rebuilt,
+                    epoch,
+                    "error = {}\ngot = {}\nwant: {}",
+                    rebuilt - *epoch,
+                    rebuilt.duration_since_j1900_tai,
+                    epoch.duration_since_j1900_tai
+                ),
+                Err(e) => {
+                    panic!(
+                        "#{i} {e:?} with {epoch:?} (duration since j1900 = {})",
+                        epoch.duration_since_j1900_tai
+                    )
+                }
+            };
+        }
     }
 
-    // Try with an epoch before 1900, reference of TAI
-    let epoch = Epoch::from_gregorian_utc_hms(1822, 9, 6, 23, 24, 29);
+    // Check the leap day formatting to/from works correctly.
+    let epoch = Epoch::from_gregorian_utc_hms(2020, 1, 2, 23, 24, 29);
+    assert_eq!(format!("{epoch:?}"), "2020-01-02T23:24:29 UTC");
 
-    assert_eq!(epoch.duration_since_j1900_tai.decompose().0, -1);
+    // Try with epochs near 1900, reference of TAI
+    let epoch_post = Epoch::from_gregorian_tai_hms(1900, 1, 1, 0, 0, 1);
+    let epoch_pre = Epoch::from_gregorian_tai_hms(1899, 12, 31, 23, 59, 59);
+    println!("{}", epoch_post - epoch_pre);
 
-    use core::str::FromStr;
+    assert_eq!(epoch_post.duration_since_j1900_tai.decompose().0, 0);
+    assert_eq!(epoch_pre.duration_since_j1900_tai.decompose().0, -1);
+
     let rebuilt = Epoch::from_str(&format!("{epoch:?}")).unwrap();
 
     // This was initialized as UTC, so the debug print is UTC.
     assert_eq!(
         format!("{epoch:?}"),
-        "1822-09-06T23:24:29 UTC",
+        "1820-09-06T23:24:29 UTC",
         "error = {}",
         rebuilt - epoch
     );
-    assert_eq!(format!("{epoch}"), "1822-09-06T23:24:29 UTC");
-    assert_eq!(format!("{epoch:x}"), "1822-09-06T23:24:29 TAI");
-    assert_eq!(format!("{epoch:X}"), "1822-09-06T23:24:29 TT");
-    assert_eq!(format!("{epoch:E}"), "1822-09-06T23:24:29 ET");
-    assert_eq!(format!("{epoch:e}"), "1822-09-06T23:24:29 TDB");
+    assert_eq!(format!("{epoch}"), "1820-09-06T23:24:29 UTC");
+    assert_eq!(format!("{epoch:x}"), "1820-09-06T23:24:29 TAI");
+    let rb2 = Epoch::from_str(&format!("{epoch:X}")).unwrap();
+    println!("\n==\n{rb2:?}\n{epoch:X}==");
+    assert_eq!(
+        format!("{epoch:X}"),
+        "1820-09-06T23:24:29 TT",
+        "error = {}",
+        rb2 - epoch
+    );
+    assert_eq!(format!("{epoch:E}"), "1820-09-06T23:24:29 ET");
+    assert_eq!(format!("{epoch:e}"), "1820-09-06T23:24:29 TDB");
 
     // Ensure that the appropriate time system is used in the debug print.
     for ts_u8 in 0..5 {

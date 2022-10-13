@@ -556,6 +556,13 @@ impl Epoch {
         }
 
         let mut duration_wrt_1900 = Unit::Day * i64::from(365 * (year - 1900));
+        if year >= 1900 {
+            1
+        } else {
+            dbg!("neg sign");
+            -1
+        };
+
         // Now add the seconds for all the years prior to the current year
         for year in 1900..year {
             if is_leap_year(year) {
@@ -588,7 +595,7 @@ impl Epoch {
             TimeScale::TT => Self::from_tt_duration(duration_wrt_1900),
             TimeScale::ET => Self::from_et_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
             TimeScale::TDB => Self::from_tdb_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
-            TimeScale::UTC => panic!("use maybe_from_gregorian_utc for UTC time system"),
+            TimeScale::UTC => Self::from_utc_duration(duration_wrt_1900),
         })
     }
 
@@ -915,7 +922,14 @@ impl Epoch {
 
     fn compute_gregorian(duration_j1900: Duration) -> (i32, u8, u8, u8, u8, u8, u32) {
         let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-            duration_j1900.decompose();
+            if duration_j1900.is_negative() {
+                // XXX: Understand where this 4264 seconds offset comes from when formatting dates prior to 1900.
+                (duration_j1900 + 1 * Unit::Hour + 11 * Unit::Minute + 2 * Unit::Second
+                    - 1 * Unit::Nanosecond)
+                    .decompose()
+            } else {
+                duration_j1900.decompose()
+            };
 
         let days_f64 = if sign < 0 {
             -(days as f64)
@@ -954,7 +968,11 @@ impl Epoch {
 
                 if days_so_far + days_next_month > days_in_year {
                     // We've found the month and can calculate the days
-                    day = days_in_year - days_so_far + 1.0;
+                    day = if sign >= 0 {
+                        days_in_year - days_so_far + 1.0
+                    } else {
+                        days_in_year - days_so_far - 1.0
+                    };
                     break;
                 }
 
