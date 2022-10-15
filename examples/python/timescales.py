@@ -47,11 +47,11 @@ if __name__ == "__main__":
         # Build the pandas series
         data.append([
             pd_epoch,
-            delta_tt.in_seconds(),
-            delta_et.in_seconds(),
-            delta_tdb.in_seconds(),
-            delta_utc.in_seconds(),
-            delta_et_tdb.in_seconds(),
+            delta_tt.to_seconds(),
+            delta_et.to_seconds(),
+            delta_tdb.to_seconds(),
+            delta_utc.to_seconds(),
+            delta_et_tdb.to_seconds(),
         ])
 
     df = pd.DataFrame(data, columns=columns)

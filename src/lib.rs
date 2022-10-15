@@ -110,9 +110,6 @@ pub mod asn1der;
 #[cfg(feature = "python")]
 pub mod python;
 
-#[cfg(feature = "python")]
-use pyo3::prelude::*;
-
 #[cfg(feature = "std")]
 extern crate core;
 
