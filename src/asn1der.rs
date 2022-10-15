@@ -127,4 +127,20 @@ fn test_encdec() {
             "Decoded time system incorrect {ts:?}"
         );
     }
+
+    for unit_u8 in 0..8 {
+        let unit: Unit = unit_u8.into();
+
+        // Create a buffer
+        let mut buf = [0_u8; 3];
+        // Encode
+        unit.encode_to_slice(&mut buf).unwrap();
+        // Decode
+        let encdec_unit = Unit::from_der(&buf).unwrap();
+
+        assert_eq!(
+            encdec_unit, unit,
+            "Decoded epoch incorrect ({unit:?}):\ngot: {encdec_unit:?}\nexp: {unit:?}",
+        );
+    }
 }
