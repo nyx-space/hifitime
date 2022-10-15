@@ -868,7 +868,6 @@ fn test_format() {
     // Try with epochs near 1900, reference of TAI
     let epoch_post = Epoch::from_gregorian_tai_hms(1900, 1, 1, 0, 0, 1);
     let epoch_pre = Epoch::from_gregorian_tai_hms(1899, 12, 31, 23, 59, 59);
-    println!("{}", epoch_post - epoch_pre);
 
     assert_eq!(epoch_post.duration_since_j1900_tai.decompose().0, 0);
     assert_eq!(epoch_pre.duration_since_j1900_tai.decompose().0, -1);
