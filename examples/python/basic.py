@@ -22,8 +22,8 @@ if __name__ == "__main__":
     print(f"TAI epoch: {e.to_gregorian_tai()}")
 
     # Or we can print it in a specific time system
-    print(f"ET epoch: {e.to_gregorian(TimeScale.ET)}")
-    print(f"TDB epoch: {e.to_gregorian(TimeScale.TDB)}")
+    print(f"ET epoch: {e.to_string_gregorian(TimeScale.ET)}")
+    print(f"TDB epoch: {e.to_string_gregorian(TimeScale.TDB)}")
 
     # Hifitime mainly allows for nanosecond precision of durations for 64 centuries (centered on J1900).
     print(f"min negative = {Duration.min_negative()}")

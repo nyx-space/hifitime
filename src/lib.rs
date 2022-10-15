@@ -92,18 +92,15 @@ pub use timeunits::*;
 mod timeseries;
 pub use timeseries::*;
 
-/// This module defines all of the deprecated methods. To see if you're using any deprecated features, build hifitime without the `deprecated` feature flag.
-#[cfg(feature = "deprecated")]
+/// This module defines all of the deprecated methods.
 mod deprecated;
 
 #[allow(deprecated)]
 pub mod prelude {
     pub use crate::{
-        Duration, Epoch, Errors, Freq, Frequencies, TimeScale, TimeSeries, TimeUnits, Unit,
+        deprecated::TimeSystem, Duration, Epoch, Errors, Freq, Frequencies, TimeScale, TimeSeries,
+        TimeUnits, Unit,
     };
-
-    #[cfg(feature = "deprecated")]
-    pub use crate::deprecated::TimeSystem;
 }
 
 #[cfg(feature = "asn1der")]

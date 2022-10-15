@@ -62,8 +62,8 @@ println!("{}", now);
 }
 
 let mut santa = Epoch::from_gregorian_utc_hms(2017, 12, 25, 01, 02, 14);
-assert_eq!(santa.as_mjd_utc_days(), 58112.043217592590);
-assert_eq!(santa.as_jde_utc_days(), 2458112.5432175924);
+assert_eq!(santa.to_mjd_utc_days(), 58112.043217592590);
+assert_eq!(santa.to_jde_utc_days(), 2458112.5432175924);
 
 assert_eq!(
     santa + 3600 * Unit::Second,
@@ -276,7 +276,7 @@ Prior to the first leap second, NAIF SPICE claims that there were nine seconds o
 In theory, as of January 2000, ET and TDB should now be identical. _However_, the NASA NAIF leap seconds files (e.g. [naif00012.tls](./naif00012.tls)) use a simplified algorithm to compute the TDB:
 > Equation \[4\], which ignores small-period fluctuations, is accurate to about 0.000030 seconds.
 
-In order to provide full interoperability with NAIF, hifitime uses the NAIF algorithm for "ephemeris time" and the [ESA algorithm](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) for "dynamical barycentric time." Hence, if exact NAIF behavior is needed, use all of the functions marked as `et` instead of the `tdb` functions, such as `epoch.as_et_seconds()` instead of `epoch.as_tdb_seconds()`.
+In order to provide full interoperability with NAIF, hifitime uses the NAIF algorithm for "ephemeris time" and the [ESA algorithm](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) for "dynamical barycentric time." Hence, if exact NAIF behavior is needed, use all of the functions marked as `et` instead of the `tdb` functions, such as `epoch.to_et_seconds()` instead of `epoch.to_tdb_seconds()`.
 
 
 # Changelog

@@ -1626,9 +1626,10 @@ impl Epoch {
         self.to_gpst_duration().to_unit(Unit::Day)
     }
 
+    #[allow(clippy::wrong_self_convention)]
     #[must_use]
     ///Returns the Duration since the UNIX epoch UTC midnight 01 Jan 1970.
-    fn to_unix_duration(self) -> Duration {
+    fn to_unix_duration(&self) -> Duration {
         // TAI = UNIX + leap_seconds + UNIX_OFFSET_UTC_SECONDS <=> UNIX = TAI - leap_seconds - UNIX_OFFSET_UTC_SECONDS
         self.duration_since_j1900_tai
             - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second
@@ -1836,7 +1837,7 @@ impl Epoch {
     /// ```
     /// use hifitime::Epoch;
     /// let dt = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
-    /// let (y, m, d, h, min, s, _) = dt.as_gregorian_tai();
+    /// let (y, m, d, h, min, s, _) = dt.to_gregorian_tai();
     /// assert_eq!(y, 1972);
     /// assert_eq!(m, 1);
     /// assert_eq!(d, 1);
@@ -1977,19 +1978,19 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     /// Converts the Epoch to UTC Gregorian in the ISO8601 format.
-    pub fn to_gregorian_utc(&self) -> String {
+    pub fn to_string_gregorian_utc(&self) -> String {
         self.to_gregorian_utc_str()
     }
 
     #[cfg(feature = "python")]
     /// Converts the Epoch to TAI Gregorian in the ISO8601 format.
-    pub fn to_gregorian_tai(&self) -> String {
+    pub fn to_string_gregorian_tai(&self) -> String {
         self.to_gregorian_tai_str()
     }
 
     #[cfg(feature = "python")]
     /// Converts the Epoch to Gregorian in the ISO8601 format in the provided TimeSystem
-    pub fn to_gregorian(&self, ts: TimeScale) -> String {
+    pub fn to_string_gregorian(&self, ts: TimeScale) -> String {
         self.to_gregorian_str(ts)
     }
 

@@ -29,8 +29,7 @@ lexical-core = {version = "0.8.5", default-features = false, features = ["parse-
 criterion = "0.4.0"
 
 [features]
-default = ["std", "deprecated"]
-deprecated = []
+default = ["std"]
 std = ["serde", "serde_derive"]
 asn1der = ["der"]
 python = ["std", "asn1der", "pyo3"]
