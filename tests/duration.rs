@@ -38,28 +38,28 @@ fn time_unit() {
     // let five_seconds = Unit::Second * 5.0;
     let five_seconds = 5.0.seconds();
     let sum: Duration = seven_hours + six_minutes + five_seconds;
-    assert!((sum.in_seconds() - 25565.0).abs() < EPSILON);
+    assert!((sum.to_seconds() - 25565.0).abs() < EPSILON);
 
     let neg_sum = -sum;
-    assert!((neg_sum.in_seconds() + 25565.0).abs() < EPSILON);
+    assert!((neg_sum.to_seconds() + 25565.0).abs() < EPSILON);
 
     assert_eq!(neg_sum.abs(), sum, "abs failed");
 
     let sub: Duration = seven_hours - six_minutes - five_seconds;
-    assert!((sub.in_seconds() - 24835.0).abs() < EPSILON);
+    assert!((sub.to_seconds() - 24835.0).abs() < EPSILON);
 
     // Test fractional
     let quarter_hour = 0.25 * Unit::Hour;
     let third_hour = (1.0 / 3.0) * Unit::Hour;
     let sum: Duration = quarter_hour + third_hour;
-    assert!((sum.in_unit(Unit::Minute) - 35.0).abs() < EPSILON);
+    assert!((sum.to_unit(Unit::Minute) - 35.0).abs() < EPSILON);
 
     let quarter_hour = -0.25 * Unit::Hour;
     let third_hour: Duration = -1 * Unit::Hour / 3;
     let sum: Duration = quarter_hour + third_hour;
-    let delta = sum.in_unit(Unit::Millisecond).floor() - sum.in_unit(Unit::Second).floor() * 1000.0;
+    let delta = sum.to_unit(Unit::Millisecond).floor() - sum.to_unit(Unit::Second).floor() * 1000.0;
     assert!(delta < EPSILON);
-    assert!((sum.in_unit(Unit::Minute) + 35.0).abs() < EPSILON);
+    assert!((sum.to_unit(Unit::Minute) + 35.0).abs() < EPSILON);
 }
 
 #[test]
@@ -147,7 +147,7 @@ fn duration_format() {
 
     println!(
         "Proof that Duration is more precise than f64: {} vs {}",
-        sum.in_unit(Unit::Minute),
+        sum.to_unit(Unit::Minute),
         (1.0 / 4.0 + 1.0 / 3.0) * 60.0
     );
     assert_eq!(format!("{}", sum), "35 min");
@@ -155,7 +155,7 @@ fn duration_format() {
     let quarter_hour = -0.25 * Unit::Hour;
     let third_hour: Duration = -1 * Unit::Hour / 3;
     let sum: Duration = quarter_hour + third_hour;
-    let delta = sum.in_unit(Unit::Millisecond).floor() - sum.in_unit(Unit::Second).floor() * 1000.0;
+    let delta = sum.to_unit(Unit::Millisecond).floor() - sum.to_unit(Unit::Second).floor() * 1000.0;
     assert_eq!(delta * -1.0, 0.0);
     assert_eq!(format!("{}", sum), "-35 min");
 

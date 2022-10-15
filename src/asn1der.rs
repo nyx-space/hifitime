@@ -40,14 +40,14 @@ impl<'a> Decode<'a> for Duration {
 impl Encode for Epoch {
     fn encoded_len(&self) -> der::Result<der::Length> {
         let ts: u8 = self.time_scale.into();
-        ts.encoded_len()? + self.as_duration().encoded_len()?
+        ts.encoded_len()? + self.to_duration().encoded_len()?
     }
 
     fn encode(&self, encoder: &mut dyn Writer) -> der::Result<()> {
         let ts: u8 = self.time_scale.into();
 
         ts.encode(encoder)?;
-        self.as_duration().encode(encoder)
+        self.to_duration().encode(encoder)
     }
 }
 
@@ -99,14 +99,14 @@ fn test_encdec() {
         };
 
         let duration = match ts {
-            TimeScale::TAI => epoch.as_tai_duration(),
-            TimeScale::ET => epoch.as_et_duration(),
-            TimeScale::TT => epoch.as_tt_duration(),
-            TimeScale::TDB => epoch.as_tdb_duration(),
-            TimeScale::UTC => epoch.as_utc_duration(),
+            TimeScale::TAI => epoch.to_tai_duration(),
+            TimeScale::ET => epoch.to_et_duration(),
+            TimeScale::TT => epoch.to_tt_duration(),
+            TimeScale::TDB => epoch.to_tdb_duration(),
+            TimeScale::UTC => epoch.to_utc_duration(),
         };
 
-        let e_dur = epoch.as_duration();
+        let e_dur = epoch.to_duration();
 
         assert_eq!(e_dur, duration, "{ts:?}");
 
@@ -125,6 +125,22 @@ fn test_encdec() {
         assert_eq!(
             encdec_epoch.time_scale, ts,
             "Decoded time system incorrect {ts:?}"
+        );
+    }
+
+    for unit_u8 in 0..8 {
+        let unit: Unit = unit_u8.into();
+
+        // Create a buffer
+        let mut buf = [0_u8; 3];
+        // Encode
+        unit.encode_to_slice(&mut buf).unwrap();
+        // Decode
+        let encdec_unit = Unit::from_der(&buf).unwrap();
+
+        assert_eq!(
+            encdec_unit, unit,
+            "Decoded epoch incorrect ({unit:?}):\ngot: {encdec_unit:?}\nexp: {unit:?}",
         );
     }
 }

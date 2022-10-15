@@ -92,11 +92,14 @@ pub use timeunits::*;
 mod timeseries;
 pub use timeseries::*;
 
+/// This module defines all of the deprecated methods.
+mod deprecated;
+
 #[allow(deprecated)]
 pub mod prelude {
     pub use crate::{
-        Duration, Epoch, Errors, Freq, Frequencies, TimeScale, TimeSeries, TimeSystem, TimeUnits,
-        Unit,
+        deprecated::TimeSystem, Duration, Epoch, Errors, Freq, Frequencies, TimeScale, TimeSeries,
+        TimeUnits, Unit,
     };
 }
 
@@ -105,9 +108,6 @@ pub mod asn1der;
 
 #[cfg(feature = "python")]
 pub mod python;
-
-#[cfg(feature = "python")]
-use pyo3::prelude::*;
 
 #[cfg(feature = "std")]
 extern crate core;

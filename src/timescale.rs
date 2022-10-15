@@ -42,9 +42,6 @@ impl TimeScale {
     }
 }
 
-#[deprecated(since = "3.5.0", note = "TimeSystem has been renamed to TimeScale")]
-pub type TimeSystem = TimeScale;
-
 /// Allows conversion of a TimeSystem into a u8
 /// Mapping: TAI: 0; TT: 1; ET: 2; TDB: 3; UTC: 4.
 impl From<TimeScale> for u8 {

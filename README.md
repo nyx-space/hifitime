@@ -62,8 +62,8 @@ println!("{}", now);
 }
 
 let mut santa = Epoch::from_gregorian_utc_hms(2017, 12, 25, 01, 02, 14);
-assert_eq!(santa.as_mjd_utc_days(), 58112.043217592590);
-assert_eq!(santa.as_jde_utc_days(), 2458112.5432175924);
+assert_eq!(santa.to_mjd_utc_days(), 58112.043217592590);
+assert_eq!(santa.to_jde_utc_days(), 2458112.5432175924);
 
 assert_eq!(
     santa + 3600 * Unit::Second,
@@ -276,22 +276,23 @@ Prior to the first leap second, NAIF SPICE claims that there were nine seconds o
 In theory, as of January 2000, ET and TDB should now be identical. _However_, the NASA NAIF leap seconds files (e.g. [naif00012.tls](./naif00012.tls)) use a simplified algorithm to compute the TDB:
 > Equation \[4\], which ignores small-period fluctuations, is accurate to about 0.000030 seconds.
 
-In order to provide full interoperability with NAIF, hifitime uses the NAIF algorithm for "ephemeris time" and the [ESA algorithm](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) for "dynamical barycentric time." Hence, if exact NAIF behavior is needed, use all of the functions marked as `et` instead of the `tdb` functions, such as `epoch.as_et_seconds()` instead of `epoch.as_tdb_seconds()`.
+In order to provide full interoperability with NAIF, hifitime uses the NAIF algorithm for "ephemeris time" and the [ESA algorithm](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) for "dynamical barycentric time." Hence, if exact NAIF behavior is needed, use all of the functions marked as `et` instead of the `tdb` functions, such as `epoch.to_et_seconds()` instead of `epoch.to_tdb_seconds()`.
 
 
 # Changelog
 
-## 3.5.0 (unreleased)
+## 3.5.0
 + Epoch now store the time scale that they were defined in: this allows durations to be added in their respective time scales. For example, adding 36 hours to 1971-12-31 at noon when the Epoch is initialized in UTC will lead to a different epoch than adding that same duration to an epoch initialized at the same time in TAI (because the first leap second announced by IERS was on 1972-01-01), cf. the `test_add_durations_over_leap_seconds` test.
 + RFC3339 and ISO8601 fully supported for initialization of an Epoch, including the offset, e.g. `Epoch::from_str("1994-11-05T08:15:30-05:00")`, cf. [#73](https://github.com/nyx-space/hifitime/issues/73).
 + Python package available on PyPI! To build the Python package, you must first install `maturin` and then build with the `python` feature flag. For example, `maturin develop -F python && python` will build the Python package in debug mode and start a new shell where the package can be imported.
 + Fix bug when printing Duration::MIN (or any duration whose centuries are minimizing the number of centuries).
 + TimeSeries can now be formatted
-+ Epoch can now be `ceil`-ed, `floor`-ed, and `round`-ed according to the time scale they were initialized in, cf. [#127](https://github.com/nyx-space/hifitime/issues/145).
++ Epoch can now be `ceil`-ed, `floor`-ed, and `round`-ed according to the time scale they were initialized in, cf. [#145](https://github.com/nyx-space/hifitime/issues/145).
 + Epoch can now be initialized from Gregorian when specifying the time system: `from_gregorian`, `from_gregorian_hms`, `from_gregorian_at_noon`, `from_gregorian_at_midnight`.
 + Fix bug in Duration when performing operations on durations very close to `Duration::MIN` (i.e. minus thirty-two centuries).
 + Duration parsing now supports multiple units in a string and does not use regular expressions. THis allows it to work with `no-std`.
 + Epoch parsing no longer requires `regex`.
++ Functions are not more idiomatic: all of the `as_*` functions become `to_*` and `in_*` also becomes `to_*`, cf.  [#155](https://github.com/nyx-space/hifitime/issues/155).
 
 ## 3.4.0
 + Ephemeris Time and Dynamical Barycentric Time fixed to use the J2000 reference epoch instead of the J1900 reference epoch. This is a **potentially breaking change** if you relied on the previous one century error when converting from/to ET/TDB into/from UTC _and storing the data as a string_. There is **no difference** if the original representation was used.

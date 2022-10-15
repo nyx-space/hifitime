@@ -173,7 +173,7 @@ where
     TimeSeries: Iterator,
 {
     fn len(&self) -> usize {
-        let approx = ((self.end - self.start).in_seconds() / self.step.in_seconds()).abs();
+        let approx = ((self.end - self.start).to_seconds() / self.step.to_seconds()).abs();
         if self.incl {
             if approx.ceil() >= usize::MAX as f64 {
                 usize::MAX

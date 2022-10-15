@@ -157,6 +157,42 @@ impl Duration {
         unit * value
     }
 
+    /// Creates a new duration from the provided number of days
+    #[must_use]
+    pub fn from_days(value: f64) -> Self {
+        value * Unit::Day
+    }
+
+    /// Creates a new duration from the provided number of hours
+    #[must_use]
+    pub fn from_hours(value: f64) -> Self {
+        value * Unit::Hour
+    }
+
+    /// Creates a new duration from the provided number of seconds
+    #[must_use]
+    pub fn from_seconds(value: f64) -> Self {
+        value * Unit::Second
+    }
+
+    /// Creates a new duration from the provided number of milliseconds
+    #[must_use]
+    pub fn from_milliseconds(value: f64) -> Self {
+        value * Unit::Millisecond
+    }
+
+    /// Creates a new duration from the provided number of microsecond
+    #[must_use]
+    pub fn from_microseconds(value: f64) -> Self {
+        value * Unit::Microsecond
+    }
+
+    /// Creates a new duration from the provided number of nanoseconds
+    #[must_use]
+    pub fn from_nanoseconds(value: f64) -> Self {
+        value * Unit::Nanosecond
+    }
+
     /// Creates a new duration from its parts. Set the sign to a negative number for the duration to be negative.
     #[allow(clippy::too_many_arguments)]
     #[must_use]
@@ -333,7 +369,7 @@ impl Duration {
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     #[must_use]
-    pub fn in_seconds(&self) -> f64 {
+    pub fn to_seconds(&self) -> f64 {
         // Compute the seconds and nanoseconds that we know this fits on a 64bit float
         let seconds = self.nanoseconds.div_euclid(NANOSECONDS_PER_SECOND);
         let subseconds = self.nanoseconds.rem_euclid(NANOSECONDS_PER_SECOND);
@@ -346,10 +382,9 @@ impl Duration {
         }
     }
 
-    /// Returns the value of this duration in the requested unit.
     #[must_use]
-    pub fn in_unit(&self, unit: Unit) -> f64 {
-        self.in_seconds() * unit.from_seconds()
+    pub fn to_unit(&self, unit: Unit) -> f64 {
+        self.to_seconds() * unit.from_seconds()
     }
 
     /// Returns the absolute value of this duration
@@ -793,7 +828,7 @@ impl fmt::Display for Duration {
 impl fmt::LowerExp for Duration {
     // Prints the duration with appropriate units
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let seconds_f64 = self.in_seconds();
+        let seconds_f64 = self.to_seconds();
         let seconds_f64_abs = seconds_f64.abs();
         if seconds_f64_abs < 1e-5 {
             fmt::Display::fmt(&(seconds_f64 * 1e9), f)?;
@@ -1074,7 +1109,7 @@ impl From<Duration> for std::time::Duration {
         } else {
             // Build the seconds separately from the nanos.
             let above_ns_f64: f64 =
-                Duration::compose(sign, days, hours, minutes, seconds, milli, us, 0).in_seconds();
+                Duration::compose(sign, days, hours, minutes, seconds, milli, us, 0).to_seconds();
             std::time::Duration::new(above_ns_f64 as u64, nano as u32)
         }
     }

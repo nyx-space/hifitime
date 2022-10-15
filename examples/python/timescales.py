@@ -37,21 +37,21 @@ if __name__ == "__main__":
     columns = ["UTC Epoch", "Δ TT (s)", "Δ ET (s)", "Δ TDB (s)", "Δ UTC (s)", "ET-TDB (s)"]
 
     for epoch in ts:
-        delta_utc = epoch.as_utc_duration() - epoch.as_tai_duration()
-        delta_tt = epoch.as_tt_duration() - epoch.as_tai_duration()
-        delta_tdb = epoch.as_tdb_duration_since_j1900() - epoch.as_tai_duration()
-        delta_et = epoch.as_et_duration_since_j1900() - epoch.as_tai_duration()
+        delta_utc = epoch.to_utc_duration() - epoch.to_tai_duration()
+        delta_tt = epoch.to_tt_duration() - epoch.to_tai_duration()
+        delta_tdb = epoch.to_tdb_duration_since_j1900() - epoch.to_tai_duration()
+        delta_et = epoch.to_et_duration_since_j1900() - epoch.to_tai_duration()
         delta_et_tdb = delta_et - delta_tdb
         # Convert the epoch into a pandas datetime
         pd_epoch = pd.to_datetime(str(epoch))
         # Build the pandas series
         data.append([
             pd_epoch,
-            delta_tt.in_seconds(),
-            delta_et.in_seconds(),
-            delta_tdb.in_seconds(),
-            delta_utc.in_seconds(),
-            delta_et_tdb.in_seconds(),
+            delta_tt.to_seconds(),
+            delta_et.to_seconds(),
+            delta_tdb.to_seconds(),
+            delta_utc.to_seconds(),
+            delta_et_tdb.to_seconds(),
         ])
 
     df = pd.DataFrame(data, columns=columns)
