@@ -366,12 +366,6 @@ impl Duration {
         }
     }
 
-    #[must_use]
-    #[deprecated(note = "Prefer to_seconds()", since = "3.5.0")]
-    pub fn in_seconds(&self) -> f64 {
-        self.to_seconds()
-    }
-
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     #[must_use]
@@ -386,13 +380,6 @@ impl Duration {
                 + (seconds as f64)
                 + (subseconds as f64) * 1e-9
         }
-    }
-
-    /// Returns the value of this duration in the requested unit.
-    #[must_use]
-    #[deprecated(note = "Prefer to_unit()", since = "3.5.0")]
-    pub fn in_unit(&self, unit: Unit) -> f64 {
-        self.to_unit(unit)
     }
 
     #[must_use]

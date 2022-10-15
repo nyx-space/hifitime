@@ -1041,14 +1041,6 @@ impl Epoch {
 impl Epoch {
     #[must_use]
     /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
-    /// For the leap seconds _and_ the scaling in "prehistoric" times from 1960 to 1972, use `leap_seconds()`.
-    #[deprecated(note = "Prefer leap_seconds_iers or leap_seconds", since = "3.4.0")]
-    pub fn get_num_leap_seconds(&self) -> i32 {
-        self.leap_seconds_iers()
-    }
-
-    #[must_use]
-    /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
     pub fn leap_seconds_iers(&self) -> i32 {
         match self.leap_seconds(true) {
             Some(v) => v as i32,
@@ -1785,13 +1777,6 @@ impl Epoch {
     }
 
     #[must_use]
-    #[deprecated(note = "Prefer as_tdb_duration", since = "3.4.0")]
-    /// Returns the duration since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
-    pub fn as_tdb_duration_since_j2000(&self) -> Duration {
-        self.as_tdb_duration()
-    }
-
-    #[must_use]
     /// Returns the number of days since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
     pub fn as_tdb_days_since_j2000(&self) -> f64 {
         self.as_tdb_duration().to_unit(Unit::Day)
@@ -1801,13 +1786,6 @@ impl Epoch {
     /// Returns the number of centuries since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
     pub fn as_tdb_centuries_since_j2000(&self) -> f64 {
         self.as_tdb_duration().to_unit(Unit::Century)
-    }
-
-    #[must_use]
-    #[deprecated(note = "Prefer as_et_duration", since = "3.4.0")]
-    /// Returns the duration since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
-    pub fn as_et_duration_since_j2000(&self) -> Duration {
-        self.as_et_duration()
     }
 
     #[must_use]

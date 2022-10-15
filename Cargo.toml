@@ -3,7 +3,7 @@ name = "hifitime"
 version = "3.5.0"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
 description = "Ultra-precise date and time handling in Rust for scientific applications with leap second support"
-homepage = "https://nyxspace.com/MathSpec/time/"
+homepage = "https://nyxspace.com/"
 documentation = "https://docs.rs/hifitime/"
 repository = "https://github.com/nyx-space/hifitime"
 keywords = ["date", "time", "science", "leap-second", "no-std"]
@@ -29,7 +29,8 @@ lexical-core = {version = "0.8.5", default-features = false, features = ["parse-
 criterion = "0.4.0"
 
 [features]
-default = ["std"]
+default = ["std", "deprecated"]
+deprecated = []
 std = ["serde", "serde_derive"]
 asn1der = ["der"]
 python = ["std", "asn1der", "pyo3"]
