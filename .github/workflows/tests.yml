@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 name: Test Workflow
 
@@ -139,3 +140,28 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           files: ./lcov.txt
+
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    needs: [check, test, test_no_std, lints, coverage]
+    if: github.ref_type == 'tag'
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+
+      - name: Install stable toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Publish to crates.io
+        uses: actions-rs/cargo@v1
+        env:
+          TOKEN: ${{ secrets.CRATESIO_API_TOKEN }}
+        with:
+          command: publish
+          args: --token $TOKEN
