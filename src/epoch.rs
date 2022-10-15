@@ -1628,7 +1628,7 @@ impl Epoch {
 
     #[must_use]
     ///Returns the Duration since the UNIX epoch UTC midnight 01 Jan 1970.
-    fn to_unix_duration(&self) -> Duration {
+    fn to_unix_duration(self) -> Duration {
         // TAI = UNIX + leap_seconds + UNIX_OFFSET_UTC_SECONDS <=> UNIX = TAI - leap_seconds - UNIX_OFFSET_UTC_SECONDS
         self.duration_since_j1900_tai
             - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second

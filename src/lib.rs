@@ -99,9 +99,11 @@ mod deprecated;
 #[allow(deprecated)]
 pub mod prelude {
     pub use crate::{
-        deprecated::TimeSystem, Duration, Epoch, Errors, Freq, Frequencies, TimeScale, TimeSeries,
-        TimeUnits, Unit,
+        Duration, Epoch, Errors, Freq, Frequencies, TimeScale, TimeSeries, TimeUnits, Unit,
     };
+
+    #[cfg(feature = "deprecated")]
+    pub use crate::deprecated::TimeSystem;
 }
 
 #[cfg(feature = "asn1der")]
