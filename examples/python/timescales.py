@@ -34,13 +34,14 @@ if __name__ == "__main__":
     # Define the storage array
     data = []
     # Define the columns
-    columns = ["UTC Epoch", "Δ TT (s)", "Δ ET (s)", "Δ TDB (s)", "Δ UTC (s)"]
+    columns = ["UTC Epoch", "Δ TT (s)", "Δ ET (s)", "Δ TDB (s)", "Δ UTC (s)", "ET-TDB (s)"]
 
     for epoch in ts:
         delta_utc = epoch.as_utc_duration() - epoch.as_tai_duration()
         delta_tt = epoch.as_tt_duration() - epoch.as_tai_duration()
         delta_tdb = epoch.as_tdb_duration_since_j1900() - epoch.as_tai_duration()
         delta_et = epoch.as_et_duration_since_j1900() - epoch.as_tai_duration()
+        delta_et_tdb = delta_et - delta_tdb
         # Convert the epoch into a pandas datetime
         pd_epoch = pd.to_datetime(str(epoch))
         # Build the pandas series
@@ -49,15 +50,29 @@ if __name__ == "__main__":
             delta_tt.in_seconds(),
             delta_et.in_seconds(),
             delta_tdb.in_seconds(),
-            delta_utc.in_seconds()
+            delta_utc.in_seconds(),
+            delta_et_tdb.in_seconds(),
         ])
 
     df = pd.DataFrame(data, columns=columns)
 
-    fig = px.line(df, x='UTC Epoch', y=columns[1:], title="Time scale deviation (incl. UTC)")
+    fig = px.line(df,
+                  x='UTC Epoch',
+                  y=columns[1:-1],
+                  title="Time scale deviation with respect to TAI")
     fig.write_html("./target/time-scale-deviation.html")
     fig.show()
 
-    fig = px.line(df, x='UTC Epoch', y=columns[1:-1], title="Time scale deviation (excl. UTC)")
+    fig = px.line(df,
+                  x='UTC Epoch',
+                  y=columns[1:-2],
+                  title="Time scale deviation with respect to TAI (excl. UTC)")
     fig.write_html("./target/time-scale-deviation-no-utc.html")
+    fig.show()
+
+    fig = px.line(df,
+                  x='UTC Epoch',
+                  y=columns[-1],
+                  title="Time scale deviation of TDB and ET with respect to TAI")
+    fig.write_html("./target/time-scale-deviation-tdb-et.html")
     fig.show()
