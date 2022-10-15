@@ -1,6 +1,6 @@
 extern crate hifitime;
 
-use hifitime::{Epoch, TimeSeries, Unit};
+use hifitime::{Epoch, TimeSeries, TimeUnits, Unit};
 
 #[test]
 fn test_timeseries() {
@@ -72,4 +72,22 @@ fn gh131_regression() {
     let times = TimeSeries::inclusive(start, end, step);
     assert_eq!(times.len(), steps as usize);
     assert_eq!(times.len(), times.size_hint().0);
+}
+
+#[test]
+fn gh154_reciprocity() {
+    use core::str::FromStr;
+
+    // TODO: Reproduce for all time scales
+    for epoch in TimeSeries::inclusive(
+        Epoch::from_str("1970-03-02T00:00:00 UTC").unwrap(),
+        Epoch::from_str("2023-01-01 00:00:00 UTC").unwrap(),
+        30.days(),
+    ) {
+        #[cfg(feature = "std")]
+        println!("{epoch:x}");
+        let formatted = format!("{epoch:x}");
+        let rebuilt = Epoch::from_str(&formatted).unwrap();
+        assert_eq!(rebuilt, epoch, "got: {rebuilt:x}\nexp: {epoch:x}");
+    }
 }

@@ -534,6 +534,11 @@ impl Duration {
         }
     }
 
+    /// Returns whether this is a negative or positive duration.
+    pub const fn is_negative(&self) -> bool {
+        self.centuries.is_negative()
+    }
+
     /// A duration of exactly zero nanoseconds
     pub const ZERO: Self = Self {
         centuries: 0,

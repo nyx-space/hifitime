@@ -555,13 +555,24 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let mut duration_wrt_1900 = Unit::Day * i64::from(365 * (year - 1900).abs());
-        // Now add the seconds for all the years prior to the current year
-        for year in 1900..year {
-            if is_leap_year(year) {
-                duration_wrt_1900 += Unit::Day;
+        let mut duration_wrt_1900 = Unit::Day * i64::from(365 * (year - 1900));
+
+        // Now add the leap days for all the years prior to the current year
+        if year >= 1900 {
+            for year in 1900..year {
+                if is_leap_year(year) {
+                    duration_wrt_1900 += Unit::Day;
+                }
+            }
+        } else {
+            // Remove days
+            for year in year..1900 {
+                if is_leap_year(year) {
+                    duration_wrt_1900 -= Unit::Day;
+                }
             }
         }
+
         // Add the seconds for the months prior to the current month
         for month in 0..month - 1 {
             duration_wrt_1900 += Unit::Day * i64::from(usual_days_per_month(month));
@@ -588,7 +599,7 @@ impl Epoch {
             TimeScale::TT => Self::from_tt_duration(duration_wrt_1900),
             TimeScale::ET => Self::from_et_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
             TimeScale::TDB => Self::from_tdb_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
-            TimeScale::UTC => panic!("use maybe_from_gregorian_utc for UTC time system"),
+            TimeScale::UTC => Self::from_utc_duration(duration_wrt_1900),
         })
     }
 
@@ -914,61 +925,115 @@ impl Epoch {
     }
 
     fn compute_gregorian(duration_j1900: Duration) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+        let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
             duration_j1900.decompose();
 
-        let (mut year, mut days_in_year) = div_rem_f64(days as f64, DAYS_PER_YEAR_NLD);
+        let days_f64 = if sign < 0 {
+            -(days as f64)
+        } else {
+            days as f64
+        };
+
+        let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
         // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
         year += 1900;
 
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
         // between 1900 and `year`
-        for year in 1900..year {
-            if is_leap_year(year) {
-                days_in_year -= 1.0;
+        if year >= 1900 {
+            for year in 1900..year {
+                if is_leap_year(year) {
+                    days_in_year -= 1.0;
+                }
+            }
+        } else {
+            for year in year..1900 {
+                if is_leap_year(year) {
+                    days_in_year += 1.0;
+                }
             }
         }
 
         // Get the month from the exact number of seconds between the start of the year and now
         let mut month = 1;
-        let mut day = days_in_year;
+        let mut day;
 
-        if days_in_year < 0.0 {
-            month = 12;
-            year -= 1;
-            day += usual_days_per_month(11) as f64;
-            if is_leap_year(year) {
-                day += 1.0;
+        let mut days_so_far = 0.0;
+        loop {
+            let mut days_next_month = usual_days_per_month(month - 1) as f64;
+            if month == 2 && is_leap_year(year) {
+                days_next_month += 1.0;
             }
-        } else {
-            loop {
-                let mut days_next_month = usual_days_per_month(month - 1) as f64;
-                if is_leap_year(year) && month == 2 {
-                    days_next_month += 1.0;
-                }
 
-                if days_next_month > day {
-                    // We've reached the end of the month
-                    break;
-                }
-
-                day -= days_next_month;
-
-                month += 1;
+            if days_so_far + days_next_month > days_in_year {
+                // We've found the month and can calculate the days
+                day = if sign >= 0 {
+                    days_in_year - days_so_far + 1.0
+                } else {
+                    days_in_year - days_so_far - 1.0
+                };
+                break;
             }
+
+            // Otherwise, count up the number of days this year so far and keep track of the month.
+            days_so_far += days_next_month;
+            month += 1;
         }
 
-        (
-            year,
-            month as u8,
-            (day + 1.0) as u8,
-            hours as u8,
-            minutes as u8,
-            seconds as u8,
-            (nanos
-                + microseconds * NANOSECONDS_PER_MICROSECOND
-                + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
-        )
+        if day <= 0.0 || days_in_year < 0.0 {
+            // We've overflowed backward
+            month = 12;
+            year -= 1;
+            // NOTE: Leap year is already accounted for in the TAI duration when counting backward.
+            day = if days_in_year < 0.0 {
+                days_in_year + usual_days_per_month(11) as f64 + 1.0
+            } else {
+                usual_days_per_month(11) as f64
+            };
+        } else if sign < 0 {
+            // Must add one day because just below, we'll be ignoring the days when rebuilding the time.
+            day += 1.0;
+        }
+
+        if sign < 0 {
+            let time = Duration::compose(
+                sign,
+                0,
+                hours,
+                minutes,
+                seconds,
+                milliseconds,
+                microseconds,
+                nanos,
+            );
+
+            let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+                (24 * Unit::Hour + time).decompose();
+
+            (
+                year,
+                month as u8,
+                day as u8,
+                hours as u8,
+                minutes as u8,
+                seconds as u8,
+                (nanos
+                    + microseconds * NANOSECONDS_PER_MICROSECOND
+                    + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
+            )
+        } else {
+            (
+                year,
+                month as u8,
+                day as u8,
+                hours as u8,
+                minutes as u8,
+                seconds as u8,
+                (nanos
+                    + microseconds * NANOSECONDS_PER_MICROSECOND
+                    + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
+            )
+        }
     }
 }
 
@@ -1646,14 +1711,14 @@ impl Epoch {
     /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration since J2000
     ///
     /// ## Algorithm
-    /// Given the embedded sine functinos in the equationto compute the difference between TDB and TAI from the number of TDB seconds
+    /// Given the embedded sine functions in the equation to compute the difference between TDB and TAI from the number of TDB seconds
     /// past J2000, one cannot solve the revert the operation analytically. Instead, we iterate until the value no longer changes.
     ///
-    /// 1. Assume that the TAI duration is in fact the TDB seconds frin J2000.
+    /// 1. Assume that the TAI duration is in fact the TDB seconds from J2000.
     /// 2. Offset to J2000 because `Epoch` stores everything in the J1900 but the TDB duration is in J2000.
     /// 3. Compute the offset `g` due to the TDB computation with the current value of the TDB seconds (defined in step 1).
     /// 4. Subtract that offset to the latest TDB seconds and store this as a new candidate for the true TDB seconds value.
-    /// 5. Compute the difference between this candidtae and the previous one. If the difference is less than one nanosecond, stop iteration.
+    /// 5. Compute the difference between this candidate and the previous one. If the difference is less than one nanosecond, stop iteration.
     /// 6. Set the new candidate as the TDB seconds since J2000 and loop until step 5 breaks the loop, or we've done five iterations.
     /// 7. At this stage, we have a good approximation of the TDB seconds since J2000.
     /// 8. Reverse the algorithm given that approximation: compute the `g` offset, compute the difference between TDB and TAI, add the TT offset (32.184 s), and offset by the difference between J1900 and J2000.

@@ -427,3 +427,33 @@ fn std_time_duration() {
     let hf_return: Duration = std_duration.into();
     assert_eq!(hf_return, hf_duration);
 }
+
+#[test]
+fn test_decompose() {
+    let pos = 5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond;
+
+    let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) = pos.decompose();
+    assert_eq!(sign, 0);
+    assert_eq!(days, 0);
+    assert_eq!(hours, 5);
+    assert_eq!(minutes, 0);
+    assert_eq!(seconds, 0);
+    assert_eq!(milliseconds, 256);
+    assert_eq!(microseconds, 0);
+    assert_eq!(nanos, 1);
+
+    // A negative duration works in the same way, only the sign is different.
+    let neg = -(5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond);
+    assert_eq!(neg, -pos);
+    assert_eq!(neg.abs(), pos);
+
+    let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) = neg.decompose();
+    assert_eq!(sign, -1);
+    assert_eq!(days, 0);
+    assert_eq!(hours, 5);
+    assert_eq!(minutes, 0);
+    assert_eq!(seconds, 0);
+    assert_eq!(milliseconds, 256);
+    assert_eq!(microseconds, 0);
+    assert_eq!(nanos, 1);
+}
