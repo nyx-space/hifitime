@@ -164,6 +164,6 @@ jobs:
         uses: actions-rs/cargo@v1
         env:
           TOKEN: ${{ secrets.CRATESIO_API_TOKEN }}
-        with:
-          command: publish
-          args: --token $TOKEN
+        run: |
+          cargo login $TOKEN
+          cargo publish
