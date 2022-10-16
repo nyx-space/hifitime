@@ -138,6 +138,17 @@ const fn usual_days_per_month(month: u8) -> u8 {
     }
 }
 
+/// Calculates the prefix-sum of days counted up to the month start
+const CUMULATIVE_DAYS_FOR_MONTH: [u16; 12] = {
+    let mut days = [0; 12];
+    let mut month = 1;
+    while month < 12 {
+        days[month] = days[month - 1] + usual_days_per_month(month as u8 - 1) as u16;
+        month += 1;
+    }
+    days
+};
+
 /// Defines a nanosecond-precision Epoch.
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time systems or representations.
@@ -555,28 +566,30 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let mut duration_wrt_1900 = Unit::Day * i64::from(365 * (year - 1900));
+        let years_since_1900 = year - 1900;
+        let mut duration_wrt_1900 = Unit::Day * i64::from(365 * years_since_1900);
 
-        // Now add the leap days for all the years prior to the current year
-        if year >= 1900 {
-            for year in 1900..year {
-                if is_leap_year(year) {
-                    duration_wrt_1900 += Unit::Day;
-                }
-            }
+        // count leap years
+        if years_since_1900 > 0 {
+            // we don't count the leap year in 1904, since jan 1904 hasn't had the leap yet,
+            // so we push it back to 1905, same for all other leap years
+            let years_after_1900 = years_since_1900 - 1;
+            duration_wrt_1900 += Unit::Day * i64::from(years_after_1900 / 4);
+            duration_wrt_1900 -= Unit::Day * i64::from(years_after_1900 / 100);
+            // every 400 years we correct our correction. The first one after 1900 is 2000 (years_since_1900 = 100)
+            // so we add 300 to correct the offset
+            duration_wrt_1900 += Unit::Day * i64::from((years_after_1900 + 300) / 400);
         } else {
-            // Remove days
-            for year in year..1900 {
-                if is_leap_year(year) {
-                    duration_wrt_1900 -= Unit::Day;
-                }
-            }
-        }
+            // we don't need to fix the offset, since jan 1896 has had the leap, when counting back from 1900
+            duration_wrt_1900 += Unit::Day * i64::from(years_since_1900 / 4);
+            duration_wrt_1900 -= Unit::Day * i64::from(years_since_1900 / 100);
+            // every 400 years we correct our correction. The first one before 1900 is 1600 (years_since_1900 = -300)
+            // so we subtract 100 to correct the offset
+            duration_wrt_1900 += Unit::Day * i64::from((years_since_1900 - 100) / 400);
+        };
 
         // Add the seconds for the months prior to the current month
-        for month in 0..month - 1 {
-            duration_wrt_1900 += Unit::Day * i64::from(usual_days_per_month(month));
-        }
+        duration_wrt_1900 += Unit::Day * i64::from(CUMULATIVE_DAYS_FOR_MONTH[(month - 1) as usize]);
         if is_leap_year(year) && month > 2 {
             // NOTE: If on 29th of February, then the day is not finished yet, and therefore
             // the extra seconds are added below as per a normal day.
@@ -2297,7 +2310,7 @@ impl fmt::Octal for Epoch {
 
 #[must_use]
 /// Returns true if the provided Gregorian date is valid. Leap second days may have 60 seconds.
-pub fn is_gregorian_valid(
+pub const fn is_gregorian_valid(
     year: i32,
     month: u8,
     day: u8,
@@ -2417,4 +2430,12 @@ fn deser_test() {
     }
 
     println!("{}", (1 * Unit::Century + 12 * Unit::Hour).to_seconds());
+}
+
+#[test]
+fn cumulative_days_for_month() {
+    assert_eq!(
+        CUMULATIVE_DAYS_FOR_MONTH,
+        [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
+    )
 }
