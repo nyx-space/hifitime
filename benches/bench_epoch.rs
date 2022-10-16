@@ -17,7 +17,6 @@ pub fn criterion_benchmark(c: &mut Criterion) {
 
     c.bench_function("TT", |b| {
         b.iter(|| {
-            // TT is too slow now! Used to be 184ns, is now 241
             let e = Epoch::from_gregorian_utc_hms(2015, 2, 7, 11, 22, 33);
             e.as_tt_seconds();
 
