@@ -57,7 +57,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag'
+    # if: github.ref_type == 'tag'
     needs: [macos, windows, linux]
     steps:
       - uses: actions/download-artifact@v2
