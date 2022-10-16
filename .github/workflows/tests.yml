@@ -1,11 +1,13 @@
+name: Test Workflow
+
 on:
-  pull_request:
   push:
     branches:
       - master
+    tags:
+      - "*"
+  pull_request:
   workflow_dispatch:
-
-name: Test Workflow
 
 env:
   RUST_BACKTRACE: 1

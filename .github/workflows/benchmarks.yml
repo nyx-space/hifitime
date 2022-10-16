@@ -1,13 +1,15 @@
+name: Benchmarks
+
 on:
-  pull_request:
   push:
     branches:
       - master
-
-name: Benchmarks
+    tags:
+      - "*"
+  pull_request:
+  workflow_dispatch:
 
 jobs:
-
   duration:
     name: Benchmark duration
     runs-on: ubuntu-latest
@@ -23,10 +25,10 @@ jobs:
 
       - name: Bench (with default features)
         run: cargo bench --bench bench_duration
-      
+
       - name: Bench (no default features)
         run: cargo bench --no-default-features --bench bench_duration
-    
+
   epoch:
     name: Benchmark epoch
     runs-on: ubuntu-latest
@@ -41,6 +43,6 @@ jobs:
 
       - name: Bench (with default features)
         run: cargo bench --bench bench_epoch
-      
+
       - name: Bench (no default features)
         run: cargo bench --no-default-features --bench bench_epoch

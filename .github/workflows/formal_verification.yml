@@ -1,10 +1,13 @@
+name: Formal Verification Workflow
+
 on:
-  pull_request:
   push:
     branches:
       - master
-
-name: Formal Verification Workflow
+    tags:
+      - "*"
+  pull_request:
+  workflow_dispatch:
 
 env:
   RUST_BACKTRACE: 1
