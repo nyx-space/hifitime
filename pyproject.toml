@@ -9,7 +9,7 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Topic :: Scientific/Engineering :: Astronomy",
     "Topic :: Scientific/Engineering :: Physics",
-    "Intended Audience :: Science%2FResearch",
+    "Intended Audience :: Science/Research",
 ]
 
 [tool.yapf]
