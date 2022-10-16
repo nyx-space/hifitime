@@ -161,7 +161,6 @@ jobs:
           components: rustfmt, clippy
 
       - name: Publish to crates.io
-        uses: actions-rs/cargo@v1
         env:
           TOKEN: ${{ secrets.CRATESIO_API_TOKEN }}
         run: |
