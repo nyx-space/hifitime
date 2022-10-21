@@ -1139,26 +1139,7 @@ fn deser_test() {
 
 #[cfg(kani)]
 #[kani::proof]
-fn formal_normalize_min() {
-    // Test that a normalization from the min does not fail
-    let centuries = i16::MIN;
-    let nanoseconds: u64 = kani::any();
-    let _dur = Duration::from_parts(centuries, nanoseconds);
-}
-
-#[cfg(kani)]
-#[kani::proof]
-fn formal_normalize_max() {
-    // Test that a normalization from the min does not fail
-    let centuries = i16::MAX;
-    let nanoseconds: u64 = kani::any();
-    let _dur = Duration::from_parts(centuries, nanoseconds);
-}
-
-#[cfg(kani)]
-#[kani::proof]
 fn formal_normalize_any() {
-    // Test that a normalization from the min does not fail
     let centuries: i16 = kani::any();
     let nanoseconds: u64 = kani::any();
     let _dur = Duration::from_parts(centuries, nanoseconds);
