@@ -105,6 +105,108 @@ impl fmt::Display for TimeSeries {
     }
 }
 
+impl fmt::LowerHex for TimeSeries {
+    /// Prints the Epoch in TAI
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "TimeSeries [{:x} : {:x} : {}]",
+            self.start,
+            if self.incl {
+                self.end
+            } else {
+                self.end - self.step
+            },
+            self.step
+        )
+    }
+}
+
+impl fmt::UpperHex for TimeSeries {
+    /// Prints the Epoch in TT
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "TimeSeries [{:X} : {:X} : {}]",
+            self.start,
+            if self.incl {
+                self.end
+            } else {
+                self.end - self.step
+            },
+            self.step
+        )
+    }
+}
+
+impl fmt::LowerExp for TimeSeries {
+    /// Prints the Epoch in TDB
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "TimeSeries [{:e} : {:e} : {}]",
+            self.start,
+            if self.incl {
+                self.end
+            } else {
+                self.end - self.step
+            },
+            self.step
+        )
+    }
+}
+
+impl fmt::UpperExp for TimeSeries {
+    /// Prints the Epoch in ET
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "TimeSeries [{:E} : {:E} : {}]",
+            self.start,
+            if self.incl {
+                self.end
+            } else {
+                self.end - self.step
+            },
+            self.step
+        )
+    }
+}
+
+impl fmt::Pointer for TimeSeries {
+    /// Prints the Epoch in UNIX
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "TimeSeries [{:p} : {:p} : {}]",
+            self.start,
+            if self.incl {
+                self.end
+            } else {
+                self.end - self.step
+            },
+            self.step
+        )
+    }
+}
+
+impl fmt::Octal for TimeSeries {
+    /// Prints the Epoch in GPS
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "TimeSeries [{:o} : {:o} : {}]",
+            self.start,
+            if self.incl {
+                self.end
+            } else {
+                self.end - self.step
+            },
+            self.step
+        )
+    }
+}
+
 #[cfg(feature = "python")]
 #[pymethods]
 impl TimeSeries {

@@ -28,6 +28,9 @@ use core::str::FromStr;
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
+#[cfg(feature = "python")]
+use pyo3::pyclass::CompareOp;
+
 #[cfg(not(feature = "std"))]
 use num_traits::Float;
 
@@ -286,24 +289,11 @@ impl Duration {
         }
     }
 
-    #[cfg(feature = "python")]
-    #[staticmethod]
-    /// Create a normalized duration from its parts
-    pub fn init_from_parts(centuries: i16, nanoseconds: u64) -> Self {
-        Self::from_parts(centuries, nanoseconds)
-    }
-
     #[must_use]
     /// Returns the centuries and nanoseconds of this duration
     /// NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly.
     pub const fn to_parts(&self) -> (i16, u64) {
         (self.centuries, self.nanoseconds)
-    }
-
-    #[cfg(feature = "python")]
-    #[staticmethod]
-    pub fn init_from_total_nanoseconds(nanos: i128) -> Self {
-        Self::from_total_nanoseconds(nanos)
     }
 
     /// Returns the total nanoseconds in a signed 128 bit integer
@@ -319,13 +309,6 @@ impl Duration {
             i128::from(self.centuries) * i128::from(NANOSECONDS_PER_CENTURY)
                 - i128::from(self.nanoseconds)
         }
-    }
-
-    #[cfg(feature = "python")]
-    #[staticmethod]
-    /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
-    pub fn init_from_truncated_nanoseconds(nanos: i64) -> Self {
-        Self::from_truncated_nanoseconds(nanos)
     }
 
     /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.
@@ -401,33 +384,6 @@ impl Duration {
     #[must_use]
     pub const fn signum(&self) -> i8 {
         self.centuries.signum() as i8
-    }
-
-    /// Creates a new duration from its parts
-    #[allow(clippy::too_many_arguments)]
-    #[cfg(feature = "python")]
-    #[staticmethod]
-    #[must_use]
-    pub fn init_from_all_parts(
-        sign: i8,
-        days: u64,
-        hours: u64,
-        minutes: u64,
-        seconds: u64,
-        milliseconds: u64,
-        microseconds: u64,
-        nanoseconds: u64,
-    ) -> Self {
-        Self::compose(
-            sign,
-            days,
-            hours,
-            minutes,
-            seconds,
-            milliseconds,
-            microseconds,
-            nanoseconds,
-        )
     }
 
     /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns
@@ -569,6 +525,48 @@ impl Duration {
         }
     }
 
+    /// Returns the minimum of the two durations.
+    ///
+    /// ```
+    /// use hifitime::TimeUnits;
+    ///
+    /// let d0 = 20.seconds();
+    /// let d1 = 21.seconds();
+    ///
+    /// assert_eq!(d0, d1.min(d0));
+    /// assert_eq!(d0, d0.min(d1));
+    /// ```
+    ///
+    /// _Note:_ this uses a pointer to `self` which will be copied immediately because Python requires a pointer.
+    pub fn min(&self, other: Self) -> Self {
+        if *self < other {
+            *self
+        } else {
+            other
+        }
+    }
+
+    /// Returns the maximum of the two durations.
+    ///
+    /// ```
+    /// use hifitime::TimeUnits;
+    ///
+    /// let d0 = 20.seconds();
+    /// let d1 = 21.seconds();
+    ///
+    /// assert_eq!(d1, d1.max(d0));
+    /// assert_eq!(d1, d0.max(d1));
+    /// ```
+    ///
+    /// _Note:_ this uses a pointer to `self` which will be copied immediately because Python requires a pointer.
+    pub fn max(&self, other: Self) -> Self {
+        if *self > other {
+            *self
+        } else {
+            other
+        }
+    }
+
     /// Returns whether this is a negative or positive duration.
     pub const fn is_negative(&self) -> bool {
         self.centuries.is_negative()
@@ -649,6 +647,25 @@ impl Duration {
     }
 
     #[cfg(feature = "python")]
+    fn __eq__(&self, other: Self) -> bool {
+        *self == other
+    }
+
+    #[cfg(feature = "python")]
+    fn __richcmp__(&self, other: Self, op: CompareOp) -> bool {
+        match op {
+            CompareOp::Lt => *self < other,
+            CompareOp::Le => *self <= other,
+            CompareOp::Eq => *self == other,
+            CompareOp::Ne => *self != other,
+            CompareOp::Gt => *self > other,
+            CompareOp::Ge => *self >= other,
+        }
+    }
+
+    // Python constructors
+
+    #[cfg(feature = "python")]
     #[staticmethod]
     fn zero() -> Duration {
         Duration::ZERO
@@ -662,13 +679,13 @@ impl Duration {
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    fn max() -> Duration {
+    fn init_from_max() -> Duration {
         Duration::MAX
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    fn min() -> Duration {
+    fn init_from_min() -> Duration {
         Duration::MIN
     }
 
@@ -683,9 +700,57 @@ impl Duration {
     fn min_negative() -> Duration {
         Duration::MIN_NEGATIVE
     }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Create a normalized duration from its parts
+    fn init_from_parts(centuries: i16, nanoseconds: u64) -> Self {
+        Self::from_parts(centuries, nanoseconds)
+    }
+
+    /// Creates a new duration from its parts
+    #[allow(clippy::too_many_arguments)]
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    #[must_use]
+    fn init_from_all_parts(
+        sign: i8,
+        days: u64,
+        hours: u64,
+        minutes: u64,
+        seconds: u64,
+        milliseconds: u64,
+        microseconds: u64,
+        nanoseconds: u64,
+    ) -> Self {
+        Self::compose(
+            sign,
+            days,
+            hours,
+            minutes,
+            seconds,
+            milliseconds,
+            microseconds,
+            nanoseconds,
+        )
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    fn init_from_total_nanoseconds(nanos: i128) -> Self {
+        Self::from_total_nanoseconds(nanos)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
+    fn init_from_truncated_nanoseconds(nanos: i64) -> Self {
+        Self::from_truncated_nanoseconds(nanos)
+    }
 }
 
 #[cfg(feature = "std")]
+#[cfg(not(kani))]
 impl<'de> Deserialize<'de> for Duration {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

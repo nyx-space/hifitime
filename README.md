@@ -281,6 +281,12 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 
 # Changelog
 
+## 3.5.1
++ Significant speed improvement in the initialization of Epochs from their Gregorian representation, thanks [@conradludgate](https://github.com/conradludgate) for [#160](https://github.com/nyx-space/hifitime/pull/160).
++ Epoch and Duration now have a `min` and `max` function which respectively returns a copy of the epoch/duration that is the smallest or the largest between `self` and `other`, cf. [#164](https://github.com/nyx-space/hifitime/issues/164).
++ [Python] Duration and Epochs now support the operators `>`, `>=`, `<`, `<=`, `==`, and `!=`. Epoch now supports `init_from_gregorian` with a time scape, like in Rust. Epochs can also be subtracted from one another using the `timedelta` function, cf. [#162](https://github.com/nyx-space/hifitime/issues/162).
++ TimeSeries can now be formatted in different time scales, cf. [#163](https://github.com/nyx-space/hifitime/issues/163)
+
 ## 3.5.0
 + Epoch now store the time scale that they were defined in: this allows durations to be added in their respective time scales. For example, adding 36 hours to 1971-12-31 at noon when the Epoch is initialized in UTC will lead to a different epoch than adding that same duration to an epoch initialized at the same time in TAI (because the first leap second announced by IERS was on 1972-01-01), cf. the `test_add_durations_over_leap_seconds` test.
 + RFC3339 and ISO8601 fully supported for initialization of an Epoch, including the offset, e.g. `Epoch::from_str("1994-11-05T08:15:30-05:00")`, cf. [#73](https://github.com/nyx-space/hifitime/issues/73).

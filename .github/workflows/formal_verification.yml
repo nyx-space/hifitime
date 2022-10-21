@@ -28,6 +28,7 @@ jobs:
 
       - name: Install Kani
         run: |
+          sudo apt install python3-testresources
           cargo install --locked kani-verifier
           cargo-kani setup
 
