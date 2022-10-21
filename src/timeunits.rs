@@ -39,6 +39,7 @@ pub enum Unit {
 
 /// An Enum to convert frequencies to their approximate duration, **rounded to the closest nanosecond**.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
+#[cfg_attr(feature = "python", pyclass)]
 pub enum Freq {
     GigaHertz,
     MegaHertz,
@@ -94,7 +95,6 @@ pub trait TimeUnits: Copy + Mul<Unit, Output = Duration> {
 ///
 /// ```
 /// use hifitime::prelude::*;
-/// use std::str::FromStr;
 ///
 /// assert_eq!(1.Hz(), 1.seconds());
 /// assert_eq!(10.Hz(), 0.1.seconds());

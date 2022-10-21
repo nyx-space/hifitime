@@ -2103,9 +2103,11 @@ impl Epoch {
     /// assert_eq!(e0, e1.min(e0));
     /// assert_eq!(e0, e0.min(e1));
     /// ```
-    pub fn min(self, other: Self) -> Self {
-        if self < other {
-            self
+    ///
+    /// _Note:_ this uses a pointer to `self` which will be copied immediately because Python requires a pointer.
+    pub fn min(&self, other: Self) -> Self {
+        if *self < other {
+            *self
         } else {
             other
         }
@@ -2122,9 +2124,11 @@ impl Epoch {
     /// assert_eq!(e1, e1.max(e0));
     /// assert_eq!(e1, e0.max(e1));
     /// ```
-    pub fn max(self, other: Self) -> Self {
-        if self > other {
-            self
+    ///
+    /// _Note:_ this uses a pointer to `self` which will be copied immediately because Python requires a pointer.
+    pub fn max(&self, other: Self) -> Self {
+        if *self > other {
+            *self
         } else {
             other
         }

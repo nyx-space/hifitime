@@ -536,9 +536,11 @@ impl Duration {
     /// assert_eq!(d0, d1.min(d0));
     /// assert_eq!(d0, d0.min(d1));
     /// ```
-    pub fn min(self, other: Self) -> Self {
-        if self < other {
-            self
+    ///
+    /// _Note:_ this uses a pointer to `self` which will be copied immediately because Python requires a pointer.
+    pub fn min(&self, other: Self) -> Self {
+        if *self < other {
+            *self
         } else {
             other
         }
@@ -555,9 +557,11 @@ impl Duration {
     /// assert_eq!(d1, d1.max(d0));
     /// assert_eq!(d1, d0.max(d1));
     /// ```
-    pub fn max(self, other: Self) -> Self {
-        if self > other {
-            self
+    ///
+    /// _Note:_ this uses a pointer to `self` which will be copied immediately because Python requires a pointer.
+    pub fn max(&self, other: Self) -> Self {
+        if *self > other {
+            *self
         } else {
             other
         }
@@ -675,13 +679,13 @@ impl Duration {
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    fn max() -> Duration {
+    fn init_from_max() -> Duration {
         Duration::MAX
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    fn min() -> Duration {
+    fn init_from_min() -> Duration {
         Duration::MIN
     }
 
