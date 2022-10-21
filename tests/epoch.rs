@@ -1220,3 +1220,17 @@ fn from_infinite_jde_tdb_days() {
 fn from_infinite_tdb_seconds() {
     let _ = Epoch::from_tdb_seconds(f64::NAN);
 }
+
+#[test]
+fn test_minmax() {
+    use hifitime::Epoch;
+
+    let e0 = Epoch::from_gregorian_utc_at_midnight(2022, 10, 20);
+    let e1 = Epoch::from_gregorian_utc_at_midnight(2022, 10, 21);
+
+    assert_eq!(e0, e1.min(e0));
+    assert_eq!(e0, e0.min(e1));
+
+    assert_eq!(e1, e1.max(e0));
+    assert_eq!(e1, e0.max(e1));
+}

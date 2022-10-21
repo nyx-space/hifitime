@@ -446,6 +446,7 @@ fn test_decompose() {
     let neg = -(5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond);
     assert_eq!(neg, -pos);
     assert_eq!(neg.abs(), pos);
+    assert!(neg.is_negative());
 
     let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) = neg.decompose();
     assert_eq!(sign, -1);
@@ -456,4 +457,18 @@ fn test_decompose() {
     assert_eq!(milliseconds, 256);
     assert_eq!(microseconds, 0);
     assert_eq!(nanos, 1);
+}
+
+#[test]
+fn test_minmax() {
+    use hifitime::TimeUnits;
+
+    let d0 = 20.seconds();
+    let d1 = 21.seconds();
+
+    assert_eq!(d0, d1.min(d0));
+    assert_eq!(d0, d0.min(d1));
+
+    assert_eq!(d1, d1.max(d0));
+    assert_eq!(d1, d0.max(d1));
 }
