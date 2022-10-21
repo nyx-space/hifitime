@@ -16,6 +16,36 @@ fn test_timeseries() {
         "TimeSeries [2017-01-14T00:00:00 UTC : 2017-01-14T10:00:00 UTC : 2 h]"
     );
 
+    assert_eq!(
+        format!("{:x}", time_series),
+        "TimeSeries [2017-01-14T00:00:37 TAI : 2017-01-14T10:00:37 TAI : 2 h]"
+    );
+
+    assert_eq!(
+        format!("{:X}", time_series),
+        "TimeSeries [2017-01-14T00:01:09.184000000 TT : 2017-01-14T10:01:09.184000000 TT : 2 h]"
+    );
+
+    assert_eq!(
+        format!("{:e}", time_series),
+        "TimeSeries [2017-01-14T00:01:09.184299750 TDB : 2017-01-14T10:01:09.184311622 TDB : 2 h]"
+    );
+
+    assert_eq!(
+        format!("{:E}", time_series),
+        "TimeSeries [2017-01-14T00:01:09.184304724 ET : 2017-01-14T10:01:09.184316581 ET : 2 h]"
+    );
+
+    assert_eq!(
+        format!("{:o}", time_series),
+        "TimeSeries [1168387218000000000 : 1168423218000000000 : 2 h]"
+    );
+
+    assert_eq!(
+        format!("{:p}", time_series),
+        "TimeSeries [1484352000 : 1484388000 : 2 h]"
+    );
+
     for epoch in time_series {
         if count == 0 {
             assert_eq!(
@@ -78,7 +108,6 @@ fn gh131_regression() {
 fn gh154_reciprocity() {
     use core::str::FromStr;
 
-    // TODO: Reproduce for all time scales
     for epoch in TimeSeries::inclusive(
         Epoch::from_str("1970-03-02T00:00:00 UTC").unwrap(),
         Epoch::from_str("2023-01-01 00:00:00 UTC").unwrap(),

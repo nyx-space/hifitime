@@ -826,6 +826,7 @@ impl Epoch {
     ///     Epoch::from_gregorian_str("1994-11-05T08:15:30-05:00").unwrap()
     /// );
     /// ```
+    #[cfg(not(kani))]
     pub fn from_gregorian_str(s_in: &str) -> Result<Self, Errors> {
         // All of the integers in a date: year, month, day, hour, minute, second, subsecond, offset hours, offset minutes
         let mut decomposed = [0_i32; 9];
@@ -2149,6 +2150,7 @@ impl Epoch {
     }
 }
 
+#[cfg(not(kani))]
 impl FromStr for Epoch {
     type Err = Errors;
 
@@ -2226,6 +2228,7 @@ impl FromStr for Epoch {
 }
 
 #[cfg(feature = "std")]
+#[cfg(not(kani))]
 impl<'de> Deserialize<'de> for Epoch {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where

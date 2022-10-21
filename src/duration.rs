@@ -750,6 +750,7 @@ impl Duration {
 }
 
 #[cfg(feature = "std")]
+#[cfg(not(kani))]
 impl<'de> Deserialize<'de> for Duration {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
