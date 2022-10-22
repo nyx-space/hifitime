@@ -29,21 +29,26 @@ pub enum TimeScale {
     TDB,
     /// Universal Coordinated Time
     UTC,
-    // GPS Time
-    // GPST // TODO
+    /// GPST Time also applies to QZSS, IRNSS and GAL constellations
+    GPST,
+    /// Galileo Time scale 
+    GST,
+    /// BeiDou Time scale
+    BDT,
 }
 
 impl TimeScale {
     pub(crate) const fn formatted_len(&self) -> usize {
         match &self {
-            TimeScale::TAI | TimeScale::TDB | TimeScale::UTC => 3,
+            TimeScale::GPST => 4,
+            TimeScale::TAI | TimeScale::TDB | TimeScale::UTC | TimeScale::GST | TimeScale::BDT => 3,
             TimeScale::ET | TimeScale::TT => 2,
         }
     }
 }
 
 /// Allows conversion of a TimeSystem into a u8
-/// Mapping: TAI: 0; TT: 1; ET: 2; TDB: 3; UTC: 4.
+/// Mapping: TAI: 0; TT: 1; ET: 2; TDB: 3; UTC: 4; GPST: 5; GST: 6;
 impl From<TimeScale> for u8 {
     fn from(ts: TimeScale) -> Self {
         match ts {
@@ -52,12 +57,15 @@ impl From<TimeScale> for u8 {
             TimeScale::ET => 2,
             TimeScale::TDB => 3,
             TimeScale::UTC => 4,
+            TimeScale::GPST => 5,
+            TimeScale::GST => 6,
+            TimeScale::BDT => 7,
         }
     }
 }
 
 /// Allows conversion of a u8 into a TimeSystem.
-/// Mapping: 1: TT; 2: ET; 3: TDB; 4: UTC; anything else: TAI
+/// Mapping: 1: TT; 2: ET; 3: TDB; 4: UTC; 5: GPST; 6: GST; anything else: TAI
 impl From<u8> for TimeScale {
     fn from(val: u8) -> Self {
         match val {
@@ -65,6 +73,9 @@ impl From<u8> for TimeScale {
             2 => Self::ET,
             3 => Self::TDB,
             4 => Self::UTC,
+            5 => Self::GPST,
+            6 => Self::GST,
+            7 => Self::BDT,
             _ => Self::TAI,
         }
     }
@@ -85,6 +96,12 @@ impl FromStr for TimeScale {
             Ok(Self::TDB)
         } else if val == "ET" {
             Ok(Self::ET)
+        } else if val == "GPST" {
+            Ok(Self::GPST)
+        } else if val == "GST" {
+            Ok(Self::GST)
+        } else if val == "BDT" {
+            Ok(Self::BDT)
         } else {
             Err(Errors::ParseError(ParsingErrors::TimeSystem))
         }

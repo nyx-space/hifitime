@@ -825,6 +825,9 @@ fn test_format() {
                     TimeScale::TDB => format!("{epoch:e}"),
                     TimeScale::TT => format!("{epoch:X}"),
                     TimeScale::UTC => format!("{epoch}"),
+                    TimeScale::GPST => format!("{epoch}"),
+                    TimeScale::GST => format!("{epoch}"),
+                    TimeScale::BDT => format!("{epoch}"),
                 }
             );
 

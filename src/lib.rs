@@ -61,7 +61,21 @@ pub const SECONDS_GPS_TAI_OFFSET_I64: i64 =
 /// `DAYS_GPS_TAI_OFFSET` is the number of days from the TAI epoch to the GPS
 /// epoch (UTC midnight of January 6th 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)
 pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
-
+/// `SECONDS_GST_TAI_OFFSET` is the number of seconds from the TAI epoch to the
+/// GST epoch (UTC midnight - 13 seconds of Sunday August 22d 1999; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)
+pub const SECONDS_GST_TAI_OFFSET: f64 = 99.0 * SECONDS_PER_YEAR + 21.0 * SECONDS_PER_DAY - 13.0;
+pub const SECONDS_GST_TAI_OFFSET_I64: i64 =
+    99 * SECONDS_PER_YEAR_I64 + 21 * SECONDS_PER_DAY_I64 - 13;
+/// `DAYS_GST_TAI_OFFSET` is the number of days from the TAI epoch to the GST
+/// epoch (UTC midnight - 13 seconds of Sunday August 22d 1999; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)
+pub const DAYS_GST_TAI_OFFSET: f64 = SECONDS_GST_TAI_OFFSET / SECONDS_PER_DAY;
+/// `SECONDS_BDT_TAI_OFFSET` is the number of seconds from the TAI epoch to the
+/// BDT epoch (UTC midnight January 1st 2006; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)
+pub const SECONDS_BDT_TAI_OFFSET: f64 = 106.0 * SECONDS_PER_YEAR;
+pub const SECONDS_BDT_TAI_OFFSET_I64: i64 = 106 * SECONDS_PER_YEAR_I64;
+/// `DAYS_BDT_TAI_OFFSET` is the number of days from the TAI epoch to the BDT
+/// epoch (UTC midnight Jan 1st 2006; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)
+pub const DAYS_BDT_TAI_OFFSET: f64 = SECONDS_BDT_TAI_OFFSET / SECONDS_PER_DAY;
 /// The UNIX reference epoch of 1970-01-01 in TAI duration, accounting only for IERS leap seconds.
 pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
@@ -193,7 +207,7 @@ fn test_ts() {
         let ts = TimeScale::from(ts_u8);
         let ts_u8_back: u8 = ts.into();
         // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
-        if ts_u8 < 5 {
+        if ts_u8 < 8 {
             assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
         } else {
             assert_eq!(ts, TimeScale::TAI);
