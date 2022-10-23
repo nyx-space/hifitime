@@ -356,7 +356,7 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the provided duration since 1980 January 6 13 seconds prior midnight 
     pub fn from_gst_duration(duration: Duration) -> Self {
-        let mut e = Self::from_tai_duration(duration) + Unit::Second + SECONDS_GST_TAI_OFFSET;
+        let mut e = Self::from_tai_duration(duration) + Unit::Second * SECONDS_GST_TAI_OFFSET;
         e.time_scale = TimeScale::GPST;
         e
     }
@@ -364,7 +364,7 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the provided duration since January 1st midnight
     pub fn from_bdt_duration(duration: Duration) -> Self {
-        let mut e = Self::from_tai_duration(duration) + Unit::Second + SECONDS_BDT_TAI_OFFSET;
+        let mut e = Self::from_tai_duration(duration) + Unit::Second * SECONDS_BDT_TAI_OFFSET;
         e.time_scale = TimeScale::BDT;
         e
     }
@@ -543,22 +543,24 @@ impl Epoch {
     
     #[must_use]
     /// Initialize an Epoch from the number of seconds since the GST Time Epoch,
-    /// defined as 13 seconds before UTC midnight on Sunday 22nd 1999 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    /// defined as 13 seconds before UTC midnight on Sunday 22nd 1999 
+    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_gst_seconds(seconds: f64) -> Self {
         Self::from_tai_seconds(seconds) + Unit::Second * SECONDS_GPS_TAI_OFFSET
     }
     
     #[must_use]
     /// Initialize an Epoch from the number of days since the GST Time Epoch,
-    /// defined as 13 seconds before UTC midnight on Sunday 22nd 1999 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    /// defined as 13 seconds before UTC midnight on Sunday 22nd 1999 
+    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_gst_days(days: f64) -> Self {
         Self::from_tai_days(days) + Unit::Day * DAYS_GST_TAI_OFFSET
     }
 
     #[must_use]
     /// Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
-    /// defined as 13 seconds before UTC midnight on Sunday 22nd 1999 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
-    /// This may be useful for time keeping devices that use GST as a time source.
+    /// defined as 13 seconds before UTC midnight on Sunday 22nd 1999 
+    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_gst_nanoseconds(nanoseconds: u64) -> Self {
         let duration = Duration::from_parts(0, nanoseconds) + Unit::Second * SECONDS_GST_TAI_OFFSET;
         Self {
@@ -569,21 +571,21 @@ impl Epoch {
 
     #[must_use]
     /// Initialize an Epoch from the number of seconds since the BDT Time Epoch,
-    /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_bdt_seconds(seconds: f64) -> Self {
         Self::from_tai_seconds(seconds) + Unit::Second * SECONDS_BDT_TAI_OFFSET
     }
     
     #[must_use]
     /// Initialize an Epoch from the number of days since the BDT Time Epoch,
-    /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_bdt_days(days: f64) -> Self {
         Self::from_tai_days(days) + Unit::Day * DAYS_BDT_TAI_OFFSET
     }
 
     #[must_use]
     /// Initialize an Epoch from the number of nanoseconds since the BDT Time Epoch,
-    /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use BDT as a time source.
     pub fn from_bdt_nanoseconds(nanoseconds: u64) -> Self {
         let duration = Duration::from_parts(0, nanoseconds) + Unit::Second * SECONDS_BDT_TAI_OFFSET;
