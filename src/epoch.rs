@@ -278,10 +278,16 @@ impl Epoch {
             TimeScale::TT => Self::from_tt_duration(new_duration),
             TimeScale::ET => Self::from_et_duration(new_duration),
             TimeScale::TDB => Self::from_tdb_duration(new_duration),
-            TimeScale::UTC => Self::from_utc_duration(new_duration),
-            TimeScale::GPST => Self::from_gpst_duration(new_duration),
-            TimeScale::GST => Self::from_gst_duration(new_duration),
-            TimeScale::BDT => Self::from_bdt_duration(new_duration),
+            ts => {
+                // epoch is always referenced to TAI J1900    
+                let mut e = Self::from_tai_duration(new_duration);
+                if ts.uses_leap() {
+                    e.duration_since_j1900_tai += e.leap_seconds(true)
+                        .unwrap_or(0.0) * Unit::Second;
+                }
+                e.time_scale = ts;
+                e
+            },
         }
     }
 
@@ -323,14 +329,7 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
     pub fn from_utc_duration(duration: Duration) -> Self {
-        let mut e = Self::from_tai_duration(duration);
-        // Compute the TAI to UTC offset at this time.
-        // We have the time in TAI. But we were given UTC.
-        // Hence, we need to _add_ the leap seconds to get the actual TAI time.
-        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.duration_since_j1900_tai += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
-        e.time_scale = TimeScale::UTC;
-        e
+        Self::from_duration(duration, TimeScale::UTC)
     }
 
     #[must_use]
@@ -348,25 +347,19 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the provided duration since 1980 January 6 at midnight 
     pub fn from_gpst_duration(duration: Duration) -> Self {
-        let mut e = Self::from_tai_duration(duration) + Unit::Second * SECONDS_GPS_TAI_OFFSET;
-        e.time_scale = TimeScale::GPST;
-        e
+        Self::from_duration(duration, TimeScale::GPST)
     }
     
     #[must_use]
     /// Initialize an Epoch from the provided duration since 1980 January 6 13 seconds prior midnight 
     pub fn from_gst_duration(duration: Duration) -> Self {
-        let mut e = Self::from_tai_duration(duration) + Unit::Second * SECONDS_GST_TAI_OFFSET;
-        e.time_scale = TimeScale::GPST;
-        e
+        Self::from_duration(duration, TimeScale::GST)
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided duration since January 1st midnight
     pub fn from_bdt_duration(duration: Duration) -> Self {
-        let mut e = Self::from_tai_duration(duration) + Unit::Second * SECONDS_BDT_TAI_OFFSET;
-        e.time_scale = TimeScale::BDT;
-        e
+        Self::from_duration(duration, TimeScale::BDT)
     }
 
     #[must_use]
@@ -377,14 +370,32 @@ impl Epoch {
         );
         Self::from_tai_duration((days - J1900_OFFSET) * Unit::Day)
     }
+    
+    fn from_mjd_ts(days: f64, ts: TimeScale) -> Self {
+        // always refer to TAI/mjd
+        let mut e = Self::from_mjd_tai(days);
+        if ts.uses_leap() {
+            e.duration_since_j1900_tai += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
+        }
+        e.time_scale = ts;
+        e
+    }
 
     #[must_use]
     pub fn from_mjd_utc(days: f64) -> Self {
-        let mut e = Self::from_mjd_tai(days);
-        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.duration_since_j1900_tai += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
-        e.time_scale = TimeScale::UTC;
-        e
+        Self::from_mjd_ts(days, TimeScale::UTC)
+    }
+    #[must_use]
+    pub fn from_mjd_gpst(days: f64) -> Self {
+        Self::from_mjd_ts(days, TimeScale::GPST)
+    }
+    #[must_use]
+    pub fn from_mjd_gst(days: f64) -> Self {
+        Self::from_mjd_ts(days, TimeScale::GST)
+    }
+    #[must_use]
+    pub fn from_mjd_bdt(days: f64) -> Self {
+        Self::from_mjd_ts(days, TimeScale::BDT)
     }
 
     #[must_use]
@@ -396,13 +407,31 @@ impl Epoch {
         Self::from_tai_duration((days - J1900_OFFSET - MJD_OFFSET) * Unit::Day)
     }
 
+    fn from_jde_ts(days: f64, ts: TimeScale) -> Self {
+        // always refer to TAI/jde
+        let mut e = Self::from_jde_tai(days);
+        if ts.uses_leap() {
+            e.duration_since_j1900_tai += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
+        }
+        e.time_scale = ts;
+        e
+    }
+
     #[must_use]
     pub fn from_jde_utc(days: f64) -> Self {
-        let mut e = Self::from_jde_tai(days);
-        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.duration_since_j1900_tai += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
-        e.time_scale = TimeScale::UTC;
-        e
+        Self::from_jde_ts(days, TimeScale::UTC)
+    }
+    #[must_use]
+    pub fn from_jde_gpst(days: f64) -> Self {
+        Self::from_jde_ts(days, TimeScale::GPST)
+    }
+    #[must_use]
+    pub fn from_jde_gst(days: f64) -> Self {
+        Self::from_jde_ts(days, TimeScale::GST)
+    }
+    #[must_use]
+    pub fn from_jde_bdt(days: f64) -> Self {
+        Self::from_jde_ts(days, TimeScale::BDT)
     }
 
     #[must_use]

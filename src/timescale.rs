@@ -38,11 +38,22 @@ pub enum TimeScale {
 }
 
 impl TimeScale {
+    /// Maximal value when casting to unsigned integer.
+    /// Increment when introducing new timescales.
+    pub const MAX_U8: u8 = 7;
+
     pub(crate) const fn formatted_len(&self) -> usize {
         match &self {
-            TimeScale::GPST => 4,
-            TimeScale::TAI | TimeScale::TDB | TimeScale::UTC | TimeScale::GST | TimeScale::BDT => 3,
-            TimeScale::ET | TimeScale::TT => 2,
+            Self::GPST => 4,
+            Self::TAI | Self::TDB | Self::UTC | Self::GST | Self::BDT => 3,
+            Self::ET | Self::TT => 2,
+        }
+    }
+
+    pub(crate) const fn uses_leap(&self) -> bool {
+        match self {
+            Self::UTC => true,
+            _ => false,
         }
     }
 }

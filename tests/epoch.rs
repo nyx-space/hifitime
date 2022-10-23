@@ -210,6 +210,26 @@ fn utc_tai() {
 }
 
 #[test]
+fn gnss_epochs() {
+    let ref_gps = Epoch::from_gregorian_utc_at_midnight(1980, 01, 06);
+    let ref_bds = Epoch::from_gregorian_utc_at_midnight(2006, 01, 01);
+    let ref_gal = Epoch::from_gregorian_utc_at_midnight(1999, 07, 22) - 13.0 * Unit::Second;
+    
+    // Test 1sec into GNSS timescales 
+    let gnss = Epoch::from_gpst_seconds(1.0);
+    assert_eq!(gnss, ref_gps + 1.0 * Unit::Second);
+    let gnss = Epoch::from_bdt_seconds(1.0);
+    assert_eq!(gnss, ref_bds + 1.0 * Unit::Second);
+    //let gnss = Epoch::from_gst_seconds(1.0);
+    //assert_eq!(gnss, ref_gal + 1.0 * Unit::Second);
+    
+    // Test 1+1/2 day into GNSS timescales
+    let gnss = Epoch::from_gpst_days(1.5);
+    assert_eq!(gnss, ref_gps + 1.5 * Unit::Day);
+
+}
+
+#[test]
 fn julian_epoch() {
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=1900-01-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=1900-01-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
