@@ -2086,13 +2086,10 @@ impl Epoch {
             TimeScale::TAI => {
                 Self::from_tai_duration(self.duration_since_j1900_tai.floor(duration))
             }
-            TimeScale::UTC => Self::from_utc_duration(self.to_utc_duration().floor(duration)),
             TimeScale::ET => Self::from_et_duration(self.to_et_duration().floor(duration)),
             TimeScale::TDB => Self::from_tdb_duration(self.to_tdb_duration().floor(duration)),
             TimeScale::TT => Self::from_tt_duration(self.to_tt_duration().floor(duration)),
-            TimeScale::GPST => Self::from_gpst_duration(self.to_gpst_duration().floor(duration)),
-            TimeScale::GST => Self::from_gst_duration(self.to_gst_duration().floor(duration)),
-            TimeScale::BDT => Self::from_bdt_duration(self.to_bdt_duration().floor(duration)),
+            ts => Self::from_duration(self.to_duration().floor(duration), ts),
         }
     }
 
@@ -2118,13 +2115,10 @@ impl Epoch {
     pub fn ceil(&self, duration: Duration) -> Self {
         match self.time_scale {
             TimeScale::TAI => Self::from_tai_duration(self.duration_since_j1900_tai.ceil(duration)),
-            TimeScale::UTC => Self::from_utc_duration(self.to_utc_duration().ceil(duration)),
             TimeScale::ET => Self::from_et_duration(self.to_et_duration().ceil(duration)),
             TimeScale::TDB => Self::from_tdb_duration(self.to_tdb_duration().ceil(duration)),
             TimeScale::TT => Self::from_tt_duration(self.to_tt_duration().ceil(duration)),
-            TimeScale::GPST => Self::from_gpst_duration(self.to_gpst_duration().ceil(duration)),
-            TimeScale::GST => Self::from_gst_duration(self.to_gst_duration().ceil(duration)),
-            TimeScale::BDT => Self::from_bdt_duration(self.to_bdt_duration().ceil(duration)),
+            ts => Self::from_duration(self.to_duration().ceil(duration), ts),
         }
     }
 
@@ -2145,13 +2139,10 @@ impl Epoch {
             TimeScale::TAI => {
                 Self::from_tai_duration(self.duration_since_j1900_tai.round(duration))
             }
-            TimeScale::UTC => Self::from_utc_duration(self.to_utc_duration().round(duration)),
             TimeScale::ET => Self::from_et_duration(self.to_et_duration().round(duration)),
             TimeScale::TDB => Self::from_tdb_duration(self.to_tdb_duration().round(duration)),
             TimeScale::TT => Self::from_tt_duration(self.to_tt_duration().round(duration)),
-            TimeScale::GPST => Self::from_gpst_duration(self.to_gpst_duration().round(duration)),
-            TimeScale::GST => Self::from_gst_duration(self.to_gst_duration().round(duration)),
-            TimeScale::BDT => Self::from_bdt_duration(self.to_bdt_duration().round(duration)),
+            ts => Self::from_duration(self.to_duration().round(duration), ts),
         }
     }
 
