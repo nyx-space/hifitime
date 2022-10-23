@@ -1313,7 +1313,7 @@ impl Epoch {
     #[staticmethod]
     /// Initialize an Epoch from the number of seconds since the Galileo Time Epoch,
     /// defined as 13 seconds prior UTC midnight August 22nd 1999 
-    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     fn init_from_gst_seconds(seconds: f64) -> Self {
         Self::from_gst_seconds(seconds)
     }
@@ -1322,7 +1322,7 @@ impl Epoch {
     #[staticmethod]
     /// Initialize an Epoch from the number of days since the Galileo Time Epoch,
     /// defined as 13 seconds prior UTC midnight August 22nd 1999 
-    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     fn init_from_gst_days(days: f64) -> Self {
         Self::from_gst_days(days)
     }
@@ -1331,10 +1331,35 @@ impl Epoch {
     #[staticmethod]
     /// Initialize an Epoch from the number of nanoseconds since the Galileo Time Epoch,
     /// defined as 13 seconds prior UTC midnight August 22nd 1999 
-    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use GST as a time source.
     fn init_from_gst_nanoseconds(nanoseconds: u64) -> Self {
         Self::from_gst_nanoseconds(nanoseconds)
+    }
+    
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the number of seconds since the BeiDou Time Epoch,
+    /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
+    fn init_from_bdt_seconds(seconds: f64) -> Self {
+        Self::from_bdt_seconds(seconds)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the number of days since the BeiDou Time Epoch,
+    /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
+    fn init_from_bdt_days(days: f64) -> Self {
+        Self::from_bdt_days(days)
+    }
+
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    /// Initialize an Epoch from the number of days since the BeiDou Time Epoch,
+    /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
+    /// This may be useful for time keeping devices that use BDT as a time source.
+    fn init_from_bdt_nanoseconds(nanoseconds: u64) -> Self {
+        Self::from_bdt_nanoseconds(nanoseconds)
     }
 
     #[cfg(feature = "python")]
