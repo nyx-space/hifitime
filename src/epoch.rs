@@ -11,11 +11,9 @@
 use crate::duration::{Duration, Unit};
 use crate::parser::Token;
 use crate::{
-    Errors, TimeScale, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR_NLD, ET_EPOCH_S, J1900_OFFSET,
+    Errors, TimeScale, DAYS_PER_YEAR_NLD, ET_EPOCH_S, J1900_OFFSET,
     J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
-    NANOSECONDS_PER_SECOND_U32, SECONDS_GPS_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET_I64, UNIX_REF_EPOCH,
-    SECONDS_GST_TAI_OFFSET, SECONDS_GST_TAI_OFFSET_I64, DAYS_GST_TAI_OFFSET,
-    SECONDS_BDT_TAI_OFFSET, SECONDS_BDT_TAI_OFFSET_I64, DAYS_BDT_TAI_OFFSET,
+    NANOSECONDS_PER_SECOND_U32, UNIX_REF_EPOCH,
 };
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
@@ -285,6 +283,8 @@ impl Epoch {
                     e.duration_since_j1900_tai += e.leap_seconds(true)
                         .unwrap_or(0.0) * Unit::Second;
                 }
+                let ts_offset = ts.tai_j1900_offset_seconds_i64();
+                e.duration_since_j1900_tai += Duration::from_f64(ts_offset as f64, Unit::Second);
                 e.time_scale = ts;
                 e
             },
@@ -548,14 +548,14 @@ impl Epoch {
     /// Initialize an Epoch from the number of seconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn from_gpst_seconds(seconds: f64) -> Self {
-        Self::from_tai_seconds(seconds) + Unit::Second * SECONDS_GPS_TAI_OFFSET
+        Self::from_duration(Duration::from_f64(seconds, Unit::Second), TimeScale::GPST)
     }
     
     #[must_use]
     /// Initialize an Epoch from the number of days since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn from_gpst_days(days: f64) -> Self {
-        Self::from_tai_days(days) + Unit::Day * DAYS_GPS_TAI_OFFSET
+        Self::from_duration(Duration::from_f64(days, Unit::Day), TimeScale::GPST)
     }
 
     #[must_use]
@@ -563,11 +563,7 @@ impl Epoch {
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use GPS as a time source.
     pub fn from_gpst_nanoseconds(nanoseconds: u64) -> Self {
-        let duration = Duration::from_parts(0, nanoseconds) + Unit::Second * SECONDS_GPS_TAI_OFFSET;
-        Self {
-            duration_since_j1900_tai: duration,
-            time_scale: TimeScale::GPST,
-        }
+        Self::from_duration(Duration::from_f64(nanoseconds as f64, Unit::Nanosecond), TimeScale::GPST)
     }
     
     #[must_use]
@@ -575,7 +571,7 @@ impl Epoch {
     /// defined as 13 seconds before UTC midnight on Sunday 22nd 1999 
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_gst_seconds(seconds: f64) -> Self {
-        Self::from_tai_seconds(seconds) + Unit::Second * SECONDS_GPS_TAI_OFFSET
+        Self::from_duration(Duration::from_f64(seconds, Unit::Second), TimeScale::GST)
     }
     
     #[must_use]
@@ -583,7 +579,7 @@ impl Epoch {
     /// defined as 13 seconds before UTC midnight on Sunday 22nd 1999 
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_gst_days(days: f64) -> Self {
-        Self::from_tai_days(days) + Unit::Day * DAYS_GST_TAI_OFFSET
+        Self::from_duration(Duration::from_f64(days, Unit::Nanosecond), TimeScale::GST)
     }
 
     #[must_use]
@@ -591,25 +587,21 @@ impl Epoch {
     /// defined as 13 seconds before UTC midnight on Sunday 22nd 1999 
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_gst_nanoseconds(nanoseconds: u64) -> Self {
-        let duration = Duration::from_parts(0, nanoseconds) + Unit::Second * SECONDS_GST_TAI_OFFSET;
-        Self {
-            duration_since_j1900_tai: duration,
-            time_scale: TimeScale::GST,
-        }
+        Self::from_duration(Duration::from_f64(nanoseconds as f64, Unit::Nanosecond), TimeScale::GST)
     }
 
     #[must_use]
     /// Initialize an Epoch from the number of seconds since the BDT Time Epoch,
     /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_bdt_seconds(seconds: f64) -> Self {
-        Self::from_tai_seconds(seconds) + Unit::Second * SECONDS_BDT_TAI_OFFSET
+        Self::from_duration(Duration::from_f64(seconds, Unit::Second), TimeScale::BDT)
     }
     
     #[must_use]
     /// Initialize an Epoch from the number of days since the BDT Time Epoch,
     /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_bdt_days(days: f64) -> Self {
-        Self::from_tai_days(days) + Unit::Day * DAYS_BDT_TAI_OFFSET
+        Self::from_duration(Duration::from_f64(days, Unit::Day), TimeScale::BDT)
     }
 
     #[must_use]
@@ -617,11 +609,7 @@ impl Epoch {
     /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use BDT as a time source.
     pub fn from_bdt_nanoseconds(nanoseconds: u64) -> Self {
-        let duration = Duration::from_parts(0, nanoseconds) + Unit::Second * SECONDS_BDT_TAI_OFFSET;
-        Self {
-            duration_since_j1900_tai: duration,
-            time_scale: TimeScale::BDT,
-        }
+        Self::from_duration(Duration::from_f64(nanoseconds as f64, Unit::Nanosecond), TimeScale::BDT)
     }
 
     #[must_use]
@@ -1579,19 +1567,35 @@ impl Epoch {
         self.to_duration_in_time_scale(self.time_scale)
     }
 
+    #[must_use]
     /// Returns this epoch with respect to the provided time scale.
     /// This is needed to correctly perform duration conversions in dynamical time scales (e.g. TDB).
-    #[must_use]
     pub fn to_duration_in_time_scale(&self, time_scale: TimeScale) -> Duration {
         match time_scale {
             TimeScale::ET => self.to_et_duration(),
             TimeScale::TAI => self.duration_since_j1900_tai,
             TimeScale::TT => self.to_tt_duration(),
             TimeScale::TDB => self.to_tdb_duration(),
-            TimeScale::UTC => self.to_utc_duration(),
-            TimeScale::GPST => self.to_gpst_duration(),
-            TimeScale::GST => self.to_gst_duration(),
-            TimeScale::BDT => self.to_bdt_duration(),
+            ts => self.to_ts_duration(ts),
+        }
+    }
+
+    fn to_ts_duration(&self, ts: TimeScale) -> Duration {
+        let mut duration = self.duration_since_j1900_tai;
+        if ts.uses_leap() {
+            duration -= self.leap_seconds(true)
+                .unwrap_or(0.0) * Unit::Second;
+        }
+        duration -= ts.tai_j1900_offset_seconds_i64() * Unit::Second;
+        duration
+    }
+
+    fn to_ts_nanoseconds(&self, ts: TimeScale) -> Result<u64, Errors> {
+        let (centuries, nanoseconds) = self.to_ts_duration(ts).to_parts();
+        if centuries != 0 {
+            Err(Errors::Overflow)
+        } else {
+            Ok(nanoseconds)
         }
     }
 
@@ -1609,10 +1613,7 @@ impl Epoch {
             TimeScale::TAI => self.duration_since_j1900_tai,
             TimeScale::TT => self.to_tt_duration(),
             TimeScale::TDB => self.to_tdb_duration_since_j1900(),
-            TimeScale::UTC => self.to_utc_duration(),
-            TimeScale::GPST => self.to_gpst_duration(),
-            TimeScale::GST => self.to_gst_duration(),
-            TimeScale::BDT => self.to_bdt_duration(),
+            ts => self.to_ts_duration(ts),
         }
     }
 
@@ -1670,8 +1671,7 @@ impl Epoch {
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in UTC
     pub fn to_utc_duration(&self) -> Duration {
-        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        self.duration_since_j1900_tai - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second
+        self.to_ts_duration(TimeScale::UTC)
     }
 
     #[must_use]
@@ -1823,28 +1823,21 @@ impl Epoch {
 
     #[must_use]
     pub fn to_gpst_duration(&self) -> Duration {
-        self.to_tai_duration() - Unit::Second * SECONDS_GPS_TAI_OFFSET_I64
+        self.to_ts_duration(TimeScale::GPST)
     }
-
     #[must_use]
     pub fn to_gst_duration(&self) -> Duration {
-        self.to_tai_duration() - Unit::Second * SECONDS_GST_TAI_OFFSET_I64
+        self.to_ts_duration(TimeScale::GST)
     }
-    
     #[must_use]
     pub fn to_bdt_duration(&self) -> Duration {
-        self.to_tai_duration() - Unit::Second * SECONDS_BDT_TAI_OFFSET_I64
+        self.to_ts_duration(TimeScale::BDT)
     }
 
     /// Returns nanoseconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// NOTE: This function will return an error if the centuries past GPST time are not zero.
     pub fn to_gpst_nanoseconds(&self) -> Result<u64, Errors> {
-        let (centuries, nanoseconds) = self.to_gpst_duration().to_parts();
-        if centuries != 0 {
-            Err(Errors::Overflow)
-        } else {
-            Ok(nanoseconds)
-        }
+        self.to_ts_nanoseconds(TimeScale::GPST)
     }
 
     #[must_use]
@@ -2406,7 +2399,7 @@ impl FromStr for Epoch {
                 },
                 "MJD" => match ts {
                     TimeScale::TAI => Ok(Self::from_mjd_tai(value)),
-                    TimeScale::UTC => Ok(Self::from_mjd_utc(value)),
+                    TimeScale::UTC | TimeScale::GPST | TimeScale::BDT | TimeScale::GST => Ok(Self::from_mjd_ts(value, ts)),
                     _ => Err(Errors::ParseError(ParsingErrors::UnsupportedTimeSystem)),
                 },
                 "SEC" => match ts {
@@ -2414,10 +2407,10 @@ impl FromStr for Epoch {
                     TimeScale::ET => Ok(Self::from_et_seconds(value)),
                     TimeScale::TDB => Ok(Self::from_tdb_seconds(value)),
                     TimeScale::TT => Ok(Self::from_tt_seconds(value)),
-                    TimeScale::UTC => Ok(Self::from_utc_seconds(value)),
-                    TimeScale::GPST => Ok(Self::from_gpst_seconds(value)),
-                    TimeScale::GST => Ok(Self::from_gst_seconds(value)),
-                    TimeScale::BDT => Ok(Self::from_bdt_seconds(value)),
+                    ts => {
+                        let secs = Duration::from_f64(value, Unit::Second);
+                        Ok(Self::from_duration(secs, ts))
+                    },
                 },
                 _ => Err(Errors::ParseError(ParsingErrors::UnknownFormat)),
             }

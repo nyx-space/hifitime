@@ -13,7 +13,10 @@ use pyo3::prelude::*;
 
 use core::str::FromStr;
 
-use crate::{Errors, ParsingErrors};
+use crate::{
+    Errors, ParsingErrors,
+    SECONDS_PER_YEAR_I64, SECONDS_PER_DAY_I64,    
+};
 
 /// Enum of the different time systems available
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -41,7 +44,8 @@ impl TimeScale {
     /// Maximal value when casting to unsigned integer.
     /// Increment when introducing new timescales.
     pub const MAX_U8: u8 = 7;
-
+    pub const SECONDS_GPS_TAI_OFFSET_I64: i64 = 
+        80 * SECONDS_PER_YEAR_I64 + 4 * SECONDS_PER_DAY_I64 + 19;
     pub(crate) const fn formatted_len(&self) -> usize {
         match &self {
             Self::GPST => 4,
@@ -54,6 +58,15 @@ impl TimeScale {
         match self {
             Self::UTC => true,
             _ => false,
+        }
+    }
+
+    /// (Positive) offset in seconds, to apply in reference to TAI J1900
+    /// for this timescale
+    pub(crate) const fn tai_j1900_offset_seconds_i64(&self) -> i64 {
+        match self {
+            Self::GPST => Self::SECONDS_GPS_TAI_OFFSET_I64,
+            _ => 0,
         }
     }
 }

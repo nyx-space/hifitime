@@ -53,29 +53,6 @@ pub const SECONDS_PER_YEAR_I64: i64 = 31_557_600;
 pub const SECONDS_PER_TROPICAL_YEAR: f64 = 31_556_925.974_7;
 /// `SECONDS_PER_SIDERAL_YEAR` corresponds to the number of seconds per sideral year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
 pub const SECONDS_PER_SIDERAL_YEAR: f64 = 31_558_150.0;
-/// `SECONDS_GPS_TAI_OFFSET` is the number of seconds from the TAI epoch to the
-/// GPS epoch (UTC midnight of January 6th 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)
-pub const SECONDS_GPS_TAI_OFFSET: f64 = 80.0 * SECONDS_PER_YEAR + 4.0 * SECONDS_PER_DAY + 19.0;
-pub const SECONDS_GPS_TAI_OFFSET_I64: i64 =
-    80 * SECONDS_PER_YEAR_I64 + 4 * SECONDS_PER_DAY_I64 + 19;
-/// `DAYS_GPS_TAI_OFFSET` is the number of days from the TAI epoch to the GPS
-/// epoch (UTC midnight of January 6th 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)
-pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
-/// `SECONDS_GST_TAI_OFFSET` is the number of seconds from the TAI epoch to the
-/// GST epoch (UTC midnight - 13 seconds of Sunday August 22d 1999; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)
-pub const SECONDS_GST_TAI_OFFSET: f64 = 99.0 * SECONDS_PER_DAY - 13.0; // missing 22nd of august offset
-pub const SECONDS_GST_TAI_OFFSET_I64: i64 =
-    99 * SECONDS_PER_YEAR_I64 - 13; // missing 22nd of august offset
-/// `DAYS_GST_TAI_OFFSET` is the number of days from the TAI epoch to the GST
-/// epoch (UTC midnight - 13 seconds of Sunday August 22d 1999; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)
-pub const DAYS_GST_TAI_OFFSET: f64 = SECONDS_GST_TAI_OFFSET / SECONDS_PER_DAY;
-/// `SECONDS_BDT_TAI_OFFSET` is the number of seconds from the TAI epoch to the
-/// BDT epoch (UTC midnight January 1st 2006; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
-pub const SECONDS_BDT_TAI_OFFSET: f64 = 106.0 * SECONDS_PER_YEAR;
-pub const SECONDS_BDT_TAI_OFFSET_I64: i64 = 106 * SECONDS_PER_YEAR_I64;
-/// `DAYS_BDT_TAI_OFFSET` is the number of days from the TAI epoch to the BDT
-/// epoch (UTC midnight Jan 1st 2006; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
-pub const DAYS_BDT_TAI_OFFSET: f64 = SECONDS_BDT_TAI_OFFSET / SECONDS_PER_DAY;
 /// The UNIX reference epoch of 1970-01-01 in TAI duration, accounting only for IERS leap seconds.
 pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
