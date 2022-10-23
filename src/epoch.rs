@@ -711,10 +711,7 @@ impl Epoch {
             TimeScale::TT => Self::from_tt_duration(duration_wrt_1900),
             TimeScale::ET => Self::from_et_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
             TimeScale::TDB => Self::from_tdb_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
-            TimeScale::UTC => Self::from_utc_duration(duration_wrt_1900),
-            TimeScale::GPST => Self::from_gpst_duration(duration_wrt_1900),
-            TimeScale::GST => Self::from_gst_duration(duration_wrt_1900),
-            TimeScale::BDT => Self::from_bdt_duration(duration_wrt_1900),
+            ts => Self::from_duration(duration_wrt_1900, ts),
         })
     }
 
@@ -1625,10 +1622,7 @@ impl Epoch {
             TimeScale::TT => Self::from_tt_duration(new_duration),
             TimeScale::ET => Self::from_et_duration(new_duration),
             TimeScale::TDB => Self::from_tdb_duration(new_duration),
-            TimeScale::UTC => Self::from_utc_duration(new_duration),
-            TimeScale::GPST => Self::from_gpst_duration(new_duration),
-            TimeScale::GST => Self::from_gst_duration(new_duration),
-            TimeScale::BDT => Self::from_bdt_duration(new_duration),
+            ts => Self::from_duration(new_duration, ts),
         }
     }
 
