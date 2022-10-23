@@ -15,6 +15,7 @@ use core::str::FromStr;
 
 use crate::{
     Errors, ParsingErrors,
+    SECONDS_PER_YEAR, SECONDS_PER_DAY,    
     SECONDS_PER_YEAR_I64, SECONDS_PER_DAY_I64,    
 };
 
@@ -44,6 +45,9 @@ impl TimeScale {
     /// Maximal value when casting to unsigned integer.
     /// Increment when introducing new timescales.
     pub const MAX_U8: u8 = 7;
+    pub const SECONDS_GPS_TAI_OFFSET: f64 = 
+        80.0 * SECONDS_PER_YEAR + 4.0 * SECONDS_PER_DAY + 19.0;
+    pub const DAYS_GPS_TAI_OFFSET: f64 = Self::SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
     pub const SECONDS_GPS_TAI_OFFSET_I64: i64 = 
         80 * SECONDS_PER_YEAR_I64 + 4 * SECONDS_PER_DAY_I64 + 19;
     pub(crate) const fn formatted_len(&self) -> usize {
@@ -54,6 +58,7 @@ impl TimeScale {
         }
     }
 
+    /// Returns true if self takes Leap Seconds into account
     pub(crate) const fn uses_leap(&self) -> bool {
         match self {
             Self::UTC => true,

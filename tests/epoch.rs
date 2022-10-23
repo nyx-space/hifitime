@@ -207,25 +207,17 @@ fn utc_tai() {
         Epoch::from_gregorian_utc_at_midnight(1972, 1, 1),
         Epoch::from_utc_days(26297.0)
     );
-}
-
-#[test]
-fn gnss_epochs() {
-    let ref_gps = Epoch::from_gregorian_utc_at_midnight(1980, 01, 06);
-    let ref_bds = Epoch::from_gregorian_utc_at_midnight(2006, 01, 01);
-    let ref_gal = Epoch::from_gregorian_utc_at_midnight(1999, 07, 22) - 13.0 * Unit::Second;
     
-    // Test 1sec into GNSS timescales 
-    let gnss = Epoch::from_gpst_seconds(1.0);
-    assert_eq!(gnss, ref_gps + 1.0 * Unit::Second);
-    //let gnss = Epoch::from_bdt_seconds(1.0);
-    //assert_eq!(gnss, ref_bds + 1.0 * Unit::Second);
-    //let gnss = Epoch::from_gst_seconds(1.0);
-    //assert_eq!(gnss, ref_gal + 1.0 * Unit::Second);
-    
-    // Test 1+1/2 day into GNSS timescales
-    let gnss = Epoch::from_gpst_days(1.5);
-    assert_eq!(gnss, ref_gps + 1.5 * Unit::Day);
+    let now = Epoch::from_gregorian_tai_hms(2019, 8, 24, 3, 49, 9);
+    assert!(
+        now.to_tai_seconds() > now.to_utc_seconds(),
+        "TAI is not ahead of UTC"
+    );
+    assert!((now.to_tai_seconds() - now.to_utc_seconds() - 37.0).abs() < EPSILON);
+    assert!(
+        now.to_tai_seconds() > now.to_gpst_seconds(),
+        "TAI is not ahead of GPS Time"
+    );
 }
 
 #[test]
@@ -317,33 +309,35 @@ fn datetime_invalid_dates() {
     assert!(!is_gregorian_valid(2015, 6, 30, 23, 59, 61, 0));
 }
 
-/*
 #[test]
 fn gpst() {
+    let tai_offset = TimeScale::SECONDS_GPS_TAI_OFFSET;
+    let days_tai_offset = TimeScale::DAYS_GPS_TAI_OFFSET;
+    let ref_gps = Epoch::from_gregorian_utc_at_midnight(1980, 01, 06);
+    
+    // Test 1sec into GPS timescale
+    let gnss = Epoch::from_gpst_seconds(1.0);
+    assert_eq!(gnss, ref_gps + 1.0 * Unit::Second);
+    
+    // Test 1+1/2 day into GPS timescale
+    let gnss = Epoch::from_gpst_days(1.5);
+    assert_eq!(gnss, ref_gps + 1.5 * Unit::Day);
+
     let now = Epoch::from_gregorian_tai_hms(2019, 8, 24, 3, 49, 9);
-    assert!(
-        now.to_tai_seconds() > now.to_utc_seconds(),
-        "TAI is not ahead of UTC"
-    );
-    assert!((now.to_tai_seconds() - now.to_utc_seconds() - 37.0).abs() < EPSILON);
-    assert!(
-        now.to_tai_seconds() > now.to_gpst_seconds(),
-        "TAI is not ahead of GPS Time"
-    );
     assert_eq!(
         Epoch::from_gpst_nanoseconds(now.to_gpst_nanoseconds().unwrap()),
         now,
-        "To/from GPST nanoseconds failed"
+        "To/from (recip.) GPST nanoseconds failed"
     );
     assert!(
-        (now.to_tai_seconds() - SECONDS_GPS_TAI_OFFSET - now.to_gpst_seconds()).abs() < EPSILON
+        (now.to_tai_seconds() - tai_offset - now.to_gpst_seconds()).abs() < EPSILON
     );
     assert!(
-        now.to_gpst_seconds() + SECONDS_GPS_TAI_OFFSET > now.to_utc_seconds(),
+        now.to_gpst_seconds() + tai_offset > now.to_utc_seconds(),
         "GPS Time is not ahead of UTC"
     );
 
-    let gps_epoch = Epoch::from_tai_seconds(SECONDS_GPS_TAI_OFFSET);
+    let gps_epoch = Epoch::from_tai_seconds(tai_offset);
     #[cfg(feature = "std")]
     {
         assert_eq!(
@@ -373,15 +367,15 @@ fn gpst() {
 
     let epoch = Epoch::from_gregorian_utc_at_midnight(1972, 1, 1);
     assert!(
-        (epoch.to_tai_seconds() - SECONDS_GPS_TAI_OFFSET - epoch.to_gpst_seconds()).abs() < EPSILON
+        (epoch.to_tai_seconds() - tai_offset - epoch.to_gpst_seconds()).abs() < EPSILON
     );
-    assert!((epoch.to_tai_days() - DAYS_GPS_TAI_OFFSET - epoch.to_gpst_days()).abs() < 1e-11);
+    assert!((epoch.to_tai_days() - days_tai_offset - epoch.to_gpst_days()).abs() < 1e-11);
 
     // 1 Jan 1980 is 5 days before the GPS epoch.
     let epoch = Epoch::from_gregorian_utc_at_midnight(1980, 1, 1);
     assert!((epoch.to_gpst_seconds() + 5.0 * SECONDS_PER_DAY).abs() < EPSILON);
     assert!((epoch.to_gpst_days() + 5.0).abs() < EPSILON);
-}*/
+}
 
 #[test]
 fn unix() {
