@@ -2,8 +2,10 @@
 extern crate core;
 
 use hifitime::{
-    is_gregorian_valid, Duration, Epoch, TimeScale, TimeUnits, Unit, 
-    J1900_OFFSET, J2000_OFFSET, MJD_OFFSET, SECONDS_PER_DAY,
+    is_gregorian_valid, Duration, Epoch, TimeScale, TimeUnits, Unit, DAYS_BDT_TAI_OFFSET,
+    DAYS_GPS_TAI_OFFSET, DAYS_GST_TAI_OFFSET, GPST_REF_EPOCH, J1900_OFFSET, J2000_OFFSET,
+    MJD_OFFSET, SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET,
+    SECONDS_PER_DAY,
 };
 
 #[cfg(feature = "std")]
@@ -207,7 +209,7 @@ fn utc_tai() {
         Epoch::from_gregorian_utc_at_midnight(1972, 1, 1),
         Epoch::from_utc_days(26297.0)
     );
-    
+
     let now = Epoch::from_gregorian_tai_hms(2019, 8, 24, 3, 49, 9);
     assert!(
         now.to_tai_seconds() > now.to_utc_seconds(),
@@ -311,14 +313,12 @@ fn datetime_invalid_dates() {
 
 #[test]
 fn gpst() {
-    let tai_offset = TimeScale::SECONDS_GPS_TAI_OFFSET;
-    let days_tai_offset = TimeScale::DAYS_GPS_TAI_OFFSET;
     let ref_gps = Epoch::from_gregorian_utc_at_midnight(1980, 01, 06);
-    
+
     // Test 1sec into GPS timescale
     let gnss = Epoch::from_gpst_seconds(1.0);
     assert_eq!(gnss, ref_gps + 1.0 * Unit::Second);
-    
+
     // Test 1+1/2 day into GPS timescale
     let gnss = Epoch::from_gpst_days(1.5);
     assert_eq!(gnss, ref_gps + 1.5 * Unit::Day);
@@ -330,18 +330,18 @@ fn gpst() {
         "To/from (recip.) GPST nanoseconds failed"
     );
     assert!(
-        (now.to_tai_seconds() - tai_offset - now.to_gpst_seconds()).abs() < EPSILON
+        (now.to_tai_seconds() - SECONDS_GPS_TAI_OFFSET - now.to_gpst_seconds()).abs() < EPSILON
     );
     assert!(
-        now.to_gpst_seconds() + tai_offset > now.to_utc_seconds(),
+        now.to_gpst_seconds() + SECONDS_GPS_TAI_OFFSET > now.to_utc_seconds(),
         "GPS Time is not ahead of UTC"
     );
 
-    let gps_epoch = Epoch::from_tai_seconds(tai_offset);
+    let gps_epoch = Epoch::from_tai_seconds(SECONDS_GPS_TAI_OFFSET);
     #[cfg(feature = "std")]
     {
         assert_eq!(
-            gps_epoch.to_gregorian_str(TimeScale::UTC),
+            GPST_REF_EPOCH.to_gregorian_str(TimeScale::UTC),
             "1980-01-06T00:00:00 UTC"
         );
         assert_eq!(
@@ -367,9 +367,9 @@ fn gpst() {
 
     let epoch = Epoch::from_gregorian_utc_at_midnight(1972, 1, 1);
     assert!(
-        (epoch.to_tai_seconds() - tai_offset - epoch.to_gpst_seconds()).abs() < EPSILON
+        (epoch.to_tai_seconds() - SECONDS_GPS_TAI_OFFSET - epoch.to_gpst_seconds()).abs() < EPSILON
     );
-    assert!((epoch.to_tai_days() - days_tai_offset - epoch.to_gpst_days()).abs() < 1e-11);
+    assert!((epoch.to_tai_days() - DAYS_GPS_TAI_OFFSET - epoch.to_gpst_days()).abs() < 1e-11);
 
     // 1 Jan 1980 is 5 days before the GPS epoch.
     let epoch = Epoch::from_gregorian_utc_at_midnight(1980, 1, 1);
@@ -379,8 +379,8 @@ fn gpst() {
 
 #[test]
 fn galileo_time_scale() {
-    let tai_offset = TimeScale::SECONDS_GST_TAI_OFFSET;
-    let days_tai_offset = TimeScale::DAYS_GST_TAI_OFFSET;
+    let tai_offset = SECONDS_GST_TAI_OFFSET;
+    let days_tai_offset = DAYS_GST_TAI_OFFSET;
     let now = Epoch::from_gregorian_tai_hms(2019, 8, 24, 3, 49, 9);
     let gst_nanos = now.to_gst_nanoseconds().unwrap();
     assert_eq!(
@@ -388,9 +388,7 @@ fn galileo_time_scale() {
         now,
         "To/from (recip.) GPST nanoseconds failed"
     );
-    assert!(
-        (now.to_tai_seconds() - tai_offset - now.to_gst_seconds()).abs() < EPSILON
-    );
+    assert!((now.to_tai_seconds() - tai_offset - now.to_gst_seconds()).abs() < EPSILON);
     assert!(
         now.to_gst_seconds() + tai_offset > now.to_utc_seconds(),
         "GST Time is not ahead of UTC"
@@ -438,8 +436,8 @@ fn galileo_time_scale() {
 
 #[test]
 fn beidou_time_scale() {
-    let tai_offset = TimeScale::SECONDS_BDT_TAI_OFFSET;
-    let days_tai_offset = TimeScale::DAYS_BDT_TAI_OFFSET;
+    let tai_offset = SECONDS_BDT_TAI_OFFSET;
+    let days_tai_offset = DAYS_BDT_TAI_OFFSET;
     let now = Epoch::from_gregorian_tai_hms(2019, 8, 24, 3, 49, 9);
     let nanos = now.to_bdt_nanoseconds().unwrap();
     assert_eq!(
@@ -447,9 +445,7 @@ fn beidou_time_scale() {
         now,
         "To/from (recip.) BDT nanoseconds failed"
     );
-    assert!(
-        (now.to_tai_seconds() - tai_offset - now.to_bdt_seconds()).abs() < EPSILON
-    );
+    assert!((now.to_tai_seconds() - tai_offset - now.to_bdt_seconds()).abs() < EPSILON);
     assert!(
         now.to_bdt_seconds() + tai_offset > now.to_utc_seconds(),
         "BDT Time is not ahead of UTC"

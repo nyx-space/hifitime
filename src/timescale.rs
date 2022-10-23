@@ -13,11 +13,41 @@ use pyo3::prelude::*;
 
 use core::str::FromStr;
 
-use crate::{
-    Errors, ParsingErrors,
-    SECONDS_PER_YEAR, SECONDS_PER_DAY,    
-    SECONDS_PER_YEAR_I64, SECONDS_PER_DAY_I64,    
-};
+use crate::{Duration, Epoch, Errors, ParsingErrors, SECONDS_PER_DAY, SECONDS_PER_YEAR};
+
+/// GPS reference epoch is UTC midnight between 05 January and 06 January 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>.
+pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
+    centuries: 0,
+    nanoseconds: 2_524_953_619_000_000_000,
+});
+pub const SECONDS_GPS_TAI_OFFSET: f64 = 2_524_953_619.0;
+pub const SECONDS_GPS_TAI_OFFSET_I64: i64 = 2_524_953_619;
+pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
+
+/// GST (Galileo) reference epoch is 13 seconds before 1999 August 21 UTC at midnight.
+pub const GST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
+    centuries: 0,
+    nanoseconds: 3_144_182_387_000_000_000,
+});
+pub const SECONDS_GST_TAI_OFFSET: f64 = 3_144_182_387.0;
+pub const SECONDS_GST_TAI_OFFSET_I64: i64 = 3_144_182_387;
+pub const DAYS_GST_TAI_OFFSET: f64 = SECONDS_GST_TAI_OFFSET / SECONDS_PER_YEAR;
+
+/// BDT(BeiDou): 2005 Dec 31st Midnight
+/// BDT (BeiDou) reference epoch is 2005 December 31st UTC at midnight. **This time scale is synchronized with UTC.**
+pub const BDT_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
+    centuries: 1,
+    nanoseconds: 189_302_433_000_000_000,
+});
+pub const SECONDS_BDT_TAI_OFFSET: f64 = 3_345_062_433.0;
+pub const SECONDS_BDT_TAI_OFFSET_I64: i64 = 3_345_062_433;
+pub const DAYS_BDT_TAI_OFFSET: f64 = SECONDS_BDT_TAI_OFFSET / SECONDS_PER_YEAR;
+
+/// The UNIX reference epoch of 1970-01-01 in TAI duration, accounting only for IERS leap seconds.
+pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
+    centuries: 0,
+    nanoseconds: 2_208_988_800_000_000_000,
+});
 
 /// Enum of the different time systems available
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -35,42 +65,13 @@ pub enum TimeScale {
     UTC,
     /// GPST Time also applies to QZSS, IRNSS and GAL constellations
     GPST,
-    /// Galileo Time scale 
+    /// Galileo Time scale
     GST,
     /// BeiDou Time scale
     BDT,
 }
 
 impl TimeScale {
-    /// Maximal value when casting to unsigned integer.
-    /// Increment when introducing new timescales.
-    pub const MAX_U8: u8 = 7;
-    
-    /// GPS: 1980 Jan 5th Midnight,
-    /// |TAI-UTC| = +19 on that day
-    pub const SECONDS_GPS_TAI_OFFSET: f64 = 
-        80.0 * SECONDS_PER_YEAR + 4.0 * SECONDS_PER_DAY + 19.0;
-    pub const SECONDS_GPS_TAI_OFFSET_I64: i64 = 
-        80 * SECONDS_PER_YEAR_I64 + 4 * SECONDS_PER_DAY_I64 + 19;
-    pub const DAYS_GPS_TAI_OFFSET: f64 = Self::SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
-
-    /// GST(Galileo): 1999 August 21st Midnight 
-    /// |TAI-UTC| = +32 on that day, cf. https://en.wikipedia.org/wiki/Leap_second
-    pub const SECONDS_GST_TAI_OFFSET: f64 =
-        /* August 21st midnight: +233 days */
-        99.0 * SECONDS_PER_YEAR + 233.0 * SECONDS_PER_DAY + 32.0;
-    pub const SECONDS_GST_TAI_OFFSET_I64: i64 =
-        99 * SECONDS_PER_YEAR_I64 + 233 * SECONDS_PER_DAY_I64 + 32;
-    pub const DAYS_GST_TAI_OFFSET: f64 = Self::SECONDS_GST_TAI_OFFSET / SECONDS_PER_YEAR;
-    
-    /// BDT(BeiDou): 2005 Dec 31st Midnight
-    /// |TAI-UTC| = +33 on that day, cf. https://en.wikipedia.org/wiki/Leap_second
-    pub const SECONDS_BDT_TAI_OFFSET: f64 =
-        106.0 * SECONDS_PER_YEAR + 33.0;
-    pub const SECONDS_BDT_TAI_OFFSET_I64: i64 =
-        106 * SECONDS_PER_YEAR_I64 + 33;
-    pub const DAYS_BDT_TAI_OFFSET: f64 = Self::SECONDS_BDT_TAI_OFFSET / SECONDS_PER_YEAR;
-
     pub(crate) const fn formatted_len(&self) -> usize {
         match &self {
             Self::GPST => 4,
@@ -79,23 +80,9 @@ impl TimeScale {
         }
     }
 
-    /// Returns true if self takes Leap Seconds into account
-    pub(crate) const fn uses_leap(&self) -> bool {
-        match self {
-            Self::UTC => true,
-            _ => false,
-        }
-    }
-
-    /// (Positive) offset in seconds, to apply in reference to TAI J1900
-    /// for this timescale
-    pub(crate) const fn tai_j1900_offset_seconds_i64(&self) -> i64 {
-        match self {
-            Self::GST  => Self::SECONDS_GST_TAI_OFFSET_I64,
-            Self::BDT  => Self::SECONDS_BDT_TAI_OFFSET_I64,
-            Self::GPST => Self::SECONDS_GPS_TAI_OFFSET_I64,
-            _ => 0,
-        }
+    /// Returns true if self takes leap seconds into account
+    pub(crate) const fn uses_leap_seconds(&self) -> bool {
+        matches!(self, Self::UTC)
     }
 }
 

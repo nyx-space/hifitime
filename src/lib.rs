@@ -53,16 +53,11 @@ pub const SECONDS_PER_YEAR_I64: i64 = 31_557_600;
 pub const SECONDS_PER_TROPICAL_YEAR: f64 = 31_556_925.974_7;
 /// `SECONDS_PER_SIDERAL_YEAR` corresponds to the number of seconds per sideral year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
 pub const SECONDS_PER_SIDERAL_YEAR: f64 = 31_558_150.0;
-/// The UNIX reference epoch of 1970-01-01 in TAI duration, accounting only for IERS leap seconds.
-pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
-    centuries: 0,
-    nanoseconds: 2_208_988_800_000_000_000,
-});
 
-/// The duration between J2000 and J1900: one century **minus** twelve hours. J1900 starts at  _noon_ but J2000 is at midnight.
+/// The duration between J2000 and J1900: one century **minus** twelve hours. J1900 starts at _noon_ but J2000 is at midnight.
 pub const J2000_TO_J1900_DURATION: Duration = Duration {
     centuries: 0,
-    nanoseconds: 3155716800000000000,
+    nanoseconds: 3_155_716_800_000_000_000,
 };
 
 mod parser;
