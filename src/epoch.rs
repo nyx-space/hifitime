@@ -1219,24 +1219,28 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     #[staticmethod]
+    /// Initialize an Epoch from given MJD in TAI time scale
     fn init_from_mjd_tai(days: f64) -> Self {
         Self::from_mjd_tai(days)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
+    /// Initialize an Epoch from given MJD in UTC time scale
     fn init_from_mjd_utc(days: f64) -> Self {
         Self::from_mjd_utc(days)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
+    /// Initialize an Epoch from given JDE in TAI time scale
     fn init_from_jde_tai(days: f64) -> Self {
         Self::from_jde_tai(days)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
+    /// Initialize an Epoch from given JDE in UTC time scale
     fn init_from_jde_utc(days: f64) -> Self {
         Self::from_jde_utc(days)
     }
@@ -1264,6 +1268,7 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     #[staticmethod]
+    /// Initialize an Epoch from the Ephemeris Time duration past 2000 JAN 01 (J2000 reference) 
     fn init_from_et_duration(duration_since_j2000: Duration) -> Self {
         Self::from_et_duration(duration_since_j2000)
     }
@@ -1726,11 +1731,13 @@ impl Epoch {
     }
 
     #[must_use]
+    /// Returns the Julian Days from epoch 01 Jan -4713 12:00 (noon) in desired Duration::Unit
     pub fn to_jde_tai(&self, unit: Unit) -> f64 {
         self.to_jde_tai_duration().to_unit(unit)
     }
 
     #[must_use]
+    /// Returns the Julian Days from epoch 01 Jan -4713 12:00 (noon) as a Duration
     pub fn to_jde_tai_duration(&self) -> Duration {
         self.duration_since_j1900_tai + Unit::Day * J1900_OFFSET + Unit::Day * MJD_OFFSET
     }
@@ -1748,12 +1755,13 @@ impl Epoch {
     }
 
     #[must_use]
+    /// Returns the Julian days in UTC as a `Duration`
     pub fn to_jde_utc_duration(&self) -> Duration {
         self.to_utc_duration() + Unit::Day * (J1900_OFFSET + MJD_OFFSET)
     }
 
     #[must_use]
-    /// Returns the Julian seconds in UTC.
+    /// Returns the Julian Days in UTC seconds.
     pub fn to_jde_utc_seconds(&self) -> f64 {
         self.to_jde_utc_duration().to_seconds()
     }
@@ -1765,6 +1773,7 @@ impl Epoch {
     }
 
     #[must_use]
+    /// Returns `Duration` past TAI epoch in Terrestrial Time (TT).
     pub fn to_tt_duration(&self) -> Duration {
         self.duration_since_j1900_tai + Unit::Millisecond * TT_OFFSET_MS
     }
@@ -1816,18 +1825,11 @@ impl Epoch {
     }
 
     #[must_use]
+    /// Returns `Duration` past GPS time Epoch.
     pub fn to_gpst_duration(&self) -> Duration {
         self.to_ts_duration(TimeScale::GPST)
     }
-    #[must_use]
-    pub fn to_gst_duration(&self) -> Duration {
-        self.to_ts_duration(TimeScale::GST)
-    }
-    #[must_use]
-    pub fn to_bdt_duration(&self) -> Duration {
-        self.to_ts_duration(TimeScale::BDT)
-    }
-
+    
     /// Returns nanoseconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// NOTE: This function will return an error if the centuries past GPST time are not zero.
     pub fn to_gpst_nanoseconds(&self) -> Result<u64, Errors> {
@@ -1838,6 +1840,46 @@ impl Epoch {
     /// Returns days past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn to_gpst_days(&self) -> f64 {
         self.to_gpst_duration().to_unit(Unit::Day)
+    }
+    
+    #[must_use]
+    /// Returns `Duration` past GST (Galileo) time Epoch.
+    pub fn to_gst_duration(&self) -> Duration {
+        self.to_ts_duration(TimeScale::GST)
+    }
+    
+    #[must_use]
+    /// Returns days past GST (Galileo) Time Epoch, defined as 13 seconds prior midnight, August 22nd 1999 UTC
+    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
+    pub fn to_gst_days(&self) -> f64 {
+        self.to_gst_duration().to_unit(Unit::Day)
+    }
+    
+    /// Returns nanoseconds past GST (Galileo) Time Epoch, defined as 13 seconds prior midnight, August 22nd 1999 UTC,
+    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
+    /// NOTE: This function will return an error if the centuries past GST time are not zero.
+    pub fn to_gst_nanoseconds(&self) -> Result<u64, Errors> {
+        self.to_ts_nanoseconds(TimeScale::GST)
+    }
+    
+    #[must_use]
+    /// Returns `Duration` past BDT (BeiDou) time Epoch.
+    pub fn to_bdt_duration(&self) -> Duration {
+        self.to_ts_duration(TimeScale::BDT)
+    }
+
+    #[must_use]
+    /// Returns days past BDT (BeiDou) Time Epoch, defined as Jan 01 2006 UTC
+    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
+    pub fn to_bdt_days(&self) -> f64 {
+        self.to_bdt_duration().to_unit(Unit::Day)
+    }
+
+    /// Returns nanoseconds past BDT (BeiDou) Time Epoch, defined as Jan 01 2006 UTC
+    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
+    /// NOTE: This function will return an error if the centuries past GST time are not zero.
+    pub fn to_bdt_nanoseconds(&self) -> Result<u64, Errors> {
+        self.to_ts_nanoseconds(TimeScale::BDT)
     }
 
     #[allow(clippy::wrong_self_convention)]
