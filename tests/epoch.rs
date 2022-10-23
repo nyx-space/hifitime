@@ -378,6 +378,124 @@ fn gpst() {
 }
 
 #[test]
+fn galileo_time_scale() {
+    let tai_offset = TimeScale::SECONDS_GST_TAI_OFFSET;
+    let days_tai_offset = TimeScale::DAYS_GST_TAI_OFFSET;
+    let now = Epoch::from_gregorian_tai_hms(2019, 8, 24, 3, 49, 9);
+    let gst_nanos = now.to_gst_nanoseconds().unwrap();
+    assert_eq!(
+        Epoch::from_gst_nanoseconds(gst_nanos),
+        now,
+        "To/from (recip.) GPST nanoseconds failed"
+    );
+    assert!(
+        (now.to_tai_seconds() - tai_offset - now.to_gst_seconds()).abs() < EPSILON
+    );
+    assert!(
+        now.to_gst_seconds() + tai_offset > now.to_utc_seconds(),
+        "GST Time is not ahead of UTC"
+    );
+
+    let epoch = Epoch::from_tai_seconds(tai_offset);
+    #[cfg(feature = "std")]
+    {
+        assert_eq!(
+            epoch.to_gregorian_str(TimeScale::UTC),
+            "1999-08-22T00:00:00 UTC"
+        );
+        assert_eq!(
+            epoch.to_gregorian_str(TimeScale::TAI),
+            "1999-08-22T00:00:32 TAI"
+        );
+        assert_eq!(format!("{:o}", epoch), "0");
+    }
+    assert_eq!(
+        epoch.to_tai_seconds(),
+        Epoch::from_gregorian_utc_at_midnight(1999, 08, 22).to_tai_seconds()
+    );
+    assert!(
+        epoch.to_gst_seconds().abs() < EPSILON,
+        "The number of seconds from the GST epoch was not 0: {}",
+        epoch.to_gst_seconds()
+    );
+    assert!(
+        epoch.to_gst_days().abs() < EPSILON,
+        "The number of days from the GST epoch was not 0: {}",
+        epoch.to_gst_days()
+    );
+
+    //let epoch = Epoch::from_gregorian_utc_at_midnight(1972, 1, 1);
+    //assert!(
+    //    (epoch.to_tai_seconds() - tai_offset - epoch.to_gpst_seconds()).abs() < EPSILON
+    //);
+    //assert!((epoch.to_tai_days() - days_tai_offset - epoch.to_gpst_days()).abs() < 1e-11);
+
+    // 1 Jan 1980 is 5 days before the GPS epoch.
+    //let epoch = Epoch::from_gregorian_utc_at_midnight(1980, 1, 1);
+    //assert!((epoch.to_gst_seconds() + 5.0 * SECONDS_PER_DAY).abs() < EPSILON);
+    //assert!((epoch.to_gst_days() + 5.0).abs() < EPSILON);
+}
+
+#[test]
+fn beidou_time_scale() {
+    let tai_offset = TimeScale::SECONDS_BDT_TAI_OFFSET;
+    let days_tai_offset = TimeScale::DAYS_BDT_TAI_OFFSET;
+    let now = Epoch::from_gregorian_tai_hms(2019, 8, 24, 3, 49, 9);
+    let nanos = now.to_bdt_nanoseconds().unwrap();
+    assert_eq!(
+        Epoch::from_bdt_nanoseconds(nanos),
+        now,
+        "To/from (recip.) BDT nanoseconds failed"
+    );
+    assert!(
+        (now.to_tai_seconds() - tai_offset - now.to_bdt_seconds()).abs() < EPSILON
+    );
+    assert!(
+        now.to_bdt_seconds() + tai_offset > now.to_utc_seconds(),
+        "BDT Time is not ahead of UTC"
+    );
+
+    let epoch = Epoch::from_tai_seconds(tai_offset);
+    #[cfg(feature = "std")]
+    {
+        assert_eq!(
+            epoch.to_gregorian_str(TimeScale::UTC),
+            "2006-01-01T00:00:00 UTC"
+        );
+        assert_eq!(
+            epoch.to_gregorian_str(TimeScale::TAI),
+            "2006-01-01T00:00:33 TAI"
+        );
+        assert_eq!(format!("{:o}", epoch), "0");
+    }
+    assert_eq!(
+        epoch.to_tai_seconds(),
+        Epoch::from_gregorian_utc_at_midnight(2006, 01, 01).to_tai_seconds()
+    );
+    assert!(
+        epoch.to_bdt_seconds().abs() < EPSILON,
+        "The number of seconds from the BDT epoch was not 0: {}",
+        epoch.to_bdt_seconds()
+    );
+    assert!(
+        epoch.to_bdt_days().abs() < EPSILON,
+        "The number of days from the BDT epoch was not 0: {}",
+        epoch.to_bdt_days()
+    );
+
+    //let epoch = Epoch::from_gregorian_utc_at_midnight(1972, 1, 1);
+    //assert!(
+    //    (epoch.to_tai_seconds() - tai_offset - epoch.to_gpst_seconds()).abs() < EPSILON
+    //);
+    //assert!((epoch.to_tai_days() - days_tai_offset - epoch.to_gpst_days()).abs() < 1e-11);
+
+    // 1 Jan 1980 is 5 days before the GPS epoch.
+    //let epoch = Epoch::from_gregorian_utc_at_midnight(1980, 1, 1);
+    //assert!((epoch.to_gst_seconds() + 5.0 * SECONDS_PER_DAY).abs() < EPSILON);
+    //assert!((epoch.to_gst_days() + 5.0).abs() < EPSILON);
+}
+
+#[test]
 fn unix() {
     // Continuous check that the system time as reported by this machine is within millisecond accuracy of what we compute
     #[cfg(feature = "std")]

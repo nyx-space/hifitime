@@ -351,7 +351,7 @@ impl Epoch {
     }
     
     #[must_use]
-    /// Initialize an Epoch from the provided duration since 1980 January 6 13 seconds prior midnight 
+    /// Initialize an Epoch from the provided duration since August 21st 1999 midnight
     pub fn from_gst_duration(duration: Duration) -> Self {
         Self::from_duration(duration, TimeScale::GST)
     }
@@ -568,15 +568,15 @@ impl Epoch {
     
     #[must_use]
     /// Initialize an Epoch from the number of seconds since the GST Time Epoch,
-    /// defined as 13 seconds before UTC midnight on Sunday 22nd 1999 
-    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
+    /// starting August 21st 1999 midnight (UTC)
+    /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     pub fn from_gst_seconds(seconds: f64) -> Self {
         Self::from_duration(Duration::from_f64(seconds, Unit::Second), TimeScale::GST)
     }
     
     #[must_use]
     /// Initialize an Epoch from the number of days since the GST Time Epoch,
-    /// defined as 13 seconds before UTC midnight on Sunday 22nd 1999 
+    /// starting August 21st 1999 midnight (UTC)
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_gst_days(days: f64) -> Self {
         Self::from_duration(Duration::from_f64(days, Unit::Nanosecond), TimeScale::GST)
@@ -584,7 +584,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
-    /// defined as 13 seconds before UTC midnight on Sunday 22nd 1999 
+    /// starting August 21st 1999 midnight (UTC)
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_gst_nanoseconds(nanoseconds: u64) -> Self {
         Self::from_duration(Duration::from_f64(nanoseconds as f64, Unit::Nanosecond), TimeScale::GST)
@@ -1331,7 +1331,7 @@ impl Epoch {
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize an Epoch from the number of seconds since the Galileo Time Epoch,
-    /// defined as 13 seconds prior UTC midnight August 22nd 1999 
+    /// starting on August 21st 1999 Midnight UTC,
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     fn init_from_gst_seconds(seconds: f64) -> Self {
         Self::from_gst_seconds(seconds)
@@ -1340,7 +1340,7 @@ impl Epoch {
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize an Epoch from the number of days since the Galileo Time Epoch,
-    /// defined as 13 seconds prior UTC midnight August 22nd 1999 
+    /// starting on August 21st 1999 Midnight UTC,
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     fn init_from_gst_days(days: f64) -> Self {
         Self::from_gst_days(days)
@@ -1349,7 +1349,7 @@ impl Epoch {
     #[cfg(feature = "python")]
     #[staticmethod]
     /// Initialize an Epoch from the number of nanoseconds since the Galileo Time Epoch,
-    /// defined as 13 seconds prior UTC midnight August 22nd 1999 
+    /// starting on August 21st 1999 Midnight UTC,
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use GST as a time source.
     fn init_from_gst_nanoseconds(nanoseconds: u64) -> Self {
@@ -1843,25 +1843,39 @@ impl Epoch {
     }
     
     #[must_use]
+    /// Returns seconds past GST (Galileo) Time Epoch
+    pub fn to_gst_seconds(&self) -> f64 {
+        self.to_gst_duration().to_seconds()
+    }
+
+    #[must_use]
     /// Returns `Duration` past GST (Galileo) time Epoch.
     pub fn to_gst_duration(&self) -> Duration {
         self.to_ts_duration(TimeScale::GST)
     }
     
     #[must_use]
-    /// Returns days past GST (Galileo) Time Epoch, defined as 13 seconds prior midnight, August 22nd 1999 UTC
+    /// Returns days past GST (Galileo) Time Epoch,
+    /// starting on August 21st 1999 Midnight UTC
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     pub fn to_gst_days(&self) -> f64 {
         self.to_gst_duration().to_unit(Unit::Day)
     }
     
-    /// Returns nanoseconds past GST (Galileo) Time Epoch, defined as 13 seconds prior midnight, August 22nd 1999 UTC,
+    /// Returns nanoseconds past GST (Galileo) Time Epoch, 
+    /// starting on August 21st 1999 Midnight UTC
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// NOTE: This function will return an error if the centuries past GST time are not zero.
     pub fn to_gst_nanoseconds(&self) -> Result<u64, Errors> {
         self.to_ts_nanoseconds(TimeScale::GST)
     }
     
+    #[must_use]
+    /// Returns seconds past BDT (BeiDou) Time Epoch
+    pub fn to_bdt_seconds(&self) -> f64 {
+        self.to_bdt_duration().to_seconds()
+    }
+
     #[must_use]
     /// Returns `Duration` past BDT (BeiDou) time Epoch.
     pub fn to_bdt_duration(&self) -> Duration {

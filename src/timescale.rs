@@ -45,11 +45,32 @@ impl TimeScale {
     /// Maximal value when casting to unsigned integer.
     /// Increment when introducing new timescales.
     pub const MAX_U8: u8 = 7;
+    
+    /// GPS: 1980 Jan 5th Midnight,
+    /// |TAI-UTC| = +19 on that day
     pub const SECONDS_GPS_TAI_OFFSET: f64 = 
         80.0 * SECONDS_PER_YEAR + 4.0 * SECONDS_PER_DAY + 19.0;
-    pub const DAYS_GPS_TAI_OFFSET: f64 = Self::SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
     pub const SECONDS_GPS_TAI_OFFSET_I64: i64 = 
         80 * SECONDS_PER_YEAR_I64 + 4 * SECONDS_PER_DAY_I64 + 19;
+    pub const DAYS_GPS_TAI_OFFSET: f64 = Self::SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
+
+    /// GST(Galileo): 1999 August 21st Midnight 
+    /// |TAI-UTC| = +32 on that day, cf. https://en.wikipedia.org/wiki/Leap_second
+    pub const SECONDS_GST_TAI_OFFSET: f64 =
+        /* August 21st midnight: +233 days */
+        99.0 * SECONDS_PER_YEAR + 233.0 * SECONDS_PER_DAY + 32.0;
+    pub const SECONDS_GST_TAI_OFFSET_I64: i64 =
+        99 * SECONDS_PER_YEAR_I64 + 233 * SECONDS_PER_DAY_I64 + 32;
+    pub const DAYS_GST_TAI_OFFSET: f64 = Self::SECONDS_GST_TAI_OFFSET / SECONDS_PER_YEAR;
+    
+    /// BDT(BeiDou): 2005 Dec 31st Midnight
+    /// |TAI-UTC| = +33 on that day, cf. https://en.wikipedia.org/wiki/Leap_second
+    pub const SECONDS_BDT_TAI_OFFSET: f64 =
+        106.0 * SECONDS_PER_YEAR + 33.0;
+    pub const SECONDS_BDT_TAI_OFFSET_I64: i64 =
+        106 * SECONDS_PER_YEAR_I64 + 33;
+    pub const DAYS_BDT_TAI_OFFSET: f64 = Self::SECONDS_BDT_TAI_OFFSET / SECONDS_PER_YEAR;
+
     pub(crate) const fn formatted_len(&self) -> usize {
         match &self {
             Self::GPST => 4,
@@ -70,6 +91,8 @@ impl TimeScale {
     /// for this timescale
     pub(crate) const fn tai_j1900_offset_seconds_i64(&self) -> i64 {
         match self {
+            Self::GST  => Self::SECONDS_GST_TAI_OFFSET_I64,
+            Self::BDT  => Self::SECONDS_BDT_TAI_OFFSET_I64,
             Self::GPST => Self::SECONDS_GPS_TAI_OFFSET_I64,
             _ => 0,
         }
