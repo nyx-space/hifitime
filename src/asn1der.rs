@@ -92,7 +92,7 @@ impl<'a> Decode<'a> for Unit {
 // Testing the encoding and decoding of an Epoch inherently also tests the encoding and decoding of a Duration
 #[test]
 fn test_encdec() {
-    for ts_u8 in 0..5 {
+    for ts_u8 in 0..=7 {
         let ts: TimeScale = ts_u8.into();
 
         let epoch = if ts == TimeScale::UTC {
@@ -134,7 +134,7 @@ fn test_encdec() {
         );
     }
 
-    for unit_u8 in 0..8 {
+    for unit_u8 in 0..=7 {
         let unit: Unit = unit_u8.into();
 
         // Create a buffer

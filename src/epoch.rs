@@ -1638,9 +1638,9 @@ impl Epoch {
             TimeScale::TT => self.to_tt_duration(),
             TimeScale::TDB => self.to_tdb_duration_since_j1900(),
             TimeScale::UTC => self.to_utc_duration(),
-            TimeScale::GPST => self.to_gpst_duration() - GPST_REF_EPOCH.to_tai_duration(),
+            TimeScale::GPST => self.to_gpst_duration() + GPST_REF_EPOCH.to_tai_duration(),
             TimeScale::GST => self.to_gst_duration() + GST_REF_EPOCH.to_tai_duration(),
-            TimeScale::BDT => self.to_bdt_duration() + BDT_REF_EPOCH.to_utc_duration(),
+            TimeScale::BDT => self.to_bdt_duration() + BDT_REF_EPOCH.to_tai_duration(),
         }
     }
 

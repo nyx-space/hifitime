@@ -2,9 +2,9 @@
 extern crate core;
 
 use hifitime::{
-    is_gregorian_valid, Duration, Epoch, TimeScale, TimeUnits, Unit, DAYS_GPS_TAI_OFFSET,
-    GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET, SECONDS_BDT_TAI_OFFSET,
-    SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
+    is_gregorian_valid, Duration, Epoch, TimeScale, TimeUnits, Unit, BDT_REF_EPOCH,
+    DAYS_GPS_TAI_OFFSET, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
+    SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
 #[cfg(feature = "std")]
@@ -340,6 +340,10 @@ fn gpst() {
     assert_eq!(format!("{}", GPST_REF_EPOCH), "1980-01-06T00:00:00 UTC");
     assert_eq!(format!("{:x}", GPST_REF_EPOCH), "1980-01-06T00:00:19 TAI");
     assert_eq!(format!("{:o}", gps_epoch), "0");
+    assert_eq!(
+        Epoch::from_gpst_days(0.0).to_duration_since_j1900(),
+        gps_epoch.duration_since_j1900_tai
+    );
 
     assert_eq!(
         gps_epoch.to_tai_seconds(),
@@ -386,27 +390,31 @@ fn galileo_time_scale() {
     let ref_gst = Epoch::from_gst_nanoseconds(0);
     assert_eq!(format!("{}", ref_gst), "1999-08-21T23:59:47 UTC");
 
-    let epoch = Epoch::from_tai_seconds(SECONDS_GST_TAI_OFFSET);
-    assert_eq!(epoch, Epoch::from_gst_days(0.0));
-    assert_eq!(epoch, Epoch::from_gst_seconds(0.0));
-    assert_eq!(epoch, Epoch::from_gst_nanoseconds(0));
-    assert_eq!(epoch, GST_REF_EPOCH);
+    let gst_epoch = Epoch::from_tai_seconds(SECONDS_GST_TAI_OFFSET);
+    assert_eq!(gst_epoch, Epoch::from_gst_days(0.0));
+    assert_eq!(gst_epoch, Epoch::from_gst_seconds(0.0));
+    assert_eq!(gst_epoch, Epoch::from_gst_nanoseconds(0));
+    assert_eq!(gst_epoch, GST_REF_EPOCH);
     assert_eq!(format!("{}", GST_REF_EPOCH), "1999-08-21T23:59:47 UTC");
     assert_eq!(format!("{:x}", GST_REF_EPOCH), "1999-08-22T00:00:19 TAI");
+    assert_eq!(
+        Epoch::from_gst_days(0.0).to_duration_since_j1900(),
+        gst_epoch.duration_since_j1900_tai
+    );
 
     assert_eq!(
-        epoch.to_tai_seconds(),
+        gst_epoch.to_tai_seconds(),
         Epoch::from_gregorian_utc_at_midnight(1999, 08, 22).to_tai_seconds() - 13.0
     );
     assert!(
-        epoch.to_gst_seconds().abs() < EPSILON,
+        gst_epoch.to_gst_seconds().abs() < EPSILON,
         "The number of seconds from the GST epoch was not 0: {}",
-        epoch.to_gst_seconds()
+        gst_epoch.to_gst_seconds()
     );
     assert!(
-        epoch.to_gst_days().abs() < EPSILON,
+        gst_epoch.to_gst_days().abs() < EPSILON,
         "The number of days from the GST epoch was not 0: {}",
-        epoch.to_gst_days()
+        gst_epoch.to_gst_days()
     );
 }
 
@@ -425,27 +433,33 @@ fn beidou_time_scale() {
         "BDT Time is not ahead of UTC"
     );
 
-    let epoch = Epoch::from_tai_seconds(SECONDS_BDT_TAI_OFFSET);
-    assert_eq!(epoch, Epoch::from_bdt_days(0.0));
-    assert_eq!(epoch, Epoch::from_bdt_seconds(0.0));
-    assert_eq!(epoch, Epoch::from_bdt_nanoseconds(0));
+    let bdt_epoch = Epoch::from_tai_seconds(SECONDS_BDT_TAI_OFFSET);
+    assert_eq!(bdt_epoch, Epoch::from_bdt_days(0.0));
+    assert_eq!(bdt_epoch, Epoch::from_bdt_seconds(0.0));
+    assert_eq!(bdt_epoch, Epoch::from_bdt_nanoseconds(0));
+    assert_eq!(bdt_epoch, BDT_REF_EPOCH);
 
-    assert_eq!(format!("{epoch}"), "2006-01-01T00:00:00 UTC");
-    assert_eq!(format!("{epoch:x}"), "2006-01-01T00:00:33 TAI");
+    assert_eq!(format!("{bdt_epoch}"), "2006-01-01T00:00:00 UTC");
+    assert_eq!(format!("{bdt_epoch:x}"), "2006-01-01T00:00:33 TAI");
 
     assert_eq!(
-        epoch.to_tai_seconds(),
+        Epoch::from_bdt_days(0.0).to_duration_since_j1900(),
+        bdt_epoch.duration_since_j1900_tai
+    );
+
+    assert_eq!(
+        bdt_epoch.to_tai_seconds(),
         Epoch::from_gregorian_utc_at_midnight(2006, 01, 01).to_tai_seconds()
     );
     assert!(
-        epoch.to_bdt_seconds().abs() < EPSILON,
+        bdt_epoch.to_bdt_seconds().abs() < EPSILON,
         "The number of seconds from the BDT epoch was not 0: {}",
-        epoch.to_bdt_seconds()
+        bdt_epoch.to_bdt_seconds()
     );
     assert!(
-        epoch.to_bdt_days().abs() < EPSILON,
+        bdt_epoch.to_bdt_days().abs() < EPSILON,
         "The number of days from the BDT epoch was not 0: {}",
-        epoch.to_bdt_days()
+        bdt_epoch.to_bdt_days()
     );
 }
 
