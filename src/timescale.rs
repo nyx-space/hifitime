@@ -13,7 +13,7 @@ use pyo3::prelude::*;
 
 use core::str::FromStr;
 
-use crate::{Duration, Epoch, Errors, ParsingErrors, SECONDS_PER_DAY, SECONDS_PER_YEAR};
+use crate::{Duration, Epoch, Errors, ParsingErrors, SECONDS_PER_DAY};
 
 /// GPS reference epoch is UTC midnight between 05 January and 06 January 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>.
 pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
@@ -27,11 +27,10 @@ pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
 /// GST (Galileo) reference epoch is 13 seconds before 1999 August 21 UTC at midnight.
 pub const GST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
-    nanoseconds: 3_144_182_387_000_000_000,
+    nanoseconds: 3_144_268_819_000_000_000,
 });
-pub const SECONDS_GST_TAI_OFFSET: f64 = 3_144_182_387.0;
-pub const SECONDS_GST_TAI_OFFSET_I64: i64 = 3_144_182_387;
-pub const DAYS_GST_TAI_OFFSET: f64 = SECONDS_GST_TAI_OFFSET / SECONDS_PER_YEAR;
+pub const SECONDS_GST_TAI_OFFSET: f64 = 3_144_268_819.0;
+pub const SECONDS_GST_TAI_OFFSET_I64: i64 = 3_144_268_819;
 
 /// BDT(BeiDou): 2005 Dec 31st Midnight
 /// BDT (BeiDou) reference epoch is 2005 December 31st UTC at midnight. **This time scale is synchronized with UTC.**
@@ -41,7 +40,6 @@ pub const BDT_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
 });
 pub const SECONDS_BDT_TAI_OFFSET: f64 = 3_345_062_433.0;
 pub const SECONDS_BDT_TAI_OFFSET_I64: i64 = 3_345_062_433;
-pub const DAYS_BDT_TAI_OFFSET: f64 = SECONDS_BDT_TAI_OFFSET / SECONDS_PER_YEAR;
 
 /// The UNIX reference epoch of 1970-01-01 in TAI duration, accounting only for IERS leap seconds.
 pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {

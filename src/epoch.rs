@@ -362,7 +362,7 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the provided duration since January 1st midnight
     pub fn from_bdt_duration(duration: Duration) -> Self {
-        let mut me = Self::from_utc_duration(BDT_REF_EPOCH.to_utc_duration() + duration);
+        let mut me = Self::from_tai_duration(BDT_REF_EPOCH.to_tai_duration() + duration);
         me.time_scale = TimeScale::BDT;
         me
     }
@@ -1613,6 +1613,7 @@ impl Epoch {
     /// This will return an overflow error if more than one century has past since the reference epoch in the provided time scale.
     /// If this is _not_ an issue, you should use `epoch.to_duration_in_time_scale().to_parts()` to retrieve both the centuries and the nanoseconds
     /// in that century.
+    #[allow(clippy::wrong_self_convention)]
     fn to_nanoseconds_in_time_scale(&self, ts: TimeScale) -> Result<u64, Errors> {
         let (centuries, nanoseconds) = self.to_duration_in_time_scale(ts).to_parts();
         if centuries != 0 {
@@ -1906,7 +1907,7 @@ impl Epoch {
     #[must_use]
     /// Returns `Duration` past BDT (BeiDou) time Epoch.
     pub fn to_bdt_duration(&self) -> Duration {
-        self.to_utc_duration() - BDT_REF_EPOCH.to_utc_duration()
+        self.to_tai_duration() - BDT_REF_EPOCH.to_tai_duration()
     }
 
     #[must_use]
