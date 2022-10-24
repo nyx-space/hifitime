@@ -63,8 +63,8 @@ impl<'a> Decode<'a> for Epoch {
             TimeScale::TDB => Self::from_tdb_duration(duration),
             TimeScale::UTC => Self::from_utc_duration(duration),
             TimeScale::GPST => Self::from_gpst_duration(duration),
-            TimeScale::GST => Self::from_gst_duration(duration), 
-            TimeScale::BDT => Self::from_bdt_duration(duration), 
+            TimeScale::GST => Self::from_gst_duration(duration),
+            TimeScale::BDT => Self::from_bdt_duration(duration),
         })
     }
 }

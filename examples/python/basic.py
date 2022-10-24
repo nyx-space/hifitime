@@ -47,3 +47,9 @@ if __name__ == "__main__":
     print(time_series)
     for (num, epoch) in enumerate(time_series):
         print(f"#{num}:\t{epoch}")
+
+    e1 = Epoch.system_now()
+    e3 = e1 + Unit.Day * 1.5998
+    epoch_delta = e3.timedelta(e1)
+    assert epoch_delta == Unit.Day * 1 + Unit.Hour * 14 + Unit.Minute * 23 + Unit.Second * 42.720
+    print(epoch_delta)

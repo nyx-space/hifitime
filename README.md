@@ -35,7 +35,10 @@ This library is validated against NASA/NAIF SPICE for the Ephemeris Time to Univ
 + Terrestrial Time (TT)
 + Ephemeris Time (ET) without the small perturbations as per NASA/NAIF SPICE leap seconds kernel
 + Dynamic Barycentric Time (TDB), a higher fidelity ephemeris time
-+ Global Positioning System (GPS), and UNIX
++ Global Positioning System (GPST)
++ Galileo System Time (GST)
++ BaiDou Time (BDT)
++ UNIX
 ## Non-features
 * Time-agnostic / date-only epochs. Hifitime only supports the combination of date and time, but the `Epoch::{at_midnight, at_noon}` is provided as a helper function.
 
@@ -282,6 +285,7 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 # Changelog
 
 ## 3.5.1
++ Galileo System Time and BeiDou Time are now supported, huge thanks to [@gwbres](https://github.com/gwbres) for all that work!
 + Significant speed improvement in the initialization of Epochs from their Gregorian representation, thanks [@conradludgate](https://github.com/conradludgate) for [#160](https://github.com/nyx-space/hifitime/pull/160).
 + Epoch and Duration now have a `min` and `max` function which respectively returns a copy of the epoch/duration that is the smallest or the largest between `self` and `other`, cf. [#164](https://github.com/nyx-space/hifitime/issues/164).
 + [Python] Duration and Epochs now support the operators `>`, `>=`, `<`, `<=`, `==`, and `!=`. Epoch now supports `init_from_gregorian` with a time scape, like in Rust. Epochs can also be subtracted from one another using the `timedelta` function, cf. [#162](https://github.com/nyx-space/hifitime/issues/162).
