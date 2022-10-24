@@ -569,7 +569,10 @@ impl Epoch {
     /// This may be useful for time keeping devices that use GPS as a time source.
     pub fn from_gpst_nanoseconds(nanoseconds: u64) -> Self {
         Self::from_duration(
-            Duration::from_f64(nanoseconds as f64, Unit::Nanosecond),
+            Duration {
+                centuries: 0,
+                nanoseconds,
+            },
             TimeScale::GPST,
         )
     }
@@ -579,7 +582,7 @@ impl Epoch {
     /// starting August 21st 1999 midnight (UTC)
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     pub fn from_gst_seconds(seconds: f64) -> Self {
-        Self::from_duration(Duration::from_f64(seconds, Unit::Second), TimeScale::GST)
+        Self::from_duration(seconds * Unit::Second, TimeScale::GST)
     }
 
     #[must_use]
@@ -587,7 +590,7 @@ impl Epoch {
     /// starting August 21st 1999 midnight (UTC)
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_gst_days(days: f64) -> Self {
-        Self::from_duration(Duration::from_f64(days, Unit::Nanosecond), TimeScale::GST)
+        Self::from_duration(days * Unit::Nanosecond, TimeScale::GST)
     }
 
     #[must_use]
@@ -596,7 +599,10 @@ impl Epoch {
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_gst_nanoseconds(nanoseconds: u64) -> Self {
         Self::from_duration(
-            Duration::from_f64(nanoseconds as f64, Unit::Nanosecond),
+            Duration {
+                centuries: 0,
+                nanoseconds,
+            },
             TimeScale::GST,
         )
     }
@@ -605,14 +611,14 @@ impl Epoch {
     /// Initialize an Epoch from the number of seconds since the BDT Time Epoch,
     /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_bdt_seconds(seconds: f64) -> Self {
-        Self::from_duration(Duration::from_f64(seconds, Unit::Second), TimeScale::BDT)
+        Self::from_duration(seconds * Unit::Second, TimeScale::BDT)
     }
 
     #[must_use]
     /// Initialize an Epoch from the number of days since the BDT Time Epoch,
     /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_bdt_days(days: f64) -> Self {
-        Self::from_duration(Duration::from_f64(days, Unit::Day), TimeScale::BDT)
+        Self::from_duration(days * Unit::Day, TimeScale::BDT)
     }
 
     #[must_use]
@@ -621,7 +627,10 @@ impl Epoch {
     /// This may be useful for time keeping devices that use BDT as a time source.
     pub fn from_bdt_nanoseconds(nanoseconds: u64) -> Self {
         Self::from_duration(
-            Duration::from_f64(nanoseconds as f64, Unit::Nanosecond),
+            Duration {
+                centuries: 0,
+                nanoseconds,
+            },
             TimeScale::BDT,
         )
     }
