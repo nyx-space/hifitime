@@ -13,7 +13,39 @@ use pyo3::prelude::*;
 
 use core::str::FromStr;
 
-use crate::{Errors, ParsingErrors};
+use crate::{Duration, Epoch, Errors, ParsingErrors, SECONDS_PER_DAY};
+
+/// GPS reference epoch is UTC midnight between 05 January and 06 January 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>.
+pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
+    centuries: 0,
+    nanoseconds: 2_524_953_619_000_000_000,
+});
+pub const SECONDS_GPS_TAI_OFFSET: f64 = 2_524_953_619.0;
+pub const SECONDS_GPS_TAI_OFFSET_I64: i64 = 2_524_953_619;
+pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
+
+/// GST (Galileo) reference epoch is 13 seconds before 1999 August 21 UTC at midnight.
+pub const GST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
+    centuries: 0,
+    nanoseconds: 3_144_268_819_000_000_000,
+});
+pub const SECONDS_GST_TAI_OFFSET: f64 = 3_144_268_819.0;
+pub const SECONDS_GST_TAI_OFFSET_I64: i64 = 3_144_268_819;
+
+/// BDT(BeiDou): 2005 Dec 31st Midnight
+/// BDT (BeiDou) reference epoch is 2005 December 31st UTC at midnight. **This time scale is synchronized with UTC.**
+pub const BDT_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
+    centuries: 1,
+    nanoseconds: 189_302_433_000_000_000,
+});
+pub const SECONDS_BDT_TAI_OFFSET: f64 = 3_345_062_433.0;
+pub const SECONDS_BDT_TAI_OFFSET_I64: i64 = 3_345_062_433;
+
+/// The UNIX reference epoch of 1970-01-01 in TAI duration, accounting only for IERS leap seconds.
+pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
+    centuries: 0,
+    nanoseconds: 2_208_988_800_000_000_000,
+});
 
 /// Enum of the different time systems available
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -29,21 +61,34 @@ pub enum TimeScale {
     TDB,
     /// Universal Coordinated Time
     UTC,
-    // GPS Time
-    // GPST // TODO
+    /// GPST Time also applies to QZSS, IRNSS and GAL constellations
+    GPST,
+    /// Galileo Time scale
+    GST,
+    /// BeiDou Time scale
+    BDT,
 }
 
 impl TimeScale {
     pub(crate) const fn formatted_len(&self) -> usize {
         match &self {
-            TimeScale::TAI | TimeScale::TDB | TimeScale::UTC => 3,
-            TimeScale::ET | TimeScale::TT => 2,
+            Self::GPST => 4,
+            Self::TAI | Self::TDB | Self::UTC | Self::GST | Self::BDT => 3,
+            Self::ET | Self::TT => 2,
         }
     }
 }
 
+#[cfg_attr(feature = "python", pymethods)]
+impl TimeScale {
+    /// Returns true if self takes leap seconds into account
+    pub const fn uses_leap_seconds(&self) -> bool {
+        matches!(self, Self::UTC)
+    }
+}
+
 /// Allows conversion of a TimeSystem into a u8
-/// Mapping: TAI: 0; TT: 1; ET: 2; TDB: 3; UTC: 4.
+/// Mapping: TAI: 0; TT: 1; ET: 2; TDB: 3; UTC: 4; GPST: 5; GST: 6; BDT: 7;
 impl From<TimeScale> for u8 {
     fn from(ts: TimeScale) -> Self {
         match ts {
@@ -52,12 +97,15 @@ impl From<TimeScale> for u8 {
             TimeScale::ET => 2,
             TimeScale::TDB => 3,
             TimeScale::UTC => 4,
+            TimeScale::GPST => 5,
+            TimeScale::GST => 6,
+            TimeScale::BDT => 7,
         }
     }
 }
 
 /// Allows conversion of a u8 into a TimeSystem.
-/// Mapping: 1: TT; 2: ET; 3: TDB; 4: UTC; anything else: TAI
+/// Mapping: 1: TT; 2: ET; 3: TDB; 4: UTC; 5: GPST; 6: GST; 7: BDT; anything else: TAI
 impl From<u8> for TimeScale {
     fn from(val: u8) -> Self {
         match val {
@@ -65,6 +113,9 @@ impl From<u8> for TimeScale {
             2 => Self::ET,
             3 => Self::TDB,
             4 => Self::UTC,
+            5 => Self::GPST,
+            6 => Self::GST,
+            7 => Self::BDT,
             _ => Self::TAI,
         }
     }
@@ -85,6 +136,12 @@ impl FromStr for TimeScale {
             Ok(Self::TDB)
         } else if val == "ET" {
             Ok(Self::ET)
+        } else if val == "GPST" {
+            Ok(Self::GPST)
+        } else if val == "GST" {
+            Ok(Self::GST)
+        } else if val == "BDT" {
+            Ok(Self::BDT)
         } else {
             Err(Errors::ParseError(ParsingErrors::TimeSystem))
         }
