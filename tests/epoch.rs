@@ -884,7 +884,7 @@ fn test_format() {
     assert_eq!(format!("{epoch:o}"), "1346541887000000000"); // GPS nanoseconds
 
     // Ensure that the appropriate time system is used in the debug print.
-    for ts_u8 in 0..5 {
+    for ts_u8 in 0..=7 {
         let ts: TimeScale = ts_u8.into();
 
         let recent = Epoch::from_gregorian(2020, 9, 6, 23, 24, 29, 2, ts);
@@ -925,9 +925,9 @@ fn test_format() {
                     TimeScale::TDB => format!("{epoch:e}"),
                     TimeScale::TT => format!("{epoch:X}"),
                     TimeScale::UTC => format!("{epoch}"),
-                    TimeScale::GPST => format!("{epoch}"),
-                    TimeScale::GST => format!("{epoch}"),
-                    TimeScale::BDT => format!("{epoch}"),
+                    TimeScale::GPST => format!("{epoch:x}").replace("TAI", "GPST"),
+                    TimeScale::GST => format!("{epoch:x}").replace("TAI", "GST"),
+                    TimeScale::BDT => format!("{epoch:x}").replace("TAI", "BDT"),
                 }
             );
 

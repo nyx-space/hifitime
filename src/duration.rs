@@ -92,7 +92,7 @@ impl Default for Duration {
 impl Duration {
     /// Builds a new duration from the number of centuries and the number of nanoseconds
     #[must_use]
-    #[deprecated(note = "Prefer from_parts()", since = "3.5.1")]
+    #[deprecated(note = "Prefer from_parts()", since = "3.6.0")]
     pub fn new(centuries: i16, nanoseconds: u64) -> Self {
         let mut out = Self {
             centuries,
