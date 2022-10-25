@@ -974,9 +974,6 @@ impl Epoch {
                     if idx != s.len() - 1 {
                         // We have some remaining characters, so let's parse those in the only formats we know.
                         ts = TimeScale::from_str(s[idx..].trim())?;
-                        if ts == TimeScale::GPST {
-                            print!("yo");
-                        }
                     }
                     break;
                 }
