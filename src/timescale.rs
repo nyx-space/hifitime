@@ -11,6 +11,7 @@
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
+use core::fmt;
 use core::str::FromStr;
 
 use crate::{Duration, Epoch, Errors, ParsingErrors, SECONDS_PER_DAY};
@@ -75,6 +76,43 @@ impl TimeScale {
             Self::GPST => 4,
             Self::TAI | Self::TDB | Self::UTC | Self::GST | Self::BDT => 3,
             Self::ET | Self::TT => 2,
+        }
+    }
+
+    /// Returns true if Self is based off a GNSS constellation
+    pub const fn is_gnss(&self) -> bool {
+        match &self {
+            Self::GPST | Self::GST | Self::BDT => true,
+            _ => false,
+        }
+    }
+}
+
+impl fmt::Display for TimeScale {
+    /// Prints given TimeScale
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::TAI => write!(f, "TAI"),
+            Self::TT => write!(f, "TT"),
+            Self::ET => write!(f, "ET"),
+            Self::TDB => write!(f, "TDB"),
+            Self::UTC => write!(f, "UTC"),
+            Self::GPST => write!(f, "GPST"),
+            Self::GST => write!(f, "GST"),
+            Self::BDT => write!(f, "BDT"),
+        }
+    }
+}
+
+impl fmt::LowerHex for TimeScale {
+    /// Prints given TimeScale in RINEX format
+    /// ie., standard GNSS constellation name is prefered when possible
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Self::GPST => write!(f, "GPS"),
+            Self::GST => write!(f, "GAL"),
+            Self::BDT => write!(f, "BDS"),
+            s => write!(f, "{}", s),
         }
     }
 }
