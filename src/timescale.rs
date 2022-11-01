@@ -12,7 +12,7 @@
 use pyo3::prelude::*;
 
 #[cfg(feature = "serde")]
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 
 use core::str::FromStr;
 
