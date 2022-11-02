@@ -81,10 +81,7 @@ impl TimeScale {
 
     /// Returns true if Self is based off a GNSS constellation
     pub const fn is_gnss(&self) -> bool {
-        match &self {
-            Self::GPST | Self::GST | Self::BDT => true,
-            _ => false,
-        }
+        matches!(self, Self::GPST | Self::GST | Self::BDT)
     }
 }
 
@@ -112,7 +109,7 @@ impl fmt::LowerHex for TimeScale {
             Self::GPST => write!(f, "GPS"),
             Self::GST => write!(f, "GAL"),
             Self::BDT => write!(f, "BDS"),
-            s => write!(f, "{}", s),
+            _ => write!(f, "{self}"),
         }
     }
 }

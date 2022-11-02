@@ -35,11 +35,11 @@ fn test_from_str() {
 #[test]
 fn test_is_gnss() {
     let ts = TimeScale::GPST;
-    assert_eq!(ts.is_gnss(), true);
+    assert!(ts.is_gnss());
     let ts = TimeScale::GST;
-    assert_eq!(ts.is_gnss(), true);
+    assert!(ts.is_gnss());
     let ts = TimeScale::UTC;
-    assert_eq!(ts.is_gnss(), false);
+    assert!(!ts.is_gnss());
     let ts = TimeScale::TAI;
-    assert_eq!(ts.is_gnss(), false);
+    assert!(!ts.is_gnss());
 }
