@@ -11,6 +11,9 @@
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
+#[cfg(feature = "serde")]
+use serde_derive::{Deserialize, Serialize};
+
 use core::fmt;
 use core::str::FromStr;
 
@@ -51,6 +54,7 @@ pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
 /// Enum of the different time systems available
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum TimeScale {
     /// TAI is the representation of an Epoch internally
     TAI,
