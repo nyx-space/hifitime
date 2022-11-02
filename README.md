@@ -37,7 +37,7 @@ This library is validated against NASA/NAIF SPICE for the Ephemeris Time to Univ
 + Dynamic Barycentric Time (TDB), a higher fidelity ephemeris time
 + Global Positioning System (GPST)
 + Galileo System Time (GST)
-+ BaiDou Time (BDT)
++ BeiDou Time (BDT)
 + UNIX
 ## Non-features
 * Time-agnostic / date-only epochs. Hifitime only supports the combination of date and time, but the `Epoch::{at_midnight, at_noon}` is provided as a helper function.
