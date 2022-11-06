@@ -52,7 +52,7 @@ pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
 });
 
 /// Enum of the different time systems available
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum TimeScale {

@@ -155,7 +155,7 @@ const CUMULATIVE_DAYS_FOR_MONTH: [u16; 12] = {
 /// Defines a nanosecond-precision Epoch.
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time systems or representations.
-#[derive(Copy, Clone, Eq)]
+#[derive(Copy, Clone, Eq, Hash)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
 pub struct Epoch {
