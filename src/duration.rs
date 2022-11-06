@@ -19,6 +19,7 @@ use core::cmp::Ordering;
 use core::convert::TryInto;
 use core::fmt;
 use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
+use core::hash::{Hash, Hasher};
 
 #[cfg(feature = "std")]
 use serde::{de, Deserialize, Deserializer};
@@ -53,7 +54,7 @@ pub const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_
 /// That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
 /// As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
 /// 2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
-#[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord, Hash)]
+#[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
 pub struct Duration {
@@ -79,6 +80,13 @@ impl PartialEq for Duration {
         } else {
             false
         }
+    }
+}
+
+impl Hash for Duration {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        self.centuries.hash(hasher);
+        self.nanoseconds.hash(hasher);
     }
 }
 
