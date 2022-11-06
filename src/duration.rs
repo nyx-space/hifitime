@@ -18,8 +18,8 @@ extern crate core;
 use core::cmp::Ordering;
 use core::convert::TryInto;
 use core::fmt;
-use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 use core::hash::{Hash, Hasher};
+use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 #[cfg(feature = "std")]
 use serde::{de, Deserialize, Deserializer};
