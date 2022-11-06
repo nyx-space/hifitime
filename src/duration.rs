@@ -18,6 +18,7 @@ extern crate core;
 use core::cmp::Ordering;
 use core::convert::TryInto;
 use core::fmt;
+use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
 #[cfg(feature = "std")]
@@ -79,6 +80,13 @@ impl PartialEq for Duration {
         } else {
             false
         }
+    }
+}
+
+impl Hash for Duration {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        self.centuries.hash(hasher);
+        self.nanoseconds.hash(hasher);
     }
 }
 

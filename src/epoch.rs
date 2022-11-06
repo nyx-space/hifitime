@@ -17,6 +17,7 @@ use crate::{
 };
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
+use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 use crate::ParsingErrors;
@@ -247,6 +248,12 @@ impl AddAssign<Duration> for Epoch {
 impl PartialEq for Epoch {
     fn eq(&self, other: &Self) -> bool {
         self.duration_since_j1900_tai == other.duration_since_j1900_tai
+    }
+}
+
+impl Hash for Epoch {
+    fn hash<H: Hasher>(&self, hasher: &mut H) {
+        self.duration_since_j1900_tai.hash(hasher);
     }
 }
 
