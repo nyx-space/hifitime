@@ -33,6 +33,17 @@ fn test_from_str() {
 }
 
 #[test]
+fn test_from_rinex_format() {
+    /*
+     * Test (GNSS) timescales identification
+     * from standard 3 letter constellation code
+     */
+    assert_eq!(TimeScale::from_str("GPS"), Ok(TimeScale::GPST));
+    assert_eq!(TimeScale::from_str("GAL"), Ok(TimeScale::GST));
+    assert_eq!(TimeScale::from_str("BDS"), Ok(TimeScale::BDT));
+}
+
+#[test]
 fn test_is_gnss() {
     let ts = TimeScale::GPST;
     assert!(ts.is_gnss());
