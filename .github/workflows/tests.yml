@@ -62,8 +62,8 @@ jobs:
       - name: Test (no default features)
         run: cargo test --no-default-features
       
-      - name: Test (all features)
-        run: cargo test --all-features
+      - name: Test (serde)
+        run: cargo test --features serde
 
   test_no_std:
     strategy:
