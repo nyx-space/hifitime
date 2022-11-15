@@ -2732,18 +2732,6 @@ fn leap_year() {
     }
 }
 
-#[cfg(feature = "std")]
-#[test]
-fn deser_test() {
-    use serde_derive::Deserialize;
-    #[derive(Deserialize)]
-    struct _D {
-        pub _e: Epoch,
-    }
-
-    println!("{}", (1 * Unit::Century + 12 * Unit::Hour).to_seconds());
-}
-
 #[test]
 fn cumulative_days_for_month() {
     assert_eq!(
