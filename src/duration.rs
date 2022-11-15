@@ -1190,20 +1190,20 @@ impl From<std::time::Duration> for Duration {
     }
 }
 
-#[cfg(feature = "std")]
-#[test]
-fn deser_test() {
-    use serde_derive::Deserialize;
-    #[derive(Deserialize)]
-    struct _D {
-        pub _d: Duration,
-    }
-}
-
 #[cfg(kani)]
 #[kani::proof]
 fn formal_normalize_any() {
     let centuries: i16 = kani::any();
     let nanoseconds: u64 = kani::any();
     let _dur = Duration::from_parts(centuries, nanoseconds);
+}
+
+#[test]
+#[cfg(feature = "serde")]
+fn test_serdes() {
+    let dt = Duration::from_seconds(10.1);
+    let content = r#"{"centuries":0,"nanoseconds":10100000000}"#;
+    assert_eq!(content, serde_json::to_string(&dt).unwrap());
+    let parsed: Duration = serde_json::from_str(content).unwrap(); 
+    assert_eq!(dt, parsed);
 }
