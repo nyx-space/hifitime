@@ -2751,3 +2751,13 @@ fn cumulative_days_for_month() {
         [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
     )
 }
+
+#[test]
+#[cfg(feature = "serde")]
+fn test_serdes() {
+    let e = Epoch::from_gregorian_utc(2020, 01, 01, 0, 0, 0, 0);
+    let content = r#"{"duration_since_j1900_tai":{"centuries":1,"nanoseconds":631065637000000000},"time_scale":"UTC"}"#;
+    assert_eq!(content, serde_json::to_string(&e).unwrap());
+    let parsed: Epoch = serde_json::from_str(content).unwrap(); 
+    assert_eq!(e, parsed);
+}
