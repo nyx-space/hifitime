@@ -21,8 +21,8 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
-#[cfg(feature = "std")]
-use serde::{de, Deserialize, Deserializer};
+#[cfg(feature = "serde")]
+use serde_derive::{Deserialize, Serialize};
 
 use core::str::FromStr;
 
@@ -57,6 +57,7 @@ pub const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_
 #[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Duration {
     pub(crate) centuries: i16,
     pub(crate) nanoseconds: u64,
@@ -755,18 +756,6 @@ impl Duration {
     /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
     fn init_from_truncated_nanoseconds(nanos: i64) -> Self {
         Self::from_truncated_nanoseconds(nanos)
-    }
-}
-
-#[cfg(feature = "std")]
-#[cfg(not(kani))]
-impl<'de> Deserialize<'de> for Duration {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        FromStr::from_str(&s).map_err(de::Error::custom)
     }
 }
 
