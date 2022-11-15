@@ -61,6 +61,9 @@ jobs:
 
       - name: Test (no default features)
         run: cargo test --no-default-features
+      
+      - name: Test (all features)
+        run: cargo test --all-features
 
   test_no_std:
     strategy:
