@@ -186,3 +186,13 @@ impl FromStr for TimeScale {
         }
     }
 }
+
+#[test]
+#[cfg(feature = "serde")]
+fn test_serdes() {
+    let ts = TimeScale::UTC;
+    let content = "\"UTC\"";
+    assert_eq!(content, serde_json::to_string(&ts).unwrap());
+    let parsed: TimeScale = serde_json::from_str(content).unwrap();
+    assert_eq!(ts, parsed);
+}
