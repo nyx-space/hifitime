@@ -175,11 +175,11 @@ impl FromStr for TimeScale {
             Ok(Self::TDB)
         } else if val == "ET" {
             Ok(Self::ET)
-        } else if val == "GPST" {
+        } else if val == "GPST" || val == "GPS" {
             Ok(Self::GPST)
-        } else if val == "GST" {
+        } else if val == "GST" || val == "GAL" {
             Ok(Self::GST)
-        } else if val == "BDT" {
+        } else if val == "BDT" || val == "BDS" {
             Ok(Self::BDT)
         } else {
             Err(Errors::ParseError(ParsingErrors::TimeSystem))
