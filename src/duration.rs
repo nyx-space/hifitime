@@ -1204,6 +1204,6 @@ fn test_serdes() {
     let dt = Duration::from_seconds(10.1);
     let content = r#"{"centuries":0,"nanoseconds":10100000000}"#;
     assert_eq!(content, serde_json::to_string(&dt).unwrap());
-    let parsed: Duration = serde_json::from_str(content).unwrap(); 
+    let parsed: Duration = serde_json::from_str(content).unwrap();
     assert_eq!(dt, parsed);
 }
