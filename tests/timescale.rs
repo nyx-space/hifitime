@@ -54,3 +54,8 @@ fn test_is_gnss() {
     let ts = TimeScale::TAI;
     assert!(!ts.is_gnss());
 }
+
+#[test]
+fn test_default() {
+    assert_eq!(TimeScale::default(), TimeScale::TAI);
+}
