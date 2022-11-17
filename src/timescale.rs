@@ -74,6 +74,18 @@ pub enum TimeScale {
     BDT,
 }
 
+impl Default for TimeScale {
+    /// Builds default TAI time scale
+    fn default() -> Self {
+        /*
+         * We use TAI as default Time scale,
+         * because `Epoch` is always defined with respect to TAI.
+         * Also, a default `Epoch` is then a null duration into TAI.
+         */
+        Self::TAI
+    }
+}
+
 impl TimeScale {
     pub(crate) const fn formatted_len(&self) -> usize {
         match &self {
