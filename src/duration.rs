@@ -21,8 +21,8 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
-#[cfg(feature = "std")]
-use serde::{de, Deserialize, Deserializer};
+#[cfg(feature = "serde")]
+use serde_derive::{Deserialize, Serialize};
 
 use core::str::FromStr;
 
@@ -57,6 +57,7 @@ pub const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_
 #[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Duration {
     pub(crate) centuries: i16,
     pub(crate) nanoseconds: u64,
@@ -758,18 +759,6 @@ impl Duration {
     }
 }
 
-#[cfg(feature = "std")]
-#[cfg(not(kani))]
-impl<'de> Deserialize<'de> for Duration {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        FromStr::from_str(&s).map_err(de::Error::custom)
-    }
-}
-
 impl Mul<i64> for Duration {
     type Output = Duration;
     fn mul(self, q: i64) -> Self::Output {
@@ -1201,20 +1190,20 @@ impl From<std::time::Duration> for Duration {
     }
 }
 
-#[cfg(feature = "std")]
-#[test]
-fn deser_test() {
-    use serde_derive::Deserialize;
-    #[derive(Deserialize)]
-    struct _D {
-        pub _d: Duration,
-    }
-}
-
 #[cfg(kani)]
 #[kani::proof]
 fn formal_normalize_any() {
     let centuries: i16 = kani::any();
     let nanoseconds: u64 = kani::any();
     let _dur = Duration::from_parts(centuries, nanoseconds);
+}
+
+#[test]
+#[cfg(feature = "serde")]
+fn test_serdes() {
+    let dt = Duration::from_seconds(10.1);
+    let content = r#"{"centuries":0,"nanoseconds":10100000000}"#;
+    assert_eq!(content, serde_json::to_string(&dt).unwrap());
+    let parsed: Duration = serde_json::from_str(content).unwrap();
+    assert_eq!(dt, parsed);
 }

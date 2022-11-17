@@ -28,8 +28,8 @@ use pyo3::prelude::*;
 #[cfg(feature = "python")]
 use pyo3::pyclass::CompareOp;
 
-#[cfg(feature = "std")]
-use serde::{de, Deserialize, Deserializer};
+#[cfg(feature = "serde")]
+use serde_derive::{Deserialize, Serialize};
 
 use core::str::FromStr;
 #[cfg(feature = "std")]
@@ -159,6 +159,7 @@ const CUMULATIVE_DAYS_FOR_MONTH: [u16; 12] = {
 #[derive(Copy, Clone, Eq)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Epoch {
     /// An Epoch is always stored as the duration of since J1900 in the TAI time scale.
     pub duration_since_j1900_tai: Duration,
@@ -2477,18 +2478,6 @@ impl FromStr for Epoch {
     }
 }
 
-#[cfg(feature = "std")]
-#[cfg(not(kani))]
-impl<'de> Deserialize<'de> for Epoch {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let s = String::deserialize(deserializer)?;
-        FromStr::from_str(&s).map_err(de::Error::custom)
-    }
-}
-
 impl fmt::Debug for Epoch {
     /// Print this epoch in Gregorian in the time scale used at initialization
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -2743,22 +2732,20 @@ fn leap_year() {
     }
 }
 
-#[cfg(feature = "std")]
-#[test]
-fn deser_test() {
-    use serde_derive::Deserialize;
-    #[derive(Deserialize)]
-    struct _D {
-        pub _e: Epoch,
-    }
-
-    println!("{}", (1 * Unit::Century + 12 * Unit::Hour).to_seconds());
-}
-
 #[test]
 fn cumulative_days_for_month() {
     assert_eq!(
         CUMULATIVE_DAYS_FOR_MONTH,
         [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334]
     )
+}
+
+#[test]
+#[cfg(feature = "serde")]
+fn test_serdes() {
+    let e = Epoch::from_gregorian_utc(2020, 01, 01, 0, 0, 0, 0);
+    let content = r#"{"duration_since_j1900_tai":{"centuries":1,"nanoseconds":631065637000000000},"time_scale":"UTC"}"#;
+    assert_eq!(content, serde_json::to_string(&e).unwrap());
+    let parsed: Epoch = serde_json::from_str(content).unwrap();
+    assert_eq!(e, parsed);
 }
