@@ -48,7 +48,7 @@ Put this in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hifitime = "3.6"
+hifitime = "3.7"
 ```
 
 ## Examples:
@@ -283,6 +283,17 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 
 
 # Changelog
+
+## 3.7.0
+Huge thanks to [@gwbres](https://github.com/gwbres) who put in all of the work for this release. These usability changes allow [Rinex](https://crates.io/crates/rinex) to use hifitime, check out this work.
++ timescale.rs: derive serdes traits when feasible by @gwbres in https://github.com/nyx-space/hifitime/pull/167
++ timecale.rs: introduce format/display by @gwbres in https://github.com/nyx-space/hifitime/pull/168
++ readme: fix BeiDou typo by @gwbres in https://github.com/nyx-space/hifitime/pull/169
++ epoch: derive Hash by @gwbres in https://github.com/nyx-space/hifitime/pull/170
++ timescale: identify GNSS timescales from standard 3 letter codes by @gwbres in https://github.com/nyx-space/hifitime/pull/171
++ timescale: standard formatting is now available by @gwbres in https://github.com/nyx-space/hifitime/pull/174
++ epoch, duration: improve and fix serdes feature by @gwbres in https://github.com/nyx-space/hifitime/pull/175
++ epoch, timescale: implement default trait by @gwbres in https://github.com/nyx-space/hifitime/pull/176
 
 ## 3.6.0
 + Galileo System Time and BeiDou Time are now supported, huge thanks to [@gwbres](https://github.com/gwbres) for all that work!
