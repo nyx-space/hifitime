@@ -35,5 +35,6 @@ jobs:
       - name: Run Kani
         run: |
           # Remove `cdylib` from targets in Cargo.toml because it confuses Kani
-          sed -i s/'"cdylib", "rlib"'/'"rlib"'/ Cargo.toml
+          sed '17d' Cargo.toml > Cargo.toml.new
+          mv Cargo.toml.new Cargo.toml
           cargo kani
