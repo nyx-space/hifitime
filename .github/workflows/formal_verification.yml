@@ -44,4 +44,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: formal-verification-report
-          path: target/report*/html/index.html
+          path: target/report*/html/**/*
