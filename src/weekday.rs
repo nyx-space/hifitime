@@ -9,6 +9,7 @@
  */
 
 use crate::ParsingErrors;
+use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 use core::str::FromStr;
 
 #[cfg(feature = "python")]
@@ -18,6 +19,7 @@ use pyo3::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[repr(u8)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Weekday {
@@ -30,9 +32,20 @@ pub enum Weekday {
     Sunday = 6,
 }
 
+impl Default for Weekday {
+    fn default() -> Self {
+        Self::Monday
+    }
+}
+
+impl Weekday {
+    /// Max: last weekday <=> `Sunday`
+    pub const MAX: Self = Self::Sunday;
+}
+
 impl From<u8> for Weekday {
     fn from(u: u8) -> Self {
-        match u {
+        match u.rem_euclid(Self::MAX.into()) {
             0 => Self::Monday,
             1 => Self::Tuesday,
             2 => Self::Wednesday,
@@ -72,5 +85,57 @@ impl FromStr for Weekday {
             "sunday" => Ok(Self::Sunday),
             _ => Err(ParsingErrors::ParseWeekdayError),
         }
+    }
+}
+
+impl Add for Weekday {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        Self::from(self as u8 + rhs as u8)
+    }
+}
+
+impl Sub for Weekday {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        Self::from(self as u8 - rhs as u8)
+    }
+}
+
+impl Add<u8> for Weekday {
+    type Output = Self;
+    fn add(self, rhs: u8) -> Self {
+        Self::from(self as u8 + rhs)
+    }
+}
+
+impl Sub<u8> for Weekday {
+    type Output = Self;
+    fn sub(self, rhs: u8) -> Self {
+        Self::from(self as u8 - rhs)
+    }
+}
+
+impl AddAssign for Weekday {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = *self + rhs;
+    }
+}
+
+impl SubAssign for Weekday {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = *self - rhs;
+    }
+}
+
+impl AddAssign<u8> for Weekday {
+    fn add_assign(&mut self, rhs: u8) {
+        *self = *self + rhs;
+    }
+}
+
+impl SubAssign<u8> for Weekday {
+    fn sub_assign(&mut self, rhs: u8) {
+        *self = *self - rhs;
     }
 }
