@@ -2227,7 +2227,7 @@ impl Epoch {
     }
     
     /// Builds an Epoch from given `wk` week counter into the desired Time scale. 
-    /// `ns` is the amount of nanoseconds into that week from closest Sunday Midnight of that week.
+    /// `ns` is the amount of nanoseconds into that week from closest Sunday Midnight.
     /// This is usually how GNSS receivers describe a GNSS time scale epoch
     #[cfg(feature = "python")]
     #[staticmethod]
