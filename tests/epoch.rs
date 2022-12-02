@@ -2,7 +2,7 @@
 extern crate core;
 
 use hifitime::{
-    is_gregorian_valid, Duration, Epoch, TimeScale, TimeUnits, Unit, BDT_REF_EPOCH,
+    is_gregorian_valid, Duration, Epoch, TimeScale, TimeUnits, Unit, Weekday, BDT_REF_EPOCH,
     DAYS_GPS_TAI_OFFSET, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
     SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
 };
@@ -1342,51 +1342,60 @@ fn test_minmax() {
 fn test_weekday() {
     // J1900 was a monday
     let j1900 = Epoch::from_gregorian_tai_at_midnight(1900, 01, 01);
-    assert_eq!(j1900.weekday_tai(), 0);
+    assert_eq!(j1900.weekday_tai(), Weekday::Monday);
     // 1 nanosec into TAI: still a monday
     let j1900_1ns = Epoch::from_gregorian_tai(1900, 01, 01, 0, 0, 0, 1);
-    assert_eq!(j1900_1ns.weekday_tai(), 0);
+    assert_eq!(j1900_1ns.weekday_tai(), Weekday::Monday);
     // some portion of that day: still a mon day
     let j1900_10h_123_ns = Epoch::from_gregorian_tai(1900, 01, 01, 10, 00, 00, 123);
-    assert_eq!(j1900_10h_123_ns.weekday_tai(), 0);
+    assert_eq!(j1900_10h_123_ns.weekday_tai(), Weekday::Monday);
     // Day +1: tuesday
     let j1901 = j1900 + Duration::from_days(1.0);
-    assert_eq!(j1901.weekday_tai(), 1);
+    assert_eq!(j1901.weekday_tai(), Weekday::Tuesday);
     // 1 ns into tuesday, still a tuesday
     let j1901 = j1901 + Duration::from_nanoseconds(1.0);
-    assert_eq!(j1901.weekday_tai(), 1);
+    assert_eq!(j1901.weekday_tai(), Weekday::Tuesday);
     // 6 days into TAI was a sunday
     let e = j1900 + Duration::from_days(6.0);
-    assert_eq!(e.weekday_tai(), 6);
-    // 6 days + some residuales, still a sunday
+    assert_eq!(e.weekday_tai(), Weekday::Sunday);
+    // 6 days + some tiny offset, still a sunday
     let e = e + Duration::from_nanoseconds(10000.0);
-    assert_eq!(e.weekday_tai(), 6);
+    assert_eq!(e.weekday_tai(), Weekday::Sunday);
     // 7 days into TAI: back to a monday
     let e = j1900 + Duration::from_days(7.0);
-    assert_eq!(e.weekday_tai(), 0);
+    assert_eq!(e.weekday_tai(), Weekday::Monday);
     // 2022/12/01 was a thursday
     let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 00, 00, 00, 0);
-    assert_eq!(epoch.weekday_utc(), 3);
+    assert_eq!(epoch.weekday_utc(), Weekday::Thursday);
     // 2022/11/28 was a monday
     let epoch = Epoch::from_gregorian_utc(2022, 11, 28, 00, 00, 00, 0);
-    assert_eq!(epoch.weekday_utc(), 0);
+    assert_eq!(epoch.weekday_utc(), Weekday::Monday);
 }
 
 #[test]
 fn test_start_of_week() {
     // 2022/12/01 + some offset, was a thursday
     let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
+    assert_eq!(epoch.weekday_utc(), Weekday::Thursday);
     // 2022/11/27 was the related sunday / start of week
     assert_eq!(
         epoch.closest_utc_start_of_week(),
         Epoch::from_gregorian_utc_at_midnight(2022, 11, 27)
     );
+    assert_eq!(
+        epoch.closest_utc_start_of_week().weekday_utc(),
+        Weekday::Sunday
+    );
 
     let epoch = Epoch::from_gregorian_utc(2022, 09, 15, 01, 01, 01, 01);
-    assert_eq!(epoch.weekday_utc(), 3);
+    assert_eq!(epoch.weekday_utc(), Weekday::Thursday);
     assert_eq!(
         epoch.closest_utc_start_of_week(),
         Epoch::from_gregorian_utc_at_midnight(2022, 09, 11)
+    );
+    assert_eq!(
+        epoch.closest_utc_start_of_week().weekday_utc(),
+        Weekday::Sunday
     );
 }
 

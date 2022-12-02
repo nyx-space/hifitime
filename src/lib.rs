@@ -78,6 +78,9 @@ pub use timeunits::*;
 mod timeseries;
 pub use timeseries::*;
 
+mod weekday;
+pub use weekday::*;
+
 /// This module defines all of the deprecated methods.
 mod deprecated;
 
@@ -132,6 +135,8 @@ pub enum ParsingErrors {
     UnknownFormat,
     UnknownOrMissingUnit,
     UnsupportedTimeSystem,
+    /// Non recognized Weekday description
+    ParseWeekdayError,
 }
 
 impl fmt::Display for Errors {

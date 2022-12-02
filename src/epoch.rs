@@ -21,6 +21,7 @@ use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 use crate::ParsingErrors;
+use crate::Weekday;
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
@@ -1186,6 +1187,21 @@ impl Epoch {
             )
         }
     }
+
+    /// Builds an Epoch from given `wk` week counter into the desired Time scale.
+    /// `ns` is the amount of nanoseconds into that week from closest Sunday Midnight.
+    /// This is usually how GNSS receivers describe a GNSS time scale epoch
+    #[must_use]
+    pub fn from_timeofweek(wk: u32, ns: u64, ts: TimeScale) -> Self {
+        let week = Duration::from_seconds(wk as f64 * SECONDS_PER_DAY * 7.0);
+        Self::from_duration(week + (ns as f64) * Unit::Nanosecond, ts)
+    }
+
+    #[must_use]
+    pub fn from_timeofweek_utc(wk: u32, ns: u64) -> Self {
+        let week = Duration::from_seconds(wk as f64 * SECONDS_PER_DAY * 7.0);
+        Self::from_utc_duration(week + (ns as f64) * Unit::Nanosecond)
+    }
 }
 
 #[cfg_attr(feature = "python", pymethods)]
@@ -2226,23 +2242,6 @@ impl Epoch {
         me
     }
 
-    /// Builds an Epoch from given `wk` week counter into the desired Time scale.
-    /// `ns` is the amount of nanoseconds into that week from closest Sunday Midnight.
-    /// This is usually how GNSS receivers describe a GNSS time scale epoch
-    #[cfg(feature = "python")]
-    #[staticmethod]
-    pub fn from_timeofweek(wk: u32, ns: u64, ts: TimeScale) -> Self {
-        let week = Duration::from_seconds(wk as f64 * SECONDS_PER_DAY * 7.0);
-        Self::from_duration(week + (ns as f64) * Unit::Nanosecond, ts)
-    }
-
-    #[cfg(feature = "python")]
-    #[staticmethod]
-    pub fn from_timeofweek_utc(wk: u32, ns: u64) -> Self {
-        let week = Duration::from_seconds(wk as f64 * SECONDS_PER_DAY * 7.0);
-        Self::from_utc_duration(week + (ns as f64) * Unit::Nanosecond)
-    }
-
     /// Converts to "time of week" (`wk, `tow`),
     /// which is usually how GNSS receivers describe a timestamp.
     /// `wk` is a rolling week conter into that time scale,
@@ -2256,11 +2255,11 @@ impl Epoch {
             TimeScale::TT => self.to_tt_days(),
             TimeScale::TAI => self.to_tai_days(),
             TimeScale::UTC => self.to_utc_days(),
-            TimeScale::TDB => self.to_tdb_seconds() / SECONDS_PER_DAY,
-            TimeScale::ET => self.to_et_seconds() / SECONDS_PER_DAY,
+            TimeScale::TDB => self.to_tdb_duration().to_unit(Unit::Day),
+            TimeScale::ET => self.to_et_duration().to_unit(Unit::Day),
         };
         // wk: rolling week counter into timescale
-        let wk = (days / 7.0) as u32;
+        let wk = (days / 7.0).floor() as u32;
         // tow: number of nanoseconds between self and closest sunday midnight / start of week
         let start_of_week = self.closest_utc_start_of_week();
         let dw = *self - start_of_week; // difference in weekdays [0..6]
@@ -2279,14 +2278,14 @@ impl Epoch {
 
     /// Returns weekday counter in TAI timescale,
     /// 0: Monday, ..., 6: Sunday
-    pub fn weekday_tai(&self) -> u8 {
-        // we're helped here, because J1900 was a monday :)
-        (self.to_tai_days() as u64).rem_euclid(7) as u8
+    pub fn weekday_tai(&self) -> Weekday {
+        // J1900 was a monday :)
+        ((self.to_tai_days() as u64).rem_euclid(7) as u8).into()
     }
 
     /// Returns weekday counter in UTC timescale,
     /// 0: Monday, ..., 6: Sunday
-    pub fn weekday_utc(&self) -> u8 {
+    pub fn weekday_utc(&self) -> Weekday {
         Self::from_tai_duration(
             self.duration_since_j1900_tai - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second,
         )
@@ -2296,8 +2295,8 @@ impl Epoch {
     /// Returns closest UTC Sunday midnight (ie., start of week) from self
     pub fn closest_utc_start_of_week(&self) -> Self {
         let weekday = self.weekday_utc();
-        let days = Duration::from_days(weekday as f64); // duration into that week
-                                                        // -1: 0 is monday, we want Sunday midnight
+        let days = Duration::from_days((weekday as u8).into()); // duration into that week
+                                                                // -1: 0 is monday, we want Sunday midnight
         let (y, m, d, _, _, _, _) = (*self - days - Duration::from_days(1.0)).to_gregorian_utc();
         Self::from_gregorian_utc_at_midnight(y, m, d)
     }
