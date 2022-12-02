@@ -1347,8 +1347,8 @@ fn test_weekday() {
     let j1900_fractionnal = Epoch::from_gregorian_tai(1900, 01, 01, 0, 0, 0, 1);
     assert_eq!(j1900.weekday_tai(), 0);
     // some portion of that day: still a mon day
-    let j1900_fractionnal = Epoch::from_gregorian_tai(1900, 01, 01, 10, 00, 00, 123);
-    assert_eq!(j1900.weekday_tai(), 0);
+    let j1900_10h_123_ns = Epoch::from_gregorian_tai(1900, 01, 01, 10, 00, 00, 123);
+    assert_eq!(j1900_10h_123_ns.weekday_tai(), 0);
     // Day +1: tuesday
     let j1901 = j1900 + Duration::from_days(1.0);
     assert_eq!(j1901.weekday_tai(), 1);
@@ -1364,6 +1364,21 @@ fn test_weekday() {
     // 7 days into TAI: back to a monday
     let e = j1900 + Duration::from_days(7.0);
     assert_eq!(e.weekday_tai(), 0);
+    // 2022/12/01 was a thursday
+    let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 00, 00, 00, 0);
+    assert_eq!(epoch.weekday_utc(), 3);
+    // 2022/11/28 was a monday 
+    let epoch = Epoch::from_gregorian_utc(2022, 11, 28, 00, 00, 00, 0);
+    assert_eq!(epoch.weekday_utc(), 0);
+}
+
+#[test]
+fn test_start_of_week() {
+    // 2022/12/01 + some offset, was a thursday
+    let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
+    // 2022/11/28 was the related start of week
+    assert_eq!(epoch.closest_utc_start_of_week(),
+        Epoch::from_gregorian_utc_at_midnight(2022, 11, 28));
 }
 
 #[test]

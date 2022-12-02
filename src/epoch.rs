@@ -2261,29 +2261,38 @@ impl Epoch {
     /// 0: Monday,..., 6: Sunday
     pub fn weekday_tai(&self) -> u8 {
         // we're helped here, because J1900 was a monday :) 
-        (self.to_tai_days() as u64).rem_euclid(7) as u8 
+        (self.to_tai_days() as u64).rem_euclid(7) as u8
     }
 
-/* needs timescale starting point offset
-    /// Returns weekday counter in GST timescale,
-    /// 0: Monday,..., 6: Sunday
-    pub fn weekday_gst(&self) -> u8 {
-        self.in_time_scale(TimeScale::TAI).weekday_tai()
-    }
-    
-    pub fn weekday_gpst(&self) -> u8 {
-        self.in_time_scale(TimeScale::GPST).weekday_tai()
-    }
-    
-    pub fn weekday_bdt(&self) -> u8 {
-        self.in_time_scale(TimeScale::BDT).weekday_tai()
-    }
-    
-    pub fn weekday_utc(&self) -> u8 {
-        self.in_time_scale(TimeScale::UTC).weekday_tai()
+/*
+    /// Returns weekday counter in current time scale
+    pub fn weekday(&self) -> u8 {
+        match self.time_scale {
+            TimeScale::TAI => self.weekday_tai(),
+            TimeScale::UTC => self.weekday_utc(),
+            TimeScale::TT => self.weekday_tt(),
+            TimeScale::TDB => self.weekday_tdb(),
+            TimeScale::ET => self.weekday_et(),
+            TimeScale::GPST => self.weekday_gpst(),
+            TimeScale::GST => self.weekday_gst(),
+            TimeScale::BDT => self.weekday_bdt(),
+        }
     }
 */
+    /// Returns weekday counter in UTC timescale,
+    /// 0: Monday,..., 6: Sunday
+    pub fn weekday_utc(&self) -> u8 {
+        Self::from_tai_duration(self.duration_since_j1900_tai - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second) 
+            .weekday_tai()
+    }
 
+    /// Returns closest UTC Sunday midnight (ie., start of week) from self
+    pub fn closest_utc_start_of_week(&self) -> Self {
+        let days = Duration::from_days(self.weekday_utc() as f64);
+        let (y, m, d, _, _, _, _) = (*self - days).to_gregorian_utc();
+        Self::from_gregorian_utc_at_midnight(y, m, d)
+    }
+    
     // Python helpers
 
     #[cfg(feature = "python")]
