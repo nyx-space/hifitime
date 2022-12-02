@@ -1337,3 +1337,42 @@ fn test_minmax() {
     assert_eq!(e1, e1.max(e0));
     assert_eq!(e1, e0.max(e1));
 }
+
+#[test]
+fn test_weekday() {
+    // J1900 was a monday
+    let j1900 = Epoch::from_gregorian_tai_at_midnight(1900, 01, 01);
+    assert_eq!(j1900.weekday_tai(), 0);
+    // 1 nanosec into TAI: still a monday
+    let j1900_fractionnal = Epoch::from_gregorian_tai(1900, 01, 01, 0, 0, 0, 1);
+    assert_eq!(j1900.weekday_tai(), 0);
+    // some portion of that day: still a mon day
+    let j1900_fractionnal = Epoch::from_gregorian_tai(1900, 01, 01, 10, 00, 00, 123);
+    assert_eq!(j1900.weekday_tai(), 0);
+    // Day +1: tuesday
+    let j1901 = j1900 + Duration::from_days(1.0);
+    assert_eq!(j1901.weekday_tai(), 1);
+    // 1 ns into tuesday, still a tuesday
+    let j1901 = j1901 + Duration::from_nanoseconds(1.0);
+    assert_eq!(j1901.weekday_tai(), 1);
+    // 6 days into TAI was a sunday
+    let e = j1900 + Duration::from_days(6.0);
+    assert_eq!(e.weekday_tai(), 6);
+    // 6 days + some residuales, still a sunday
+    let e = e + Duration::from_nanoseconds(10000.0);
+    assert_eq!(e.weekday_tai(), 6);
+    // 7 days into TAI: back to a monday
+    let e = j1900 + Duration::from_days(7.0);
+    assert_eq!(e.weekday_tai(), 0);
+}
+
+#[test]
+fn test_gnss_timeofweek() {
+    // GPST
+    // https://www.labsat.co.uk/index.php/en/gps-time-calculator
+    // 01/12/2022 00:00:00 => (2238, 345_618_000_000_000)
+    let epoch = Epoch::from_timeofweek(2238, 345_618_000_000_000, TimeScale::GPST);
+    assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 01, 00, 00, 00, 00));
+    // test reserve op
+    assert_eq!(epoch.to_timeofweek(), (2238, 345_618_000_000_000));
+}

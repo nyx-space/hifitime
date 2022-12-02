@@ -19,6 +19,15 @@ use core::str::FromStr;
 
 use crate::{Duration, Epoch, Errors, ParsingErrors, SECONDS_PER_DAY};
 
+/*
+/// TAI reference Monday: first Monday encountered in the TAI timescale,
+/// from our reference point (or Epoch), which is defined as J1900 in TAI.
+/// This is used as a reference point for weekday determination
+pub const TAI_REF_MONDAY: Epoch = Epoch {
+    centuries: 0, // funny enough, Day 1 in 1900 tai was a monday
+    nanoseconds: 0,
+}; */
+
 /// GPS reference epoch is UTC midnight between 05 January and 06 January 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>.
 pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,

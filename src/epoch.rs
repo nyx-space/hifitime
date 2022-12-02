@@ -13,7 +13,7 @@ use crate::parser::Token;
 use crate::{
     Errors, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S, GPST_REF_EPOCH, GST_REF_EPOCH,
     J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_MICROSECOND,
-    NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32, UNIX_REF_EPOCH,
+    SECONDS_PER_DAY, NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32, UNIX_REF_EPOCH,
 };
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
@@ -2225,6 +2225,64 @@ impl Epoch {
         me.time_scale = new_time_scale;
         me
     }
+    
+    /// Builds an Epoch from given `wk` week counter into the desired Time scale. 
+    /// `ns` is the amount of nanoseconds into that week, starting on Sunday midnight of that week.
+    #[cfg(feature = "python")]
+    #[staticmethod]
+    pub fn from_timeofweek(wk: u32, ns: u64, ts: TimeScale) -> Self  {
+        let week = Duration::from_seconds(wk as f64 * SECONDS_PER_DAY * 7.0);
+        Self::from_duration(week + (ns as f64) * Unit::Nanosecond, ts)
+    }
+
+    /// Converts to "time of week" (`wk, `tow`),
+    /// which is usually how GNSS receivers describe a timestamp.
+    /// `wk` is a rolling week conter into that time scale,
+    /// `tow` is the number of seconds since closest Sunday midnight into that week.
+    pub fn to_timeofweek(&self) -> (u32, u64) {
+        // fractionnal days in this time scale
+        let days = match self.time_scale {
+            TimeScale::GPST => self.to_gpst_days(),
+            TimeScale::GST => self.to_gst_days(),
+            TimeScale::BDT => self.to_bdt_days(),
+            TimeScale::TT => self.to_tt_days(),
+            TimeScale::TAI => self.to_tai_days(),
+            TimeScale::UTC => self.to_utc_days(),
+            TimeScale::TDB => self.to_tdb_seconds() / SECONDS_PER_DAY,
+            TimeScale::ET => self.to_et_seconds() / SECONDS_PER_DAY,
+        };
+        let wk = (days / 7.0) as u32;
+        let residuals = (Duration::from_f64(days + 7.0, Unit::Day) -  Duration::from_f64(days, Unit::Day))
+            .truncated_nanoseconds();
+        (wk, residuals as u64)// express residuals in ns 
+    }
+
+    /// Returns weekday counter in TAI timescale,
+    /// 0: Monday,..., 6: Sunday
+    pub fn weekday_tai(&self) -> u8 {
+        // we're helped here, because J1900 was a monday :) 
+        (self.to_tai_days() as u64).rem_euclid(7) as u8 
+    }
+
+/* needs timescale starting point offset
+    /// Returns weekday counter in GST timescale,
+    /// 0: Monday,..., 6: Sunday
+    pub fn weekday_gst(&self) -> u8 {
+        self.in_time_scale(TimeScale::TAI).weekday_tai()
+    }
+    
+    pub fn weekday_gpst(&self) -> u8 {
+        self.in_time_scale(TimeScale::GPST).weekday_tai()
+    }
+    
+    pub fn weekday_bdt(&self) -> u8 {
+        self.in_time_scale(TimeScale::BDT).weekday_tai()
+    }
+    
+    pub fn weekday_utc(&self) -> u8 {
+        self.in_time_scale(TimeScale::UTC).weekday_tai()
+    }
+*/
 
     // Python helpers
 
