@@ -9,7 +9,7 @@
  */
 
 use crate::ParsingErrors;
-use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::str::FromStr;
 
 #[cfg(feature = "python")]
@@ -40,12 +40,12 @@ impl Default for Weekday {
 
 impl Weekday {
     /// Max: last weekday <=> `Sunday`
-    pub const MAX: Self = Self::Sunday;
+    pub const MAX: u8 = 7;
 }
 
 impl From<u8> for Weekday {
     fn from(u: u8) -> Self {
-        match u.rem_euclid(Self::MAX.into()) {
+        match u.rem_euclid(Self::MAX) {
             0 => Self::Monday,
             1 => Self::Tuesday,
             2 => Self::Wednesday,
@@ -54,6 +54,12 @@ impl From<u8> for Weekday {
             5 => Self::Saturday,
             _ => Self::Sunday,
         }
+    }
+}
+
+impl From<i8> for Weekday {
+    fn from(i: i8) -> Self {
+        Self::from((i.rem_euclid(Self::MAX as i8) + Self::MAX as i8) as u8)
     }
 }
 
@@ -112,7 +118,7 @@ impl Add<u8> for Weekday {
 impl Sub<u8> for Weekday {
     type Output = Self;
     fn sub(self, rhs: u8) -> Self {
-        Self::from(self as u8 - rhs)
+        Self::from(self as i8 - rhs as i8)
     }
 }
 
