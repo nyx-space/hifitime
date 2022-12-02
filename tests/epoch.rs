@@ -1367,7 +1367,7 @@ fn test_weekday() {
     // 2022/12/01 was a thursday
     let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 00, 00, 00, 0);
     assert_eq!(epoch.weekday_utc(), 3);
-    // 2022/11/28 was a monday 
+    // 2022/11/28 was a monday
     let epoch = Epoch::from_gregorian_utc(2022, 11, 28, 00, 00, 00, 0);
     assert_eq!(epoch.weekday_utc(), 0);
 }
@@ -1377,13 +1377,17 @@ fn test_start_of_week() {
     // 2022/12/01 + some offset, was a thursday
     let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
     // 2022/11/27 was the related sunday / start of week
-    assert_eq!(epoch.closest_utc_start_of_week(),
-        Epoch::from_gregorian_utc_at_midnight(2022, 11, 27));
+    assert_eq!(
+        epoch.closest_utc_start_of_week(),
+        Epoch::from_gregorian_utc_at_midnight(2022, 11, 27)
+    );
 
     let epoch = Epoch::from_gregorian_utc(2022, 09, 15, 01, 01, 01, 01);
     assert_eq!(epoch.weekday_utc(), 3);
-    assert_eq!(epoch.closest_utc_start_of_week(),
-        Epoch::from_gregorian_utc_at_midnight(2022, 09, 11));
+    assert_eq!(
+        epoch.closest_utc_start_of_week(),
+        Epoch::from_gregorian_utc_at_midnight(2022, 09, 11)
+    );
 }
 
 #[test]
@@ -1394,15 +1398,15 @@ fn test_timeofweek() {
     let epoch = Epoch::from_timeofweek(2238, 345_618_000_000_000, TimeScale::GPST);
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 01, 00, 00, 00, 00));
     assert_eq!(epoch.to_timeofweek_utc(), (2238, 345_618_000_000_000));
-    
+
     // add 1 nanos
     let epoch = Epoch::from_timeofweek(2238, 345_618_000_000_001, TimeScale::GPST);
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 01, 00, 00, 00, 01));
-    
-    // add 1/2 day  
+
+    // add 1/2 day
     let epoch = Epoch::from_timeofweek(2238, 475_218_000_000_000, TimeScale::GPST);
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 02, 12, 00, 00, 00));
-    
+
     // add 1/2 day + 3 hours + 27 min + 19s +10ns
     let epoch = Epoch::from_timeofweek(2238, 487_657_000_000_010, TimeScale::GPST);
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 02, 15, 27, 19, 10));
