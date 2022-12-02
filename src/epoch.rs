@@ -2276,15 +2276,13 @@ impl Epoch {
         (wk, tow)
     }
 
-    /// Returns weekday counter in TAI timescale,
-    /// 0: Monday, ..., 6: Sunday
+    /// Returns weekday in TAI timescale
     pub fn weekday_tai(&self) -> Weekday {
         // J1900 was a monday :)
         ((self.to_tai_days() as u64).rem_euclid(7) as u8).into()
     }
 
-    /// Returns weekday counter in UTC timescale,
-    /// 0: Monday, ..., 6: Sunday
+    /// Returns weekday in UTC timescale
     pub fn weekday_utc(&self) -> Weekday {
         Self::from_tai_duration(
             self.duration_since_j1900_tai - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second,
