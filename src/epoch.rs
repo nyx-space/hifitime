@@ -2273,7 +2273,7 @@ impl Epoch {
             + Duration::from_microseconds(us as f64)
             + Duration::from_nanoseconds(ns as f64);
         let (_, mut tow) = tow.to_parts();
-        //tow += self.leap_seconds(true).unwrap_or(0.0) as u64 * 1_000_000_000;
+        tow += self.leap_seconds(true).unwrap_or(0.0) as u64 * 1_000_000_000;
         (wk, tow)
     }
     
