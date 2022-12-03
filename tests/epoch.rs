@@ -1016,12 +1016,17 @@ fn test_leap_seconds_iers() {
     let epoch_from_utc_greg = Epoch::from_gregorian_tai_hms(1971, 12, 31, 23, 59, 59);
     // Just after it.
     let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 0);
+    assert_eq!(epoch_from_utc_greg1.day_of_year(), 0.0);
     assert_eq!(epoch_from_utc_greg.leap_seconds_iers(), 0);
     // The first leap second is special; it adds 10 seconds.
     assert_eq!(epoch_from_utc_greg1.leap_seconds_iers(), 10);
 
     // Just before the second leap second.
     let epoch_from_utc_greg = Epoch::from_gregorian_tai_hms(1972, 6, 30, 23, 59, 59);
+    assert_eq!(
+        epoch_from_utc_greg.duration_in_year(),
+        (31 + 29 + 31 + 30 + 31 + 30) * Unit::Day - Unit::Second
+    );
     // Just after it.
     let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 7, 1, 0, 0, 0);
     assert_eq!(epoch_from_utc_greg.leap_seconds_iers(), 10);

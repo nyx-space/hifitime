@@ -2354,6 +2354,18 @@ impl Epoch {
         self.previous(weekday).with_hms_strict(12, 0, 0)
     }
 
+    /// Returns the duration since the start of the year
+    pub fn duration_in_year(&self) -> Duration {
+        let year = Self::compute_gregorian(self.to_duration()).0;
+        let start_of_year = Self::from_gregorian(year, 1, 1, 0, 0, 0, 0, self.time_scale);
+        self.to_duration() - start_of_year.to_duration()
+    }
+
+    /// Returns the number of days since the start of the year.
+    pub fn day_of_year(&self) -> f64 {
+        self.duration_in_year().to_unit(Unit::Day)
+    }
+
     /// Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn hours(&self) -> u64 {
         self.to_duration().decompose().2
