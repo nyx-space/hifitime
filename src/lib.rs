@@ -88,7 +88,7 @@ mod deprecated;
 pub mod prelude {
     pub use crate::{
         deprecated::TimeSystem, Duration, Epoch, Errors, Freq, Frequencies, TimeScale, TimeSeries,
-        TimeUnits, Unit,
+        TimeUnits, Unit, Weekday,
     };
 }
 

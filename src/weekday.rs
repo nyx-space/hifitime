@@ -8,7 +8,8 @@
  * Documentation: https://nyxspace.com/
  */
 
-use crate::ParsingErrors;
+use crate::{Duration, ParsingErrors, Unit};
+use core::fmt;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::str::FromStr;
 
@@ -100,40 +101,35 @@ impl FromStr for Weekday {
 impl Add for Weekday {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
-        Self::from(self as u8 + rhs as u8)
+        Self::from(u8::from(self) + u8::from(rhs))
     }
 }
 
 impl Sub for Weekday {
-    type Output = Self;
-    fn sub(self, rhs: Self) -> Self {
-        Self::from(self as u8 - rhs as u8)
+    type Output = Duration;
+    fn sub(self, rhs: Self) -> Self::Output {
+        // We can safely cast the weekdays as u8 into i8 because the maximum value is 6, and the max value of a i8 is 127.
+        let self_i8 = u8::from(self) as i8;
+        let mut rhs_i8 = u8::from(rhs) as i8;
+        if rhs_i8 - self_i8 < 0 {
+            rhs_i8 += 7;
+        }
+        i64::from(rhs_i8 - self_i8) * Unit::Day
     }
 }
 
 impl Add<u8> for Weekday {
     type Output = Self;
     fn add(self, rhs: u8) -> Self {
-        Self::from(self as u8 + rhs)
+        Self::from(u8::from(self) + rhs)
     }
 }
 
 impl Sub<u8> for Weekday {
     type Output = Self;
     fn sub(self, rhs: u8) -> Self {
-        Self::from(self as i8 - rhs as i8)
-    }
-}
-
-impl AddAssign for Weekday {
-    fn add_assign(&mut self, rhs: Self) {
-        *self = *self + rhs;
-    }
-}
-
-impl SubAssign for Weekday {
-    fn sub_assign(&mut self, rhs: Self) {
-        *self = *self - rhs;
+        // We can safely cast the weekdays as u8 into i8 because the maximum value is 6, and the max value of a i8 is 127.
+        Self::from(u8::from(self) as i8 - u8::from(rhs) as i8)
     }
 }
 
@@ -146,6 +142,12 @@ impl AddAssign<u8> for Weekday {
 impl SubAssign<u8> for Weekday {
     fn sub_assign(&mut self, rhs: u8) {
         *self = *self - rhs;
+    }
+}
+
+impl fmt::Display for Weekday {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{self:?}")
     }
 }
 

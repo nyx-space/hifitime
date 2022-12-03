@@ -2300,6 +2300,115 @@ impl Epoch {
         self.weekday_in_time_scale(TimeScale::UTC)
     }
 
+    /// Returns the next weekday.
+    ///
+    /// ```
+    /// use hifitime::prelude::*;
+    ///
+    /// let epoch = Epoch::from_gregorian_utc_at_midnight(1988, 1, 2);
+    /// assert_eq!(epoch.weekday_utc(), Weekday::Saturday);
+    /// assert_eq!(epoch.next(Weekday::Sunday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 3));
+    /// assert_eq!(epoch.next(Weekday::Monday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 4));
+    /// assert_eq!(epoch.next(Weekday::Tuesday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 5));
+    /// assert_eq!(epoch.next(Weekday::Wednesday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 6));
+    /// assert_eq!(epoch.next(Weekday::Thursday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 7));
+    /// assert_eq!(epoch.next(Weekday::Friday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 8));
+    /// assert_eq!(epoch.next(Weekday::Saturday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 9));
+    /// ```
+    pub fn next(&self, weekday: Weekday) -> Self {
+        let delta_days = self.weekday() - weekday;
+        if delta_days == Duration::ZERO {
+            *self + 7 * Unit::Day
+        } else {
+            *self + delta_days
+        }
+    }
+
+    /// Returns the next weekday.
+    ///
+    /// ```
+    /// use hifitime::prelude::*;
+    ///
+    /// let epoch = Epoch::from_gregorian_utc_at_midnight(1988, 1, 2);
+    /// assert_eq!(epoch.previous(Weekday::Friday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 1));
+    /// assert_eq!(epoch.previous(Weekday::Thursday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 31));
+    /// assert_eq!(epoch.previous(Weekday::Wednesday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 30));
+    /// assert_eq!(epoch.previous(Weekday::Tuesday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 29));
+    /// assert_eq!(epoch.previous(Weekday::Monday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 28));
+    /// assert_eq!(epoch.previous(Weekday::Sunday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 27));
+    /// assert_eq!(epoch.previous(Weekday::Saturday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 26));
+    /// ```
+    pub fn previous(&self, weekday: Weekday) -> Self {
+        let delta_days = weekday - self.weekday();
+        if delta_days == Duration::ZERO {
+            *self - 7 * Unit::Day
+        } else {
+            *self - delta_days
+        }
+    }
+
+    /// Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    pub fn hours(&self) -> u64 {
+        self.to_duration().decompose().2
+    }
+
+    /// Returns the minutes of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    pub fn minutes(&self) -> u64 {
+        self.to_duration().decompose().3
+    }
+
+    /// Returns the seconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    pub fn seconds(&self) -> u64 {
+        self.to_duration().decompose().4
+    }
+
+    /// Returns the milliseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    pub fn milliseconds(&self) -> u64 {
+        self.to_duration().decompose().5
+    }
+
+    /// Returns the microseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    pub fn microseconds(&self) -> u64 {
+        self.to_duration().decompose().6
+    }
+
+    /// Returns the nanoseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    pub fn nanoseconds(&self) -> u64 {
+        self.to_duration().decompose().7
+    }
+
+    /// Returns a copy of self where the time is set to the provided hours, minutes, seconds
+    /// Invalid number of hours, minutes, and seconds will overflow into their higher unit.
+    /// Warning: this does _not_ set the subdivisions of second to zero.
+    pub fn with_hms(&self, hours: u64, minutes: u64, seconds: u64) -> Self {
+        let (sign, days, _, _, _, milliseconds, microseconds, nanoseconds) =
+            self.to_duration().decompose();
+        Self::from_duration(
+            Duration::compose(
+                sign,
+                days,
+                hours,
+                minutes,
+                seconds,
+                milliseconds,
+                microseconds,
+                nanoseconds,
+            ),
+            self.time_scale,
+        )
+    }
+
+    /// Returns a copy of self where the time is set to the provided hours, minutes, seconds
+    /// Invalid number of hours, minutes, and seconds will overflow into their higher unit.
+    /// Warning: this will set the subdivisions of seconds to zero.
+    pub fn with_hms_strict(&self, hours: u64, minutes: u64, seconds: u64) -> Self {
+        let (sign, days, _, _, _, _, _, _) = self.to_duration().decompose();
+        Self::from_duration(
+            Duration::compose(sign, days, hours, minutes, seconds, 0, 0, 0),
+            self.time_scale,
+        )
+    }
+
     /// Returns closest UTC Sunday midnight (ie., start of week) from self
     pub fn closest_utc_start_of_week(&self) -> Self {
         let weekday = self.weekday_utc();

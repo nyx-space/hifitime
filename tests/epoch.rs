@@ -1404,6 +1404,29 @@ fn test_weekday() {
 }
 
 #[test]
+fn test_get_time() {
+    let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
+    assert_eq!(epoch.hours(), 10);
+    assert_eq!(epoch.minutes(), 11);
+    assert_eq!(epoch.seconds(), 12);
+    assert_eq!(epoch.milliseconds(), 0);
+    assert_eq!(epoch.microseconds(), 0);
+    assert_eq!(epoch.nanoseconds(), 13);
+
+    let epoch_midnight = epoch.with_hms(0, 0, 0);
+    assert_eq!(
+        epoch_midnight,
+        Epoch::from_gregorian_utc_at_midnight(2022, 12, 01) + 13 * Unit::Nanosecond
+    );
+
+    let epoch_midnight = epoch.with_hms_strict(0, 0, 0);
+    assert_eq!(
+        epoch_midnight,
+        Epoch::from_gregorian_utc_at_midnight(2022, 12, 01)
+    );
+}
+
+#[test]
 fn test_start_of_week() {
     // 2022/12/01 + some offset, was a thursday
     let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
