@@ -1,6 +1,8 @@
 #[cfg(feature = "std")]
 extern crate core;
 
+use core::str::FromStr;
+
 use hifitime::{Duration, Epoch, Unit, Weekday};
 
 #[test]
@@ -65,6 +67,8 @@ fn test_weekday_differences() {
         } else {
             assert_eq!(neg_delta, i64::from(day_num % 7 - 2) * Unit::Day);
         }
+        // Test FromStr
+        assert_eq!(Weekday::from_str(&format!("{day}")).unwrap(), day);
     }
 }
 

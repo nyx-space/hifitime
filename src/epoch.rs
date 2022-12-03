@@ -37,7 +37,7 @@ use core::str::FromStr;
 use std::time::SystemTime;
 
 #[cfg(not(feature = "std"))]
-use num_traits::Float;
+use num_traits::{Euclid, Float};
 
 const TT_OFFSET_MS: i64 = 32_184;
 const ET_OFFSET_US: i64 = 32_184_935;

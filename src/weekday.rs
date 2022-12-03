@@ -84,15 +84,14 @@ impl From<Weekday> for u8 {
 impl FromStr for Weekday {
     type Err = ParsingErrors;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let val = s.trim().to_lowercase();
-        match val.as_str() {
-            "monday" => Ok(Self::Monday),
-            "tuesday" => Ok(Self::Tuesday),
-            "wednesday" => Ok(Self::Wednesday),
-            "thursday" => Ok(Self::Thursday),
-            "friday" => Ok(Self::Friday),
-            "saturday" => Ok(Self::Saturday),
-            "sunday" => Ok(Self::Sunday),
+        match s.trim() {
+            "monday" | "Monday" | "MONDAY" => Ok(Self::Monday),
+            "tuesday" | "Tuesday" | "TUESDAY" => Ok(Self::Tuesday),
+            "wednesday" | "Wednesday" | "WEDNESDAY" => Ok(Self::Wednesday),
+            "thursday" | "Thursday" | "THURSDAY" => Ok(Self::Thursday),
+            "friday" | "Friday" | "FRIDAY" => Ok(Self::Friday),
+            "saturday" | "Saturday" | "SATURDAY" => Ok(Self::Saturday),
+            "sunday" | "Sunday" | "SUNDAY" => Ok(Self::Sunday),
             _ => Err(ParsingErrors::ParseWeekdayError),
         }
     }
@@ -129,7 +128,7 @@ impl Sub<u8> for Weekday {
     type Output = Self;
     fn sub(self, rhs: u8) -> Self {
         // We can safely cast the weekdays as u8 into i8 because the maximum value is 6, and the max value of a i8 is 127.
-        Self::from(u8::from(self) as i8 - u8::from(rhs) as i8)
+        Self::from(u8::from(self) as i8 - rhs as i8)
     }
 }
 
@@ -166,5 +165,6 @@ fn test_wrapping() {
             "expecting {:?} got {:?} for {:02} conversion",
             expected, add, i
         );
+        // Test FromStr
     }
 }
