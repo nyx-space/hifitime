@@ -8,16 +8,6 @@ fn test_basic_ops() {
     assert_eq!(Weekday::default(), Weekday::Monday);
 
     let monday = Weekday::default();
-    for i in 0..24 {
-        // wrapping
-        let add = monday + i;
-        let expected: Weekday = i.rem_euclid(Weekday::MAX.into()).into();
-        assert_eq!(
-            add, expected,
-            "test failed, expecting {:?} got {:?} for {:02} conversion",
-            expected, add, i
-        );
-    }
 
     assert_eq!(monday - 1, Weekday::Sunday);
     assert_eq!(monday - 2, Weekday::Saturday);

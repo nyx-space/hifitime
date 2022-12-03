@@ -17,7 +17,13 @@ use serde_derive::{Deserialize, Serialize};
 use core::fmt;
 use core::str::FromStr;
 
-use crate::{Duration, Epoch, Errors, ParsingErrors, SECONDS_PER_DAY};
+use crate::{Duration, Epoch, Errors, ParsingErrors, J2000_TO_J1900_DURATION, SECONDS_PER_DAY};
+
+/// The J1900 reference epoch (1900-01-01 at noon) TAI.
+pub const J1900_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration::ZERO);
+
+/// The J2000 reference epoch (2000-01-01 at midnight) TAI.
+pub const J2000_REF_EPOCH: Epoch = Epoch::from_tai_duration(J2000_TO_J1900_DURATION);
 
 /// GPS reference epoch is UTC midnight between 05 January and 06 January 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>.
 pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {

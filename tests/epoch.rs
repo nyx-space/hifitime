@@ -3,8 +3,9 @@ extern crate core;
 
 use hifitime::{
     is_gregorian_valid, Duration, Epoch, TimeScale, TimeUnits, Unit, Weekday, BDT_REF_EPOCH,
-    DAYS_GPS_TAI_OFFSET, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
-    SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
+    DAYS_GPS_TAI_OFFSET, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J1900_REF_EPOCH,
+    J2000_OFFSET, MJD_OFFSET, SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET,
+    SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
 #[cfg(feature = "std")]
@@ -1340,36 +1341,66 @@ fn test_minmax() {
 
 #[test]
 fn test_weekday() {
+    // Ensure that even when we switch the time scale of the underlying Epoch, we're still correctly computing the weekday.
+    let permutate_time_scale = |e: Epoch, expect: Weekday| {
+        for new_time_scale in [
+            TimeScale::BDT,
+            TimeScale::ET,
+            TimeScale::GPST,
+            TimeScale::GST,
+            TimeScale::TAI,
+            TimeScale::TDB,
+            TimeScale::TT,
+            TimeScale::UTC,
+        ] {
+            let e_ts = e.in_time_scale(new_time_scale);
+            assert_eq!(e_ts.weekday(), expect, "error with {new_time_scale}");
+        }
+    };
     // J1900 was a monday
-    let j1900 = Epoch::from_gregorian_tai_at_midnight(1900, 01, 01);
-    assert_eq!(j1900.weekday_tai(), Weekday::Monday);
+    let j1900 = J1900_REF_EPOCH;
+    assert_eq!(j1900.weekday(), Weekday::Monday);
+    permutate_time_scale(j1900, Weekday::Monday);
     // 1 nanosec into TAI: still a monday
     let j1900_1ns = Epoch::from_gregorian_tai(1900, 01, 01, 0, 0, 0, 1);
-    assert_eq!(j1900_1ns.weekday_tai(), Weekday::Monday);
+    assert_eq!(j1900_1ns.weekday(), Weekday::Monday);
+    permutate_time_scale(j1900_1ns, Weekday::Monday);
     // some portion of that day: still a mon day
     let j1900_10h_123_ns = Epoch::from_gregorian_tai(1900, 01, 01, 10, 00, 00, 123);
-    assert_eq!(j1900_10h_123_ns.weekday_tai(), Weekday::Monday);
+    assert_eq!(j1900_10h_123_ns.weekday(), Weekday::Monday);
+    permutate_time_scale(j1900_10h_123_ns, Weekday::Monday);
     // Day +1: tuesday
     let j1901 = j1900 + Duration::from_days(1.0);
-    assert_eq!(j1901.weekday_tai(), Weekday::Tuesday);
+    assert_eq!(j1901.weekday(), Weekday::Tuesday);
+    permutate_time_scale(j1901, Weekday::Tuesday);
     // 1 ns into tuesday, still a tuesday
     let j1901 = j1901 + Duration::from_nanoseconds(1.0);
-    assert_eq!(j1901.weekday_tai(), Weekday::Tuesday);
+    assert_eq!(j1901.weekday(), Weekday::Tuesday);
+    permutate_time_scale(j1901, Weekday::Tuesday);
     // 6 days into TAI was a sunday
     let e = j1900 + Duration::from_days(6.0);
-    assert_eq!(e.weekday_tai(), Weekday::Sunday);
+    assert_eq!(e.weekday(), Weekday::Sunday);
+    permutate_time_scale(e, Weekday::Sunday);
     // 6 days + some tiny offset, still a sunday
     let e = e + Duration::from_nanoseconds(10000.0);
-    assert_eq!(e.weekday_tai(), Weekday::Sunday);
+    assert_eq!(e.weekday(), Weekday::Sunday);
+    permutate_time_scale(e, Weekday::Sunday);
     // 7 days into TAI: back to a monday
     let e = j1900 + Duration::from_days(7.0);
-    assert_eq!(e.weekday_tai(), Weekday::Monday);
+    assert_eq!(e.weekday(), Weekday::Monday);
+    permutate_time_scale(e, Weekday::Monday);
     // 2022/12/01 was a thursday
-    let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 00, 00, 00, 0);
+    let epoch = Epoch::from_gregorian_utc_at_midnight(2022, 12, 01);
     assert_eq!(epoch.weekday_utc(), Weekday::Thursday);
+    permutate_time_scale(epoch, Weekday::Thursday);
     // 2022/11/28 was a monday
-    let epoch = Epoch::from_gregorian_utc(2022, 11, 28, 00, 00, 00, 0);
+    let epoch = Epoch::from_gregorian_utc_at_midnight(2022, 11, 28);
     assert_eq!(epoch.weekday_utc(), Weekday::Monday);
+    permutate_time_scale(epoch, Weekday::Monday);
+    // 1988/01/02 was a Saturday
+    let epoch = Epoch::from_gregorian_utc_at_midnight(1988, 1, 2);
+    assert_eq!(epoch.weekday_utc(), Weekday::Saturday);
+    permutate_time_scale(epoch, Weekday::Saturday);
 }
 
 #[test]

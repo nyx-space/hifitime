@@ -2247,7 +2247,7 @@ impl Epoch {
     /// `wk` is a rolling week conter into that time scale,
     /// `tow` is the number of seconds since closest Sunday midnight into that week.
     pub fn to_timeofweek_utc(&self) -> (u32, u64) {
-        // fractionnal days in this time scale
+        // fractional days in this time scale
         let days = match self.time_scale {
             TimeScale::GPST => self.to_gpst_days(),
             TimeScale::GST => self.to_gst_days(),
@@ -2276,18 +2276,28 @@ impl Epoch {
         (wk, tow)
     }
 
-    /// Returns weekday in TAI timescale
-    pub fn weekday_tai(&self) -> Weekday {
-        // J1900 was a monday :)
-        ((self.to_tai_days() as u64).rem_euclid(7) as u8).into()
+    /// Returns the weekday in provided time scale **ASSUMING** that the reference epoch of that time scale is a Monday.
+    /// You _probably_ do not want to use this. You probably either want `weekday()` or `weekday_utc()`.
+    /// Several time scales do _not_ have a reference day that's on a Monday, e.g. BDT.
+    pub fn weekday_in_time_scale(&self, time_scale: TimeScale) -> Weekday {
+        (self
+            .to_duration_in_time_scale(time_scale)
+            .to_unit(Unit::Day)
+            .rem_euclid(Weekday::DAYS_PER_WEEK)
+            .floor() as u8)
+            .into()
+    }
+
+    /// Returns weekday (uses the TAI representation for this calculation).
+    pub fn weekday(&self) -> Weekday {
+        // J1900 was a Monday so we just have to modulo the number of days by the number of days per week.
+        // The function call will be optimized away.
+        self.weekday_in_time_scale(TimeScale::TAI)
     }
 
     /// Returns weekday in UTC timescale
     pub fn weekday_utc(&self) -> Weekday {
-        Self::from_tai_duration(
-            self.duration_since_j1900_tai - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second,
-        )
-        .weekday_tai()
+        self.weekday_in_time_scale(TimeScale::UTC)
     }
 
     /// Returns closest UTC Sunday midnight (ie., start of week) from self

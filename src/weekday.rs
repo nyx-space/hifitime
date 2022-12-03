@@ -39,8 +39,10 @@ impl Default for Weekday {
 }
 
 impl Weekday {
-    /// Max: last weekday <=> `Sunday`
-    pub const MAX: u8 = 7;
+    /// Max: last weekday <=> `Sunday`, used only for conversion to/from u8.
+    const MAX: u8 = 7;
+    /// Trivial, but avoid magic numbers.
+    pub(crate) const DAYS_PER_WEEK: f64 = 7.0;
 }
 
 impl From<u8> for Weekday {
@@ -52,7 +54,8 @@ impl From<u8> for Weekday {
             3 => Self::Thursday,
             4 => Self::Friday,
             5 => Self::Saturday,
-            _ => Self::Sunday,
+            6 => Self::Sunday,
+            _ => Self::default(), // Defaults back to default for other values.
         }
     }
 }
@@ -143,5 +146,23 @@ impl AddAssign<u8> for Weekday {
 impl SubAssign<u8> for Weekday {
     fn sub_assign(&mut self, rhs: u8) {
         *self = *self - rhs;
+    }
+}
+
+#[test]
+fn test_wrapping() {
+    assert_eq!(Weekday::default(), Weekday::Monday);
+    assert_eq!(Weekday::from(Weekday::MAX), Weekday::Monday);
+
+    let monday = Weekday::default();
+    for i in 0..24 {
+        // Test wrapping
+        let add = monday + i;
+        let expected: Weekday = i.rem_euclid(Weekday::MAX.into()).into();
+        assert_eq!(
+            add, expected,
+            "expecting {:?} got {:?} for {:02} conversion",
+            expected, add, i
+        );
     }
 }
