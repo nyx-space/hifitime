@@ -12,7 +12,7 @@ use crate::duration::{Duration, Unit};
 use crate::parser::Token;
 use crate::{
     Errors, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S, GPST_REF_EPOCH, GST_REF_EPOCH,
-    J1900_OFFSET, J1900_REF_EPOCH, J2000_TO_J1900_DURATION, MJD_OFFSET,
+    J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET,
     NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32,
     SECONDS_PER_DAY, UNIX_REF_EPOCH,
 };
@@ -2251,30 +2251,10 @@ impl Epoch {
         let wk = (days / Weekday::DAYS_PER_WEEK).floor() as u32;
         // tow: number of nanoseconds between self and previous sunday midnight / start of week
         let mut start_of_week = self.previous_weekday_at_midnight(Weekday::Sunday);
-        // restrict start of week/sunday to the time scale starting day
-        // std::cmp::min( start_of_week, self.time_scale.ref_epoch)
-        match self.time_scale {
-            TimeScale::GPST => {
-                if start_of_week < GPST_REF_EPOCH {
-                    start_of_week = GPST_REF_EPOCH;
-                }
-            }
-            TimeScale::BDT => {
-                if start_of_week < BDT_REF_EPOCH {
-                    start_of_week = BDT_REF_EPOCH;
-                }
-            }
-            TimeScale::GST => {
-                if start_of_week < GST_REF_EPOCH {
-                    start_of_week = GST_REF_EPOCH;
-                }
-            }
-            TimeScale::TAI => {
-                if start_of_week < J1900_REF_EPOCH {
-                    start_of_week = J1900_REF_EPOCH;
-                }
-            }
-            _ => {}
+        let ref_epoch = self.time_scale.ref_epoch();
+        // restrict start of week/sunday to the start of the time scale
+        if start_of_week < ref_epoch {
+            start_of_week = ref_epoch;
         }
         let dw = *self - start_of_week; // difference in weekdays [0..6]
         (wk, dw.nanoseconds)

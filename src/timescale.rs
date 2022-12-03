@@ -105,6 +105,15 @@ impl TimeScale {
     pub const fn is_gnss(&self) -> bool {
         matches!(self, Self::GPST | Self::GST | Self::BDT)
     }
+    /// Returns Reference Epoch (t(0)) for given timescale
+    pub(crate) const fn ref_epoch(&self) -> Epoch {
+        match self {
+            Self::GPST => GPST_REF_EPOCH,
+            Self::GST => GST_REF_EPOCH,
+            Self::BDT => BDT_REF_EPOCH,
+            _ => J1900_REF_EPOCH,
+        }
+    }
 }
 
 impl fmt::Display for TimeScale {
