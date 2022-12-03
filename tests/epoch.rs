@@ -1433,22 +1433,26 @@ fn test_start_of_week() {
     assert_eq!(epoch.weekday_utc(), Weekday::Thursday);
     // 2022/11/27 was the related sunday / start of week
     assert_eq!(
-        epoch.closest_utc_start_of_week(),
+        epoch.previous_weekday_at_midnight(Weekday::Sunday),
         Epoch::from_gregorian_utc_at_midnight(2022, 11, 27)
     );
     assert_eq!(
-        epoch.closest_utc_start_of_week().weekday_utc(),
+        epoch
+            .previous_weekday_at_midnight(Weekday::Sunday)
+            .weekday_utc(),
         Weekday::Sunday
     );
 
     let epoch = Epoch::from_gregorian_utc(2022, 09, 15, 01, 01, 01, 01);
     assert_eq!(epoch.weekday_utc(), Weekday::Thursday);
     assert_eq!(
-        epoch.closest_utc_start_of_week(),
+        epoch.previous_weekday_at_midnight(Weekday::Sunday),
         Epoch::from_gregorian_utc_at_midnight(2022, 09, 11)
     );
     assert_eq!(
-        epoch.closest_utc_start_of_week().weekday_utc(),
+        epoch
+            .previous_weekday_at_midnight(Weekday::Sunday)
+            .weekday_utc(),
         Weekday::Sunday
     );
 }
@@ -1458,19 +1462,19 @@ fn test_timeofweek() {
     // GPST
     // https://www.labsat.co.uk/index.php/en/gps-time-calculator
     // 01/12/2022 00:00:00 <=> (2238, 345_618_000_000_000)
-    let epoch = Epoch::from_timeofweek(2238, 345_618_000_000_000, TimeScale::GPST);
+    let epoch = Epoch::from_time_of_week(2238, 345_618_000_000_000, TimeScale::GPST);
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 01, 00, 00, 00, 00));
-    assert_eq!(epoch.to_timeofweek_utc(), (2238, 345_618_000_000_000));
+    assert_eq!(epoch.to_time_of_week_utc(), (2238, 345_618_000_000_000));
 
     // add 1 nanos
-    let epoch = Epoch::from_timeofweek(2238, 345_618_000_000_001, TimeScale::GPST);
+    let epoch = Epoch::from_time_of_week(2238, 345_618_000_000_001, TimeScale::GPST);
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 01, 00, 00, 00, 01));
 
     // add 1/2 day
-    let epoch = Epoch::from_timeofweek(2238, 475_218_000_000_000, TimeScale::GPST);
+    let epoch = Epoch::from_time_of_week(2238, 475_218_000_000_000, TimeScale::GPST);
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 02, 12, 00, 00, 00));
 
     // add 1/2 day + 3 hours + 27 min + 19s +10ns
-    let epoch = Epoch::from_timeofweek(2238, 487_657_000_000_010, TimeScale::GPST);
+    let epoch = Epoch::from_time_of_week(2238, 487_657_000_000_010, TimeScale::GPST);
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 02, 15, 27, 19, 10));
 }
