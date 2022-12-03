@@ -106,7 +106,7 @@ impl TimeScale {
         matches!(self, Self::GPST | Self::GST | Self::BDT)
     }
     /// Returns Reference Epoch (t(0)) for given timescale
-    pub(crate) const fn ref_epoch(&self) -> Epoch {
+    pub const fn ref_epoch(&self) -> Epoch {
         match self {
             Self::GPST => GPST_REF_EPOCH,
             Self::GST => GST_REF_EPOCH,

@@ -1506,4 +1506,44 @@ fn test_time_of_week() {
     // add 1/2 day + 3 hours + 27 min + 19s +10ns
     let epoch = Epoch::from_time_of_week(2238, 487_657_000_000_010, TimeScale::GPST);
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 02, 15, 27, 19, 10));
+
+    // 1H into Galileo timescale
+    let epoch = Epoch::from_time_of_week(0, 3_600_000_000_000, TimeScale::GST);
+    let expected_tai = TimeScale::GST.ref_epoch() + Duration::from_hours(1.0);
+    assert_eq!(epoch.to_gregorian_utc(), expected_tai.to_gregorian_utc());
+    assert_eq!(epoch.to_time_of_week(), (0, 3_600_000_000_000));
+
+    // 1W + 128H into Galileo timescale
+    let epoch = Epoch::from_time_of_week(1, 128 * 3600 * 1_000_000_000, TimeScale::GST);
+    let expected_tai =
+        TimeScale::GST.ref_epoch() + Duration::from_days(7.0) + Duration::from_hours(128.0);
+    assert_eq!(epoch.to_gregorian_utc(), expected_tai.to_gregorian_utc());
+    assert_eq!(epoch.to_time_of_week(), (1, 128 * 3600 * 1_000_000_000));
+
+    // 13.5H into BeiDou timescale
+    let epoch = Epoch::from_time_of_week(
+        0,
+        13 * 3600 * 1_000_000_000 + 1800 * 1_000_000_000,
+        TimeScale::BDT,
+    );
+    let expected_tai = TimeScale::BDT.ref_epoch() + Duration::from_hours(13.5);
+    assert_eq!(epoch.to_gregorian_utc(), expected_tai.to_gregorian_utc());
+    assert_eq!(
+        epoch.to_time_of_week(),
+        (0, 13 * 3600 * 1_000_000_000 + 1800 * 1_000_000_000)
+    );
+
+    // 10W + 36.25 H into BeiDou Timescale
+    let epoch = Epoch::from_time_of_week(
+        10,
+        36 * 3600 * 1_000_000_000 + 900 * 1_000_000_000,
+        TimeScale::BDT,
+    );
+    let expected_tai =
+        TimeScale::BDT.ref_epoch() + Duration::from_days(70.0) + Duration::from_hours(36.25);
+    assert_eq!(epoch.to_gregorian_utc(), expected_tai.to_gregorian_utc());
+    assert_eq!(
+        epoch.to_time_of_week(),
+        (10, 36 * 3600 * 1_000_000_000 + 900 * 1_000_000_000)
+    );
 }
