@@ -1188,18 +1188,18 @@ impl Epoch {
         }
     }
 
-    /// Builds an Epoch from given `wk` week counter into the desired Time scale.
-    /// `ns` is the amount of nanoseconds into that week from closest Sunday Midnight.
-    /// This is usually how GNSS receivers describe a GNSS time scale epoch
+    /// Builds an Epoch from given `week`: elapsed weeks counter into the desired Time scale, and "ns" amount of nanoseconds since closest Sunday Midnight.
+    /// For example, this is how GPS vehicles describe a GPST epoch.
     #[must_use]
-    pub fn from_time_of_week(wk: u32, ns: u64, ts: TimeScale) -> Self {
-        let week = Duration::from_seconds(wk as f64 * SECONDS_PER_DAY * Weekday::DAYS_PER_WEEK);
+    pub fn from_time_of_week(week: u32, ns: u64, ts: TimeScale) -> Self {
+        let week = Duration::from_seconds(week as f64 * SECONDS_PER_DAY * Weekday::DAYS_PER_WEEK);
         Self::from_duration(week + (ns as f64) * Unit::Nanosecond, ts)
     }
 
     #[must_use]
-    pub fn from_time_of_week_utc(wk: u32, ns: u64) -> Self {
-        Self::from_time_of_week(wk, ns, TimeScale::UTC)
+    /// Builds an UTC Epoch from given `week`: elapsed weeks counter and "ns" amount of nanoseconds since closest Sunday Midnight.
+    pub fn from_time_of_week_utc(week: u32, ns: u64) -> Self {
+        Self::from_time_of_week(week, ns, TimeScale::UTC)
     }
 }
 
@@ -2244,9 +2244,9 @@ impl Epoch {
     /// Converts this epoch into the time of week, represented as a rolling week counter into that time scale and the number of nanoseconds since closest Sunday midnight into that week.
     /// This is usually how GNSS receivers describe a timestamp.
     pub fn to_time_of_week(&self) -> (u32, u64) {
-        // fractional days in this time scale
-        let days = self.to_duration().to_unit(Unit::Day);
         // wk: rolling week counter into timescale
+        //   fractional days in this time scale
+        let days = self.to_duration().to_unit(Unit::Day);
         let wk = (days / Weekday::DAYS_PER_WEEK).floor() as u32;
         // tow: number of nanoseconds between self and previous sunday midnight / start of week
         let mut start_of_week = self.previous_weekday_at_midnight(Weekday::Sunday);
