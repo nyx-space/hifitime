@@ -3,7 +3,7 @@ extern crate core;
 
 use core::str::FromStr;
 
-use hifitime::{Duration, Epoch, Unit, Weekday};
+use hifitime::{Duration, Epoch, TimeUnits, Unit, Weekday};
 
 #[test]
 fn test_basic_ops() {
@@ -104,6 +104,65 @@ fn test_next() {
         epoch.next(Weekday::Saturday),
         Epoch::from_gregorian_utc_at_midnight(1988, 1, 9)
     );
+
+    // Try with non zero subseconds
+    let epoch = epoch + 159.microseconds();
+    assert_eq!(
+        epoch.next_weekday_at_midnight(Weekday::Sunday),
+        Epoch::from_gregorian_utc_at_midnight(1988, 1, 3)
+    );
+    assert_eq!(
+        epoch.next_weekday_at_noon(Weekday::Sunday),
+        Epoch::from_gregorian_utc_at_noon(1988, 1, 3)
+    );
+    assert_eq!(
+        epoch.next_weekday_at_midnight(Weekday::Monday),
+        Epoch::from_gregorian_utc_at_midnight(1988, 1, 4)
+    );
+    assert_eq!(
+        epoch.next_weekday_at_noon(Weekday::Monday),
+        Epoch::from_gregorian_utc_at_noon(1988, 1, 4)
+    );
+    assert_eq!(
+        epoch.next_weekday_at_midnight(Weekday::Tuesday),
+        Epoch::from_gregorian_utc_at_midnight(1988, 1, 5)
+    );
+    assert_eq!(
+        epoch.next_weekday_at_noon(Weekday::Tuesday),
+        Epoch::from_gregorian_utc_at_noon(1988, 1, 5)
+    );
+    assert_eq!(
+        epoch.next_weekday_at_midnight(Weekday::Wednesday),
+        Epoch::from_gregorian_utc_at_midnight(1988, 1, 6)
+    );
+    assert_eq!(
+        epoch.next_weekday_at_noon(Weekday::Wednesday),
+        Epoch::from_gregorian_utc_at_noon(1988, 1, 6)
+    );
+    assert_eq!(
+        epoch.next_weekday_at_midnight(Weekday::Thursday),
+        Epoch::from_gregorian_utc_at_midnight(1988, 1, 7)
+    );
+    assert_eq!(
+        epoch.next_weekday_at_noon(Weekday::Thursday),
+        Epoch::from_gregorian_utc_at_noon(1988, 1, 7)
+    );
+    assert_eq!(
+        epoch.next_weekday_at_midnight(Weekday::Friday),
+        Epoch::from_gregorian_utc_at_midnight(1988, 1, 8)
+    );
+    assert_eq!(
+        epoch.next_weekday_at_noon(Weekday::Friday),
+        Epoch::from_gregorian_utc_at_noon(1988, 1, 8)
+    );
+    assert_eq!(
+        epoch.next_weekday_at_midnight(Weekday::Saturday),
+        Epoch::from_gregorian_utc_at_midnight(1988, 1, 9)
+    );
+    assert_eq!(
+        epoch.next_weekday_at_noon(Weekday::Saturday),
+        Epoch::from_gregorian_utc_at_noon(1988, 1, 9)
+    );
 }
 
 #[test]
@@ -136,5 +195,65 @@ fn test_previous() {
     assert_eq!(
         epoch.previous(Weekday::Saturday),
         Epoch::from_gregorian_utc_at_midnight(1987, 12, 26)
+    );
+
+    // Try with non zero subseconds
+    let epoch = epoch + 159.microseconds();
+    assert_eq!(
+        epoch.previous_weekday_at_midnight(Weekday::Friday),
+        Epoch::from_gregorian_utc_at_midnight(1988, 1, 1)
+    );
+    assert_eq!(
+        epoch.previous_weekday_at_midnight(Weekday::Thursday),
+        Epoch::from_gregorian_utc_at_midnight(1987, 12, 31)
+    );
+    assert_eq!(
+        epoch.previous_weekday_at_midnight(Weekday::Wednesday),
+        Epoch::from_gregorian_utc_at_midnight(1987, 12, 30)
+    );
+    assert_eq!(
+        epoch.previous_weekday_at_midnight(Weekday::Tuesday),
+        Epoch::from_gregorian_utc_at_midnight(1987, 12, 29)
+    );
+    assert_eq!(
+        epoch.previous_weekday_at_midnight(Weekday::Monday),
+        Epoch::from_gregorian_utc_at_midnight(1987, 12, 28)
+    );
+    assert_eq!(
+        epoch.previous_weekday_at_midnight(Weekday::Sunday),
+        Epoch::from_gregorian_utc_at_midnight(1987, 12, 27)
+    );
+    assert_eq!(
+        epoch.previous_weekday_at_midnight(Weekday::Saturday),
+        Epoch::from_gregorian_utc_at_midnight(1987, 12, 26)
+    );
+
+    assert_eq!(
+        epoch.previous_weekday_at_noon(Weekday::Friday),
+        Epoch::from_gregorian_utc_at_noon(1988, 1, 1)
+    );
+    assert_eq!(
+        epoch.previous_weekday_at_noon(Weekday::Thursday),
+        Epoch::from_gregorian_utc_at_noon(1987, 12, 31)
+    );
+    assert_eq!(
+        epoch.previous_weekday_at_noon(Weekday::Wednesday),
+        Epoch::from_gregorian_utc_at_noon(1987, 12, 30)
+    );
+    assert_eq!(
+        epoch.previous_weekday_at_noon(Weekday::Tuesday),
+        Epoch::from_gregorian_utc_at_noon(1987, 12, 29)
+    );
+    assert_eq!(
+        epoch.previous_weekday_at_noon(Weekday::Monday),
+        Epoch::from_gregorian_utc_at_noon(1987, 12, 28)
+    );
+    assert_eq!(
+        epoch.previous_weekday_at_noon(Weekday::Sunday),
+        Epoch::from_gregorian_utc_at_noon(1987, 12, 27)
+    );
+    assert_eq!(
+        epoch.previous_weekday_at_noon(Weekday::Saturday),
+        Epoch::from_gregorian_utc_at_noon(1987, 12, 26)
     );
 }

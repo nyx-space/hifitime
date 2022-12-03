@@ -1199,8 +1199,7 @@ impl Epoch {
 
     #[must_use]
     pub fn from_time_of_week_utc(wk: u32, ns: u64) -> Self {
-        let week = Duration::from_seconds(wk as f64 * SECONDS_PER_DAY * Weekday::DAYS_PER_WEEK);
-        Self::from_utc_duration(week + (ns as f64) * Unit::Nanosecond)
+        Self::from_time_of_week(wk, ns, TimeScale::UTC)
     }
 }
 
@@ -2244,7 +2243,7 @@ impl Epoch {
 
     /// Converts this epoch into the time of week, represented as a rolling week counter into that time scale and the number of seconds since closest Sunday midnight into that week.
     /// This is usually how GNSS receivers describe a timestamp.
-    pub fn to_time_of_week_utc(&self) -> (u32, u64) {
+    pub fn to_time_of_week(&self) -> (u32, u64) {
         // fractional days in this time scale
         let days = self.to_duration().to_unit(Unit::Day);
         // wk: rolling week counter into timescale
@@ -2259,12 +2258,25 @@ impl Epoch {
     /// You _probably_ do not want to use this. You probably either want `weekday()` or `weekday_utc()`.
     /// Several time scales do _not_ have a reference day that's on a Monday, e.g. BDT.
     pub fn weekday_in_time_scale(&self, time_scale: TimeScale) -> Weekday {
-        (self
-            .to_duration_in_time_scale(time_scale)
-            .to_unit(Unit::Day)
-            .rem_euclid(Weekday::DAYS_PER_WEEK)
-            .floor() as u8)
-            .into()
+        #[cfg(feature = "std")]
+        {
+            (self
+                .to_duration_in_time_scale(time_scale)
+                .to_unit(Unit::Day)
+                .rem_euclid(Weekday::DAYS_PER_WEEK)
+                .floor() as u8)
+                .into()
+        }
+        #[cfg(not(feature = "std"))]
+        {
+            // The rem_euclid call of num_traits requires a pointer not a value.
+            (self
+                .to_duration_in_time_scale(time_scale)
+                .to_unit(Unit::Day)
+                .rem_euclid(&Weekday::DAYS_PER_WEEK)
+                .floor() as u8)
+                .into()
+        }
     }
 
     /// Returns weekday (uses the TAI representation for this calculation).

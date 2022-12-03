@@ -1458,13 +1458,17 @@ fn test_start_of_week() {
 }
 
 #[test]
-fn test_timeofweek() {
+fn test_time_of_week() {
     // GPST
     // https://www.labsat.co.uk/index.php/en/gps-time-calculator
     // 01/12/2022 00:00:00 <=> (2238, 345_618_000_000_000)
     let epoch = Epoch::from_time_of_week(2238, 345_618_000_000_000, TimeScale::GPST);
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 01, 00, 00, 00, 00));
-    assert_eq!(epoch.to_time_of_week_utc(), (2238, 345_618_000_000_000));
+    assert_eq!(epoch.to_time_of_week(), (2238, 345_618_000_000_000));
+
+    let epoch_utc = epoch.in_time_scale(TimeScale::UTC);
+    let (utc_wk, utc_tow) = epoch_utc.to_time_of_week();
+    assert_eq!(Epoch::from_time_of_week_utc(utc_wk, utc_tow), epoch_utc);
 
     // add 1 nanos
     let epoch = Epoch::from_time_of_week(2238, 345_618_000_000_001, TimeScale::GPST);
