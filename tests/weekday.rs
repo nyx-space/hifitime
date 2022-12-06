@@ -24,6 +24,8 @@ fn test_basic_ops() {
     assert_eq!(monday - 14, monday);
     assert_eq!(monday - 15, Weekday::Sunday);
 
+    assert_eq!(Weekday::Monday as u8, 0);
+
     let i: i8 = -1;
     let weekday: Weekday = i.into();
     assert_eq!(weekday, Weekday::Sunday);

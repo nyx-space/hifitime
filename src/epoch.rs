@@ -12,8 +12,9 @@ use crate::duration::{Duration, Unit};
 use crate::parser::Token;
 use crate::{
     Errors, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S, GPST_REF_EPOCH, GST_REF_EPOCH,
-    J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_MICROSECOND,
-    NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32, UNIX_REF_EPOCH,
+    J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_DAY,
+    NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32,
+    UNIX_REF_EPOCH,
 };
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
@@ -1188,17 +1189,15 @@ impl Epoch {
         }
     }
 
-    /// Builds an Epoch from given `week`: elapsed weeks counter into the desired Time scale, and "ns" amount of nanoseconds since closest Sunday Midnight.
+    /// Builds an Epoch from given `week`: elapsed weeks counter into the desired Time scale,
+    /// and "ns" amount of nanoseconds within that week.
     /// For example, this is how GPS vehicles describe a GPST epoch.
     #[must_use]
     pub fn from_time_of_week(week: u32, nanoseconds: u64, ts: TimeScale) -> Self {
-        let duration = i64::from(week) * Weekday::DAYS_PER_WEEK_I64 * Unit::Day
-            + Duration::from_parts(0, nanoseconds);
-        let gh_187 = match ts {
-            TimeScale::UTC | TimeScale::TT | TimeScale::TAI => 1.0 * Unit::Day,
-            _ => Duration::ZERO,
-        };
-        Self::from_duration(duration - gh_187, ts)
+        let mut nanos = nanoseconds as i128;
+        nanos += week as i128 * Weekday::DAYS_PER_WEEK_I64 as i128 * NANOSECONDS_PER_DAY as i128;
+        let duration = Duration::from_total_nanoseconds(nanos);
+        Self::from_duration(duration, ts)
     }
 
     #[must_use]
@@ -2251,23 +2250,19 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Converts this epoch into the time of week, represented as a rolling week counter into that time scale and the number of nanoseconds since closest Sunday midnight into that week.
+    /// Converts this epoch into the time of week, represented as a rolling week counter into that time scale
+    /// and the number of nanoseconds elapsed in current week (since closest Sunday midnight).
     /// This is usually how GNSS receivers describe a timestamp.
     pub fn to_time_of_week(&self) -> (u32, u64) {
-        // wk: rolling week counter into timescale
-        //   fractional days in this time scale
-        let wk = div_euclid_f64(
-            self.to_duration().to_unit(Unit::Day),
-            Weekday::DAYS_PER_WEEK,
-        );
-        let mut start_of_week = self.previous_weekday_at_midnight(Weekday::Sunday);
-        let ref_epoch = self.time_scale.ref_epoch();
-        // restrict start of week/sunday to the start of the time scale
-        if start_of_week < ref_epoch {
-            start_of_week = ref_epoch;
-        }
-        let dw = *self - start_of_week; // difference in weekdays [0..6]
-        (wk as u32, dw.nanoseconds)
+        let total_nanoseconds = self.to_duration().total_nanoseconds();
+        let weeks =
+            total_nanoseconds / NANOSECONDS_PER_DAY as i128 / Weekday::DAYS_PER_WEEK_I64 as i128;
+        // elapsed nanoseconds in current week:
+        //   remove previously determined nb of weeks
+        //   get residual nanoseconds
+        let nanoseconds = total_nanoseconds
+            - weeks * NANOSECONDS_PER_DAY as i128 * Weekday::DAYS_PER_WEEK_I64 as i128;
+        (weeks as u32, nanoseconds as u64)
     }
 
     #[must_use]
