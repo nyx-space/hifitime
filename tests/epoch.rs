@@ -2,9 +2,10 @@
 extern crate core;
 
 use hifitime::{
-    is_gregorian_valid, Duration, Epoch, TimeScale, TimeUnits, Unit, BDT_REF_EPOCH,
-    DAYS_GPS_TAI_OFFSET, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J2000_OFFSET, MJD_OFFSET,
-    SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
+    is_gregorian_valid, Duration, Epoch, TimeScale, TimeUnits, Unit, Weekday, BDT_REF_EPOCH,
+    DAYS_GPS_TAI_OFFSET, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J1900_REF_EPOCH,
+    J2000_OFFSET, MJD_OFFSET, SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET,
+    SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
 #[cfg(feature = "std")]
@@ -1015,12 +1016,17 @@ fn test_leap_seconds_iers() {
     let epoch_from_utc_greg = Epoch::from_gregorian_tai_hms(1971, 12, 31, 23, 59, 59);
     // Just after it.
     let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 0);
+    assert_eq!(epoch_from_utc_greg1.day_of_year(), 0.0);
     assert_eq!(epoch_from_utc_greg.leap_seconds_iers(), 0);
     // The first leap second is special; it adds 10 seconds.
     assert_eq!(epoch_from_utc_greg1.leap_seconds_iers(), 10);
 
     // Just before the second leap second.
     let epoch_from_utc_greg = Epoch::from_gregorian_tai_hms(1972, 6, 30, 23, 59, 59);
+    assert_eq!(
+        epoch_from_utc_greg.duration_in_year(),
+        (31 + 29 + 31 + 30 + 31 + 30) * Unit::Day - Unit::Second
+    );
     // Just after it.
     let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 7, 1, 0, 0, 0);
     assert_eq!(epoch_from_utc_greg.leap_seconds_iers(), 10);
@@ -1336,4 +1342,211 @@ fn test_minmax() {
 
     assert_eq!(e1, e1.max(e0));
     assert_eq!(e1, e0.max(e1));
+}
+
+#[test]
+fn test_weekday() {
+    // Ensure that even when we switch the time scale of the underlying Epoch, we're still correctly computing the weekday.
+    let permutate_time_scale = |e: Epoch, expect: Weekday| {
+        for new_time_scale in [
+            TimeScale::BDT,
+            TimeScale::ET,
+            TimeScale::GPST,
+            TimeScale::GST,
+            TimeScale::TAI,
+            TimeScale::TDB,
+            TimeScale::TT,
+            TimeScale::UTC,
+        ] {
+            let e_ts = e.in_time_scale(new_time_scale);
+            assert_eq!(e_ts.weekday(), expect, "error with {new_time_scale}");
+        }
+    };
+    // J1900 was a monday
+    let j1900 = J1900_REF_EPOCH;
+    assert_eq!(j1900.weekday(), Weekday::Monday);
+    permutate_time_scale(j1900, Weekday::Monday);
+    // 1 nanosec into TAI: still a monday
+    let j1900_1ns = Epoch::from_gregorian_tai(1900, 01, 01, 0, 0, 0, 1);
+    assert_eq!(j1900_1ns.weekday(), Weekday::Monday);
+    permutate_time_scale(j1900_1ns, Weekday::Monday);
+    // some portion of that day: still a mon day
+    let j1900_10h_123_ns = Epoch::from_gregorian_tai(1900, 01, 01, 10, 00, 00, 123);
+    assert_eq!(j1900_10h_123_ns.weekday(), Weekday::Monday);
+    permutate_time_scale(j1900_10h_123_ns, Weekday::Monday);
+    // Day +1: tuesday
+    let j1901 = j1900 + Duration::from_days(1.0);
+    assert_eq!(j1901.weekday(), Weekday::Tuesday);
+    permutate_time_scale(j1901, Weekday::Tuesday);
+    // 1 ns into tuesday, still a tuesday
+    let j1901 = j1901 + Duration::from_nanoseconds(1.0);
+    assert_eq!(j1901.weekday(), Weekday::Tuesday);
+    permutate_time_scale(j1901, Weekday::Tuesday);
+    // 6 days into TAI was a sunday
+    let e = j1900 + Duration::from_days(6.0);
+    assert_eq!(e.weekday(), Weekday::Sunday);
+    permutate_time_scale(e, Weekday::Sunday);
+    // 6 days + some tiny offset, still a sunday
+    let e = e + Duration::from_nanoseconds(10000.0);
+    assert_eq!(e.weekday(), Weekday::Sunday);
+    permutate_time_scale(e, Weekday::Sunday);
+    // 7 days into TAI: back to a monday
+    let e = j1900 + Duration::from_days(7.0);
+    assert_eq!(e.weekday(), Weekday::Monday);
+    permutate_time_scale(e, Weekday::Monday);
+    // 2022/12/01 was a thursday
+    let epoch = Epoch::from_gregorian_utc_at_midnight(2022, 12, 01);
+    assert_eq!(epoch.weekday_utc(), Weekday::Thursday);
+    permutate_time_scale(epoch, Weekday::Thursday);
+    // 2022/11/28 was a monday
+    let epoch = Epoch::from_gregorian_utc_at_midnight(2022, 11, 28);
+    assert_eq!(epoch.weekday_utc(), Weekday::Monday);
+    permutate_time_scale(epoch, Weekday::Monday);
+    // 1988/01/02 was a Saturday
+    let epoch = Epoch::from_gregorian_utc_at_midnight(1988, 1, 2);
+    assert_eq!(epoch.weekday_utc(), Weekday::Saturday);
+    permutate_time_scale(epoch, Weekday::Saturday);
+}
+
+#[test]
+fn test_get_time() {
+    let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
+    assert_eq!(epoch.hours(), 10);
+    assert_eq!(epoch.minutes(), 11);
+    assert_eq!(epoch.seconds(), 12);
+    assert_eq!(epoch.milliseconds(), 0);
+    assert_eq!(epoch.microseconds(), 0);
+    assert_eq!(epoch.nanoseconds(), 13);
+
+    let epoch_midnight = epoch.with_hms(0, 0, 0);
+    assert_eq!(
+        epoch_midnight,
+        Epoch::from_gregorian_utc_at_midnight(2022, 12, 01) + 13 * Unit::Nanosecond
+    );
+
+    let epoch_midnight = epoch.with_hms_strict(0, 0, 0);
+    assert_eq!(
+        epoch_midnight,
+        Epoch::from_gregorian_utc_at_midnight(2022, 12, 01)
+    );
+}
+
+#[test]
+fn test_start_of_week() {
+    // 2022/12/01 + some offset, was a thursday
+    let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
+    assert_eq!(epoch.weekday_utc(), Weekday::Thursday);
+    // 2022/11/27 was the related sunday / start of week
+    assert_eq!(
+        epoch.previous_weekday_at_midnight(Weekday::Sunday),
+        Epoch::from_gregorian_utc_at_midnight(2022, 11, 27)
+    );
+    assert_eq!(
+        epoch
+            .previous_weekday_at_midnight(Weekday::Sunday)
+            .weekday_utc(),
+        Weekday::Sunday
+    );
+
+    let epoch = Epoch::from_gregorian_utc(2022, 09, 15, 01, 01, 01, 01);
+    assert_eq!(epoch.weekday_utc(), Weekday::Thursday);
+    assert_eq!(
+        epoch.previous_weekday_at_midnight(Weekday::Sunday),
+        Epoch::from_gregorian_utc_at_midnight(2022, 09, 11)
+    );
+    assert_eq!(
+        epoch
+            .previous_weekday_at_midnight(Weekday::Sunday)
+            .weekday_utc(),
+        Weekday::Sunday
+    );
+}
+
+#[test]
+fn test_time_of_week() {
+    // GPST
+    // https://www.labsat.co.uk/index.php/en/gps-time-calculator
+    // 01/12/2022 00:00:00 <=> (2238, 345_618_000_000_000)
+    //      2238 weeks since 1980 + 345_600_000_000_000 ns since previous Sunday
+    //                            +      18_000_000_000 ns for elapsed leap seconds
+    let epoch = Epoch::from_time_of_week(2238, 345_618_000_000_000, TimeScale::GPST);
+    assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 01, 00, 00, 00, 00));
+    assert_eq!(epoch.to_time_of_week(), (2238, 345_618_000_000_000));
+
+    let epoch_utc = epoch.in_time_scale(TimeScale::TT);
+    let (utc_wk, utc_tow) = epoch_utc.to_time_of_week();
+    assert_eq!(
+        Epoch::from_time_of_week(utc_wk, utc_tow, TimeScale::TT),
+        epoch_utc
+    );
+
+    // 06/01/1980 01:00:00 = 1H into GPST <=> (0, 3_618_000_000_000)
+    let epoch = Epoch::from_time_of_week(0, 3_618_000_000_000, TimeScale::GPST);
+    assert_eq!(epoch.to_gregorian_utc(), (1980, 01, 06, 01, 00, 0 + 18, 00));
+    assert_eq!(epoch.to_time_of_week(), (0, 3_618_000_000_000));
+
+    // 01/01/1981 01:00:00 = 51W + 1 hour into GPS epoch <=> 51, 349_218_000_000_000
+    let epoch = Epoch::from_time_of_week(51, 349_218_000_000_000, TimeScale::GPST);
+    assert_eq!(epoch.to_gregorian_utc(), (1981, 01, 01, 01, 00, 18, 00));
+    assert_eq!(epoch.to_time_of_week(), (51, 349_218_000_000_000));
+
+    // 06/25/1980 13:07:19 = 24W + 13:07:19 into GPS epoch <=> 24, 306_457_000_000_000
+    let epoch = Epoch::from_time_of_week(24, 306_457_000_000_000, TimeScale::GPST);
+    assert_eq!(
+        epoch.to_gregorian_utc(),
+        (1980, 06, 25, 13, 07, 18 + 19, 00)
+    );
+    assert_eq!(epoch.to_time_of_week(), (24, 306_457_000_000_000));
+
+    // add 1 nanos
+    let epoch = Epoch::from_time_of_week(2238, 345_618_000_000_001, TimeScale::GPST);
+    assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 01, 00, 00, 00, 01));
+
+    // add 1/2 day
+    let epoch = Epoch::from_time_of_week(2238, 475_218_000_000_000, TimeScale::GPST);
+    assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 02, 12, 00, 00, 00));
+
+    // add 1/2 day + 3 hours + 27 min + 19s +10ns
+    let epoch = Epoch::from_time_of_week(2238, 487_657_000_000_010, TimeScale::GPST);
+    assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 02, 15, 27, 19, 10));
+
+    // 1H into Galileo timescale
+    let epoch = Epoch::from_time_of_week(0, 3_600_000_000_000, TimeScale::GST);
+    let expected_tai = TimeScale::GST.ref_epoch() + Duration::from_hours(1.0);
+    assert_eq!(epoch.to_gregorian_utc(), expected_tai.to_gregorian_utc());
+    assert_eq!(epoch.to_time_of_week(), (0, 3_600_000_000_000));
+
+    // 1W + 128H into Galileo timescale
+    let epoch = Epoch::from_time_of_week(1, 128 * 3600 * 1_000_000_000, TimeScale::GST);
+    let expected_tai =
+        TimeScale::GST.ref_epoch() + Duration::from_days(7.0) + Duration::from_hours(128.0);
+    assert_eq!(epoch.to_gregorian_utc(), expected_tai.to_gregorian_utc());
+    assert_eq!(epoch.to_time_of_week(), (1, 128 * 3600 * 1_000_000_000));
+
+    // 13.5H into BeiDou timescale
+    let epoch = Epoch::from_time_of_week(
+        0,
+        13 * 3600 * 1_000_000_000 + 1800 * 1_000_000_000,
+        TimeScale::BDT,
+    );
+    let expected_tai = TimeScale::BDT.ref_epoch() + Duration::from_hours(13.5);
+    assert_eq!(epoch.to_gregorian_utc(), expected_tai.to_gregorian_utc());
+    assert_eq!(
+        epoch.to_time_of_week(),
+        (0, 13 * 3600 * 1_000_000_000 + 1800 * 1_000_000_000)
+    );
+
+    // 10W + 36.25 H into BeiDou Timescale
+    let epoch = Epoch::from_time_of_week(
+        10,
+        36 * 3600 * 1_000_000_000 + 900 * 1_000_000_000,
+        TimeScale::BDT,
+    );
+    let expected_tai =
+        TimeScale::BDT.ref_epoch() + Duration::from_days(70.0) + Duration::from_hours(36.25);
+    assert_eq!(epoch.to_gregorian_utc(), expected_tai.to_gregorian_utc());
+    assert_eq!(
+        epoch.to_time_of_week(),
+        (10, 36 * 3600 * 1_000_000_000 + 900 * 1_000_000_000)
+    );
 }

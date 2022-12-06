@@ -21,6 +21,7 @@ use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 use crate::ParsingErrors;
+use crate::Weekday;
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
@@ -36,7 +37,7 @@ use core::str::FromStr;
 use std::time::SystemTime;
 
 #[cfg(not(feature = "std"))]
-use num_traits::Float;
+use num_traits::{Euclid, Float};
 
 const TT_OFFSET_MS: i64 = 32_184;
 const ET_OFFSET_US: i64 = 32_184_935;
@@ -1186,6 +1187,25 @@ impl Epoch {
             )
         }
     }
+
+    /// Builds an Epoch from given `week`: elapsed weeks counter into the desired Time scale, and "ns" amount of nanoseconds since closest Sunday Midnight.
+    /// For example, this is how GPS vehicles describe a GPST epoch.
+    #[must_use]
+    pub fn from_time_of_week(week: u32, nanoseconds: u64, ts: TimeScale) -> Self {
+        let duration = i64::from(week) * Weekday::DAYS_PER_WEEK_I64 * Unit::Day
+            + Duration::from_parts(0, nanoseconds);
+        let gh_187 = match ts {
+            TimeScale::UTC | TimeScale::TT | TimeScale::TAI => 1.0 * Unit::Day,
+            _ => Duration::ZERO,
+        };
+        Self::from_duration(duration - gh_187, ts)
+    }
+
+    #[must_use]
+    /// Builds an UTC Epoch from given `week`: elapsed weeks counter and "ns" amount of nanoseconds since closest Sunday Midnight.
+    pub fn from_time_of_week_utc(week: u32, nanoseconds: u64) -> Self {
+        Self::from_time_of_week(week, nanoseconds, TimeScale::UTC)
+    }
 }
 
 #[cfg_attr(feature = "python", pymethods)]
@@ -2158,6 +2178,7 @@ impl Epoch {
         Self::compute_gregorian(self.to_tai_duration())
     }
 
+    #[must_use]
     /// Floors this epoch to the closest provided duration
     ///
     /// # Example
@@ -2180,6 +2201,7 @@ impl Epoch {
         Self::from_duration(self.to_duration().floor(duration), self.time_scale)
     }
 
+    #[must_use]
     /// Ceils this epoch to the closest provided duration in the TAI time system
     ///
     /// # Example
@@ -2203,6 +2225,7 @@ impl Epoch {
         Self::from_duration(self.to_duration().ceil(duration), self.time_scale)
     }
 
+    #[must_use]
     /// Rounds this epoch to the closest provided duration in TAI
     ///
     /// # Example
@@ -2219,11 +2242,195 @@ impl Epoch {
         Self::from_duration(self.to_duration().round(duration), self.time_scale)
     }
 
+    #[must_use]
     /// Copies this epoch and sets it to the new time scale provided.
     pub fn in_time_scale(&self, new_time_scale: TimeScale) -> Self {
         let mut me = *self;
         me.time_scale = new_time_scale;
         me
+    }
+
+    #[must_use]
+    /// Converts this epoch into the time of week, represented as a rolling week counter into that time scale and the number of nanoseconds since closest Sunday midnight into that week.
+    /// This is usually how GNSS receivers describe a timestamp.
+    pub fn to_time_of_week(&self) -> (u32, u64) {
+        // wk: rolling week counter into timescale
+        //   fractional days in this time scale
+        let wk = div_euclid_f64(
+            self.to_duration().to_unit(Unit::Day),
+            Weekday::DAYS_PER_WEEK,
+        );
+        let mut start_of_week = self.previous_weekday_at_midnight(Weekday::Sunday);
+        let ref_epoch = self.time_scale.ref_epoch();
+        // restrict start of week/sunday to the start of the time scale
+        if start_of_week < ref_epoch {
+            start_of_week = ref_epoch;
+        }
+        let dw = *self - start_of_week; // difference in weekdays [0..6]
+        (wk as u32, dw.nanoseconds)
+    }
+
+    #[must_use]
+    /// Returns the weekday in provided time scale **ASSUMING** that the reference epoch of that time scale is a Monday.
+    /// You _probably_ do not want to use this. You probably either want `weekday()` or `weekday_utc()`.
+    /// Several time scales do _not_ have a reference day that's on a Monday, e.g. BDT.
+    pub fn weekday_in_time_scale(&self, time_scale: TimeScale) -> Weekday {
+        (rem_euclid_f64(
+            self.to_duration_in_time_scale(time_scale)
+                .to_unit(Unit::Day),
+            Weekday::DAYS_PER_WEEK,
+        )
+        .floor() as u8)
+            .into()
+    }
+
+    /// Returns weekday (uses the TAI representation for this calculation).
+    pub fn weekday(&self) -> Weekday {
+        // J1900 was a Monday so we just have to modulo the number of days by the number of days per week.
+        // The function call will be optimized away.
+        self.weekday_in_time_scale(TimeScale::TAI)
+    }
+
+    /// Returns weekday in UTC timescale
+    pub fn weekday_utc(&self) -> Weekday {
+        self.weekday_in_time_scale(TimeScale::UTC)
+    }
+
+    /// Returns the next weekday.
+    ///
+    /// ```
+    /// use hifitime::prelude::*;
+    ///
+    /// let epoch = Epoch::from_gregorian_utc_at_midnight(1988, 1, 2);
+    /// assert_eq!(epoch.weekday_utc(), Weekday::Saturday);
+    /// assert_eq!(epoch.next(Weekday::Sunday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 3));
+    /// assert_eq!(epoch.next(Weekday::Monday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 4));
+    /// assert_eq!(epoch.next(Weekday::Tuesday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 5));
+    /// assert_eq!(epoch.next(Weekday::Wednesday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 6));
+    /// assert_eq!(epoch.next(Weekday::Thursday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 7));
+    /// assert_eq!(epoch.next(Weekday::Friday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 8));
+    /// assert_eq!(epoch.next(Weekday::Saturday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 9));
+    /// ```
+    pub fn next(&self, weekday: Weekday) -> Self {
+        let delta_days = self.weekday() - weekday;
+        if delta_days == Duration::ZERO {
+            *self + 7 * Unit::Day
+        } else {
+            *self + delta_days
+        }
+    }
+
+    pub fn next_weekday_at_midnight(&self, weekday: Weekday) -> Self {
+        self.next(weekday).with_hms_strict(0, 0, 0)
+    }
+
+    pub fn next_weekday_at_noon(&self, weekday: Weekday) -> Self {
+        self.next(weekday).with_hms_strict(12, 0, 0)
+    }
+
+    /// Returns the next weekday.
+    ///
+    /// ```
+    /// use hifitime::prelude::*;
+    ///
+    /// let epoch = Epoch::from_gregorian_utc_at_midnight(1988, 1, 2);
+    /// assert_eq!(epoch.previous(Weekday::Friday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 1));
+    /// assert_eq!(epoch.previous(Weekday::Thursday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 31));
+    /// assert_eq!(epoch.previous(Weekday::Wednesday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 30));
+    /// assert_eq!(epoch.previous(Weekday::Tuesday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 29));
+    /// assert_eq!(epoch.previous(Weekday::Monday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 28));
+    /// assert_eq!(epoch.previous(Weekday::Sunday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 27));
+    /// assert_eq!(epoch.previous(Weekday::Saturday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 26));
+    /// ```
+    pub fn previous(&self, weekday: Weekday) -> Self {
+        let delta_days = weekday - self.weekday();
+        if delta_days == Duration::ZERO {
+            *self - 7 * Unit::Day
+        } else {
+            *self - delta_days
+        }
+    }
+
+    pub fn previous_weekday_at_midnight(&self, weekday: Weekday) -> Self {
+        self.previous(weekday).with_hms_strict(0, 0, 0)
+    }
+
+    pub fn previous_weekday_at_noon(&self, weekday: Weekday) -> Self {
+        self.previous(weekday).with_hms_strict(12, 0, 0)
+    }
+
+    /// Returns the duration since the start of the year
+    pub fn duration_in_year(&self) -> Duration {
+        let year = Self::compute_gregorian(self.to_duration()).0;
+        let start_of_year = Self::from_gregorian(year, 1, 1, 0, 0, 0, 0, self.time_scale);
+        self.to_duration() - start_of_year.to_duration()
+    }
+
+    /// Returns the number of days since the start of the year.
+    pub fn day_of_year(&self) -> f64 {
+        self.duration_in_year().to_unit(Unit::Day)
+    }
+
+    /// Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    pub fn hours(&self) -> u64 {
+        self.to_duration().decompose().2
+    }
+
+    /// Returns the minutes of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    pub fn minutes(&self) -> u64 {
+        self.to_duration().decompose().3
+    }
+
+    /// Returns the seconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    pub fn seconds(&self) -> u64 {
+        self.to_duration().decompose().4
+    }
+
+    /// Returns the milliseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    pub fn milliseconds(&self) -> u64 {
+        self.to_duration().decompose().5
+    }
+
+    /// Returns the microseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    pub fn microseconds(&self) -> u64 {
+        self.to_duration().decompose().6
+    }
+
+    /// Returns the nanoseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    pub fn nanoseconds(&self) -> u64 {
+        self.to_duration().decompose().7
+    }
+
+    /// Returns a copy of self where the time is set to the provided hours, minutes, seconds
+    /// Invalid number of hours, minutes, and seconds will overflow into their higher unit.
+    /// Warning: this does _not_ set the subdivisions of second to zero.
+    pub fn with_hms(&self, hours: u64, minutes: u64, seconds: u64) -> Self {
+        let (sign, days, _, _, _, milliseconds, microseconds, nanoseconds) =
+            self.to_duration().decompose();
+        Self::from_duration(
+            Duration::compose(
+                sign,
+                days,
+                hours,
+                minutes,
+                seconds,
+                milliseconds,
+                microseconds,
+                nanoseconds,
+            ),
+            self.time_scale,
+        )
+    }
+
+    /// Returns a copy of self where the time is set to the provided hours, minutes, seconds
+    /// Invalid number of hours, minutes, and seconds will overflow into their higher unit.
+    /// Warning: this will set the subdivisions of seconds to zero.
+    pub fn with_hms_strict(&self, hours: u64, minutes: u64, seconds: u64) -> Self {
+        let (sign, days, _, _, _, _, _, _) = self.to_duration().decompose();
+        Self::from_duration(
+            Duration::compose(sign, days, hours, minutes, seconds, 0, 0, 0),
+            self.time_scale,
+        )
     }
 
     // Python helpers
