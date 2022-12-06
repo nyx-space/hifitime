@@ -1550,3 +1550,79 @@ fn test_time_of_week() {
         (10, 36 * 3600 * 1_000_000_000 + 900 * 1_000_000_000)
     );
 }
+
+/// Tests that for a number of epochs covering different leap seconds, creating an Epoch with a given time scale will allow us to retrieve in that same time scale with the same value.
+#[test]
+fn test_day_of_year() {
+    // The general test function used throughout this verification.
+    let recip_func = |utc_epoch: Epoch| {
+        // Test that we can convert this epoch into another time scale and re-initialize it correctly from that value.
+        for ts in &[
+            TimeScale::UTC,
+            TimeScale::TAI,
+            TimeScale::TT,
+            TimeScale::ET,
+            TimeScale::TDB,
+        ] {
+            let epoch = utc_epoch.in_time_scale(*ts);
+            let (year, days) = epoch.year_days_of_year();
+            let rebuilt = Epoch::from_day_of_year(year, days, *ts);
+            if *ts == TimeScale::ET {
+                // There is limitation in the ET scale due to the Newton Raphson iteration.
+                // So let's check for a near equality
+                // TODO: Make this more strict
+                assert!(
+                    (epoch - rebuilt).abs() < 150 * Unit::Nanosecond,
+                    "ET recip error = {} for {}",
+                    epoch - rebuilt,
+                    epoch
+                );
+            } else {
+                assert!(
+                    (epoch - rebuilt).abs() < 50 * Unit::Nanosecond,
+                    "{} recip error = {} for {}",
+                    ts,
+                    epoch - rebuilt,
+                    epoch
+                );
+            }
+        }
+    };
+
+    recip_func(Epoch::from_gregorian_utc(1900, 1, 9, 0, 17, 15, 0));
+
+    recip_func(Epoch::from_gregorian_utc(1920, 7, 23, 14, 39, 29, 0));
+
+    recip_func(Epoch::from_gregorian_utc(1954, 12, 24, 6, 6, 31, 0));
+
+    // Test prior to official leap seconds but with some scaling, valid from 1960 to 1972 according to IAU SOFA.
+    recip_func(Epoch::from_gregorian_utc(1960, 2, 14, 6, 6, 31, 0));
+
+    // First test with some leap seconds
+    recip_func(Epoch::from_gregorian_utc(
+        1983,
+        4,
+        13,
+        12,
+        9,
+        14,
+        274_000_000,
+    ));
+
+    // Once every 400 years, there is a leap day on the new century! Joyeux anniversaire, Papa!
+    recip_func(Epoch::from_gregorian_utc(2000, 2, 29, 14, 57, 29, 0));
+
+    recip_func(Epoch::from_gregorian_utc(
+        2022,
+        11,
+        29,
+        7,
+        58,
+        49,
+        782_000_000,
+    ));
+
+    recip_func(Epoch::from_gregorian_utc(2044, 6, 6, 12, 18, 54, 0));
+
+    recip_func(Epoch::from_gregorian_utc(2075, 4, 30, 23, 59, 54, 0));
+}

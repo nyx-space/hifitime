@@ -1202,9 +1202,16 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Builds an UTC Epoch from given `week`: elapsed weeks counter and "ns" amount of nanoseconds since closest Sunday Midnight.
+    /// Builds a UTC Epoch from given `week`: elapsed weeks counter and "ns" amount of nanoseconds since closest Sunday Midnight.
     pub fn from_time_of_week_utc(week: u32, nanoseconds: u64) -> Self {
         Self::from_time_of_week(week, nanoseconds, TimeScale::UTC)
+    }
+
+    #[must_use]
+    /// Builds an Epoch from the provided year, days in the year, and a time scale.
+    pub fn from_day_of_year(year: i32, days: f64, time_scale: TimeScale) -> Self {
+        let start_of_year = Self::from_gregorian(year, 1, 1, 0, 0, 0, 0, time_scale);
+        start_of_year + days * Unit::Day
     }
 }
 
@@ -2284,6 +2291,7 @@ impl Epoch {
             .into()
     }
 
+    #[must_use]
     /// Returns weekday (uses the TAI representation for this calculation).
     pub fn weekday(&self) -> Weekday {
         // J1900 was a Monday so we just have to modulo the number of days by the number of days per week.
@@ -2291,11 +2299,13 @@ impl Epoch {
         self.weekday_in_time_scale(TimeScale::TAI)
     }
 
+    #[must_use]
     /// Returns weekday in UTC timescale
     pub fn weekday_utc(&self) -> Weekday {
         self.weekday_in_time_scale(TimeScale::UTC)
     }
 
+    #[must_use]
     /// Returns the next weekday.
     ///
     /// ```
@@ -2320,14 +2330,17 @@ impl Epoch {
         }
     }
 
+    #[must_use]
     pub fn next_weekday_at_midnight(&self, weekday: Weekday) -> Self {
         self.next(weekday).with_hms_strict(0, 0, 0)
     }
 
+    #[must_use]
     pub fn next_weekday_at_noon(&self, weekday: Weekday) -> Self {
         self.next(weekday).with_hms_strict(12, 0, 0)
     }
 
+    #[must_use]
     /// Returns the next weekday.
     ///
     /// ```
@@ -2351,14 +2364,17 @@ impl Epoch {
         }
     }
 
+    #[must_use]
     pub fn previous_weekday_at_midnight(&self, weekday: Weekday) -> Self {
         self.previous(weekday).with_hms_strict(0, 0, 0)
     }
 
+    #[must_use]
     pub fn previous_weekday_at_noon(&self, weekday: Weekday) -> Self {
         self.previous(weekday).with_hms_strict(12, 0, 0)
     }
 
+    #[must_use]
     /// Returns the duration since the start of the year
     pub fn duration_in_year(&self) -> Duration {
         let year = Self::compute_gregorian(self.to_duration()).0;
@@ -2366,9 +2382,19 @@ impl Epoch {
         self.to_duration() - start_of_year.to_duration()
     }
 
+    #[must_use]
     /// Returns the number of days since the start of the year.
     pub fn day_of_year(&self) -> f64 {
         self.duration_in_year().to_unit(Unit::Day)
+    }
+
+    #[must_use]
+    /// Returns the year and the days in the year so far (days of year).
+    pub fn year_days_of_year(&self) -> (i32, f64) {
+        (
+            Self::compute_gregorian(self.to_duration()).0,
+            self.day_of_year(),
+        )
     }
 
     /// Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in.
