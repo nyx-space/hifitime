@@ -45,7 +45,7 @@ impl Weekday {
     /// Trivial, but avoid magic numbers.
     pub(crate) const DAYS_PER_WEEK: f64 = 7.0;
     /// Trivial, but avoid magic numbers.
-    pub(crate) const DAYS_PER_WEEK_I64: i64 = 7;
+    pub(crate) const DAYS_PER_WEEK_I128: i128 = 7;
 }
 
 impl From<u8> for Weekday {

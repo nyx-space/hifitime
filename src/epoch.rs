@@ -192,7 +192,7 @@ impl Sub<Duration> for Epoch {
 }
 
 /// WARNING: For speed, there is a possibility to add seconds directly to an Epoch. These will be added in the time scale the Epoch was initialized in.
-/// Using this is _discouraged_ and should only be used if you have facing bottlenecks with the units.
+/// Using this is _discouraged_ and should only be used if you have facing bottlenecks with the unitime_scale.
 impl Add<f64> for Epoch {
     type Output = Self;
 
@@ -386,13 +386,13 @@ impl Epoch {
         Self::from_tai_duration((days - J1900_OFFSET) * Unit::Day)
     }
 
-    fn from_mjd_in_time_scale(days: f64, ts: TimeScale) -> Self {
+    fn from_mjd_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
         // always refer to TAI/mjd
         let mut e = Self::from_mjd_tai(days);
-        if ts.uses_leap_seconds() {
+        if time_scale.uses_leap_seconds() {
             e.duration_since_j1900_tai += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         }
-        e.time_scale = ts;
+        e.time_scale = time_scale;
         e
     }
 
@@ -422,13 +422,13 @@ impl Epoch {
         Self::from_tai_duration((days - J1900_OFFSET - MJD_OFFSET) * Unit::Day)
     }
 
-    fn from_jde_in_time_scale(days: f64, ts: TimeScale) -> Self {
+    fn from_jde_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
         // always refer to TAI/jde
         let mut e = Self::from_jde_tai(days);
-        if ts.uses_leap_seconds() {
+        if time_scale.uses_leap_seconds() {
             e.duration_since_j1900_tai += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         }
-        e.time_scale = ts;
+        e.time_scale = time_scale;
         e
     }
 
@@ -690,7 +690,7 @@ impl Epoch {
         minute: u8,
         second: u8,
         nanos: u32,
-        ts: TimeScale,
+        time_scale: TimeScale,
     ) -> Result<Self, Errors> {
         if !is_gregorian_valid(year, month, day, hour, minute, second, nanos) {
             return Err(Errors::Carry);
@@ -737,7 +737,7 @@ impl Epoch {
         }
 
         // NOTE: For ET and TDB, we make sure to offset the duration back to J2000 since those functions expect a J2000 input.
-        Ok(match ts {
+        Ok(match time_scale {
             TimeScale::TAI => Self::from_tai_duration(duration_wrt_1900),
             TimeScale::TT => Self::from_tt_duration(duration_wrt_1900),
             TimeScale::ET => Self::from_et_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
@@ -876,23 +876,28 @@ impl Epoch {
         minute: u8,
         second: u8,
         nanos: u32,
-        ts: TimeScale,
+        time_scale: TimeScale,
     ) -> Self {
-        Self::maybe_from_gregorian(year, month, day, hour, minute, second, nanos, ts)
+        Self::maybe_from_gregorian(year, month, day, hour, minute, second, nanos, time_scale)
             .expect("invalid Gregorian date")
     }
 
     #[must_use]
     /// Initialize from Gregorian date in UTC at midnight
-    pub fn from_gregorian_at_midnight(year: i32, month: u8, day: u8, ts: TimeScale) -> Self {
-        Self::maybe_from_gregorian(year, month, day, 0, 0, 0, 0, ts)
+    pub fn from_gregorian_at_midnight(
+        year: i32,
+        month: u8,
+        day: u8,
+        time_scale: TimeScale,
+    ) -> Self {
+        Self::maybe_from_gregorian(year, month, day, 0, 0, 0, 0, time_scale)
             .expect("invalid Gregorian date")
     }
 
     #[must_use]
     /// Initialize from Gregorian date in UTC at noon
-    pub fn from_gregorian_at_noon(year: i32, month: u8, day: u8, ts: TimeScale) -> Self {
-        Self::maybe_from_gregorian(year, month, day, 12, 0, 0, 0, ts)
+    pub fn from_gregorian_at_noon(year: i32, month: u8, day: u8, time_scale: TimeScale) -> Self {
+        Self::maybe_from_gregorian(year, month, day, 12, 0, 0, 0, time_scale)
             .expect("invalid Gregorian date")
     }
 
@@ -905,9 +910,9 @@ impl Epoch {
         hour: u8,
         minute: u8,
         second: u8,
-        ts: TimeScale,
+        time_scale: TimeScale,
     ) -> Self {
-        Self::maybe_from_gregorian(year, month, day, hour, minute, second, 0, ts)
+        Self::maybe_from_gregorian(year, month, day, hour, minute, second, 0, time_scale)
             .expect("invalid Gregorian date")
     }
 
@@ -1189,15 +1194,16 @@ impl Epoch {
         }
     }
 
-    /// Builds an Epoch from given `week`: elapsed weeks counter into the desired Time scale,
-    /// and "ns" amount of nanoseconds within that week.
+    /// Builds an Epoch from given `week`: elapsed weeks counter into the desired Time scale, and the amount of nanoseconds within that week.
     /// For example, this is how GPS vehicles describe a GPST epoch.
+    ///
+    /// Note that this constructor relies on 128 bit integer math and may be slow on embedded devices.
     #[must_use]
-    pub fn from_time_of_week(week: u32, nanoseconds: u64, ts: TimeScale) -> Self {
-        let mut nanos = nanoseconds as i128;
-        nanos += week as i128 * Weekday::DAYS_PER_WEEK_I64 as i128 * NANOSECONDS_PER_DAY as i128;
+    pub fn from_time_of_week(week: u32, nanoseconds: u64, time_scale: TimeScale) -> Self {
+        let mut nanos = i128::from(nanoseconds);
+        nanos += i128::from(week) * Weekday::DAYS_PER_WEEK_I128 * i128::from(NANOSECONDS_PER_DAY);
         let duration = Duration::from_total_nanoseconds(nanos);
-        Self::from_duration(duration, ts)
+        Self::from_duration(duration, time_scale)
     }
 
     #[must_use]
@@ -1462,20 +1468,25 @@ impl Epoch {
         minute: u8,
         second: u8,
         nanos: u32,
-        ts: TimeScale,
+        time_scale: TimeScale,
     ) -> Self {
         Self::from_gregorian(year, month, day, hour, minute, second, nanos, ts)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    fn init_from_gregorian_at_noon(year: i32, month: u8, day: u8, ts: TimeScale) -> Self {
+    fn init_from_gregorian_at_noon(year: i32, month: u8, day: u8, time_scale: TimeScale) -> Self {
         Self::from_gregorian_at_noon(year, month, day, ts)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    fn init_from_gregorian_at_midnight(year: i32, month: u8, day: u8, ts: TimeScale) -> Self {
+    fn init_from_gregorian_at_midnight(
+        year: i32,
+        month: u8,
+        day: u8,
+        time_scale: TimeScale,
+    ) -> Self {
         Self::from_gregorian_at_midnight(year, month, day, ts)
     }
 
@@ -1507,7 +1518,7 @@ impl Epoch {
         minute: u8,
         second: u8,
         nanos: u32,
-        ts: TimeScale,
+        time_scale: TimeScale,
     ) -> Result<Self, Errors> {
         Self::maybe_from_gregorian(year, month, day, hour, minute, second, nanos, ts)
     }
@@ -1647,8 +1658,8 @@ impl Epoch {
     /// If this is _not_ an issue, you should use `epoch.to_duration_in_time_scale().to_parts()` to retrieve both the centuries and the nanoseconds
     /// in that century.
     #[allow(clippy::wrong_self_convention)]
-    fn to_nanoseconds_in_time_scale(&self, ts: TimeScale) -> Result<u64, Errors> {
-        let (centuries, nanoseconds) = self.to_duration_in_time_scale(ts).to_parts();
+    fn to_nanoseconds_in_time_scale(&self, time_scale: TimeScale) -> Result<u64, Errors> {
+        let (centuries, nanoseconds) = self.to_duration_in_time_scale(time_scale).to_parts();
         if centuries != 0 {
             Err(Errors::Overflow)
         } else {
@@ -2256,12 +2267,12 @@ impl Epoch {
     pub fn to_time_of_week(&self) -> (u32, u64) {
         let total_nanoseconds = self.to_duration().total_nanoseconds();
         let weeks =
-            total_nanoseconds / NANOSECONDS_PER_DAY as i128 / Weekday::DAYS_PER_WEEK_I64 as i128;
+            total_nanoseconds / NANOSECONDS_PER_DAY as i128 / Weekday::DAYS_PER_WEEK_I128 as i128;
         // elapsed nanoseconds in current week:
         //   remove previously determined nb of weeks
         //   get residual nanoseconds
         let nanoseconds = total_nanoseconds
-            - weeks * NANOSECONDS_PER_DAY as i128 * Weekday::DAYS_PER_WEEK_I64 as i128;
+            - weeks * NANOSECONDS_PER_DAY as i128 * Weekday::DAYS_PER_WEEK_I128 as i128;
         (weeks as u32, nanoseconds as u64)
     }
 
@@ -2499,8 +2510,8 @@ impl Epoch {
     #[cfg(feature = "std")]
     #[must_use]
     /// Converts the Epoch to Gregorian in the provided time system and in the ISO8601 format with the time system appended to the string
-    pub fn to_gregorian_str(&self, ts: TimeScale) -> String {
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(match ts {
+    pub fn to_gregorian_str(&self, time_scale: TimeScale) -> String {
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(match time_scale {
             TimeScale::TT => self.to_tt_duration(),
             TimeScale::TAI => self.to_tai_duration(),
             TimeScale::ET => self.to_et_duration_since_j1900(),
@@ -2514,12 +2525,12 @@ impl Epoch {
         if nanos == 0 {
             format!(
                 "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {}",
-                y, mm, dd, hh, min, s, ts
+                y, mm, dd, hh, min, s, time_scale
             )
         } else {
             format!(
                 "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {}",
-                y, mm, dd, hh, min, s, nanos, ts
+                y, mm, dd, hh, min, s, nanos, time_scale
             )
         }
     }
@@ -2863,7 +2874,7 @@ pub const fn is_gregorian_valid(
 }
 
 /// `is_leap_year` returns whether the provided year is a leap year or not.
-/// Tests for this function are part of the Datetime tests.
+/// Tests for this function are part of the Datetime testime_scale.
 const fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
 }
