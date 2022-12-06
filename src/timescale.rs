@@ -17,7 +17,10 @@ use serde_derive::{Deserialize, Serialize};
 use core::fmt;
 use core::str::FromStr;
 
-use crate::{Duration, Epoch, Errors, ParsingErrors, J2000_TO_J1900_DURATION, SECONDS_PER_DAY};
+use crate::{
+    Duration, Epoch, Errors, ParsingErrors, J2000_REF_EPOCH_ET, J2000_REF_EPOCH_TDB,
+    J2000_TO_J1900_DURATION, SECONDS_PER_DAY,
+};
 
 /// The J1900 reference epoch (1900-01-01 at noon) TAI.
 pub const J1900_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration::ZERO);
@@ -105,13 +108,17 @@ impl TimeScale {
     pub const fn is_gnss(&self) -> bool {
         matches!(self, Self::GPST | Self::GST | Self::BDT)
     }
+
     /// Returns Reference Epoch (t(0)) for given timescale
     pub const fn ref_epoch(&self) -> Epoch {
         match self {
             Self::GPST => GPST_REF_EPOCH,
             Self::GST => GST_REF_EPOCH,
             Self::BDT => BDT_REF_EPOCH,
-            _ => J1900_REF_EPOCH,
+            Self::ET => J2000_REF_EPOCH_ET,
+            Self::TDB => J2000_REF_EPOCH_TDB,
+            // Explicit on purpose in case more time scales end up being supported.
+            Self::TT | Self::TAI | Self::UTC => J1900_REF_EPOCH,
         }
     }
 }

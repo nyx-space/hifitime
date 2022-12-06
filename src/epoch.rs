@@ -13,7 +13,7 @@ use crate::parser::Token;
 use crate::{
     Errors, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S, GPST_REF_EPOCH, GST_REF_EPOCH,
     J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_MICROSECOND,
-    NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32, SECONDS_PER_DAY, UNIX_REF_EPOCH,
+    NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32, UNIX_REF_EPOCH,
 };
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
@@ -1191,15 +1191,20 @@ impl Epoch {
     /// Builds an Epoch from given `week`: elapsed weeks counter into the desired Time scale, and "ns" amount of nanoseconds since closest Sunday Midnight.
     /// For example, this is how GPS vehicles describe a GPST epoch.
     #[must_use]
-    pub fn from_time_of_week(week: u32, ns: u64, ts: TimeScale) -> Self {
-        let week = Duration::from_seconds(week as f64 * SECONDS_PER_DAY * Weekday::DAYS_PER_WEEK);
-        Self::from_duration(week + (ns as f64) * Unit::Nanosecond, ts)
+    pub fn from_time_of_week(week: u32, nanoseconds: u64, ts: TimeScale) -> Self {
+        let duration = i64::from(week) * Weekday::DAYS_PER_WEEK_I64 * Unit::Day
+            + Duration::from_parts(0, nanoseconds);
+        let gh_187 = match ts {
+            TimeScale::UTC | TimeScale::TT | TimeScale::TAI => 1.0 * Unit::Day,
+            _ => Duration::ZERO,
+        };
+        Self::from_duration(duration - gh_187, ts)
     }
 
     #[must_use]
     /// Builds an UTC Epoch from given `week`: elapsed weeks counter and "ns" amount of nanoseconds since closest Sunday Midnight.
-    pub fn from_time_of_week_utc(week: u32, ns: u64) -> Self {
-        Self::from_time_of_week(week, ns, TimeScale::UTC)
+    pub fn from_time_of_week_utc(week: u32, nanoseconds: u64) -> Self {
+        Self::from_time_of_week(week, nanoseconds, TimeScale::UTC)
     }
 }
 
@@ -2173,6 +2178,7 @@ impl Epoch {
         Self::compute_gregorian(self.to_tai_duration())
     }
 
+    #[must_use]
     /// Floors this epoch to the closest provided duration
     ///
     /// # Example
@@ -2195,6 +2201,7 @@ impl Epoch {
         Self::from_duration(self.to_duration().floor(duration), self.time_scale)
     }
 
+    #[must_use]
     /// Ceils this epoch to the closest provided duration in the TAI time system
     ///
     /// # Example
@@ -2218,6 +2225,7 @@ impl Epoch {
         Self::from_duration(self.to_duration().ceil(duration), self.time_scale)
     }
 
+    #[must_use]
     /// Rounds this epoch to the closest provided duration in TAI
     ///
     /// # Example
@@ -2234,6 +2242,7 @@ impl Epoch {
         Self::from_duration(self.to_duration().round(duration), self.time_scale)
     }
 
+    #[must_use]
     /// Copies this epoch and sets it to the new time scale provided.
     pub fn in_time_scale(&self, new_time_scale: TimeScale) -> Self {
         let mut me = *self;
@@ -2241,14 +2250,16 @@ impl Epoch {
         me
     }
 
+    #[must_use]
     /// Converts this epoch into the time of week, represented as a rolling week counter into that time scale and the number of nanoseconds since closest Sunday midnight into that week.
     /// This is usually how GNSS receivers describe a timestamp.
     pub fn to_time_of_week(&self) -> (u32, u64) {
         // wk: rolling week counter into timescale
         //   fractional days in this time scale
-        let days = self.to_duration().to_unit(Unit::Day);
-        let wk = (days / Weekday::DAYS_PER_WEEK).floor() as u32;
-        // tow: number of nanoseconds between self and previous sunday midnight / start of week
+        let wk = div_euclid_f64(
+            self.to_duration().to_unit(Unit::Day),
+            Weekday::DAYS_PER_WEEK,
+        );
         let mut start_of_week = self.previous_weekday_at_midnight(Weekday::Sunday);
         let ref_epoch = self.time_scale.ref_epoch();
         // restrict start of week/sunday to the start of the time scale
@@ -2256,32 +2267,21 @@ impl Epoch {
             start_of_week = ref_epoch;
         }
         let dw = *self - start_of_week; // difference in weekdays [0..6]
-        (wk, dw.nanoseconds)
+        (wk as u32, dw.nanoseconds)
     }
 
+    #[must_use]
     /// Returns the weekday in provided time scale **ASSUMING** that the reference epoch of that time scale is a Monday.
     /// You _probably_ do not want to use this. You probably either want `weekday()` or `weekday_utc()`.
     /// Several time scales do _not_ have a reference day that's on a Monday, e.g. BDT.
     pub fn weekday_in_time_scale(&self, time_scale: TimeScale) -> Weekday {
-        #[cfg(feature = "std")]
-        {
-            (self
-                .to_duration_in_time_scale(time_scale)
-                .to_unit(Unit::Day)
-                .rem_euclid(Weekday::DAYS_PER_WEEK)
-                .floor() as u8)
-                .into()
-        }
-        #[cfg(not(feature = "std"))]
-        {
-            // The rem_euclid call of num_traits requires a pointer not a value.
-            (self
-                .to_duration_in_time_scale(time_scale)
-                .to_unit(Unit::Day)
-                .rem_euclid(&Weekday::DAYS_PER_WEEK)
-                .floor() as u8)
-                .into()
-        }
+        (rem_euclid_f64(
+            self.to_duration_in_time_scale(time_scale)
+                .to_unit(Unit::Day),
+            Weekday::DAYS_PER_WEEK,
+        )
+        .floor() as u8)
+            .into()
     }
 
     /// Returns weekday (uses the TAI representation for this calculation).

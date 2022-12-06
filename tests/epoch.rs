@@ -1473,9 +1473,12 @@ fn test_time_of_week() {
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 01, 00, 00, 00, 00));
     assert_eq!(epoch.to_time_of_week(), (2238, 345_618_000_000_000));
 
-    let epoch_utc = epoch.in_time_scale(TimeScale::UTC);
+    let epoch_utc = epoch.in_time_scale(TimeScale::TT);
     let (utc_wk, utc_tow) = epoch_utc.to_time_of_week();
-    assert_eq!(Epoch::from_time_of_week_utc(utc_wk, utc_tow), epoch_utc);
+    assert_eq!(
+        Epoch::from_time_of_week(utc_wk, utc_tow, TimeScale::TT),
+        epoch_utc
+    );
 
     // 06/01/1980 01:00:00 = 1H into GPST <=> (0, 3_618_000_000_000)
     let epoch = Epoch::from_time_of_week(0, 3_618_000_000_000, TimeScale::GPST);
