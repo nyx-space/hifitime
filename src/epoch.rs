@@ -192,7 +192,7 @@ impl Sub<Duration> for Epoch {
 }
 
 /// WARNING: For speed, there is a possibility to add seconds directly to an Epoch. These will be added in the time scale the Epoch was initialized in.
-/// Using this is _discouraged_ and should only be used if you have facing bottlenecks with the unitime_scale.
+/// Using this is _discouraged_ and should only be used if you have facing bottlenecks with the units.
 impl Add<f64> for Epoch {
     type Output = Self;
 
