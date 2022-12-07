@@ -1470,13 +1470,13 @@ impl Epoch {
         nanos: u32,
         time_scale: TimeScale,
     ) -> Self {
-        Self::from_gregorian(year, month, day, hour, minute, second, nanos, ts)
+        Self::from_gregorian(year, month, day, hour, minute, second, nanos, time_scale)
     }
 
     #[cfg(feature = "python")]
     #[staticmethod]
     fn init_from_gregorian_at_noon(year: i32, month: u8, day: u8, time_scale: TimeScale) -> Self {
-        Self::from_gregorian_at_noon(year, month, day, ts)
+        Self::from_gregorian_at_noon(year, month, day, time_scale)
     }
 
     #[cfg(feature = "python")]
@@ -1487,7 +1487,7 @@ impl Epoch {
         day: u8,
         time_scale: TimeScale,
     ) -> Self {
-        Self::from_gregorian_at_midnight(year, month, day, ts)
+        Self::from_gregorian_at_midnight(year, month, day, time_scale)
     }
 
     #[cfg(feature = "python")]
@@ -1520,7 +1520,7 @@ impl Epoch {
         nanos: u32,
         time_scale: TimeScale,
     ) -> Result<Self, Errors> {
-        Self::maybe_from_gregorian(year, month, day, hour, minute, second, nanos, ts)
+        Self::maybe_from_gregorian(year, month, day, hour, minute, second, nanos, time_scale)
     }
 
     #[cfg(feature = "python")]
