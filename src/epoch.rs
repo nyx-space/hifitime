@@ -1117,7 +1117,7 @@ impl Epoch {
                 days_next_month += 1.0;
             }
 
-            if days_so_far + days_next_month > days_in_year {
+            if days_so_far + days_next_month > days_in_year || month == 12 {
                 // We've found the month and can calculate the days
                 day = if sign >= 0 {
                     days_in_year - days_so_far + 1.0
@@ -1209,6 +1209,10 @@ impl Epoch {
 
     #[must_use]
     /// Builds an Epoch from the provided year, days in the year, and a time scale.
+    ///
+    /// # Limitations
+    /// In the TDB or ET time scales, there may be an error of up to 750 nanoseconds when initializing an Epoch this way.
+    /// This is because we first initialize the epoch in Gregorian scale and then apply the TDB/ET offset, but that offset actually depends on the precise time.
     pub fn from_day_of_year(year: i32, days: f64, time_scale: TimeScale) -> Self {
         let start_of_year = Self::from_gregorian(year, 1, 1, 0, 0, 0, 0, time_scale);
         start_of_year + days * Unit::Day

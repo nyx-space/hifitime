@@ -1567,13 +1567,13 @@ fn test_day_of_year() {
             let epoch = utc_epoch.in_time_scale(*ts);
             let (year, days) = epoch.year_days_of_year();
             let rebuilt = Epoch::from_day_of_year(year, days, *ts);
-            if *ts == TimeScale::ET {
+            if *ts == TimeScale::ET || *ts == TimeScale::TDB {
                 // There is limitation in the ET scale due to the Newton Raphson iteration.
                 // So let's check for a near equality
-                // TODO: Make this more strict
                 assert!(
-                    (epoch - rebuilt).abs() < 150 * Unit::Nanosecond,
-                    "ET recip error = {} for {}",
+                    (epoch - rebuilt).abs() < 750 * Unit::Nanosecond,
+                    "{} recip error = {} for {}",
+                    ts,
                     epoch - rebuilt,
                     epoch
                 );
