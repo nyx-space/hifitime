@@ -33,7 +33,7 @@ pub enum Unit {
     Minute,
     Hour,
     Day,
-    /// 36525 days, it the number of days per century in the Julian calendar
+    /// 36525 days, is the number of days per century in the Julian calendar
     Century,
 }
 
