@@ -413,6 +413,53 @@ fn duration_from_str() {
             == Err(Errors::ParseError(ParsingErrors::UnknownOrMissingUnit)),
         "should return an unknown unit error"
     );
+
+    // Test the offset initialization
+    assert_eq!(
+        Duration::from_str("-01:15:30").unwrap(),
+        -(1 * Unit::Hour + 15 * Unit::Minute + 30 * Unit::Second)
+    );
+
+    assert_eq!(
+        Duration::from_str("+01:15:30").unwrap(),
+        1 * Unit::Hour + 15 * Unit::Minute + 30 * Unit::Second
+    );
+
+    assert_eq!(
+        Duration::from_str("-01:15").unwrap(),
+        -(1 * Unit::Hour + 15 * Unit::Minute)
+    );
+
+    assert_eq!(
+        Duration::from_str("+01:15").unwrap(),
+        1 * Unit::Hour + 15 * Unit::Minute
+    );
+
+    // Test offsets without colon
+    assert_eq!(
+        Duration::from_str("-011530").unwrap(),
+        -(1 * Unit::Hour + 15 * Unit::Minute + 30 * Unit::Second)
+    );
+
+    assert_eq!(
+        Duration::from_str("+011530").unwrap(),
+        1 * Unit::Hour + 15 * Unit::Minute + 30 * Unit::Second
+    );
+
+    assert_eq!(
+        Duration::from_str("-0115").unwrap(),
+        -(1 * Unit::Hour + 15 * Unit::Minute)
+    );
+
+    assert_eq!(
+        Duration::from_str("+0115").unwrap(),
+        1 * Unit::Hour + 15 * Unit::Minute
+    );
+
+    assert_eq!(
+        Duration::from_str("+2515").unwrap(),
+        25 * Unit::Hour + 15 * Unit::Minute
+    );
 }
 
 #[cfg(feature = "std")]

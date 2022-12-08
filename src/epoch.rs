@@ -11,10 +11,10 @@
 use crate::duration::{Duration, Unit};
 use crate::parser::Token;
 use crate::{
-    Errors, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S, GPST_REF_EPOCH, GST_REF_EPOCH,
-    J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_DAY,
-    NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32,
-    UNIX_REF_EPOCH,
+    EpochFormat, Errors, MonthName, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S,
+    GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET,
+    NANOSECONDS_PER_DAY, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
+    NANOSECONDS_PER_SECOND_U32, UNIX_REF_EPOCH,
 };
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
@@ -994,7 +994,7 @@ impl Epoch {
                 }
                 let prev_token = cur_token;
 
-                let pos = cur_token.pos();
+                let pos = cur_token.gregorian_position();
 
                 let end_idx = if idx != s.len() - 1 || !char.is_numeric() {
                     // Only advance the token if we aren't at the end of the string
@@ -1066,6 +1066,12 @@ impl Epoch {
         Ok(epoch? + tz)
     }
 
+    /// Initializes an Epoch from the provided EpochFormat.
+    /// For acceptable tokens, refer to the EpochFormat documentation.
+    pub fn from_str_with_format(s_in: &str, format: EpochFormat) -> Self {
+        todo!();
+    }
+
     fn delta_et_tai(seconds: f64) -> f64 {
         // Calculate M, the mean anomaly.4
         let m = NAIF_M0 + seconds * NAIF_M1;
@@ -1082,7 +1088,7 @@ impl Epoch {
         1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
     }
 
-    fn compute_gregorian(duration_j1900: Duration) -> (i32, u8, u8, u8, u8, u8, u32) {
+    pub(crate) fn compute_gregorian(duration_j1900: Duration) -> (i32, u8, u8, u8, u8, u8, u32) {
         let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
             duration_j1900.decompose();
 
@@ -2467,6 +2473,11 @@ impl Epoch {
             Duration::compose(sign, days, hours, minutes, seconds, 0, 0, 0),
             self.time_scale,
         )
+    }
+
+    pub fn month_name(&self) -> MonthName {
+        let month = Self::compute_gregorian(self.to_duration()).1;
+        month.into()
     }
 
     // Python helpers

@@ -22,60 +22,87 @@ pub(crate) enum Token {
     OffsetHours,
     OffsetMinutes,
     Timescale,
+    DayOfYear,
+    Weekday,
+    WeekdayShort,
+    WeekdayDecimal,
+    MonthName,
+    MonthNameShort,
+}
+
+impl Default for Token {
+    fn default() -> Self {
+        Self::Year
+    }
 }
 
 impl Token {
+    // Check that the _integer_ value is valid at first sight.
     pub fn value_ok(&self, val: i32) -> Result<(), Errors> {
         match &self {
-            Token::Year => Ok(()), // No validation on the year
-            Token::Month => {
+            Self::Year => Ok(()), // No validation
+            Self::Month => {
                 if !(0..=13).contains(&val) {
                     Err(Errors::ParseError(ParsingErrors::ValueError))
                 } else {
                     Ok(())
                 }
             }
-            Token::Day => {
+            Self::Day => {
                 if !(0..=31).contains(&val) {
                     Err(Errors::ParseError(ParsingErrors::ValueError))
                 } else {
                     Ok(())
                 }
             }
-            Token::Hour | Token::OffsetHours => {
+            Self::Hour | Self::OffsetHours => {
                 if !(0..=23).contains(&val) {
                     Err(Errors::ParseError(ParsingErrors::ValueError))
                 } else {
                     Ok(())
                 }
             }
-            Token::Minute | Token::OffsetMinutes => {
+            Self::Minute | Self::OffsetMinutes => {
                 if !(0..=59).contains(&val) {
                     Err(Errors::ParseError(ParsingErrors::ValueError))
                 } else {
                     Ok(())
                 }
             }
-            Token::Second => {
+            Self::Second => {
                 if !(0..=60).contains(&val) {
                     Err(Errors::ParseError(ParsingErrors::ValueError))
                 } else {
                     Ok(())
                 }
             }
-            Token::Subsecond => {
+            Self::Subsecond => {
                 if val < 0 {
                     Err(Errors::ParseError(ParsingErrors::ValueError))
                 } else {
                     Ok(())
                 }
             }
-            Token::Timescale => Ok(()),
+            Self::Timescale => Ok(()),
+            Self::DayOfYear => {
+                if !(0..=366).contains(&val) {
+                    Err(Errors::ParseError(ParsingErrors::ValueError))
+                } else {
+                    Ok(())
+                }
+            }
+            Self::WeekdayDecimal => {
+                Ok(()) // We modulo it anyway
+            }
+            Self::Weekday | Self::WeekdayShort | Self::MonthName | Self::MonthNameShort => {
+                // These cannot be parsed as integers
+                Err(Errors::ParseError(ParsingErrors::ValueError))
+            }
         }
     }
 
-    /// Returns the position in the array for this token
-    pub fn pos(&self) -> usize {
+    /// Returns the position in the array for a Gregorian date for this token
+    pub fn gregorian_position(&self) -> usize {
         match &self {
             Token::Year => 0,
             Token::Month => 1,
@@ -86,7 +113,7 @@ impl Token {
             Token::Subsecond => 6,
             Token::OffsetHours => 7,
             Token::OffsetMinutes => 8,
-            Token::Timescale => unreachable!(),
+            _ => unreachable!(),
         }
     }
 
@@ -177,7 +204,7 @@ impl Token {
                     Err(Errors::ParseError(ParsingErrors::UnknownFormat))
                 }
             }
-            Token::Timescale => Ok(()),
+            _ => Ok(()),
         }
     }
 }

@@ -78,6 +78,9 @@ pub const J2000_REF_EPOCH_TDB: Epoch = Epoch {
     time_scale: TimeScale::ET,
 };
 
+mod formatter;
+pub use formatter::epoch_format::EpochFormat;
+pub use formatter::epoch_formatter::EpochFormatter;
 mod parser;
 
 mod epoch;
@@ -99,14 +102,17 @@ pub use timeseries::*;
 mod weekday;
 pub use weekday::*;
 
+mod month;
+pub use month::*;
+
 /// This module defines all of the deprecated methods.
 mod deprecated;
 
 #[allow(deprecated)]
 pub mod prelude {
     pub use crate::{
-        deprecated::TimeSystem, Duration, Epoch, Errors, Freq, Frequencies, TimeScale, TimeSeries,
-        TimeUnits, Unit, Weekday,
+        deprecated::TimeSystem, Duration, Epoch, EpochFormat, EpochFormatter, Errors, Freq,
+        Frequencies, TimeScale, TimeSeries, TimeUnits, Unit, Weekday,
     };
 }
 
@@ -153,8 +159,9 @@ pub enum ParsingErrors {
     UnknownFormat,
     UnknownOrMissingUnit,
     UnsupportedTimeSystem,
-    /// Non recognized Weekday description
-    ParseWeekdayError,
+    UnknownWeekday,
+    UnknownMonthName,
+    UnknownFormattingToken(char),
 }
 
 impl fmt::Display for Errors {

@@ -2,9 +2,9 @@
 extern crate core;
 
 use hifitime::{
-    is_gregorian_valid, Duration, Epoch, TimeScale, TimeUnits, Unit, Weekday, BDT_REF_EPOCH,
-    DAYS_GPS_TAI_OFFSET, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J1900_REF_EPOCH,
-    J2000_OFFSET, MJD_OFFSET, SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET,
+    is_gregorian_valid, Duration, Epoch, EpochFormat, EpochFormatter, TimeScale, TimeUnits, Unit,
+    Weekday, BDT_REF_EPOCH, DAYS_GPS_TAI_OFFSET, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET,
+    J1900_REF_EPOCH, J2000_OFFSET, MJD_OFFSET, SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET,
     SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
@@ -1720,4 +1720,44 @@ fn test_day_of_year() {
     recip_func(Epoch::from_gregorian_utc(2044, 6, 6, 12, 18, 54, 0));
 
     recip_func(Epoch::from_gregorian_utc(2075, 4, 30, 23, 59, 54, 0));
+}
+
+/// Tests that for a number of epochs covering different leap seconds, creating an Epoch with a given time scale will allow us to retrieve in that same time scale with the same value.
+#[test]
+fn test_epoch_formatter() {
+    use core::str::FromStr;
+
+    let bday = Epoch::from_gregorian_utc(2000, 2, 29, 14, 57, 29, 37);
+
+    let fmt_iso_ord = EpochFormatter::new(bday, EpochFormat::ISO_ORDINAL);
+    assert_eq!(format!("{fmt_iso_ord}"), "2000-059");
+
+    let fmt_iso = EpochFormatter::new(bday, EpochFormat::ISO);
+    assert_eq!(format!("{fmt_iso}"), format!("{bday}"));
+
+    let fmt = EpochFormatter::new(bday, EpochFormat::ISODATE);
+    assert_eq!(format!("{fmt}"), format!("2000-02-29"));
+
+    let fmt = EpochFormatter::new(bday, EpochFormat::RFC2822);
+    assert_eq!(format!("{fmt}"), format!("Tue, 29 Feb 2000 14:57:29"));
+
+    let fmt = EpochFormatter::new(bday, EpochFormat::RFC2822_LONG);
+    assert_eq!(
+        format!("{fmt}"),
+        format!("Tuesday, 29 February 2000 14:57:29")
+    );
+
+    let init_str = "1994-11-05T08:15:30-05:00";
+    let e = Epoch::from_str(init_str).unwrap();
+
+    let fmt = EpochFormat::from_str("%Y-%m-%dT%H:%M:%S.%f%z").unwrap();
+    assert_eq!(fmt, EpochFormat::RFC3339);
+
+    let fmtd = EpochFormatter::with_timezone(
+        e,
+        Duration::from_str("-05:00").unwrap(),
+        EpochFormat::RFC3339_FLEX,
+    );
+
+    assert_eq!(init_str, format!("{fmtd}"));
 }
