@@ -193,30 +193,6 @@ fn test_wrapping() {
 }
 
 #[test]
-fn test_formatting() {
-    assert_eq!(format!("{}", Weekday::Monday), "Monday");
-    assert_eq!(format!("{:x}", Weekday::Monday), "Mon");
-
-    assert_eq!(format!("{}", Weekday::Tuesday), "Tuesday");
-    assert_eq!(format!("{:x}", Weekday::Tuesday), "Tue");
-
-    assert_eq!(format!("{}", Weekday::Wednesday), "Wednesday");
-    assert_eq!(format!("{:x}", Weekday::Wednesday), "Wed");
-
-    assert_eq!(format!("{}", Weekday::Thursday), "Thursday");
-    assert_eq!(format!("{:x}", Weekday::Thursday), "Thu");
-
-    assert_eq!(format!("{}", Weekday::Friday), "Friday");
-    assert_eq!(format!("{:x}", Weekday::Friday), "Fri");
-
-    assert_eq!(format!("{}", Weekday::Saturday), "Saturday");
-    assert_eq!(format!("{:x}", Weekday::Saturday), "Sat");
-
-    assert_eq!(format!("{}", Weekday::Sunday), "Sunday");
-    assert_eq!(format!("{:x}", Weekday::Sunday), "Sun");
-}
-
-#[test]
 fn test_iso_weekday() {
     assert_eq!(Weekday::Sunday.to_c89_weekday(), 0);
     assert_eq!(Weekday::Monday.to_c89_weekday(), 1);

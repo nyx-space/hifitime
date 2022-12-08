@@ -14,6 +14,9 @@ use crate::{parser::Token, Duration, Epoch, TimeScale};
 
 use super::epoch_format::EpochFormat;
 
+#[cfg(not(feature = "std"))]
+use num_traits::Float;
+
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub(crate) struct FormatItem {
     pub(crate) token: Token,
@@ -91,6 +94,21 @@ impl EpochFormatter {
 impl fmt::Display for EpochFormatter {
     /// The default format of an epoch is in UTC
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // We make sure to only call this as needed.
+        let write_sep = |f: &mut fmt::Formatter, i: usize, format: &EpochFormat| -> fmt::Result {
+            if i > 0 {
+                // Print the first separation character of the previous item
+                if let Some(sep) = format.items[i - 1].unwrap().sep_char {
+                    write!(f, "{sep}")?;
+                }
+                // Print the second separation character
+                if let Some(sep) = format.items[i - 1].unwrap().second_sep_char {
+                    write!(f, "{sep}")?;
+                }
+            }
+            Ok(())
+        };
+
         if self.format.need_gregorian() {
             // This is a specific branch so we don't recompute the gregorian information for each token.
             let (y, mm, dd, hh, min, s, nanos) = Epoch::compute_gregorian(self.epoch.to_duration());
@@ -104,54 +122,39 @@ impl fmt::Display for EpochFormatter {
             {
                 let item = maybe_item.as_ref().unwrap();
 
-                // We make sure to only call this as needed.
-                let mut write_sep = || -> fmt::Result {
-                    if i > 0 {
-                        // Print the first separation character of the previous item
-                        if let Some(sep) = self.format.items[i - 1].unwrap().sep_char {
-                            write!(f, "{sep}")?;
-                        }
-                        // Print the second separation character
-                        if let Some(sep) = self.format.items[i - 1].unwrap().second_sep_char {
-                            write!(f, "{sep}")?;
-                        }
-                    }
-                    Ok(())
-                };
-
                 match item.token {
                     Token::Year => {
-                        write_sep()?;
+                        write_sep(f, i, &self.format)?;
                         write!(f, "{y:04}")?
                     }
                     Token::Month => {
-                        write_sep()?;
+                        write_sep(f, i, &self.format)?;
                         write!(f, "{mm:02}")?
                     }
                     Token::Day => {
-                        write_sep()?;
+                        write_sep(f, i, &self.format)?;
                         write!(f, "{dd:02}")?
                     }
                     Token::Hour => {
-                        write_sep()?;
+                        write_sep(f, i, &self.format)?;
                         write!(f, "{hh:02}")?
                     }
                     Token::Minute => {
-                        write_sep()?;
+                        write_sep(f, i, &self.format)?;
                         write!(f, "{min:02}")?
                     }
                     Token::Second => {
-                        write_sep()?;
+                        write_sep(f, i, &self.format)?;
                         write!(f, "{s:02}")?
                     }
                     Token::Subsecond => {
                         if !item.optional || nanos > 0 {
-                            write_sep()?;
+                            write_sep(f, i, &self.format)?;
                             write!(f, "{nanos:09}")?
                         }
                     }
                     Token::OffsetHours => {
-                        write_sep()?;
+                        write_sep(f, i, &self.format)?;
                         let (sign, days, mut hours, minutes, seconds, _, _, _) =
                             self.offset.decompose();
 
@@ -177,44 +180,93 @@ impl fmt::Display for EpochFormatter {
                     }
                     Token::Timescale => {
                         if !item.optional || self.epoch.time_scale != TimeScale::UTC {
-                            write_sep()?;
+                            write_sep(f, i, &self.format)?;
                             write!(f, "{}", self.epoch.time_scale)?;
                         }
                     }
-                    Token::DayOfYear => {
-                        write_sep()?;
+                    Token::DayOfYearInteger => {
+                        write_sep(f, i, &self.format)?;
                         write!(f, "{:03}", self.epoch.day_of_year().floor() as u16)?
                     }
+                    Token::DayOfYear => {
+                        write_sep(f, i, &self.format)?;
+                        write!(f, "{}", self.epoch.day_of_year())?
+                    }
                     Token::Weekday => {
-                        write_sep()?;
+                        write_sep(f, i, &self.format)?;
                         write!(f, "{}", self.epoch.weekday())?
                     }
                     Token::WeekdayShort => {
-                        write_sep()?;
+                        write_sep(f, i, &self.format)?;
                         write!(f, "{:x}", self.epoch.weekday())?
                     }
                     Token::WeekdayDecimal => {
-                        write_sep()?;
+                        write_sep(f, i, &self.format)?;
                         write!(f, "{}", self.epoch.weekday().to_c89_weekday())?
                     }
                     Token::MonthName => {
-                        write_sep()?;
+                        write_sep(f, i, &self.format)?;
                         write!(f, "{}", self.epoch.month_name())?
                     }
                     Token::MonthNameShort => {
-                        write_sep()?;
+                        write_sep(f, i, &self.format)?;
                         write!(f, "{:x}", self.epoch.month_name())?
                     }
                 };
             }
         } else {
-            for maybe_item in self.format.items.iter().take(self.format.num_items) {
+            for (i, maybe_item) in self
+                .format
+                .items
+                .iter()
+                .enumerate()
+                .take(self.format.num_items)
+            {
                 let item = maybe_item.as_ref().unwrap();
                 match item.token {
-                    Token::OffsetHours => todo!(),
-                    Token::OffsetMinutes => todo!(),
-                    Token::Timescale => write!(f, "{}", self.epoch.time_scale)?,
-                    Token::DayOfYear => write!(f, "{}", self.epoch.day_of_year())?,
+                    Token::OffsetHours => {
+                        write_sep(f, i, &self.format)?;
+                        let (sign, days, mut hours, minutes, seconds, _, _, _) =
+                            self.offset.decompose();
+
+                        if days > 0 {
+                            hours += 24 * days;
+                        }
+
+                        write!(
+                            f,
+                            "{}{:02}:{:02}",
+                            if sign >= 0 { '+' } else { '-' },
+                            hours,
+                            minutes
+                        )?;
+
+                        if seconds > 0 {
+                            write!(f, "{:02}", seconds)?;
+                        }
+                    }
+                    Token::OffsetMinutes => {
+                        // To print the offset, someone should use OffsetHours, so return an error here.
+                        return Err(fmt::Error);
+                    }
+                    Token::Timescale => {
+                        if !item.optional || self.epoch.time_scale != TimeScale::UTC {
+                            write_sep(f, i, &self.format)?;
+                            write!(f, "{}", self.epoch.time_scale)?;
+                        }
+                    }
+                    Token::DayOfYearInteger => {
+                        write_sep(f, i, &self.format)?;
+                        write!(f, "{:03}", self.epoch.day_of_year().floor() as u16)?
+                    }
+                    Token::DayOfYear => {
+                        write_sep(f, i, &self.format)?;
+                        write!(f, "{}", self.epoch.day_of_year())?
+                    }
+                    Token::WeekdayDecimal => {
+                        write_sep(f, i, &self.format)?;
+                        write!(f, "{}", self.epoch.weekday().to_c89_weekday())?
+                    }
                     _ => unreachable!(),
                 };
 

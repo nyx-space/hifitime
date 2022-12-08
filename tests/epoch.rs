@@ -2,10 +2,10 @@
 extern crate core;
 
 use hifitime::{
-    is_gregorian_valid, Duration, Epoch, EpochFormat, EpochFormatter, TimeScale, TimeUnits, Unit,
-    Weekday, BDT_REF_EPOCH, DAYS_GPS_TAI_OFFSET, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET,
-    J1900_REF_EPOCH, J2000_OFFSET, MJD_OFFSET, SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET,
-    SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
+    is_gregorian_valid, Duration, Epoch, EpochFormat, EpochFormatter, Errors, ParsingErrors,
+    TimeScale, TimeUnits, Unit, Weekday, BDT_REF_EPOCH, DAYS_GPS_TAI_OFFSET, GPST_REF_EPOCH,
+    GST_REF_EPOCH, J1900_OFFSET, J1900_REF_EPOCH, J2000_OFFSET, MJD_OFFSET, SECONDS_BDT_TAI_OFFSET,
+    SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
 #[cfg(feature = "std")]
@@ -142,6 +142,10 @@ fn utc_epochs() {
     );
     this_epoch -= Unit::Hour;
     assert_eq!(epoch_utc, this_epoch, "Incorrect epoch after sub");
+    // Revert and then subassign with duration
+    this_epoch += Unit::Hour;
+    this_epoch -= 1 * Unit::Hour;
+    assert_eq!(epoch_utc, this_epoch, "Incorrect epoch after sub");
 
     let this_epoch = Epoch::from_gregorian_tai_at_midnight(2020, 1, 1);
     assert!((this_epoch.to_jde_tai_days() - 2_458_849.5).abs() < EPSILON)
@@ -171,6 +175,19 @@ fn utc_tai() {
             > Epoch::from_gregorian_tai_at_noon(1972, 1, 1),
         "TAI is not ahead of UTC (via PartialEq) at noon after first leap second"
     );
+    assert_eq!(
+        Epoch::from_gregorian_utc_at_noon(1972, 1, 1)
+            .min(Epoch::from_gregorian_tai_at_noon(1972, 1, 1)),
+        Epoch::from_gregorian_tai_at_noon(1972, 1, 1),
+        "TAI is not ahead of UTC (via PartialEq) at noon after first leap second"
+    );
+    assert_eq!(
+        Epoch::from_gregorian_utc_at_noon(1972, 1, 1)
+            .max(Epoch::from_gregorian_tai_at_noon(1972, 1, 1)),
+        Epoch::from_gregorian_utc_at_noon(1972, 1, 1),
+        "TAI is not ahead of UTC (via PartialEq) at noon after first leap second"
+    );
+
     assert!(
         flp_from_secs_tai.to_tai_seconds() > flp_from_secs_tai.to_utc_seconds(),
         "TAI is not ahead of UTC (via function call)"
@@ -501,19 +518,18 @@ fn unix() {
     );
 
     let unix_epoch = Epoch::from_gregorian_utc_at_midnight(1970, 1, 1);
-    #[cfg(feature = "std")]
-    {
-        assert_eq!(
-            unix_epoch.to_gregorian_str(TimeScale::UTC),
-            "1970-01-01T00:00:00 UTC"
-        );
-        assert_eq!(
-            unix_epoch.to_gregorian_str(TimeScale::TAI),
-            "1970-01-01T00:00:00 TAI"
-        );
-        // Print as UNIX seconds
-        assert_eq!(format!("{:p}", unix_epoch), "0");
-    }
+
+    assert_eq!(
+        format!("{}", unix_epoch.in_time_scale(TimeScale::UTC)),
+        "1970-01-01T00:00:00 UTC"
+    );
+    assert_eq!(
+        format!("{:x}", unix_epoch.in_time_scale(TimeScale::TAI)),
+        "1970-01-01T00:00:00 TAI"
+    );
+    // Print as UNIX seconds
+    assert_eq!(format!("{:p}", unix_epoch), "0");
+
     assert_eq!(
         unix_epoch.to_tai_seconds(),
         Epoch::from_gregorian_utc_at_midnight(1970, 1, 1).to_tai_seconds()
@@ -820,6 +836,11 @@ fn test_from_str() {
     assert_eq!(
         Epoch::from_gregorian_utc(2017, 1, 14, 0, 31, 55, 811000000),
         Epoch::from_gregorian(2017, 1, 14, 0, 31, 55, 811000000, TimeScale::UTC),
+    );
+
+    assert_eq!(
+        Epoch::from_str("blah"),
+        Err(Errors::ParseError(ParsingErrors::UnknownFormat))
     );
 }
 
@@ -1435,6 +1456,25 @@ fn test_get_time() {
         epoch_midnight,
         Epoch::from_gregorian_utc_at_midnight(2022, 12, 01)
     );
+
+    let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
+    let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
+    let other = other_utc.in_time_scale(TimeScale::TDB);
+
+    assert_eq!(
+        epoch.with_hms_from(other),
+        Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 13)
+    );
+
+    assert_eq!(
+        epoch.with_hms_strict_from(other),
+        Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 0)
+    );
+
+    assert_eq!(
+        epoch.with_time_from(other),
+        Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 23)
+    );
 }
 
 #[test]
@@ -1732,6 +1772,9 @@ fn test_epoch_formatter() {
     let fmt_iso_ord = EpochFormatter::new(bday, EpochFormat::ISO_ORDINAL);
     assert_eq!(format!("{fmt_iso_ord}"), "2000-059");
 
+    let fmt_iso_ord = EpochFormatter::new(bday, EpochFormat::from_str("%j").unwrap());
+    assert_eq!(format!("{fmt_iso_ord}"), "059");
+
     let fmt_iso = EpochFormatter::new(bday, EpochFormat::ISO);
     assert_eq!(format!("{fmt_iso}"), format!("{bday}"));
 
@@ -1747,6 +1790,10 @@ fn test_epoch_formatter() {
         format!("Tuesday, 29 February 2000 14:57:29")
     );
 
+    // Decimal week day starts counting at zero ... it's dumb.
+    let fmt = EpochFormatter::new(bday, EpochFormat::from_str("%w").unwrap());
+    assert_eq!(format!("{fmt}"), format!("2"));
+
     let init_str = "1994-11-05T08:15:30-05:00";
     let e = Epoch::from_str(init_str).unwrap();
 
@@ -1760,4 +1807,19 @@ fn test_epoch_formatter() {
     );
 
     assert_eq!(init_str, format!("{fmtd}"));
+
+    assert_eq!(
+        format!("{:?}", EpochFormat::from_str("%A, ").unwrap()),
+        "EpochFormat:`Weekday, `"
+    );
+    assert_eq!(
+        format!("{:?}", EpochFormat::from_str("%A,?").unwrap()),
+        "EpochFormat:`Weekday,?`"
+    );
+
+    // Test an invalid token
+    assert_eq!(
+        EpochFormat::from_str("%p"),
+        Err(hifitime::ParsingErrors::UnknownFormattingToken('p'))
+    );
 }

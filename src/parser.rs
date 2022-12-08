@@ -22,6 +22,7 @@ pub(crate) enum Token {
     OffsetHours,
     OffsetMinutes,
     Timescale,
+    DayOfYearInteger,
     DayOfYear,
     Weekday,
     WeekdayShort,
@@ -84,7 +85,7 @@ impl Token {
                 }
             }
             Self::Timescale => Ok(()),
-            Self::DayOfYear => {
+            Self::DayOfYearInteger => {
                 if !(0..=366).contains(&val) {
                     Err(Errors::ParseError(ParsingErrors::ValueError))
                 } else {
@@ -94,7 +95,11 @@ impl Token {
             Self::WeekdayDecimal => {
                 Ok(()) // We modulo it anyway
             }
-            Self::Weekday | Self::WeekdayShort | Self::MonthName | Self::MonthNameShort => {
+            Self::Weekday
+            | Self::WeekdayShort
+            | Self::MonthName
+            | Self::MonthNameShort
+            | Self::DayOfYear => {
                 // These cannot be parsed as integers
                 Err(Errors::ParseError(ParsingErrors::ValueError))
             }

@@ -1122,14 +1122,19 @@ impl FromStr for Duration {
 
                 let indexes: (usize, usize, usize) = (1, 3, 5);
                 let colon = if s.len() == 3 || s.len() == 5 || s.len() == 7 {
+                    // There is a zero or even number of separators between the hours, minutes, and seconds.
+                    // Only zero (or one) characters separator is supported. This will return a ValueError later if there is
+                    // an even but greater than one character separator.
                     0
                 } else if s.len() == 4 || s.len() == 6 || s.len() == 9 {
+                    // There is an odd number of characters as a separator between the hours, minutes, and seconds.
+                    // Only one character separator is supported. This will return a ValueError later if there is
+                    // an odd but greater than one character separator.
                     1
                 } else {
                     // This invalid
                     return Err(Errors::ParseError(ParsingErrors::ValueError));
                 };
-                // There is no separator between the hours, minutes, and seconds
 
                 // Fetch the hours
                 let hours: i64 = match lexical_core::parse(s[indexes.0..indexes.1].as_bytes()) {

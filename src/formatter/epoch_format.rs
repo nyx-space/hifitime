@@ -53,6 +53,7 @@ use core::str::FromStr;
 /// | Token | Explanation | Example | Notes
 /// | :-- | :-- | :-- | :-- |
 /// | `%T` | Time scale used to represent this date | `TDB` for Dynamical barycentric time | (3) |
+/// | `%J` | Full day of year as a double | `59.62325231481524` for 29 February 2000 14:57:29 UTC | N/A |
 ///
 /// * (3): Hifitime supports many time scales and these should not be lost when formatting. **This is a novelty compared to other time management libraries** as most do not have any concept of time scales.
 ///
@@ -120,6 +121,7 @@ impl EpochFormat {
                 | Token::OffsetHours
                 | Token::OffsetMinutes => return true,
                 Token::Timescale
+                | Token::DayOfYearInteger
                 | Token::DayOfYear
                 | Token::Weekday
                 | Token::WeekdayShort
@@ -425,7 +427,7 @@ impl EpochFormat {
                 optional: false,
             }),
             Some(FormatItem {
-                token: Token::DayOfYear,
+                token: Token::DayOfYearInteger,
                 sep_char: None,
                 second_sep_char: None,
                 optional: false,
@@ -632,6 +634,14 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'j' => {
+                        me.items[me.num_items] = Some(FormatItem::new(
+                            Token::DayOfYearInteger,
+                            token.chars().nth(1),
+                            token.chars().nth(2),
+                        ));
+                        me.num_items += 1;
+                    }
+                    'J' => {
                         me.items[me.num_items] = Some(FormatItem::new(
                             Token::DayOfYear,
                             token.chars().nth(1),

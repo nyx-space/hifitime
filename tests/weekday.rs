@@ -3,7 +3,7 @@ extern crate core;
 
 use core::str::FromStr;
 
-use hifitime::{Duration, Epoch, TimeUnits, Unit, Weekday};
+use hifitime::{Duration, Epoch, ParsingErrors, TimeUnits, Unit, Weekday};
 
 #[test]
 fn test_basic_ops() {
@@ -257,5 +257,39 @@ fn test_previous() {
     assert_eq!(
         epoch.previous_weekday_at_noon(Weekday::Saturday),
         Epoch::from_gregorian_utc_at_noon(1987, 12, 26)
+    );
+}
+
+#[test]
+fn test_formatting() {
+    assert_eq!(format!("{}", Weekday::Monday), "Monday");
+    assert_eq!(format!("{:x}", Weekday::Monday), "Mon");
+
+    assert_eq!(format!("{}", Weekday::Tuesday), "Tuesday");
+    assert_eq!(format!("{:x}", Weekday::Tuesday), "Tue");
+
+    assert_eq!(format!("{}", Weekday::Wednesday), "Wednesday");
+    assert_eq!(format!("{:x}", Weekday::Wednesday), "Wed");
+
+    assert_eq!(format!("{}", Weekday::Thursday), "Thursday");
+    assert_eq!(format!("{:x}", Weekday::Thursday), "Thu");
+
+    assert_eq!(format!("{}", Weekday::Friday), "Friday");
+    assert_eq!(format!("{:x}", Weekday::Friday), "Fri");
+
+    assert_eq!(format!("{}", Weekday::Saturday), "Saturday");
+    assert_eq!(format!("{:x}", Weekday::Saturday), "Sat");
+
+    assert_eq!(format!("{}", Weekday::Sunday), "Sunday");
+    assert_eq!(format!("{:x}", Weekday::Sunday), "Sun");
+}
+
+#[test]
+fn test_from_str() {
+    use core::str::FromStr;
+
+    assert_eq!(
+        Weekday::from_str("fake"),
+        Err(ParsingErrors::UnknownWeekday)
     );
 }
