@@ -14,6 +14,9 @@ use pyo3::prelude::*;
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
 
+#[cfg(kani)]
+use kani::Arbitrary;
+
 use core::fmt;
 use core::str::FromStr;
 
@@ -81,6 +84,16 @@ pub enum TimeScale {
     GST,
     /// BeiDou Time scale
     BDT,
+}
+
+#[cfg(kani)]
+impl Arbitrary for TimeScale {
+    #[inline(always)]
+    fn any() -> Self {
+        let ts_u8: u8 = kani::any();
+
+        Self::from(ts_u8)
+    }
 }
 
 impl Default for TimeScale {
@@ -229,4 +242,10 @@ fn test_serdes() {
     assert_eq!(content, serde_json::to_string(&ts).unwrap());
     let parsed: TimeScale = serde_json::from_str(content).unwrap();
     assert_eq!(ts, parsed);
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_time_scale() {
+    let _time_scale: TimeScale = kani::any();
 }

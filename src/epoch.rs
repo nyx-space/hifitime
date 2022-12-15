@@ -2962,3 +2962,16 @@ fn test_serdes() {
     let parsed: Epoch = serde_json::from_str(content).unwrap();
     assert_eq!(e, parsed);
 }
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_epoch_from_time_scale() {
+    let duration: Duration = kani::any();
+    let time_scale: TimeScale = kani::any();
+
+    if time_scale != TimeScale::UTC && time_scale != TimeScale::BDT && time_scale != TimeScale::GST
+    {
+        let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+        assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+    }
+}
