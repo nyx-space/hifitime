@@ -35,6 +35,9 @@ use pyo3::pyclass::CompareOp;
 #[cfg(not(feature = "std"))]
 use num_traits::Float;
 
+#[cfg(kani)]
+use kani::Arbitrary;
+
 pub const DAYS_PER_CENTURY_U64: u64 = 36_525;
 pub const NANOSECONDS_PER_MICROSECOND: u64 = 1_000;
 pub const NANOSECONDS_PER_MILLISECOND: u64 = 1_000 * NANOSECONDS_PER_MICROSECOND;
@@ -61,6 +64,17 @@ pub const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_
 pub struct Duration {
     pub(crate) centuries: i16,
     pub(crate) nanoseconds: u64,
+}
+
+#[cfg(kani)]
+impl Arbitrary for Duration {
+    #[inline(always)]
+    fn any() -> Self {
+        let centuries: i16 = kani::any();
+        let nanoseconds: u64 = kani::any();
+
+        Duration::from_parts(centuries, nanoseconds)
+    }
 }
 
 impl PartialEq for Duration {
@@ -1190,14 +1204,6 @@ impl From<std::time::Duration> for Duration {
     }
 }
 
-#[cfg(kani)]
-#[kani::proof]
-fn formal_normalize_any() {
-    let centuries: i16 = kani::any();
-    let nanoseconds: u64 = kani::any();
-    let _dur = Duration::from_parts(centuries, nanoseconds);
-}
-
 #[test]
 #[cfg(feature = "serde")]
 fn test_serdes() {
@@ -1206,4 +1212,91 @@ fn test_serdes() {
     assert_eq!(content, serde_json::to_string(&dt).unwrap());
     let parsed: Duration = serde_json::from_str(content).unwrap();
     assert_eq!(dt, parsed);
+}
+
+#[test]
+fn test_bounds() {
+    let min = Duration::MIN;
+    assert_eq!(min.centuries, i16::MIN);
+    assert_eq!(min.nanoseconds, NANOSECONDS_PER_CENTURY);
+
+    let max = Duration::MAX;
+    assert_eq!(max.centuries, i16::MAX);
+    assert_eq!(max.nanoseconds, NANOSECONDS_PER_CENTURY);
+
+    let min_p = Duration::MIN_POSITIVE;
+    assert_eq!(min_p.centuries, 0);
+    assert_eq!(min_p.nanoseconds, 1);
+
+    let min_n = Duration::MIN_NEGATIVE;
+    assert_eq!(min_n.centuries, -1);
+    assert_eq!(min_n.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_normalize_any() {
+    let centuries: i16 = kani::any();
+    let nanoseconds: u64 = kani::any();
+    let _dur = Duration::from_parts(centuries, nanoseconds);
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_truncated_ns_reciprocity() {
+    let nanoseconds: i64 = kani::any();
+    let dur_from_part = Duration::from_truncated_nanoseconds(nanoseconds);
+
+    let u_ns = dur_from_part.nanoseconds;
+    let centuries = dur_from_part.centuries;
+    if centuries <= -3 || centuries >= 3 {
+        // Then it does not fit on a i64, so this function should return an error
+        assert_eq!(
+            dur_from_part.try_truncated_nanoseconds(),
+            Err(Errors::Overflow)
+        );
+    } else if centuries == -1 {
+        // If we are negative by just enough that the centuries is negative, then the truncated seconds
+        // should be the unsigned nanoseconds wrapped by the number of nanoseconds per century.
+
+        let expect_rslt = -((NANOSECONDS_PER_CENTURY - u_ns) as i64);
+
+        let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
+        assert_eq!(recip_ns, expect_rslt);
+    } else if centuries < 0 {
+        // We fit on a i64 but we need to account for the number of nanoseconds wrapped to the negative centuries.
+
+        let nanos = u_ns.rem_euclid(NANOSECONDS_PER_CENTURY);
+        let expect_rslt = i64::from(centuries + 1) * NANOSECONDS_PER_CENTURY as i64 + nanos as i64;
+
+        let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
+        assert_eq!(recip_ns, expect_rslt);
+    } else {
+        // Positive duration but enough to fit on an i64.
+        let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
+
+        assert_eq!(recip_ns, nanoseconds);
+    }
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_to_seconds() {
+    use core::f64::EPSILON;
+
+    let dur: Duration = kani::any();
+
+    let (centuries, nanoseconds) = dur.to_parts();
+
+    // To avoid rounding errors, we separate the seconds and the subsections calculation.
+    // Note that we check against the initialized duration.
+
+    // Compute the seconds and nanoseconds that we know this fits on a 64bit float
+    let seconds = nanoseconds.div_euclid(NANOSECONDS_PER_SECOND);
+    let subseconds = nanoseconds.rem_euclid(NANOSECONDS_PER_SECOND);
+
+    let expect_s =
+        f64::from(centuries) * SECONDS_PER_CENTURY + (seconds as f64) + (subseconds as f64) * 1e-9;
+
+    assert!((expect_s - dur.to_seconds()).abs() < EPSILON)
 }
