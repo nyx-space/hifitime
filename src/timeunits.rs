@@ -247,10 +247,10 @@ impl Mul<i64> for Unit {
 
         match q.checked_mul(factor) {
             Some(total_ns) => {
-                if total_ns.abs() < (i64::MAX as i64) {
-                    Duration::from_truncated_nanoseconds(total_ns as i64)
+                if total_ns.abs() < i64::MAX {
+                    Duration::from_truncated_nanoseconds(total_ns)
                 } else {
-                    Duration::from_total_nanoseconds(total_ns as i128)
+                    Duration::from_total_nanoseconds(i128::from(total_ns))
                 }
             }
             None => {

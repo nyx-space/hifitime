@@ -1170,7 +1170,7 @@ impl Epoch {
 
             (
                 year,
-                month as u8,
+                month,
                 day as u8,
                 hours as u8,
                 minutes as u8,
@@ -1182,7 +1182,7 @@ impl Epoch {
         } else {
             (
                 year,
-                month as u8,
+                month,
                 day as u8,
                 hours as u8,
                 minutes as u8,
@@ -2266,13 +2266,12 @@ impl Epoch {
     /// This is usually how GNSS receivers describe a timestamp.
     pub fn to_time_of_week(&self) -> (u32, u64) {
         let total_nanoseconds = self.to_duration().total_nanoseconds();
-        let weeks =
-            total_nanoseconds / NANOSECONDS_PER_DAY as i128 / Weekday::DAYS_PER_WEEK_I128 as i128;
+        let weeks = total_nanoseconds / NANOSECONDS_PER_DAY as i128 / Weekday::DAYS_PER_WEEK_I128;
         // elapsed nanoseconds in current week:
         //   remove previously determined nb of weeks
         //   get residual nanoseconds
-        let nanoseconds = total_nanoseconds
-            - weeks * NANOSECONDS_PER_DAY as i128 * Weekday::DAYS_PER_WEEK_I128 as i128;
+        let nanoseconds =
+            total_nanoseconds - weeks * NANOSECONDS_PER_DAY as i128 * Weekday::DAYS_PER_WEEK_I128;
         (weeks as u32, nanoseconds as u64)
     }
 
@@ -2982,7 +2981,7 @@ fn formal_epoch_from_time_scale() {
     let time_scale: TimeScale = TimeScale::TDB;
     let epoch: Epoch = Epoch::from_duration(duration, time_scale);
     assert!(
-        (epoch.to_duration_in_time_scale(time_scale) - duration).abs() < 150 * Unit::Nanosecond
+        (epoch.to_duration_in_time_scale(time_scale) - duration).abs() < 250 * Unit::Nanosecond
     );
 
     // Skip UTC, kani chokes on the leap seconds counting.
