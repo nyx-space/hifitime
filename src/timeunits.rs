@@ -234,20 +234,32 @@ impl Mul<i64> for Unit {
     /// Converts the input values to i128 and creates a duration from that
     /// This method will necessarily ignore durations below nanoseconds
     fn mul(self, q: i64) -> Duration {
-        let total_ns = match self {
-            Unit::Century => q * (NANOSECONDS_PER_CENTURY as i64),
-            Unit::Day => q * (NANOSECONDS_PER_DAY as i64),
-            Unit::Hour => q * (NANOSECONDS_PER_HOUR as i64),
-            Unit::Minute => q * (NANOSECONDS_PER_MINUTE as i64),
-            Unit::Second => q * (NANOSECONDS_PER_SECOND as i64),
-            Unit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as i64),
-            Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as i64),
-            Unit::Nanosecond => q,
+        let factor = match self {
+            Unit::Century => NANOSECONDS_PER_CENTURY as i64,
+            Unit::Day => NANOSECONDS_PER_DAY as i64,
+            Unit::Hour => NANOSECONDS_PER_HOUR as i64,
+            Unit::Minute => NANOSECONDS_PER_MINUTE as i64,
+            Unit::Second => NANOSECONDS_PER_SECOND as i64,
+            Unit::Millisecond => NANOSECONDS_PER_MILLISECOND as i64,
+            Unit::Microsecond => NANOSECONDS_PER_MICROSECOND as i64,
+            Unit::Nanosecond => 1,
         };
-        if total_ns.abs() < (i64::MAX as i64) {
-            Duration::from_truncated_nanoseconds(total_ns as i64)
-        } else {
-            Duration::from_total_nanoseconds(total_ns as i128)
+
+        match q.checked_mul(factor) {
+            Some(total_ns) => {
+                if total_ns.abs() < (i64::MAX as i64) {
+                    Duration::from_truncated_nanoseconds(total_ns as i64)
+                } else {
+                    Duration::from_total_nanoseconds(total_ns as i128)
+                }
+            }
+            None => {
+                if q.is_negative() {
+                    Duration::MIN
+                } else {
+                    Duration::MAX
+                }
+            }
         }
     }
 }
@@ -255,23 +267,36 @@ impl Mul<i64> for Unit {
 impl Mul<f64> for Unit {
     type Output = Duration;
 
-    /// Converts the input values to i128 and creates a duration from that
-    /// This method will necessarily ignore durations below nanoseconds
+    /// Creates a duration from that f64
+    ///
+    /// ## Limitations
+    /// 1. If the input value times the unit does not fit on a Duration, then Duration::MAX or Duration::MIN will be returned
+    /// depending on whether the value would have overflowed or underflowed (respectively).
+    /// 2. Floating point operations may round differently on different processors. It's advised to use integer initialization of Durations whenever possible.
     fn mul(self, q: f64) -> Duration {
-        let total_ns = match self {
-            Unit::Century => q * (NANOSECONDS_PER_CENTURY as f64),
-            Unit::Day => q * (NANOSECONDS_PER_DAY as f64),
-            Unit::Hour => q * (NANOSECONDS_PER_HOUR as f64),
-            Unit::Minute => q * (NANOSECONDS_PER_MINUTE as f64),
-            Unit::Second => q * (NANOSECONDS_PER_SECOND as f64),
-            Unit::Millisecond => q * (NANOSECONDS_PER_MILLISECOND as f64),
-            Unit::Microsecond => q * (NANOSECONDS_PER_MICROSECOND as f64),
-            Unit::Nanosecond => q,
+        let factor = match self {
+            Unit::Century => NANOSECONDS_PER_CENTURY as f64,
+            Unit::Day => NANOSECONDS_PER_DAY as f64,
+            Unit::Hour => NANOSECONDS_PER_HOUR as f64,
+            Unit::Minute => NANOSECONDS_PER_MINUTE as f64,
+            Unit::Second => NANOSECONDS_PER_SECOND as f64,
+            Unit::Millisecond => NANOSECONDS_PER_MILLISECOND as f64,
+            Unit::Microsecond => NANOSECONDS_PER_MICROSECOND as f64,
+            Unit::Nanosecond => 1.0,
         };
-        if total_ns.abs() < (i64::MAX as f64) {
-            Duration::from_truncated_nanoseconds(total_ns as i64)
+
+        // Bound checking to prevent overflows
+        if q >= f64::MAX / factor {
+            Duration::MAX
+        } else if q <= f64::MIN / factor {
+            Duration::MIN
         } else {
-            Duration::from_total_nanoseconds(total_ns as i128)
+            let total_ns = q * factor;
+            if total_ns.abs() < (i64::MAX as f64) {
+                Duration::from_truncated_nanoseconds(total_ns as i64)
+            } else {
+                Duration::from_total_nanoseconds(total_ns as i128)
+            }
         }
     }
 }

@@ -53,7 +53,7 @@ pub const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_
 /// **Important conventions:**
 /// Conventions had to be made to define the partial order of a duration.
 /// 1. It was decided that the nanoseconds corresponds to the nanoseconds _into_ the current century. In other words,
-/// a durationn with centuries = -1 and nanoseconds = 0 is _a smaller duration_ than centuries = -1 and nanoseconds = 1.
+/// a duration with centuries = -1 and nanoseconds = 0 is _a smaller duration_ than centuries = -1 and nanoseconds = 1.
 /// That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
 /// As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
 /// 2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
@@ -975,7 +975,7 @@ impl Sub for Duration {
         let mut me = self;
         match me.centuries.checked_sub(rhs.centuries) {
             None => {
-                // Underflowed, so we've hit the max
+                // Underflowed, so we've hit the min
                 return Self::MIN;
             }
             Some(centuries) => {
@@ -986,7 +986,13 @@ impl Sub for Duration {
         match me.nanoseconds.checked_sub(rhs.nanoseconds) {
             None => {
                 // Decrease the number of centuries, and realign
-                me.centuries -= 1;
+                match me.centuries.checked_sub(1) {
+                    Some(centuries) => me.centuries = centuries,
+                    None => {
+                        // Underflowed, so we've hit the min
+                        return Duration::MIN;
+                    }
+                };
                 me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
             }
             Some(nanos) => {
@@ -1283,25 +1289,3 @@ fn formal_truncated_ns_reciprocity() {
         assert_eq!(recip_ns, nanoseconds);
     }
 }
-
-// #[cfg(kani)]
-// #[kani::proof]
-// fn formal_to_seconds() {
-//     use core::f64::EPSILON;
-
-//     let dur: Duration = kani::any();
-
-//     let (centuries, nanoseconds) = dur.to_parts();
-
-//     // To avoid rounding errors, we separate the seconds and the subsections calculation.
-//     // Note that we check against the initialized duration.
-
-//     // Compute the seconds and nanoseconds that we know this fits on a 64bit float
-//     let seconds = nanoseconds.div_euclid(NANOSECONDS_PER_SECOND);
-//     let subseconds = nanoseconds.rem_euclid(NANOSECONDS_PER_SECOND);
-
-//     let expect_s =
-//         f64::from(centuries) * SECONDS_PER_CENTURY + (seconds as f64) + (subseconds as f64) * 1e-9;
-
-//     assert!((expect_s - dur.to_seconds()).abs() < EPSILON)
-// }

@@ -154,7 +154,7 @@ impl fmt::Display for TimeScale {
 
 impl fmt::LowerHex for TimeScale {
     /// Prints given TimeScale in RINEX format
-    /// ie., standard GNSS constellation name is prefered when possible
+    /// ie., standard GNSS constellation name is preferred when possible
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::GPST => write!(f, "GPS"),
