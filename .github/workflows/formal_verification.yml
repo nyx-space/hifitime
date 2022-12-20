@@ -37,7 +37,7 @@ jobs:
           # Remove `cdylib` from targets in Cargo.toml because it confuses Kani
           sed '17d' Cargo.toml > Cargo.toml.new
           mv Cargo.toml.new Cargo.toml
-          cargo kani | cargo kani --visualize # Re-run for artifacts if it has failed.
+          cargo kani | (cargo kani --visualize && exit 1) # Re-run for artifacts if it has failed.
 
       - name: Save formal verification artifacts
         uses: actions/upload-artifact@v3

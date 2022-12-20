@@ -221,8 +221,8 @@ fn test_ops_near_bounds() {
 
     // Check that the special cases of the bounds themselves don't prevent correct math.
     assert_eq!(
-        (Duration::MIN + 1 * Unit::Nanosecond) - (Duration::MIN + 1 * Unit::Nanosecond),
-        0 * Unit::Century
+        (Duration::MIN - 1 * Unit::Nanosecond) - (Duration::MIN - 1 * Unit::Nanosecond),
+        0 * Unit::Nanosecond
     );
 
     let tt_offset_ns: u64 = 32_184_000_000;
@@ -232,6 +232,10 @@ fn test_ops_near_bounds() {
         duration - Duration::from_total_nanoseconds(tt_offset_ns.into()),
         exp
     );
+
+    // Check that we saturate one way but not the other
+    assert_ne!(Duration::MIN + 1 * Unit::Nanosecond, Duration::MIN);
+    assert_ne!(Duration::MAX - 1 * Unit::Nanosecond, Duration::MAX);
 }
 
 #[test]

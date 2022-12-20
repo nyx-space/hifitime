@@ -2967,7 +2967,7 @@ fn test_serdes() {
 // #[test]
 fn formal_epoch_from_time_scale() {
     let duration: Duration = kani::any();
-    // let duration = Duration::from_parts(-32766, 0);
+    // let duration = Duration::from_parts(32767, 2966457567000000000);
 
     // TAI
     let time_scale: TimeScale = TimeScale::TAI;
@@ -2980,9 +2980,8 @@ fn formal_epoch_from_time_scale() {
     assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
 
     // TDB
-    if duration > Duration::MIN + (1 * Unit::Century + 12 * Unit::Hour)
-        && duration < Duration::MAX - (1 * Unit::Century + 12 * Unit::Hour)
-    {
+    let ts_offset = TimeScale::TDB.ref_epoch() - TimeScale::TAI.ref_epoch();
+    if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
         // We guard TDB from durations that are would hit the MIN or the MAX.
         // TDB is centered on J2000 but the Epoch is on J1900. So on initialization, we offset by one century and twelve hours.
         // If the duration is too close to the Duration bounds, then the TDB initialization and retrieval will fail (because the bounds will have been hit).
@@ -2999,18 +2998,27 @@ fn formal_epoch_from_time_scale() {
 
     // GPST
     let time_scale: TimeScale = TimeScale::GPST;
-    let epoch: Epoch = Epoch::from_duration(duration, time_scale);
-    assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+    let ts_offset = TimeScale::GPST.ref_epoch() - TimeScale::TAI.ref_epoch();
+    if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
+        let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+        assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+    }
 
     // GST
     let time_scale: TimeScale = TimeScale::GST;
-    let epoch: Epoch = Epoch::from_duration(duration, time_scale);
-    assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+    let ts_offset = TimeScale::GST.ref_epoch() - TimeScale::TAI.ref_epoch();
+    if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
+        let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+        assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+    }
 
     // BDT
     let time_scale: TimeScale = TimeScale::BDT;
-    let epoch: Epoch = Epoch::from_duration(duration, time_scale);
-    assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+    let ts_offset = TimeScale::BDT.ref_epoch() - TimeScale::TAI.ref_epoch();
+    if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
+        let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+        assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+    }
 }
 
 #[cfg(kani)]

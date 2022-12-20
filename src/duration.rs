@@ -281,13 +281,20 @@ impl Duration {
         if extra_centuries > 0 {
             let rem_nanos = self.nanoseconds.rem_euclid(NANOSECONDS_PER_CENTURY);
 
-            if self.centuries == i16::MIN && rem_nanos > 0 {
-                // We're at the min number of centuries already, and we have extra nanos, so we're saturated the duration limit
-                *self = Self::MIN;
-            } else if self.centuries == i16::MAX && rem_nanos > 0 {
-                // Saturated max
-                *self = Self::MAX;
-            } else {
+            if self.centuries == i16::MIN {
+                if rem_nanos > Self::MIN.nanoseconds {
+                    // We're at the min number of centuries already, and we have extra nanos, so we're saturated the duration limit
+                    *self = Self::MIN;
+                }
+                // Else, we're near the MIN but we're within the MIN in nanoseconds, so let's not do anything here.
+            } else if self.centuries == i16::MAX {
+                if rem_nanos > Self::MAX.nanoseconds {
+                    // Saturated max
+                    *self = Self::MAX;
+                }
+                // Else, we're near the MAX but we're within the MAX in nanoseconds, so let's not do anything here.
+            } else if *self != Self::MAX && *self != Self::MIN {
+                // The bounds are valid as is, no wrapping needed when rem_nanos is not zero.
                 match self.centuries.checked_add(extra_centuries as i16) {
                     Some(centuries) => {
                         self.centuries = centuries;
@@ -1080,10 +1087,21 @@ impl Neg for Duration {
         } else if self == Self::MAX {
             Self::MIN
         } else {
-            Self::from_parts(
-                -self.centuries - 1,
-                NANOSECONDS_PER_CENTURY - self.nanoseconds,
-            )
+            match NANOSECONDS_PER_CENTURY.checked_sub(self.nanoseconds) {
+                Some(nanoseconds) => {
+                    // yay
+                    Self::from_parts(-self.centuries - 1, nanoseconds)
+                }
+                None => {
+                    if self > Duration::ZERO {
+                        let dur_to_max = Self::MAX - self;
+                        Self::MIN + dur_to_max
+                    } else {
+                        let dur_to_min = Self::MIN + self;
+                        Self::MAX - dur_to_min
+                    }
+                }
+            }
         }
     }
 }
@@ -1247,6 +1265,14 @@ fn test_bounds() {
     let min_n = Duration::MIN_NEGATIVE;
     assert_eq!(min_n.centuries, -1);
     assert_eq!(min_n.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
+
+    let min_n1 = Duration::MIN - 1 * Unit::Nanosecond;
+    assert_eq!(min_n1.centuries, i16::MIN);
+    assert_eq!(min_n1.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
+
+    let max_n1 = Duration::MAX - 1 * Unit::Nanosecond;
+    assert_eq!(max_n1.centuries, i16::MAX);
+    assert_eq!(max_n1.nanoseconds, 2 * NANOSECONDS_PER_CENTURY - 1);
 }
 
 #[cfg(kani)]
