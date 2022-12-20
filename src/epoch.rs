@@ -2962,8 +2962,8 @@ fn test_serdes() {
     assert_eq!(e, parsed);
 }
 
-// #[cfg(kani)]
-// #[kani::proof]
+#[cfg(kani)]
+#[kani::proof]
 // #[test]
 fn formal_epoch_from_time_scale() {
     // let duration: Duration = kani::any();
@@ -2977,11 +2977,6 @@ fn formal_epoch_from_time_scale() {
     // TT
     let time_scale: TimeScale = TimeScale::TT;
     let epoch: Epoch = Epoch::from_duration(duration, time_scale);
-    println!(
-        "got: {}\nexp: {}",
-        epoch.to_duration_in_time_scale(time_scale),
-        duration
-    );
     assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
 
     // // TDB

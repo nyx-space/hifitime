@@ -1,5 +1,6 @@
 use hifitime::{
-    Duration, Errors, Freq, Frequencies, ParsingErrors, TimeUnits, Unit, NANOSECONDS_PER_MINUTE,
+    Duration, Errors, Freq, Frequencies, ParsingErrors, TimeUnits, Unit, NANOSECONDS_PER_CENTURY,
+    NANOSECONDS_PER_MINUTE,
 };
 
 #[cfg(feature = "std")]
@@ -222,6 +223,14 @@ fn test_ops_near_bounds() {
     assert_eq!(
         (Duration::MIN + 1 * Unit::Nanosecond) - (Duration::MIN + 1 * Unit::Nanosecond),
         0 * Unit::Century
+    );
+
+    let tt_offset_ns: u64 = 32_184_000_000;
+    let duration = Duration::from_parts(-32767, 0);
+    let exp = Duration::from_parts(-32768, NANOSECONDS_PER_CENTURY - tt_offset_ns);
+    assert_eq!(
+        duration - Duration::from_total_nanoseconds(tt_offset_ns.into()),
+        exp
     );
 }
 

@@ -287,33 +287,23 @@ impl Duration {
             } else if self.centuries == i16::MAX && rem_nanos > 0 {
                 // Saturated max
                 *self = Self::MAX;
-            } else if self.centuries >= 0 {
-                // Check that we can safely cast because we have that room without overflowing
-                if (i16::MAX - self.centuries) as u64 >= extra_centuries {
-                    // We can safely add without an overflow
-                    self.centuries = self.centuries.checked_add(extra_centuries as i16).unwrap();
-                    self.nanoseconds = rem_nanos;
-                } else {
-                    // Saturated max again
-                    *self = Self::MAX;
-                }
             } else {
-                assert!(self.centuries < 0, "this shouldn't be possible");
-
-                // Check that we can safely cast because we have that room without overflowing
-                if (i16::MIN - self.centuries) as u64 >= extra_centuries {
-                    // We can safely add without an overflow
-                    self.centuries = self.centuries.checked_add(extra_centuries as i16).unwrap();
-                    self.nanoseconds = rem_nanos;
-                } else {
-                    // Saturated max again
-                    *self = Self::MIN;
+                match self.centuries.checked_add(extra_centuries as i16) {
+                    Some(centuries) => {
+                        self.centuries = centuries;
+                        self.nanoseconds = rem_nanos;
+                    }
+                    None => {
+                        if self.centuries >= 0 {
+                            // Saturated max again
+                            *self = Self::MAX;
+                        } else {
+                            // Saturated min
+                            *self = Self::MIN;
+                        }
+                    }
                 }
             }
-        } else if *self < Self::MIN {
-            *self = Self::MIN;
-        } else if *self > Self::MAX {
-            *self = Self::MAX
         }
     }
 
