@@ -282,13 +282,13 @@ impl Duration {
             let rem_nanos = self.nanoseconds.rem_euclid(NANOSECONDS_PER_CENTURY);
 
             if self.centuries == i16::MIN {
-                if rem_nanos > Self::MIN.nanoseconds {
+                if rem_nanos + self.nanoseconds > Self::MIN.nanoseconds {
                     // We're at the min number of centuries already, and we have extra nanos, so we're saturated the duration limit
                     *self = Self::MIN;
                 }
                 // Else, we're near the MIN but we're within the MIN in nanoseconds, so let's not do anything here.
             } else if self.centuries == i16::MAX {
-                if rem_nanos > Self::MAX.nanoseconds {
+                if rem_nanos + self.nanoseconds > Self::MAX.nanoseconds {
                     // Saturated max
                     *self = Self::MAX;
                 }
@@ -614,7 +614,7 @@ impl Duration {
     /// Maximum duration that can be represented
     pub const MAX: Self = Self {
         centuries: i16::MAX,
-        nanoseconds: 2 * NANOSECONDS_PER_CENTURY,
+        nanoseconds: NANOSECONDS_PER_CENTURY,
     };
 
     /// Minimum duration that can be represented
@@ -1001,14 +1001,7 @@ impl Sub for Duration {
                 };
                 me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
             }
-            Some(nanos) => {
-                if self.centuries >= 0 && rhs.centuries < 0 {
-                    // Account for zero crossing
-                    me.nanoseconds = nanos + 1
-                } else {
-                    me.nanoseconds = nanos
-                }
-            }
+            Some(nanos) => me.nanoseconds = nanos,
         };
 
         me.normalize();
@@ -1256,7 +1249,7 @@ fn test_bounds() {
 
     let max = Duration::MAX;
     assert_eq!(max.centuries, i16::MAX);
-    assert_eq!(max.nanoseconds, 2 * NANOSECONDS_PER_CENTURY);
+    assert_eq!(max.nanoseconds, NANOSECONDS_PER_CENTURY);
 
     let min_p = Duration::MIN_POSITIVE;
     assert_eq!(min_p.centuries, 0);
@@ -1272,7 +1265,7 @@ fn test_bounds() {
 
     let max_n1 = Duration::MAX - 1 * Unit::Nanosecond;
     assert_eq!(max_n1.centuries, i16::MAX);
-    assert_eq!(max_n1.nanoseconds, 2 * NANOSECONDS_PER_CENTURY - 1);
+    assert_eq!(max_n1.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
 }
 
 #[cfg(kani)]

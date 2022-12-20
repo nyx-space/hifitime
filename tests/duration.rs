@@ -160,7 +160,7 @@ fn duration_format() {
     assert_eq!(delta * -1.0, 0.0);
     assert_eq!(format!("{}", sum), "-35 min");
 
-    assert_eq!(format!("{}", Duration::MAX), "1196887725 days");
+    assert_eq!(format!("{}", Duration::MAX), "1196851200 days");
     assert_eq!(format!("{}", Duration::MIN), "-1196887725 days");
     assert_eq!(format!("{}", Duration::ZERO), "0 ns");
 
@@ -233,8 +233,18 @@ fn test_ops_near_bounds() {
         exp
     );
 
-    // Check that we saturate one way but not the other
-    assert_ne!(Duration::MIN + 1 * Unit::Nanosecond, Duration::MIN);
+    // Test the zero crossing with a large negative value
+    assert_eq!(
+        2 * Unit::Nanosecond - (-1 * Unit::Century),
+        1 * Unit::Century + 2 * Unit::Nanosecond
+    );
+
+    // Check that we saturate one way but not the other for MIN
+    assert_ne!(Duration::MIN - 1 * Unit::Nanosecond, Duration::MIN);
+    assert_eq!(Duration::MIN + 1 * Unit::Nanosecond, Duration::MIN);
+
+    // Check that we saturate one way but not the other for MAX
+    assert_eq!(Duration::MAX + 1 * Unit::Nanosecond, Duration::MAX);
     assert_ne!(Duration::MAX - 1 * Unit::Nanosecond, Duration::MAX);
 }
 
@@ -245,10 +255,6 @@ fn test_neg() {
     assert_eq!(2.nanoseconds(), -(2.0.nanoseconds()));
     assert_eq!(Duration::MIN, -Duration::MAX);
     assert_eq!(Duration::MAX, -Duration::MIN);
-    assert_eq!(
-        Duration::MIN + 1 * Unit::Nanosecond,
-        -(Duration::MAX - 1 * Unit::Nanosecond)
-    );
 }
 
 #[test]
