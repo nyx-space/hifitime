@@ -2966,8 +2966,8 @@ fn test_serdes() {
 #[kani::proof]
 // #[test]
 fn formal_epoch_from_time_scale() {
-    // let duration: Duration = kani::any();
-    let duration = Duration::from_parts(-32767, 0);
+    let duration: Duration = kani::any();
+    // let duration = Duration::from_parts(-32766, 0);
 
     // TAI
     let time_scale: TimeScale = TimeScale::TAI;
@@ -2979,16 +2979,20 @@ fn formal_epoch_from_time_scale() {
     let epoch: Epoch = Epoch::from_duration(duration, time_scale);
     assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
 
-    // // TDB
-    // let time_scale: TimeScale = TimeScale::TDB;
-    // let epoch: Epoch = Epoch::from_duration(duration, time_scale);
-    // println!(
-    //     "{}",
-    //     (epoch.to_duration_in_time_scale(time_scale) - duration)
-    // );
-    // assert!(
-    //     (epoch.to_duration_in_time_scale(time_scale) - duration).abs() < 250 * Unit::Nanosecond
-    // );
+    // TDB
+    if duration > Duration::MIN + (1 * Unit::Century + 12 * Unit::Hour)
+        && duration < Duration::MAX - (1 * Unit::Century + 12 * Unit::Hour)
+    {
+        // We guard TDB from durations that are would hit the MIN or the MAX.
+        // TDB is centered on J2000 but the Epoch is on J1900. So on initialization, we offset by one century and twelve hours.
+        // If the duration is too close to the Duration bounds, then the TDB initialization and retrieval will fail (because the bounds will have been hit).
+
+        let time_scale: TimeScale = TimeScale::TDB;
+        let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+        assert!(
+            (epoch.to_duration_in_time_scale(time_scale) - duration).abs() < 250 * Unit::Nanosecond
+        );
+    }
 
     // Skip UTC, kani chokes on the leap seconds counting.
     // Skip ET, kani chokes on the Newton Raphson loop.
