@@ -81,7 +81,7 @@ impl PartialEq for Duration {
     fn eq(&self, other: &Self) -> bool {
         if self.centuries == other.centuries {
             self.nanoseconds == other.nanoseconds
-        } else if (self.centuries - other.centuries).abs() == 1
+        } else if (self.centuries.saturating_sub(other.centuries)).saturating_abs() == 1
             && (self.centuries == 0 || other.centuries == 0)
         {
             // Special case where we're at the zero crossing
@@ -310,6 +310,10 @@ impl Duration {
                     *self = Self::MIN;
                 }
             }
+        } else if *self < Self::MIN {
+            *self = Self::MIN;
+        } else if *self > Self::MAX {
+            *self = Self::MAX
         }
     }
 
@@ -410,6 +414,9 @@ impl Duration {
     }
 
     /// Returns the sign of this duration
+    /// + 0 if the number is zero
+    /// + 1 if the number is positive
+    /// + -1 if the number is negative
     #[must_use]
     pub const fn signum(&self) -> i8 {
         self.centuries.signum() as i8
@@ -610,7 +617,7 @@ impl Duration {
     /// Maximum duration that can be represented
     pub const MAX: Self = Self {
         centuries: i16::MAX,
-        nanoseconds: NANOSECONDS_PER_CENTURY,
+        nanoseconds: 2 * NANOSECONDS_PER_CENTURY,
     };
 
     /// Minimum duration that can be represented
@@ -942,14 +949,17 @@ impl Add for Duration {
         let mut me = self;
         match me.centuries.checked_add(rhs.centuries) {
             None => {
-                // Overflowed, so we've hit the max
-                return Self::MAX;
+                // Overflowed, so we've hit the bound.
+                if me.centuries < 0 {
+                    // We've hit the negative bound, so return MIN.
+                    return Self::MIN;
+                } else {
+                    // We've hit the positive bound, so return MAX.
+                    return Self::MAX;
+                }
             }
             Some(centuries) => {
                 me.centuries = centuries;
-                // if self.centuries < 0 && rhs.centuries >= 0 {
-                //     me.centuries += 1;
-                // }
             }
         }
         // We can safely add two nanoseconds together because we can fit five centuries in one u64
@@ -968,10 +978,9 @@ impl AddAssign for Duration {
 }
 
 impl Sub for Duration {
-    type Output = Duration;
+    type Output = Self;
 
-    fn sub(self, rhs: Self) -> Duration {
-        // Check that the subtraction fits in an i16
+    fn sub(self, rhs: Self) -> Self {
         let mut me = self;
         match me.centuries.checked_sub(rhs.centuries) {
             None => {
@@ -990,7 +999,7 @@ impl Sub for Duration {
                     Some(centuries) => me.centuries = centuries,
                     None => {
                         // Underflowed, so we've hit the min
-                        return Duration::MIN;
+                        return Self::MIN;
                     }
                 };
                 me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
@@ -1011,17 +1020,17 @@ impl Sub for Duration {
 }
 
 impl SubAssign for Duration {
-    fn sub_assign(&mut self, rhs: Duration) {
+    fn sub_assign(&mut self, rhs: Self) {
         *self = *self - rhs;
     }
 }
 
 // Allow adding with a Unit directly
 impl Add<Unit> for Duration {
-    type Output = Duration;
+    type Output = Self;
 
     #[allow(clippy::identity_op)]
-    fn add(self, rhs: Unit) -> Duration {
+    fn add(self, rhs: Unit) -> Self {
         self + rhs * 1
     }
 }
@@ -1076,10 +1085,16 @@ impl Neg for Duration {
 
     #[must_use]
     fn neg(self) -> Self::Output {
-        Self::from_parts(
-            -self.centuries - 1,
-            NANOSECONDS_PER_CENTURY - self.nanoseconds,
-        )
+        if self == Self::MIN {
+            Self::MAX
+        } else if self == Self::MAX {
+            Self::MIN
+        } else {
+            Self::from_parts(
+                -self.centuries - 1,
+                NANOSECONDS_PER_CENTURY - self.nanoseconds,
+            )
+        }
     }
 }
 
@@ -1233,7 +1248,7 @@ fn test_bounds() {
 
     let max = Duration::MAX;
     assert_eq!(max.centuries, i16::MAX);
-    assert_eq!(max.nanoseconds, NANOSECONDS_PER_CENTURY);
+    assert_eq!(max.nanoseconds, 2 * NANOSECONDS_PER_CENTURY);
 
     let min_p = Duration::MIN_POSITIVE;
     assert_eq!(min_p.centuries, 0);

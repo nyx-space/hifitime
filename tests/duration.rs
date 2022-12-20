@@ -159,7 +159,7 @@ fn duration_format() {
     assert_eq!(delta * -1.0, 0.0);
     assert_eq!(format!("{}", sum), "-35 min");
 
-    assert_eq!(format!("{}", Duration::MAX), "1196851200 days");
+    assert_eq!(format!("{}", Duration::MAX), "1196887725 days");
     assert_eq!(format!("{}", Duration::MIN), "-1196887725 days");
     assert_eq!(format!("{}", Duration::ZERO), "0 ns");
 
@@ -214,10 +214,28 @@ fn test_ops() {
 }
 
 #[test]
+fn test_ops_near_bounds() {
+    assert_eq!(Duration::MAX - Duration::MAX, 0 * Unit::Nanosecond);
+    assert_eq!(Duration::MIN - Duration::MIN, 0 * Unit::Nanosecond);
+
+    // Check that the special cases of the bounds themselves don't prevent correct math.
+    assert_eq!(
+        (Duration::MIN + 1 * Unit::Nanosecond) - (Duration::MIN + 1 * Unit::Nanosecond),
+        0 * Unit::Century
+    );
+}
+
+#[test]
 fn test_neg() {
     assert_eq!(Duration::MIN_NEGATIVE, -Duration::MIN_POSITIVE);
     assert_eq!(Duration::MIN_POSITIVE, -Duration::MIN_NEGATIVE);
     assert_eq!(2.nanoseconds(), -(2.0.nanoseconds()));
+    assert_eq!(Duration::MIN, -Duration::MAX);
+    assert_eq!(Duration::MAX, -Duration::MIN);
+    assert_eq!(
+        Duration::MIN + 1 * Unit::Nanosecond,
+        -(Duration::MAX - 1 * Unit::Nanosecond)
+    );
 }
 
 #[test]

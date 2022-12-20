@@ -2962,10 +2962,12 @@ fn test_serdes() {
     assert_eq!(e, parsed);
 }
 
-#[cfg(kani)]
-#[kani::proof]
+// #[cfg(kani)]
+// #[kani::proof]
+// #[test]
 fn formal_epoch_from_time_scale() {
-    let duration: Duration = kani::any();
+    // let duration: Duration = kani::any();
+    let duration = Duration::from_parts(-32767, 0);
 
     // TAI
     let time_scale: TimeScale = TimeScale::TAI;
@@ -2975,14 +2977,23 @@ fn formal_epoch_from_time_scale() {
     // TT
     let time_scale: TimeScale = TimeScale::TT;
     let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+    println!(
+        "got: {}\nexp: {}",
+        epoch.to_duration_in_time_scale(time_scale),
+        duration
+    );
     assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
 
-    // TDB
-    let time_scale: TimeScale = TimeScale::TDB;
-    let epoch: Epoch = Epoch::from_duration(duration, time_scale);
-    assert!(
-        (epoch.to_duration_in_time_scale(time_scale) - duration).abs() < 250 * Unit::Nanosecond
-    );
+    // // TDB
+    // let time_scale: TimeScale = TimeScale::TDB;
+    // let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+    // println!(
+    //     "{}",
+    //     (epoch.to_duration_in_time_scale(time_scale) - duration)
+    // );
+    // assert!(
+    //     (epoch.to_duration_in_time_scale(time_scale) - duration).abs() < 250 * Unit::Nanosecond
+    // );
 
     // Skip UTC, kani chokes on the leap seconds counting.
     // Skip ET, kani chokes on the Newton Raphson loop.
