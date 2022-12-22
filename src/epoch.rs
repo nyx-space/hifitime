@@ -2962,12 +2962,12 @@ fn test_serdes() {
     assert_eq!(e, parsed);
 }
 
-#[cfg(kani)]
-#[kani::proof]
-// #[test]
+// #[cfg(kani)]
+// #[kani::proof]
+#[test]
 fn formal_epoch_from_time_scale() {
-    let duration: Duration = kani::any();
-    // let duration = Duration::from_parts(32767, 2966457567000000000);
+    // let duration: Duration = kani::any();
+    let duration = Duration::from_parts(-32767, 0);
 
     // TAI
     let time_scale: TimeScale = TimeScale::TAI;

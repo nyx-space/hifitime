@@ -282,13 +282,13 @@ impl Duration {
             let rem_nanos = self.nanoseconds.rem_euclid(NANOSECONDS_PER_CENTURY);
 
             if self.centuries == i16::MIN {
-                if rem_nanos + self.nanoseconds > Self::MIN.nanoseconds {
+                if self.nanoseconds.saturating_add(rem_nanos) > Self::MIN.nanoseconds {
                     // We're at the min number of centuries already, and we have extra nanos, so we're saturated the duration limit
                     *self = Self::MIN;
                 }
                 // Else, we're near the MIN but we're within the MIN in nanoseconds, so let's not do anything here.
             } else if self.centuries == i16::MAX {
-                if rem_nanos + self.nanoseconds > Self::MAX.nanoseconds {
+                if self.nanoseconds.saturating_add(rem_nanos) > Self::MAX.nanoseconds {
                     // Saturated max
                     *self = Self::MAX;
                 }
@@ -959,9 +959,24 @@ impl Add for Duration {
                 me.centuries = centuries;
             }
         }
-        // We can safely add two nanoseconds together because we can fit five centuries in one u64
-        // cf. https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=b4011b1d5c06c38a72f28d0a9e6a5574
-        me.nanoseconds += rhs.nanoseconds;
+
+        if me.centuries == Self::MIN.centuries && self.nanoseconds < Self::MIN.nanoseconds {
+            // Then we do the operation backward
+            match me
+                .nanoseconds
+                .checked_sub(NANOSECONDS_PER_CENTURY - rhs.nanoseconds)
+            {
+                Some(nanos) => me.nanoseconds = nanos,
+                None => {
+                    me.centuries += 1; // Safe because we're at the MIN
+                    me.nanoseconds = rhs.nanoseconds
+                }
+            }
+        } else {
+            // We can safely add two nanoseconds together because we can fit five centuries in one u64
+            // cf. https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=b4011b1d5c06c38a72f28d0a9e6a5574
+            me.nanoseconds += rhs.nanoseconds;
+        }
 
         me.normalize();
         me
@@ -993,13 +1008,24 @@ impl Sub for Duration {
             None => {
                 // Decrease the number of centuries, and realign
                 match me.centuries.checked_sub(1) {
-                    Some(centuries) => me.centuries = centuries,
+                    Some(centuries) => {
+                        me.centuries = centuries;
+                        me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
+                    }
                     None => {
-                        // Underflowed, so we've hit the min
-                        return Self::MIN;
+                        match NANOSECONDS_PER_CENTURY.checked_sub(rhs.nanoseconds) {
+                            None => {
+                                // We're at the min number of centuries already, and we have extra nanos, so we're saturated the duration limit
+                                return Self::MIN;
+                            }
+                            Some(nanos) => me.nanoseconds = nanos,
+                        }
+
+                        // // Underflowed, so we've hit the min
+                        // return Self::MIN;
                     }
                 };
-                me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
+                // me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
             }
             Some(nanos) => me.nanoseconds = nanos,
         };
