@@ -11,7 +11,7 @@
 use crate::duration::{Duration, Unit};
 use crate::parser::Token;
 use crate::{
-    fmt::epoch_format::EpochFormat, Errors, MonthName, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD,
+    efmt::format::Format, Errors, MonthName, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD,
     ET_EPOCH_S, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET,
     NANOSECONDS_PER_DAY, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
     NANOSECONDS_PER_SECOND_U32, UNIX_REF_EPOCH,
@@ -1068,7 +1068,7 @@ impl Epoch {
 
     /// Initializes an Epoch from the provided EpochFormat.
     /// For acceptable tokens, refer to the EpochFormat documentation.
-    pub fn from_str_with_format(s_in: &str, format: EpochFormat) -> Self {
+    pub fn from_str_with_format(s_in: &str, format: Format) -> Self {
         todo!();
     }
 

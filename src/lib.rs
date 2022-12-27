@@ -78,7 +78,8 @@ pub const J2000_REF_EPOCH_TDB: Epoch = Epoch {
     time_scale: TimeScale::ET,
 };
 
-pub mod fmt;
+// Epoch formatting module is called `efmt` to avoid collision with `std::fmt` and `core::fmt`.
+pub mod efmt;
 mod parser;
 
 pub mod errors;
@@ -113,7 +114,7 @@ mod deprecated;
 pub mod prelude {
     pub use crate::{
         deprecated::TimeSystem,
-        fmt::{EpochFormat, EpochFormatter},
+        efmt::{Format, Formatter},
         Duration, Epoch, Errors, Freq, Frequencies, TimeScale, TimeSeries, TimeUnits, Unit,
         Weekday,
     };

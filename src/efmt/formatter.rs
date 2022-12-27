@@ -12,13 +12,13 @@ use core::fmt;
 
 use crate::{parser::Token, Duration, Epoch, TimeScale};
 
-use super::epoch_format::EpochFormat;
+use super::format::Format;
 
 #[cfg(not(feature = "std"))]
 use num_traits::Float;
 
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
-pub(crate) struct FormatItem {
+pub(crate) struct Item {
     pub(crate) token: Token,
     pub(crate) sep_char: Option<char>,
     pub(crate) second_sep_char: Option<char>,
@@ -26,7 +26,7 @@ pub(crate) struct FormatItem {
     pub(crate) optional: bool,
 }
 
-impl FormatItem {
+impl Item {
     pub(crate) fn new(token: Token, sep_char: Option<char>, second_sep_char: Option<char>) -> Self {
         let mut me = Self {
             token,
@@ -59,14 +59,15 @@ impl FormatItem {
     }
 }
 
-pub struct EpochFormatter {
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub struct Formatter {
     epoch: Epoch,
     offset: Duration,
-    format: EpochFormat,
+    format: Format,
 }
 
-impl EpochFormatter {
-    pub fn new(epoch: Epoch, format: EpochFormat) -> Self {
+impl Formatter {
+    pub fn new(epoch: Epoch, format: Format) -> Self {
         Self {
             epoch,
             offset: Duration::ZERO,
@@ -74,7 +75,7 @@ impl EpochFormatter {
         }
     }
 
-    pub fn with_timezone(epoch: Epoch, offset: Duration, format: EpochFormat) -> Self {
+    pub fn with_timezone(epoch: Epoch, offset: Duration, format: Format) -> Self {
         Self {
             epoch: epoch + offset,
             offset,
@@ -82,7 +83,7 @@ impl EpochFormatter {
         }
     }
 
-    pub fn in_time_scale(epoch: Epoch, format: EpochFormat, time_scale: TimeScale) -> Self {
+    pub fn in_time_scale(epoch: Epoch, format: Format, time_scale: TimeScale) -> Self {
         Self::new(epoch.in_time_scale(time_scale), format)
     }
 
@@ -91,11 +92,10 @@ impl EpochFormatter {
     }
 }
 
-impl fmt::Display for EpochFormatter {
-    /// The default format of an epoch is in UTC
+impl fmt::Display for Formatter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         // We make sure to only call this as needed.
-        let write_sep = |f: &mut fmt::Formatter, i: usize, format: &EpochFormat| -> fmt::Result {
+        let write_sep = |f: &mut fmt::Formatter, i: usize, format: &Format| -> fmt::Result {
             if i > 0 {
                 // Print the first separation character of the previous item
                 if let Some(sep) = format.items[i - 1].unwrap().sep_char {

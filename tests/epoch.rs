@@ -8,8 +8,7 @@ use hifitime::{
     SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
-use hifitime::fmt::epoch_format::EpochFormat;
-use hifitime::fmt::epoch_formatter::EpochFormatter;
+use hifitime::efmt::{Format, Formatter};
 
 #[cfg(feature = "std")]
 use core::f64::EPSILON;
@@ -1769,58 +1768,57 @@ fn test_day_of_year() {
 #[test]
 fn test_epoch_formatter() {
     use core::str::FromStr;
-    use hifitime::fmt::consts::*;
+    use hifitime::efmt::consts::*;
 
     let bday = Epoch::from_gregorian_utc(2000, 2, 29, 14, 57, 29, 37);
 
-    let fmt_iso_ord = EpochFormatter::new(bday, ISO8601_ORDINAL);
+    let fmt_iso_ord = Formatter::new(bday, ISO8601_ORDINAL);
     assert_eq!(format!("{fmt_iso_ord}"), "2000-059");
 
-    let fmt_iso_ord = EpochFormatter::new(bday, EpochFormat::from_str("%j").unwrap());
+    let fmt_iso_ord = Formatter::new(bday, Format::from_str("%j").unwrap());
     assert_eq!(format!("{fmt_iso_ord}"), "059");
 
-    let fmt_iso = EpochFormatter::new(bday, ISO8601);
+    let fmt_iso = Formatter::new(bday, ISO8601);
     assert_eq!(format!("{fmt_iso}"), format!("{bday}"));
 
-    let fmt = EpochFormatter::new(bday, ISO8601_DATE);
+    let fmt = Formatter::new(bday, ISO8601_DATE);
     assert_eq!(format!("{fmt}"), format!("2000-02-29"));
 
-    let fmt = EpochFormatter::new(bday, RFC2822);
+    let fmt = Formatter::new(bday, RFC2822);
     assert_eq!(format!("{fmt}"), format!("Tue, 29 Feb 2000 14:57:29"));
 
-    let fmt = EpochFormatter::new(bday, RFC2822_LONG);
+    let fmt = Formatter::new(bday, RFC2822_LONG);
     assert_eq!(
         format!("{fmt}"),
         format!("Tuesday, 29 February 2000 14:57:29")
     );
 
     // Decimal week day starts counting at zero ... it's dumb.
-    let fmt = EpochFormatter::new(bday, EpochFormat::from_str("%w").unwrap());
+    let fmt = Formatter::new(bday, Format::from_str("%w").unwrap());
     assert_eq!(format!("{fmt}"), format!("2"));
 
     let init_str = "1994-11-05T08:15:30-05:00";
     let e = Epoch::from_str(init_str).unwrap();
 
-    let fmt = EpochFormat::from_str("%Y-%m-%dT%H:%M:%S.%f%z").unwrap();
+    let fmt = Format::from_str("%Y-%m-%dT%H:%M:%S.%f%z").unwrap();
     assert_eq!(fmt, RFC3339);
 
-    let fmtd =
-        EpochFormatter::with_timezone(e, Duration::from_str("-05:00").unwrap(), RFC3339_FLEX);
+    let fmtd = Formatter::with_timezone(e, Duration::from_str("-05:00").unwrap(), RFC3339_FLEX);
 
     assert_eq!(init_str, format!("{fmtd}"));
 
     assert_eq!(
-        format!("{:?}", EpochFormat::from_str("%A, ").unwrap()),
+        format!("{:?}", Format::from_str("%A, ").unwrap()),
         "EpochFormat:`Weekday, `"
     );
     assert_eq!(
-        format!("{:?}", EpochFormat::from_str("%A,?").unwrap()),
+        format!("{:?}", Format::from_str("%A,?").unwrap()),
         "EpochFormat:`Weekday,?`"
     );
 
     // Test an invalid token
     assert_eq!(
-        EpochFormat::from_str("%p"),
+        Format::from_str("%p"),
         Err(hifitime::ParsingErrors::UnknownFormattingToken('p'))
     );
 }

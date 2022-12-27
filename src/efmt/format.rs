@@ -8,18 +8,18 @@
  * Documentation: https://nyxspace.com/
  */
 
-use super::epoch_formatter::FormatItem;
+use super::formatter::Item;
 use crate::{parser::Token, ParsingErrors};
 use core::fmt;
 use core::str::FromStr;
 
-/// EpochFormat allows formatting an Epoch with some custom arrangement of the Epoch items.
+/// Format allows formatting an Epoch with some custom arrangement of the Epoch items.
 /// This provides almost all of the options from the 1989 C standard.
 ///
-/// Construct a format with `EpochFormat::from_str` (no allocation needed) where the string
+/// Construct a format with `Format::from_str` (no allocation needed) where the string
 /// contains a succession of tokens (each starting with `%`) and up to two separators between tokens.
 ///
-/// Then this format can then be provided to the `EpochFormatter` for formatting. This is also no-std.
+/// Then this format can then be provided to the `Formatter` for formatting. This is also no-std.
 ///
 /// # Supported tokens
 ///
@@ -44,7 +44,7 @@ use core::str::FromStr;
 /// | `%w` | Weekday in decimal form with C89 standard | `01` for Dynamical barycentric time | (3) |
 /// | `%z` | Offset timezone if the formatter is provided with an epoch. | `+15:00` For GMT +15 hours and zero minutes | N/A |
 ///
-/// * (1): Hifitime supports years from -30868 to 34668. If your epoch is larger than +/- 9999 years, this will return
+/// * (1): Hifitime supports years from -34668 to 34668. If your epoch is larger than +/- 9999 years, the formatting of the years _will_ show all five digits of the year.
 /// * (2): Hifitime supports exactly nanosecond precision, and this is not lost when formatting.
 ///
 /// ## Hifitime specific tokens
@@ -61,53 +61,53 @@ use core::str::FromStr;
 /// # Example
 /// ```
 /// use hifitime::prelude::*;
-/// use hifitime::fmt;
-/// use hifitime::fmt::consts;
+/// use hifitime::efmt;
+/// use hifitime::efmt::consts;
 /// use core::str::FromStr;
 ///
 /// let bday = Epoch::from_gregorian_utc(2000, 2, 29, 14, 57, 29, 37);
 ///
-/// let fmt = fmt::EpochFormat::from_str("%Y-%m-%d").unwrap();
+/// let fmt = efmt::Format::from_str("%Y-%m-%d").unwrap();
 /// assert_eq!(fmt, consts::ISO8601_DATE);
 ///
-/// let fmtd_bday = EpochFormatter::new(bday, fmt);
+/// let fmtd_bday = Formatter::new(bday, fmt);
 /// assert_eq!(format!("{fmtd_bday}"), format!("2000-02-29"));
 ///
-/// let fmt = EpochFormat::from_str("%Y-%m-%dT%H:%M:%S.%f %T").unwrap();
+/// let fmt = Format::from_str("%Y-%m-%dT%H:%M:%S.%f %T").unwrap();
 /// assert_eq!(fmt, consts::ISO8601);
 ///
-/// let fmtd_bday = EpochFormatter::new(bday, fmt);
+/// let fmtd_bday = Formatter::new(bday, fmt);
 /// // ISO with the timescale is the default format
 /// assert_eq!(format!("{fmtd_bday}"), format!("{bday}"));
 ///
-/// let fmt = EpochFormat::from_str("%Y-%j").unwrap();
+/// let fmt = Format::from_str("%Y-%j").unwrap();
 /// assert_eq!(fmt, consts::ISO8601_ORDINAL);
 ///
-/// let fmt_iso_ord = EpochFormatter::new(bday, consts::ISO8601_ORDINAL);
+/// let fmt_iso_ord = Formatter::new(bday, consts::ISO8601_ORDINAL);
 /// assert_eq!(format!("{fmt_iso_ord}"), "2000-059");
 ///
-/// let fmt = EpochFormat::from_str("%A, %d %B %Y %H:%M:%S").unwrap();
+/// let fmt = Format::from_str("%A, %d %B %Y %H:%M:%S").unwrap();
 /// assert_eq!(fmt, consts::RFC2822_LONG);
 ///
-/// let fmt = EpochFormatter::new(bday, consts::RFC2822_LONG);
+/// let fmt = Formatter::new(bday, consts::RFC2822_LONG);
 /// assert_eq!(
 ///     format!("{fmt}"),
 ///     format!("Tuesday, 29 February 2000 14:57:29")
 /// );
 ///
-/// let fmt = EpochFormat::from_str("%a, %d %b %Y %H:%M:%S").unwrap();
+/// let fmt = Format::from_str("%a, %d %b %Y %H:%M:%S").unwrap();
 /// assert_eq!(fmt, consts::RFC2822);
 ///
-/// let fmt = EpochFormatter::new(bday, consts::RFC2822);
+/// let fmt = Formatter::new(bday, consts::RFC2822);
 /// assert_eq!(format!("{fmt}"), format!("Tue, 29 Feb 2000 14:57:29"));
 /// ```
-#[derive(Default, PartialEq)]
-pub struct EpochFormat {
-    pub(crate) items: [Option<FormatItem>; 16],
+#[derive(Copy, Clone, Default, PartialEq)]
+pub struct Format {
+    pub(crate) items: [Option<Item>; 16],
     pub(crate) num_items: usize,
 }
 
-impl EpochFormat {
+impl Format {
     pub(crate) fn need_gregorian(&self) -> bool {
         for item in self.items.iter().take(self.num_items) {
             match item.as_ref().unwrap().token {
@@ -134,7 +134,7 @@ impl EpochFormat {
     }
 }
 
-impl fmt::Debug for EpochFormat {
+impl fmt::Debug for Format {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "EpochFormat:`")?;
         for maybe_item in self.items.iter().take(self.num_items) {
@@ -155,15 +155,15 @@ impl fmt::Debug for EpochFormat {
     }
 }
 
-impl FromStr for EpochFormat {
+impl FromStr for Format {
     type Err = ParsingErrors;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut me = EpochFormat::default();
+        let mut me = Format::default();
         for token in s.split('%') {
             match token.chars().next() {
                 Some(char) => match char {
                     'Y' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::Year,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -171,7 +171,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'm' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::Month,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -179,7 +179,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'b' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::MonthNameShort,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -187,7 +187,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'B' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::MonthName,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -195,7 +195,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'd' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::Day,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -203,7 +203,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'j' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::DayOfYearInteger,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -211,7 +211,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'J' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::DayOfYear,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -219,7 +219,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'A' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::Weekday,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -227,7 +227,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'a' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::WeekdayShort,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -235,7 +235,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'H' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::Hour,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -243,7 +243,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'M' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::Minute,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -251,7 +251,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'S' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::Second,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -259,7 +259,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'f' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::Subsecond,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -267,7 +267,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'T' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::Timescale,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -275,7 +275,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'w' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::WeekdayDecimal,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -283,7 +283,7 @@ impl FromStr for EpochFormat {
                         me.num_items += 1;
                     }
                     'z' => {
-                        me.items[me.num_items] = Some(FormatItem::new(
+                        me.items[me.num_items] = Some(Item::new(
                             Token::OffsetHours,
                             token.chars().nth(1),
                             token.chars().nth(2),
@@ -302,21 +302,21 @@ impl FromStr for EpochFormat {
 
 #[test]
 fn epoch_format_from_str() {
-    let fmt = EpochFormat::from_str("%Y-%m-%d").unwrap();
-    assert_eq!(fmt, crate::fmt::consts::ISO8601_DATE);
+    let fmt = Format::from_str("%Y-%m-%d").unwrap();
+    assert_eq!(fmt, crate::efmt::consts::ISO8601_DATE);
 
-    let fmt = EpochFormat::from_str("%Y-%m-%dT%H:%M:%S.%f %T").unwrap();
-    assert_eq!(fmt, crate::fmt::consts::ISO8601);
+    let fmt = Format::from_str("%Y-%m-%dT%H:%M:%S.%f %T").unwrap();
+    assert_eq!(fmt, crate::efmt::consts::ISO8601);
 
-    let fmt = EpochFormat::from_str("%Y-%m-%dT%H:%M:%S.%f? %T?").unwrap();
-    assert_eq!(fmt, crate::fmt::consts::ISO8601_FLEX);
+    let fmt = Format::from_str("%Y-%m-%dT%H:%M:%S.%f? %T?").unwrap();
+    assert_eq!(fmt, crate::efmt::consts::ISO8601_FLEX);
 
-    let fmt = EpochFormat::from_str("%Y-%j").unwrap();
-    assert_eq!(fmt, crate::fmt::consts::ISO8601_ORDINAL);
+    let fmt = Format::from_str("%Y-%j").unwrap();
+    assert_eq!(fmt, crate::efmt::consts::ISO8601_ORDINAL);
 
-    let fmt = EpochFormat::from_str("%A, %d %B %Y %H:%M:%S").unwrap();
-    assert_eq!(fmt, crate::fmt::consts::RFC2822_LONG);
+    let fmt = Format::from_str("%A, %d %B %Y %H:%M:%S").unwrap();
+    assert_eq!(fmt, crate::efmt::consts::RFC2822_LONG);
 
-    let fmt = EpochFormat::from_str("%a, %d %b %Y %H:%M:%S").unwrap();
-    assert_eq!(fmt, crate::fmt::consts::RFC2822);
+    let fmt = Format::from_str("%a, %d %b %Y %H:%M:%S").unwrap();
+    assert_eq!(fmt, crate::efmt::consts::RFC2822);
 }

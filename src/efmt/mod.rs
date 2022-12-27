@@ -9,8 +9,8 @@
  */
 
 pub mod consts;
-pub mod epoch_format;
-pub mod epoch_formatter;
+pub mod format;
+pub mod formatter;
 
-pub use epoch_format::EpochFormat;
-pub use epoch_formatter::EpochFormatter;
+pub use format::Format;
+pub use formatter::Formatter;
