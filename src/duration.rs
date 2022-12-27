@@ -51,9 +51,10 @@ pub const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_
 /// Defines generally usable durations for nanosecond precision valid for 32,768 centuries in either direction, and only on 80 bits / 10 octets.
 ///
 /// **Important conventions:**
-/// Conventions had to be made to define the partial order of a duration.
-/// 1. It was decided that the nanoseconds corresponds to the nanoseconds _into_ the current century. In other words,
-/// a duration with centuries = -1 and nanoseconds = 0 is _a smaller duration_ than centuries = -1 and nanoseconds = 1.
+/// 1. The negative durations can be mentally modeled "BC" years. One hours before 01 Jan 0000, it was "-1" years but  365 days and 23h into the current day.
+/// It was decided that the nanoseconds corresponds to the nanoseconds _into_ the current century. In other words,
+/// a duration with centuries = -1 and nanoseconds = 0 is _a smaller duration_ (further from zero) than centuries = -1 and nanoseconds = 1.
+/// Duration zero minus one nanosecond returns a century of -1 and a nanosecond set to the number of nanoseconds in one century minus one.
 /// That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
 /// As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
 /// 2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
@@ -281,13 +282,7 @@ impl Duration {
         if extra_centuries > 0 {
             let rem_nanos = self.nanoseconds.rem_euclid(NANOSECONDS_PER_CENTURY);
 
-            if self.centuries == i16::MIN {
-                if self.nanoseconds.saturating_add(rem_nanos) > Self::MIN.nanoseconds {
-                    // We're at the min number of centuries already, and we have extra nanos, so we're saturated the duration limit
-                    *self = Self::MIN;
-                }
-                // Else, we're near the MIN but we're within the MIN in nanoseconds, so let's not do anything here.
-            } else if self.centuries == i16::MAX {
+            if self.centuries == i16::MAX {
                 if self.nanoseconds.saturating_add(rem_nanos) > Self::MAX.nanoseconds {
                     // Saturated max
                     *self = Self::MAX;
@@ -620,7 +615,7 @@ impl Duration {
     /// Minimum duration that can be represented
     pub const MIN: Self = Self {
         centuries: i16::MIN,
-        nanoseconds: NANOSECONDS_PER_CENTURY,
+        nanoseconds: 0,
     };
 
     /// Smallest duration that can be represented
@@ -941,6 +936,13 @@ impl fmt::LowerExp for Duration {
 impl Add for Duration {
     type Output = Duration;
 
+    /// # Addition of Durations
+    /// Durations are centered on zero duration. Of the tuple, only the centuries may be negative, the nanoseconds are always positive
+    /// and represent the nanoseconds _into_ the current centuries.
+    ///
+    /// ## Examples
+    /// + `Duration { centuries: 0, nanoseconds: 1 }` is a positive duration of zero centuries and one nanosecond.
+    /// + `Duration { centuries: -1, nanoseconds: 1 }` is a negative duration representing "one century before zero minus one nanosecond"
     fn add(self, rhs: Self) -> Duration {
         // Check that the addition fits in an i16
         let mut me = self;
@@ -992,6 +994,84 @@ impl AddAssign for Duration {
 impl Sub for Duration {
     type Output = Self;
 
+    /// # Subtraction
+    /// This operation is a notch confusing with negative durations.
+    /// As described in the `Duration` structure, a Duration of (-1, NANOSECONDS_PER_CENTURY-1) is closer to zero
+    /// than (-1, 0).
+    ///
+    /// ## Algorithm
+    ///
+    /// ### A > B, and both are positive
+    ///
+    /// If A > B, then A.centuries is subtracted by B.centuries, and A.nanoseconds is subtracted by B.nanoseconds.
+    /// If an overflow occurs, e.g. A.nanoseconds < B.nanoseconds, the number of nanoseconds is increased by the number of nanoseconds per century,
+    /// and the number of centuries is decreased by one.
+    ///
+    /// ```
+    /// use hifitime::{Duration, NANOSECONDS_PER_CENTURY};
+    ///
+    /// let a = Duration::from_parts(1, 1);
+    /// let b = Duration::from_parts(0, 10);
+    /// let c = Duration::from_parts(0, NANOSECONDS_PER_CENTURY - 9);
+    /// assert_eq!(a - b, c);
+    /// ```
+    ///
+    /// ### A < B, and both are positive
+    ///
+    /// In this case, the resulting duration will be negative. The number of centuries is a signed integer, so it is set to the difference of A.centuries - B.centuries.
+    /// The number of nanoseconds however must be wrapped by the number of nanoseconds per century.
+    /// For example:, let A = (0, 1) and B = (1, 10), then the resulting duration will be (-2, NANOSECONDS_PER_CENTURY - (10 - 1)). In this case, the centuries are set
+    /// to -2 because B is _two_ centuries into the future (the number of centuries into the future is zero-indexed).
+    /// ```
+    /// use hifitime::{Duration, NANOSECONDS_PER_CENTURY};
+    ///
+    /// let a = Duration::from_parts(0, 1);
+    /// let b = Duration::from_parts(1, 10);
+    /// let c = Duration::from_parts(-2, NANOSECONDS_PER_CENTURY - 9);
+    /// assert_eq!(a - b, c);
+    /// ```
+    ///
+    /// ### A > B, both are negative
+    ///
+    /// In this case, we try to stick to normal arithmatics: (-9 - -10) = (-9 + 10) = +1.
+    /// In this case, we can simply add the components of the duration together.
+    /// For example, let A = (-1, NANOSECONDS_PER_CENTURY - 2), and B = (-1, NANOSECONDS_PER_CENTURY - 1). Respectively, A is _two_ nanoseconds _before_ Duration::ZERO
+    /// and B is _one_ nanosecond before Duration::ZERO. Then, A-B should be one nanoseconds before zero, i.e. (-1, NANOSECONDS_PER_CENTURY - 1).
+    /// This is because we _subtract_ "negative one nanosecond" from a "negative minus two nanoseconds", which corresponds to _adding_ the opposite, and the
+    /// opposite of "negative one nanosecond" is "positive one nanosecond".
+    ///
+    /// ```
+    /// use hifitime::{Duration, NANOSECONDS_PER_CENTURY};
+    ///
+    /// let a = Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - 9);
+    /// let b = Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - 10);
+    /// let c = Duration::from_parts(0, 1);
+    /// assert_eq!(a - b, c);
+    /// ```
+    ///
+    /// ### A < B, both are negative
+    ///
+    /// Just like in the prior case, we try to stick to normal arithmatics: (-10 - -9) = (-10 + 9) = -1.
+    ///
+    /// ```
+    /// use hifitime::{Duration, NANOSECONDS_PER_CENTURY};
+    ///
+    /// let a = Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - 10);
+    /// let b = Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - 9);
+    /// let c = Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - 1);
+    /// assert_eq!(a - b, c);
+    /// ```
+    ///
+    /// ### MIN is the minimum
+    ///
+    /// One cannot subtract anything from the MIN.
+    ///
+    /// ```
+    /// use hifitime::Duration;
+    ///
+    /// let one_ns = Duration::from_parts(0, 1);
+    /// assert_eq!(Duration::MIN - one_ns, Duration::MIN);
+    /// ```
     fn sub(self, rhs: Self) -> Self {
         let mut me = self;
         match me.centuries.checked_sub(rhs.centuries) {
@@ -1013,16 +1093,8 @@ impl Sub for Duration {
                         me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
                     }
                     None => {
-                        match NANOSECONDS_PER_CENTURY.checked_sub(rhs.nanoseconds) {
-                            None => {
-                                // We're at the min number of centuries already, and we have extra nanos, so we're saturated the duration limit
-                                return Self::MIN;
-                            }
-                            Some(nanos) => me.nanoseconds = nanos,
-                        }
-
-                        // // Underflowed, so we've hit the min
-                        // return Self::MIN;
+                        // We're at the min number of centuries already, and we have extra nanos, so we're saturated the duration limit
+                        return Self::MIN;
                     }
                 };
                 // me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
@@ -1271,7 +1343,7 @@ fn test_serdes() {
 fn test_bounds() {
     let min = Duration::MIN;
     assert_eq!(min.centuries, i16::MIN);
-    assert_eq!(min.nanoseconds, NANOSECONDS_PER_CENTURY);
+    assert_eq!(min.nanoseconds, 0);
 
     let max = Duration::MAX;
     assert_eq!(max.centuries, i16::MAX);
@@ -1286,8 +1358,7 @@ fn test_bounds() {
     assert_eq!(min_n.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
 
     let min_n1 = Duration::MIN - 1 * Unit::Nanosecond;
-    assert_eq!(min_n1.centuries, i16::MIN);
-    assert_eq!(min_n1.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
+    assert_eq!(min_n1, Duration::MIN);
 
     let max_n1 = Duration::MAX - 1 * Unit::Nanosecond;
     assert_eq!(max_n1.centuries, i16::MAX);

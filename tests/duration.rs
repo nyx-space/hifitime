@@ -161,7 +161,7 @@ fn duration_format() {
     assert_eq!(format!("{}", sum), "-35 min");
 
     assert_eq!(format!("{}", Duration::MAX), "1196851200 days");
-    assert_eq!(format!("{}", Duration::MIN), "-1196887725 days");
+    assert_eq!(format!("{}", Duration::MIN), "-1196851200 days");
     assert_eq!(format!("{}", Duration::ZERO), "0 ns");
 
     // The `e` format will print this as a floating point value.
@@ -240,8 +240,8 @@ fn test_ops_near_bounds() {
     );
 
     // Check that we saturate one way but not the other for MIN
-    assert_ne!(Duration::MIN - 1 * Unit::Nanosecond, Duration::MIN);
-    assert_eq!(Duration::MIN + 1 * Unit::Nanosecond, Duration::MIN);
+    assert_eq!(Duration::MIN - 1 * Unit::Nanosecond, Duration::MIN);
+    assert_ne!(Duration::MIN + 1 * Unit::Nanosecond, Duration::MIN);
 
     // Check that we saturate one way but not the other for MAX
     assert_eq!(Duration::MAX + 1 * Unit::Nanosecond, Duration::MAX);
