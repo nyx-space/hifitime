@@ -11,11 +11,15 @@
 use crate::duration::{Duration, Unit};
 use crate::parser::Token;
 use crate::{
-    efmt::format::Format, Errors, MonthName, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD,
-    ET_EPOCH_S, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET,
-    NANOSECONDS_PER_DAY, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
-    NANOSECONDS_PER_SECOND_U32, UNIX_REF_EPOCH,
+    Errors, MonthName, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S, GPST_REF_EPOCH,
+    GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_DAY,
+    NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32,
+    UNIX_REF_EPOCH,
 };
+
+#[cfg(feature = "fmt")]
+use crate::efmt::format::Format;
+
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
 use core::hash::{Hash, Hasher};
@@ -1066,10 +1070,10 @@ impl Epoch {
         Ok(epoch? + tz)
     }
 
-    /// Initializes an Epoch from the provided EpochFormat.
-    /// For acceptable tokens, refer to the EpochFormat documentation.
-    pub fn from_str_with_format(s_in: &str, format: Format) -> Self {
-        todo!();
+    /// Initializes an Epoch from the provided Format.
+    #[cfg(feature = "fmt")]
+    pub fn from_str_with_format(s_in: &str, format: Format) -> Result<Self, Errors> {
+        format.parse(s_in)
     }
 
     fn delta_et_tai(seconds: f64) -> f64 {

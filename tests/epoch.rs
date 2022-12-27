@@ -8,6 +8,7 @@ use hifitime::{
     SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
+#[cfg(feature = "fmt")]
 use hifitime::efmt::{Format, Formatter};
 
 #[cfg(feature = "std")]
@@ -1765,6 +1766,7 @@ fn test_day_of_year() {
 }
 
 /// Tests that for a number of epochs covering different leap seconds, creating an Epoch with a given time scale will allow us to retrieve in that same time scale with the same value.
+#[cfg(feature = "fmt")]
 #[test]
 fn test_epoch_formatter() {
     use core::str::FromStr;

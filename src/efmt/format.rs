@@ -10,8 +10,12 @@
 
 use super::formatter::Item;
 use crate::{parser::Token, ParsingErrors};
+use crate::{Epoch, Errors, TimeScale, Unit};
 use core::fmt;
 use core::str::FromStr;
+
+// Maximum number of tokens in a format.
+const MAX_TOKENS: usize = 16;
 
 /// Format allows formatting an Epoch with some custom arrangement of the Epoch items.
 /// This provides almost all of the options from the 1989 C standard.
@@ -103,7 +107,7 @@ use core::str::FromStr;
 /// ```
 #[derive(Copy, Clone, Default, PartialEq)]
 pub struct Format {
-    pub(crate) items: [Option<Item>; 16],
+    pub(crate) items: [Option<Item>; MAX_TOKENS],
     pub(crate) num_items: usize,
 }
 
@@ -134,6 +138,120 @@ impl Format {
             }
         }
         false
+    }
+
+    pub fn parse(&self, s_in: &str) -> Result<Epoch, Errors> {
+        if self.need_gregorian() {
+            // All of the integers in a date: year, month, day, hour, minute, second, subsecond, offset hours, offset minutes
+            let mut decomposed = [0_i32; MAX_TOKENS];
+            // The parsed time scale, defaults to UTC
+            let mut ts = TimeScale::UTC;
+            // The offset sign, defaults to positive.
+            let mut offset_sign = 1;
+
+            // Previous index of interest in the string
+            let mut prev_idx = 0;
+            let mut cur_item_idx = 0;
+            let mut cur_item = self.items[cur_item_idx].unwrap();
+            let mut cur_token = cur_item.token;
+
+            let s = s_in.trim();
+
+            for (idx, char) in s.chars().enumerate() {
+                if !char.is_numeric() || idx == s.len() - 1 {
+                    if cur_token == Token::Timescale {
+                        // Then we match the timescale directly.
+                        if idx != s.len() - 1 {
+                            // We have some remaining characters, so let's parse those in the only formats we know.
+                            ts = TimeScale::from_str(s[idx..].trim())?;
+                        }
+                        break;
+                    }
+                    let prev_token = cur_token;
+
+                    let pos = cur_token.gregorian_position();
+
+                    let end_idx = if idx != s.len() - 1 || !char.is_numeric() {
+                        // Only advance the token if we aren't at the end of the string
+                        if char != cur_item.sep_char.unwrap() {
+                            return Err(Errors::ParseError(ParsingErrors::UnknownFormat));
+                        }
+                        // Advance the token, unless we're at the end of the tokens.
+                        if cur_item_idx == self.num_items {
+                            break;
+                        }
+                        cur_item_idx += 1;
+                        cur_item = self.items[cur_item_idx].unwrap();
+                        cur_token = cur_item.token;
+                        idx
+                    } else {
+                        idx + 1
+                    };
+
+                    match lexical_core::parse(s[prev_idx..end_idx].as_bytes()) {
+                        Ok(val) => {
+                            // Check that this valid is OK for the token we're reading it as.
+                            prev_token.value_ok(val)?;
+                            // If these are the subseconds, we must convert them to nanoseconds
+                            if prev_token == Token::Subsecond {
+                                if end_idx - prev_idx != 9 {
+                                    decomposed[pos] =
+                                        val * 10_i32.pow((9 - (end_idx - prev_idx)) as u32);
+                                } else {
+                                    decomposed[pos] = val;
+                                }
+                            } else {
+                                decomposed[pos] = val
+                            }
+                        }
+                        Err(_) => return Err(Errors::ParseError(ParsingErrors::ISO8601)),
+                    }
+                    prev_idx = idx + 1;
+                    // If we are about to parse an hours offset, we need to set the sign now.
+                    if cur_token == Token::OffsetHours {
+                        if &s[idx..idx + 1] == "-" {
+                            offset_sign = -1;
+                        }
+                        prev_idx += 1;
+                    }
+                }
+            }
+            // TODO: Test all of this stuff.
+
+            let tz = if offset_sign > 0 {
+                // We oppose the sign in the string to undo the offset
+                -(i64::from(decomposed[7]) * Unit::Hour + i64::from(decomposed[8]) * Unit::Minute)
+            } else {
+                i64::from(decomposed[7]) * Unit::Hour + i64::from(decomposed[8]) * Unit::Minute
+            };
+
+            let epoch = if ts == TimeScale::UTC {
+                Epoch::maybe_from_gregorian_utc(
+                    decomposed[0],
+                    decomposed[1].try_into().unwrap(),
+                    decomposed[2].try_into().unwrap(),
+                    decomposed[3].try_into().unwrap(),
+                    decomposed[4].try_into().unwrap(),
+                    decomposed[5].try_into().unwrap(),
+                    decomposed[6].try_into().unwrap(),
+                )
+            } else {
+                Epoch::maybe_from_gregorian(
+                    decomposed[0],
+                    decomposed[1].try_into().unwrap(),
+                    decomposed[2].try_into().unwrap(),
+                    decomposed[3].try_into().unwrap(),
+                    decomposed[4].try_into().unwrap(),
+                    decomposed[5].try_into().unwrap(),
+                    decomposed[6].try_into().unwrap(),
+                    ts,
+                )
+            };
+
+            Ok(epoch? + tz)
+        } else {
+            todo!("If this does not need any Gregorian components, it ought to be handled differently.")
+        }
     }
 }
 
