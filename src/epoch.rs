@@ -11,8 +11,8 @@
 use crate::duration::{Duration, Unit};
 use crate::parser::Token;
 use crate::{
-    EpochFormat, Errors, MonthName, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S,
-    GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET,
+    fmt::epoch_format::EpochFormat, Errors, MonthName, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD,
+    ET_EPOCH_S, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET,
     NANOSECONDS_PER_DAY, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
     NANOSECONDS_PER_SECOND_U32, UNIX_REF_EPOCH,
 };
@@ -2661,10 +2661,6 @@ impl Epoch {
         format!("{:x}", self)
     }
 
-    #[deprecated(
-        since = "3.8.0",
-        note = "Prefer using the appropriate `format!` directive"
-    )]
     #[cfg(feature = "std")]
     #[must_use]
     /// Converts the Epoch to Gregorian in the provided time system and in the ISO8601 format with the time system appended to the string

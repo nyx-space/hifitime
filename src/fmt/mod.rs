@@ -8,5 +8,9 @@
  * Documentation: https://nyxspace.com/
  */
 
+pub mod consts;
 pub mod epoch_format;
 pub mod epoch_formatter;
+
+pub use epoch_format::EpochFormat;
+pub use epoch_formatter::EpochFormatter;
