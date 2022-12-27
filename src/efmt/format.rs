@@ -127,7 +127,10 @@ impl Format {
                 | Token::DayOfYear
                 | Token::Weekday
                 | Token::WeekdayShort
-                | Token::WeekdayDecimal => {}
+                | Token::WeekdayDecimal => {
+                    // These tokens don't need the gregorian, but other tokens in the list of tokens might.
+                    // Hence, we don't return anything here and continue the loop.
+                }
             }
         }
         false
