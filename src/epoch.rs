@@ -2993,7 +2993,7 @@ fn formal_epoch_reciprocity_tt() {
 // #[test]
 fn formal_epoch_reciprocity_tdb() {
     let duration: Duration = kani::any();
-    // let duration = Duration::from_parts(0, 3124417376255567750);
+    // let duration = Duration::from_parts(19510, 3155759999999997938);
 
     // TDB
     let ts_offset = TimeScale::TDB.ref_epoch() - TimeScale::TAI.ref_epoch();
@@ -3004,9 +3004,14 @@ fn formal_epoch_reciprocity_tdb() {
 
         let time_scale: TimeScale = TimeScale::TDB;
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
-        let error = (epoch.to_duration_in_time_scale(time_scale) - duration).abs();
-        assert_eq!(error.centuries, 0);
-        assert!(error.nanoseconds < 500_000); // 500 μs
+        let out_duration = epoch.to_duration_in_time_scale(time_scale);
+        assert_eq!(out_duration.centuries, duration.centuries);
+        if out_duration.nanoseconds > duration.nanoseconds {
+            assert!(out_duration.nanoseconds - duration.nanoseconds < 500_000);
+        } else if out_duration.nanoseconds < duration.nanoseconds {
+            assert!(duration.nanoseconds - out_duration.nanoseconds < 500_000);
+        }
+        // Else: they match and we're happy.
     }
 }
 
