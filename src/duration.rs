@@ -546,6 +546,47 @@ impl Duration {
         }
     }
 
+    /// Rounds this duration to the largest units represented in this duration.
+    ///
+    /// This is useful to provide an approximate human duration. Under the hood, this function uses `round`,
+    /// so the "tipping point" of the rounding is half way to the next increment of the greatest unit.
+    /// As shown below, one example is that 35 hours and 59 minutes rounds to 1 day, but 36 hours and 1 minute rounds
+    /// to 2 days because 2 days is closer to 36h 1 min than 36h 1 min is to 1 day.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hifitime::{Duration, TimeUnits};
+    ///
+    /// assert_eq!((2.hours() + 3.minutes()).approx(), 2.hours());
+    /// assert_eq!((24.hours() + 3.minutes()).approx(), 1.days());
+    /// assert_eq!((35.hours() + 59.minutes()).approx(), 1.days());
+    /// assert_eq!((36.hours() + 1.minutes()).approx(), 2.days());
+    /// assert_eq!((47.hours() + 3.minutes()).approx(), 2.days());
+    /// assert_eq!((49.hours() + 3.minutes()).approx(), 2.days());
+    /// ```
+    pub fn approx(&self) -> Self {
+        let (_, days, hours, minutes, seconds, milli, us, _) = self.decompose();
+
+        let round_to = if days > 0 {
+            1 * Unit::Day
+        } else if hours > 0 {
+            1 * Unit::Hour
+        } else if minutes > 0 {
+            1 * Unit::Minute
+        } else if seconds > 0 {
+            1 * Unit::Second
+        } else if milli > 0 {
+            1 * Unit::Millisecond
+        } else if us > 0 {
+            1 * Unit::Microsecond
+        } else {
+            1 * Unit::Nanosecond
+        };
+
+        self.round(round_to)
+    }
+
     /// Returns the minimum of the two durations.
     ///
     /// ```

@@ -590,7 +590,7 @@ impl Epoch {
         since = "3.5.0"
     )]
     pub fn as_gregorian_utc_str(&self) -> String {
-        self.to_gregorian_utc_str()
+        format!("{}", self)
     }
 
     #[must_use]
@@ -599,7 +599,7 @@ impl Epoch {
         since = "3.5.0"
     )]
     pub fn as_gregorian_tai_str(&self) -> String {
-        self.to_gregorian_tai_str()
+        format!("{:x}", self)
     }
 
     #[must_use]
