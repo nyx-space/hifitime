@@ -2988,12 +2988,12 @@ fn formal_epoch_reciprocity_tt() {
     }
 }
 
-#[cfg(kani)]
-#[kani::proof]
-// #[test]
+// #[cfg(kani)]
+// #[kani::proof]
+#[test]
 fn formal_epoch_reciprocity_tdb() {
-    let duration: Duration = kani::any();
-    // let duration = Duration::from_parts(19510, 3155759999999997938);
+    // let duration: Duration = kani::any();
+    let duration = Duration::from_parts(19510, 3155759999999997938);
 
     // TDB
     let ts_offset = TimeScale::TDB.ref_epoch() - TimeScale::TAI.ref_epoch();
