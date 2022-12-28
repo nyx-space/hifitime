@@ -2964,23 +2964,36 @@ fn test_serdes() {
 
 #[cfg(kani)]
 #[kani::proof]
-// #[test]
-fn formal_epoch_from_time_scale() {
+fn formal_epoch_reciprocity_tai() {
     let duration: Duration = kani::any();
-    // let duration = Duration::from_parts(-1, 0);
 
     // TAI
     let time_scale: TimeScale = TimeScale::TAI;
     let epoch: Epoch = Epoch::from_duration(duration, time_scale);
     assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+}
 
-    // TT
-    let ts_offset = TimeScale::TT.ref_epoch() - TimeScale::TAI.ref_epoch();
-    if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
+#[cfg(kani)]
+#[kani::proof]
+fn formal_epoch_reciprocity_tt() {
+    let duration: Duration = kani::any();
+
+    // TT -- Check valid within bounds of (MIN + TT Offset) and (MAX - TT Offset)
+    if duration > Duration::MIN + TT_OFFSET_MS * Unit::Millisecond
+        && duration < Duration::MAX - TT_OFFSET_MS * Unit::Millisecond
+    {
         let time_scale: TimeScale = TimeScale::TT;
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
     }
+}
+
+#[cfg(kani)]
+#[kani::proof]
+// #[test]
+fn formal_epoch_reciprocity_tdb() {
+    let duration: Duration = kani::any();
+    // let duration = Duration::from_parts(0, 3124417376255567750);
 
     // TDB
     let ts_offset = TimeScale::TDB.ref_epoch() - TimeScale::TAI.ref_epoch();
@@ -2991,10 +3004,16 @@ fn formal_epoch_from_time_scale() {
 
         let time_scale: TimeScale = TimeScale::TDB;
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
-        assert!(
-            (epoch.to_duration_in_time_scale(time_scale) - duration).abs() < 250 * Unit::Nanosecond
-        );
+        let error = (epoch.to_duration_in_time_scale(time_scale) - duration).abs();
+        assert_eq!(error.centuries, 0);
+        assert!(error.nanoseconds < 500_000); // 500 μs
     }
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_epoch_reciprocity_gpst() {
+    let duration: Duration = kani::any();
 
     // Skip UTC, kani chokes on the leap seconds counting.
     // Skip ET, kani chokes on the Newton Raphson loop.
@@ -3006,6 +3025,12 @@ fn formal_epoch_from_time_scale() {
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
     }
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_epoch_reciprocity_gst() {
+    let duration: Duration = kani::any();
 
     // GST
     let time_scale: TimeScale = TimeScale::GST;
@@ -3014,6 +3039,12 @@ fn formal_epoch_from_time_scale() {
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
     }
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_epoch_reciprocity_bdt() {
+    let duration: Duration = kani::any();
 
     // BDT
     let time_scale: TimeScale = TimeScale::BDT;
