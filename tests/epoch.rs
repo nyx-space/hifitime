@@ -841,6 +841,9 @@ fn test_from_str() {
         Epoch::from_gregorian(2017, 1, 14, 0, 31, 55, 811000000, TimeScale::UTC),
     );
 
+    // Check that we can correctly parse the result from a hardware clock.
+    assert!(Epoch::from_str("2022-12-15 13:32:16.421857-07:00").is_ok());
+
     assert_eq!(
         Epoch::from_str("blah"),
         Err(Errors::ParseError(ParsingErrors::UnknownFormat))

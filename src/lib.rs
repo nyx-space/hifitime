@@ -34,7 +34,7 @@ pub const JDE_OFFSET_SECONDS: f64 = JDE_OFFSET_DAYS * SECONDS_PER_DAY;
 pub const DAYS_PER_YEAR: f64 = 365.25;
 /// `DAYS_PER_YEAR_NLD` corresponds to the number of days per year **without leap days**.
 pub const DAYS_PER_YEAR_NLD: f64 = 365.0;
-/// `DAYS_PER_CENTURY` corresponds to the number of days per centuy in the Julian calendar.
+/// `DAYS_PER_CENTURY` corresponds to the number of days per century in the Julian calendar.
 pub const DAYS_PER_CENTURY: f64 = 36525.0;
 pub const DAYS_PER_CENTURY_I64: i64 = 36525;
 /// `SECONDS_PER_MINUTE` defines the number of seconds per minute.
@@ -51,8 +51,14 @@ pub const SECONDS_PER_YEAR: f64 = 31_557_600.0;
 pub const SECONDS_PER_YEAR_I64: i64 = 31_557_600;
 /// `SECONDS_PER_TROPICAL_YEAR` corresponds to the number of seconds per tropical year from [NAIF SPICE](https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/tyear_c.html).
 pub const SECONDS_PER_TROPICAL_YEAR: f64 = 31_556_925.974_7;
-/// `SECONDS_PER_SIDERAL_YEAR` corresponds to the number of seconds per sideral year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
+/// `SECONDS_PER_SIDERAL_YEAR` corresponds to the number of seconds per sidereal year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
+#[deprecated(
+    since = "3.8.0",
+    note = "Use SECONDS_PER_SIDEREAL_YEAR instead (does not have the typo)"
+)]
 pub const SECONDS_PER_SIDERAL_YEAR: f64 = 31_558_150.0;
+/// `SECONDS_PER_SIDEREAL_YEAR` corresponds to the number of seconds per sidereal year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
+pub const SECONDS_PER_SIDEREAL_YEAR: f64 = 31_558_150.0;
 
 /// The duration between J2000 and J1900: one century **minus** twelve hours. J1900 starts at _noon_ but J2000 is at midnight.
 pub const J2000_TO_J1900_DURATION: Duration = Duration {
@@ -129,6 +135,83 @@ pub mod python;
 
 #[cfg(feature = "std")]
 extern crate core;
+
+use core::convert;
+use core::fmt;
+use core::num::ParseIntError;
+
+#[cfg(feature = "std")]
+use std::error::Error;
+
+/// Errors handles all oddities which may occur in this library.
+#[derive(Copy, Clone, Debug, PartialEq)]
+pub enum Errors {
+    /// Carry is returned when a provided function does not support time carry. For example,
+    /// if a call to `Datetime::new` receives 60 seconds and there are only 59 seconds in the provided
+    /// date time then a Carry Error is returned as the Result.
+    Carry,
+    /// ParseError is returned when a provided string could not be parsed and converted to the desired
+    /// struct (e.g. Datetime).
+    ParseError(ParsingErrors),
+    /// Raised when trying to initialize an Epoch or Duration from its hi and lo values, but these overlap
+    ConversionOverlapError(f64, f64),
+    /// Raised if an overflow occurred
+    Overflow,
+    /// Raised if the initialization from system time failed
+    SystemTimeError,
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum ParsingErrors {
+    ParseIntError,
+    ValueError,
+    TimeSystem,
+    ISO8601,
+    UnknownFormat,
+    UnknownOrMissingUnit,
+    UnsupportedTimeSystem,
+    /// Non recognized Weekday description
+    ParseWeekdayError,
+}
+
+impl fmt::Display for Errors {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            Self::Carry => write!(f, "a carry error (e.g. 61 seconds)"),
+            Self::ParseError(kind) => write!(f, "ParseError: {:?}", kind),
+            Self::ConversionOverlapError(hi, lo) => {
+                write!(f, "hi and lo values overlap: {}, {}", hi, lo)
+            }
+            Self::Overflow => write!(
+                f,
+                "overflow occurred when trying to convert Duration information"
+            ),
+            Self::SystemTimeError => write!(f, "std::time::SystemTime returned an error"),
+        }
+    }
+}
+
+impl convert::From<ParseIntError> for Errors {
+    fn from(_: ParseIntError) -> Self {
+        Errors::ParseError(ParsingErrors::ParseIntError)
+    }
+}
+
+#[cfg(feature = "std")]
+impl Error for Errors {}
+
+#[cfg(test)]
+mod tests {
+    use crate::{Errors, ParsingErrors, TimeScale};
+
+    #[test]
+    fn enum_eq() {
+        // Check the equality compiles (if one compiles, then all asserts will work)
+        assert!(Errors::Carry == Errors::Carry);
+        assert!(ParsingErrors::ParseIntError == ParsingErrors::ParseIntError);
+        assert!(TimeScale::ET == TimeScale::ET);
+    }
+}
 
 #[test]
 fn test_ts() {

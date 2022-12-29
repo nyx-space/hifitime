@@ -161,7 +161,7 @@ const CUMULATIVE_DAYS_FOR_MONTH: [u16; 12] = {
 
 /// Defines a nanosecond-precision Epoch.
 ///
-/// Refer to the appropriate functions for initializing this Epoch from different time systems or representations.
+/// Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
 #[derive(Copy, Clone, Eq, Default)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
@@ -518,7 +518,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize an Epoch from Dynamic Barycentric Time (TDB) seconds past 2000 JAN 01 midnight (difference than SPICE)
-    /// NOTE: This uses the ESA algorithm, which is a notch more complicaste than the SPICE algorithm, but more precise.
+    /// NOTE: This uses the ESA algorithm, which is a notch more complicated than the SPICE algorithm, but more precise.
     /// In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ESA algorithm should be exactly correct.
     pub fn from_tdb_seconds(seconds_j2000: f64) -> Epoch {
         assert!(
@@ -656,7 +656,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Initialize an Epoch from the provided UNIX milisecond timestamp since UTC midnight 1970 January 01.
+    /// Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01.
     pub fn from_unix_milliseconds(millisecond: f64) -> Self {
         Self::from_utc_duration(UNIX_REF_EPOCH.to_utc_duration() + millisecond * Unit::Millisecond)
     }
@@ -683,8 +683,8 @@ impl Epoch {
         )
     }
 
-    /// Attempts to build an Epoch from the provided Gregorian date and time in the provided time system.
-    /// NOTE: If the timesystem is TDB, this function assumes that the SPICE format is used
+    /// Attempts to build an Epoch from the provided Gregorian date and time in the provided time scale.
+    /// NOTE: If the time scale is TDB, this function assumes that the SPICE format is used
     #[allow(clippy::too_many_arguments)]
     pub fn maybe_from_gregorian(
         year: i32,
@@ -776,7 +776,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Initialize from the Gregoerian date at midnight in TAI.
+    /// Initialize from the Gregorian date at midnight in TAI.
     pub fn from_gregorian_tai_at_midnight(year: i32, month: u8, day: u8) -> Self {
         Self::maybe_from_gregorian_tai(year, month, day, 0, 0, 0, 0)
             .expect("invalid Gregorian date")
@@ -870,7 +870,7 @@ impl Epoch {
 
     #[allow(clippy::too_many_arguments)]
     #[must_use]
-    /// Builds an Epoch from the provided Gregorian date and time in the provided time system. If invalid date is provided, this function will panic.
+    /// Builds an Epoch from the provided Gregorian date and time in the provided time scale. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian if unsure.
     pub fn from_gregorian(
         year: i32,
@@ -920,15 +920,15 @@ impl Epoch {
             .expect("invalid Gregorian date")
     }
 
-    /// Converts a Gregorian date time in ISO8601 or RFC3339 format into an Epoch, accounting for the time zone designator and the time system.
+    /// Converts a Gregorian date time in ISO8601 or RFC3339 format into an Epoch, accounting for the time zone designator and the time scale.
     ///
     /// # Definition
     /// 1. Time Zone Designator: this is either a `Z` (lower or upper case) to specify UTC, or an offset in hours and minutes off of UTC, such as `+01:00` for UTC plus one hour and zero minutes.
     /// 2. Time system (or time "scale"): UTC, TT, TAI, TDB, ET, etc.
     ///
     /// Converts an ISO8601 or RFC3339 datetime representation to an Epoch.
-    /// If no time system is specified, then UTC is assumed.
-    /// A time system may be specified _in addition_ to the format unless
+    /// If no time scale is specified, then UTC is assumed.
+    /// A time scale may be specified _in addition_ to the format unless
     /// The `T` which separates the date from the time can be replaced with a single whitespace character (`\W`).
     /// The offset is also optional, cf. the examples below.
     ///
@@ -1528,8 +1528,8 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    /// Attempts to build an Epoch from the provided Gregorian date and time in the provided time system.
-    /// NOTE: If the timesystem is TDB, this function assumes that the SPICE format is used
+    /// Attempts to build an Epoch from the provided Gregorian date and time in the provided time scale.
+    /// NOTE: If the time scale is TDB, this function assumes that the SPICE format is used
     #[allow(clippy::too_many_arguments)]
     fn maybe_init_from_gregorian(
         year: i32,
@@ -1562,7 +1562,7 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     #[staticmethod]
-    /// Initialize from the Gregoerian date at midnight in TAI.
+    /// Initialize from the Gregorian date at midnight in TAI.
     fn init_from_gregorian_tai_at_midnight(year: i32, month: u8, day: u8) -> Self {
         Self::from_gregorian_tai_at_midnight(year, month, day)
     }
@@ -1879,7 +1879,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Returns the centuries pased J2000 TT
+    /// Returns the centuries passed J2000 TT
     pub fn to_tt_centuries_j2k(&self) -> f64 {
         (self.to_tt_duration() - Unit::Second * ET_EPOCH_S).to_unit(Unit::Century)
     }
@@ -2233,7 +2233,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Ceils this epoch to the closest provided duration in the TAI time system
+    /// Ceils this epoch to the closest provided duration in the TAI time scale
     ///
     /// # Example
     /// ```
@@ -2666,7 +2666,7 @@ impl Epoch {
 
     #[cfg(feature = "std")]
     #[must_use]
-    /// Converts the Epoch to Gregorian in the provided time system and in the ISO8601 format with the time system appended to the string
+    /// Converts the Epoch to Gregorian in the provided time scale and in the ISO8601 format with the time scale appended to the string
     pub fn to_gregorian_str(&self, time_scale: TimeScale) -> String {
         let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(match time_scale {
             TimeScale::TT => self.to_tt_duration(),
@@ -3031,7 +3031,7 @@ pub const fn is_gregorian_valid(
 }
 
 /// `is_leap_year` returns whether the provided year is a leap year or not.
-/// Tests for this function are part of the Datetime testime_scale.
+/// Tests for this function are part of the Datetime tests.
 const fn is_leap_year(year: i32) -> bool {
     (year % 4 == 0 && year % 100 != 0) || year % 400 == 0
 }
@@ -3118,4 +3118,176 @@ fn test_serdes() {
     assert_eq!(content, serde_json::to_string(&e).unwrap());
     let parsed: Epoch = serde_json::from_str(content).unwrap();
     assert_eq!(e, parsed);
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_epoch_reciprocity_tai() {
+    let duration: Duration = kani::any();
+
+    // TAI
+    let time_scale: TimeScale = TimeScale::TAI;
+    let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+    assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+
+    // Check that no error occurs on initialization
+    let seconds: f64 = kani::any();
+    if seconds.is_finite() {
+        Epoch::from_tai_seconds(seconds);
+    }
+
+    let days: f64 = kani::any();
+    if days.is_finite() {
+        Epoch::from_tai_days(days);
+    }
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_epoch_reciprocity_tt() {
+    let duration: Duration = kani::any();
+
+    // TT -- Check valid within bounds of (MIN + TT Offset) and (MAX - TT Offset)
+    if duration > Duration::MIN + TT_OFFSET_MS * Unit::Millisecond
+        && duration < Duration::MAX - TT_OFFSET_MS * Unit::Millisecond
+    {
+        let time_scale: TimeScale = TimeScale::TT;
+        let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+        assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+    }
+
+    // Check that no error occurs on initialization
+    let seconds: f64 = kani::any();
+    if seconds.is_finite() {
+        Epoch::from_tt_seconds(seconds);
+    }
+    // No TT Days initializer
+}
+
+// Skip ET, kani chokes on the Newton Raphson loop.
+
+// Skip TDB
+// #[cfg(kani)]
+// #[kani::proof]
+#[test]
+fn formal_epoch_reciprocity_tdb() {
+    // let duration: Duration = kani::any();
+    let duration = Duration::from_parts(19510, 3155759999999997938);
+
+    // TDB
+    let ts_offset = TimeScale::TDB.ref_epoch() - TimeScale::TAI.ref_epoch();
+    if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
+        // We guard TDB from durations that are would hit the MIN or the MAX.
+        // TDB is centered on J2000 but the Epoch is on J1900. So on initialization, we offset by one century and twelve hours.
+        // If the duration is too close to the Duration bounds, then the TDB initialization and retrieval will fail (because the bounds will have been hit).
+
+        let time_scale: TimeScale = TimeScale::TDB;
+        let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+        let out_duration = epoch.to_duration_in_time_scale(time_scale);
+        assert_eq!(out_duration.centuries, duration.centuries);
+        if out_duration.nanoseconds > duration.nanoseconds {
+            assert!(out_duration.nanoseconds - duration.nanoseconds < 500_000);
+        } else if out_duration.nanoseconds < duration.nanoseconds {
+            assert!(duration.nanoseconds - out_duration.nanoseconds < 500_000);
+        }
+        // Else: they match and we're happy.
+    }
+}
+
+// Skip UTC, kani chokes on the leap seconds counting.
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_epoch_reciprocity_gpst() {
+    let duration: Duration = kani::any();
+
+    // GPST
+    let time_scale: TimeScale = TimeScale::GPST;
+    let ts_offset = TimeScale::GPST.ref_epoch() - TimeScale::TAI.ref_epoch();
+    if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
+        let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+        assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+    }
+
+    // Check that no error occurs on initialization
+    let seconds: f64 = kani::any();
+    if seconds.is_finite() {
+        Epoch::from_gpst_seconds(seconds);
+    }
+
+    Epoch::from_gpst_nanoseconds(kani::any());
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_epoch_reciprocity_gst() {
+    let duration: Duration = kani::any();
+
+    // GST
+    let time_scale: TimeScale = TimeScale::GST;
+    let ts_offset = TimeScale::GST.ref_epoch() - TimeScale::TAI.ref_epoch();
+    if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
+        let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+        assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+    }
+
+    // Check that no error occurs on initialization
+    let seconds: f64 = kani::any();
+    if seconds.is_finite() {
+        Epoch::from_gst_seconds(seconds);
+    }
+
+    let days: f64 = kani::any();
+    if days.is_finite() {
+        Epoch::from_gst_days(days);
+    }
+
+    Epoch::from_gst_nanoseconds(kani::any());
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_epoch_reciprocity_bdt() {
+    let duration: Duration = kani::any();
+
+    // BDT
+    let time_scale: TimeScale = TimeScale::BDT;
+    let ts_offset = TimeScale::BDT.ref_epoch() - TimeScale::TAI.ref_epoch();
+    if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
+        let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+        assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+    }
+
+    // Check that no error occurs on initialization
+    let seconds: f64 = kani::any();
+    if seconds.is_finite() {
+        Epoch::from_bdt_seconds(seconds);
+    }
+
+    let days: f64 = kani::any();
+    if days.is_finite() {
+        Epoch::from_bdt_days(days);
+    }
+
+    Epoch::from_bdt_nanoseconds(kani::any());
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_epoch_julian() {
+    let days: f64 = kani::any();
+
+    if days.is_finite() {
+        // The initializers will fail on subnormal days.
+        Epoch::from_mjd_bdt(days);
+        Epoch::from_mjd_gpst(days);
+        Epoch::from_mjd_gst(days);
+        Epoch::from_mjd_tai(days);
+        Epoch::from_jde_bdt(days);
+        Epoch::from_jde_gpst(days);
+        Epoch::from_jde_gst(days);
+        Epoch::from_jde_tai(days);
+        Epoch::from_jde_et(days);
+        Epoch::from_jde_tai(days);
+    }
 }
