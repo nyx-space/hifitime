@@ -1,5 +1,6 @@
 use hifitime::{
-    Duration, Errors, Freq, Frequencies, ParsingErrors, TimeUnits, Unit, NANOSECONDS_PER_MINUTE,
+    Duration, Errors, Freq, Frequencies, ParsingErrors, TimeUnits, Unit, NANOSECONDS_PER_CENTURY,
+    NANOSECONDS_PER_MINUTE,
 };
 
 #[cfg(feature = "std")]
@@ -160,7 +161,7 @@ fn duration_format() {
     assert_eq!(format!("{}", sum), "-35 min");
 
     assert_eq!(format!("{}", Duration::MAX), "1196851200 days");
-    assert_eq!(format!("{}", Duration::MIN), "-1196887725 days");
+    assert_eq!(format!("{}", Duration::MIN), "-1196851200 days");
     assert_eq!(format!("{}", Duration::ZERO), "0 ns");
 
     // The `e` format will print this as a floating point value.
@@ -214,10 +215,46 @@ fn test_ops() {
 }
 
 #[test]
+fn test_ops_near_bounds() {
+    assert_eq!(Duration::MAX - Duration::MAX, 0 * Unit::Nanosecond);
+    assert_eq!(Duration::MIN - Duration::MIN, 0 * Unit::Nanosecond);
+
+    // Check that the special cases of the bounds themselves don't prevent correct math.
+    assert_eq!(
+        (Duration::MIN - 1 * Unit::Nanosecond) - (Duration::MIN - 1 * Unit::Nanosecond),
+        0 * Unit::Nanosecond
+    );
+
+    let tt_offset_ns: u64 = 32_184_000_000;
+    let duration = Duration::from_parts(-32767, 0);
+    let exp = Duration::from_parts(-32768, NANOSECONDS_PER_CENTURY - tt_offset_ns);
+    assert_eq!(
+        duration - Duration::from_total_nanoseconds(tt_offset_ns.into()),
+        exp
+    );
+
+    // Test the zero crossing with a large negative value
+    assert_eq!(
+        2 * Unit::Nanosecond - (-1 * Unit::Century),
+        1 * Unit::Century + 2 * Unit::Nanosecond
+    );
+
+    // Check that we saturate one way but not the other for MIN
+    assert_eq!(Duration::MIN - 1 * Unit::Nanosecond, Duration::MIN);
+    assert_ne!(Duration::MIN + 1 * Unit::Nanosecond, Duration::MIN);
+
+    // Check that we saturate one way but not the other for MAX
+    assert_eq!(Duration::MAX + 1 * Unit::Nanosecond, Duration::MAX);
+    assert_ne!(Duration::MAX - 1 * Unit::Nanosecond, Duration::MAX);
+}
+
+#[test]
 fn test_neg() {
     assert_eq!(Duration::MIN_NEGATIVE, -Duration::MIN_POSITIVE);
     assert_eq!(Duration::MIN_POSITIVE, -Duration::MIN_NEGATIVE);
     assert_eq!(2.nanoseconds(), -(2.0.nanoseconds()));
+    assert_eq!(Duration::MIN, -Duration::MAX);
+    assert_eq!(Duration::MAX, -Duration::MIN);
 }
 
 #[test]
@@ -261,6 +298,9 @@ fn test_extremes() {
         Duration::from_truncated_nanoseconds(d.truncated_nanoseconds()),
         d
     );
+
+    let past_min = Duration::from_total_nanoseconds(i128::MIN);
+    assert_eq!(past_min, Duration::MIN);
 }
 
 #[test]

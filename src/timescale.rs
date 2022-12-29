@@ -14,6 +14,9 @@ use pyo3::prelude::*;
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
 
+#[cfg(kani)]
+use kani::Arbitrary;
+
 use core::fmt;
 use core::str::FromStr;
 
@@ -31,7 +34,7 @@ pub const J2000_REF_EPOCH: Epoch = Epoch::from_tai_duration(J2000_TO_J1900_DURAT
 /// GPS reference epoch is UTC midnight between 05 January and 06 January 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>.
 pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
-    nanoseconds: 2_524_953_619_000_000_000,
+    nanoseconds: 2_524_953_619_000_000_000, // XXX
 });
 pub const SECONDS_GPS_TAI_OFFSET: f64 = 2_524_953_619.0;
 pub const SECONDS_GPS_TAI_OFFSET_I64: i64 = 2_524_953_619;
@@ -81,6 +84,16 @@ pub enum TimeScale {
     GST,
     /// BeiDou Time scale
     BDT,
+}
+
+#[cfg(kani)]
+impl Arbitrary for TimeScale {
+    #[inline(always)]
+    fn any() -> Self {
+        let ts_u8: u8 = kani::any();
+
+        Self::from(ts_u8)
+    }
 }
 
 impl Default for TimeScale {
@@ -141,7 +154,7 @@ impl fmt::Display for TimeScale {
 
 impl fmt::LowerHex for TimeScale {
     /// Prints given TimeScale in RINEX format
-    /// ie., standard GNSS constellation name is prefered when possible
+    /// ie., standard GNSS constellation name is preferred when possible
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::GPST => write!(f, "GPS"),
@@ -229,4 +242,10 @@ fn test_serdes() {
     assert_eq!(content, serde_json::to_string(&ts).unwrap());
     let parsed: TimeScale = serde_json::from_str(content).unwrap();
     assert_eq!(ts, parsed);
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_time_scale() {
+    let _time_scale: TimeScale = kani::any();
 }

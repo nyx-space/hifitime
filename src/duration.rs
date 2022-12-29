@@ -35,6 +35,9 @@ use pyo3::pyclass::CompareOp;
 #[cfg(not(feature = "std"))]
 use num_traits::Float;
 
+#[cfg(kani)]
+use kani::Arbitrary;
+
 pub const DAYS_PER_CENTURY_U64: u64 = 36_525;
 pub const NANOSECONDS_PER_MICROSECOND: u64 = 1_000;
 pub const NANOSECONDS_PER_MILLISECOND: u64 = 1_000 * NANOSECONDS_PER_MICROSECOND;
@@ -48,9 +51,10 @@ pub const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_
 /// Defines generally usable durations for nanosecond precision valid for 32,768 centuries in either direction, and only on 80 bits / 10 octets.
 ///
 /// **Important conventions:**
-/// Conventions had to be made to define the partial order of a duration.
-/// 1. It was decided that the nanoseconds corresponds to the nanoseconds _into_ the current century. In other words,
-/// a durationn with centuries = -1 and nanoseconds = 0 is _a smaller duration_ than centuries = -1 and nanoseconds = 1.
+/// 1. The negative durations can be mentally modeled "BC" years. One hours before 01 Jan 0000, it was "-1" years but  365 days and 23h into the current day.
+/// It was decided that the nanoseconds corresponds to the nanoseconds _into_ the current century. In other words,
+/// a duration with centuries = -1 and nanoseconds = 0 is _a smaller duration_ (further from zero) than centuries = -1 and nanoseconds = 1.
+/// Duration zero minus one nanosecond returns a century of -1 and a nanosecond set to the number of nanoseconds in one century minus one.
 /// That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
 /// As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
 /// 2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
@@ -63,11 +67,22 @@ pub struct Duration {
     pub(crate) nanoseconds: u64,
 }
 
+#[cfg(kani)]
+impl Arbitrary for Duration {
+    #[inline(always)]
+    fn any() -> Self {
+        let centuries: i16 = kani::any();
+        let nanoseconds: u64 = kani::any();
+
+        Duration::from_parts(centuries, nanoseconds)
+    }
+}
+
 impl PartialEq for Duration {
     fn eq(&self, other: &Self) -> bool {
         if self.centuries == other.centuries {
             self.nanoseconds == other.nanoseconds
-        } else if (self.centuries - other.centuries).abs() == 1
+        } else if (self.centuries.saturating_sub(other.centuries)).saturating_abs() == 1
             && (self.centuries == 0 || other.centuries == 0)
         {
             // Special case where we're at the zero crossing
@@ -149,16 +164,13 @@ impl Duration {
     pub fn from_truncated_nanoseconds(nanos: i64) -> Self {
         if nanos < 0 {
             let ns = nanos.unsigned_abs();
+            // Note: i64::MIN corresponds to a duration just past -3 centuries, so we can't hit the Duration::MIN here.
             let extra_centuries = ns.div_euclid(NANOSECONDS_PER_CENTURY);
-            if extra_centuries > i16::MAX as u64 {
-                Self::MIN
-            } else {
-                let rem_nanos = ns.rem_euclid(NANOSECONDS_PER_CENTURY);
-                Self::from_parts(
-                    -1 - (extra_centuries as i16),
-                    NANOSECONDS_PER_CENTURY - rem_nanos,
-                )
-            }
+            let rem_nanos = ns.rem_euclid(NANOSECONDS_PER_CENTURY);
+            Self::from_parts(
+                -1 - (extra_centuries as i16),
+                NANOSECONDS_PER_CENTURY - rem_nanos,
+            )
         } else {
             Self::from_parts(0, nanos.unsigned_abs())
         }
@@ -267,33 +279,28 @@ impl Duration {
         if extra_centuries > 0 {
             let rem_nanos = self.nanoseconds.rem_euclid(NANOSECONDS_PER_CENTURY);
 
-            if self.centuries == i16::MIN && rem_nanos > 0 {
-                // We're at the min number of centuries already, and we have extra nanos, so we're saturated the duration limit
-                *self = Self::MIN;
-            } else if self.centuries == i16::MAX && rem_nanos > 0 {
-                // Saturated max
-                *self = Self::MAX;
-            } else if self.centuries >= 0 {
-                // Check that we can safely cast because we have that room without overflowing
-                if (i16::MAX - self.centuries) as u64 >= extra_centuries {
-                    // We can safely add without an overflow
-                    self.centuries = self.centuries.checked_add(extra_centuries as i16).unwrap();
-                    self.nanoseconds = rem_nanos;
-                } else {
-                    // Saturated max again
+            if self.centuries == i16::MAX {
+                if self.nanoseconds.saturating_add(rem_nanos) > Self::MAX.nanoseconds {
+                    // Saturated max
                     *self = Self::MAX;
                 }
-            } else {
-                assert!(self.centuries < 0, "this shouldn't be possible");
-
-                // Check that we can safely cast because we have that room without overflowing
-                if (i16::MIN - self.centuries) as u64 >= extra_centuries {
-                    // We can safely add without an overflow
-                    self.centuries = self.centuries.checked_add(extra_centuries as i16).unwrap();
-                    self.nanoseconds = rem_nanos;
-                } else {
-                    // Saturated max again
-                    *self = Self::MIN;
+                // Else, we're near the MAX but we're within the MAX in nanoseconds, so let's not do anything here.
+            } else if *self != Self::MAX && *self != Self::MIN {
+                // The bounds are valid as is, no wrapping needed when rem_nanos is not zero.
+                match self.centuries.checked_add(extra_centuries as i16) {
+                    Some(centuries) => {
+                        self.centuries = centuries;
+                        self.nanoseconds = rem_nanos;
+                    }
+                    None => {
+                        if self.centuries >= 0 {
+                            // Saturated max again
+                            *self = Self::MAX;
+                        } else {
+                            // Saturated min
+                            *self = Self::MIN;
+                        }
+                    }
                 }
             }
         }
@@ -329,10 +336,15 @@ impl Duration {
         } else if self.centuries == -1 {
             Ok(-((NANOSECONDS_PER_CENTURY - self.nanoseconds) as i64))
         } else if self.centuries >= 0 {
-            Ok(
-                i64::from(self.centuries) * NANOSECONDS_PER_CENTURY as i64
-                    + self.nanoseconds as i64,
-            )
+            match i64::from(self.centuries).checked_mul(NANOSECONDS_PER_CENTURY as i64) {
+                Some(centuries_as_ns) => {
+                    match centuries_as_ns.checked_add(self.nanoseconds as i64) {
+                        Some(truncated_ns) => Ok(truncated_ns),
+                        None => Err(Errors::Overflow),
+                    }
+                }
+                None => Err(Errors::Overflow),
+            }
         } else {
             // Centuries negative by a decent amount
             Ok(
@@ -391,6 +403,9 @@ impl Duration {
     }
 
     /// Returns the sign of this duration
+    /// + 0 if the number is zero
+    /// + 1 if the number is positive
+    /// + -1 if the number is negative
     #[must_use]
     pub const fn signum(&self) -> i8 {
         self.centuries.signum() as i8
@@ -597,7 +612,7 @@ impl Duration {
     /// Minimum duration that can be represented
     pub const MIN: Self = Self {
         centuries: i16::MIN,
-        nanoseconds: NANOSECONDS_PER_CENTURY,
+        nanoseconds: 0,
     };
 
     /// Smallest duration that can be represented
@@ -918,24 +933,61 @@ impl fmt::LowerExp for Duration {
 impl Add for Duration {
     type Output = Duration;
 
+    /// # Addition of Durations
+    /// Durations are centered on zero duration. Of the tuple, only the centuries may be negative, the nanoseconds are always positive
+    /// and represent the nanoseconds _into_ the current centuries.
+    ///
+    /// ## Examples
+    /// + `Duration { centuries: 0, nanoseconds: 1 }` is a positive duration of zero centuries and one nanosecond.
+    /// + `Duration { centuries: -1, nanoseconds: 1 }` is a negative duration representing "one century before zero minus one nanosecond"
     fn add(self, rhs: Self) -> Duration {
         // Check that the addition fits in an i16
         let mut me = self;
         match me.centuries.checked_add(rhs.centuries) {
             None => {
-                // Overflowed, so we've hit the max
-                return Self::MAX;
+                // Overflowed, so we've hit the bound.
+                if me.centuries < 0 {
+                    // We've hit the negative bound, so return MIN.
+                    return Self::MIN;
+                } else {
+                    // We've hit the positive bound, so return MAX.
+                    return Self::MAX;
+                }
             }
             Some(centuries) => {
                 me.centuries = centuries;
-                // if self.centuries < 0 && rhs.centuries >= 0 {
-                //     me.centuries += 1;
-                // }
             }
         }
-        // We can safely add two nanoseconds together because we can fit five centuries in one u64
-        // cf. https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=b4011b1d5c06c38a72f28d0a9e6a5574
-        me.nanoseconds += rhs.nanoseconds;
+
+        if me.centuries == Self::MIN.centuries && self.nanoseconds < Self::MIN.nanoseconds {
+            // Then we do the operation backward
+            match me
+                .nanoseconds
+                .checked_sub(NANOSECONDS_PER_CENTURY - rhs.nanoseconds)
+            {
+                Some(nanos) => me.nanoseconds = nanos,
+                None => {
+                    me.centuries += 1; // Safe because we're at the MIN
+                    me.nanoseconds = rhs.nanoseconds
+                }
+            }
+        } else {
+            match me.nanoseconds.checked_add(rhs.nanoseconds) {
+                Some(nanoseconds) => me.nanoseconds = nanoseconds,
+                None => {
+                    // Rare case where somehow the input data was not normalized. So let's normalize it and call add again.
+                    let mut rhs = rhs;
+                    rhs.normalize();
+
+                    match me.centuries.checked_add(rhs.centuries) {
+                        None => return Self::MAX,
+                        Some(centuries) => me.centuries = centuries,
+                    };
+                    // Now it will fit!
+                    me.nanoseconds += rhs.nanoseconds;
+                }
+            }
+        }
 
         me.normalize();
         me
@@ -949,14 +1001,91 @@ impl AddAssign for Duration {
 }
 
 impl Sub for Duration {
-    type Output = Duration;
+    type Output = Self;
 
-    fn sub(self, rhs: Self) -> Duration {
-        // Check that the subtraction fits in an i16
+    /// # Subtraction
+    /// This operation is a notch confusing with negative durations.
+    /// As described in the `Duration` structure, a Duration of (-1, NANOSECONDS_PER_CENTURY-1) is closer to zero
+    /// than (-1, 0).
+    ///
+    /// ## Algorithm
+    ///
+    /// ### A > B, and both are positive
+    ///
+    /// If A > B, then A.centuries is subtracted by B.centuries, and A.nanoseconds is subtracted by B.nanoseconds.
+    /// If an overflow occurs, e.g. A.nanoseconds < B.nanoseconds, the number of nanoseconds is increased by the number of nanoseconds per century,
+    /// and the number of centuries is decreased by one.
+    ///
+    /// ```
+    /// use hifitime::{Duration, NANOSECONDS_PER_CENTURY};
+    ///
+    /// let a = Duration::from_parts(1, 1);
+    /// let b = Duration::from_parts(0, 10);
+    /// let c = Duration::from_parts(0, NANOSECONDS_PER_CENTURY - 9);
+    /// assert_eq!(a - b, c);
+    /// ```
+    ///
+    /// ### A < B, and both are positive
+    ///
+    /// In this case, the resulting duration will be negative. The number of centuries is a signed integer, so it is set to the difference of A.centuries - B.centuries.
+    /// The number of nanoseconds however must be wrapped by the number of nanoseconds per century.
+    /// For example:, let A = (0, 1) and B = (1, 10), then the resulting duration will be (-2, NANOSECONDS_PER_CENTURY - (10 - 1)). In this case, the centuries are set
+    /// to -2 because B is _two_ centuries into the future (the number of centuries into the future is zero-indexed).
+    /// ```
+    /// use hifitime::{Duration, NANOSECONDS_PER_CENTURY};
+    ///
+    /// let a = Duration::from_parts(0, 1);
+    /// let b = Duration::from_parts(1, 10);
+    /// let c = Duration::from_parts(-2, NANOSECONDS_PER_CENTURY - 9);
+    /// assert_eq!(a - b, c);
+    /// ```
+    ///
+    /// ### A > B, both are negative
+    ///
+    /// In this case, we try to stick to normal arithmatics: (-9 - -10) = (-9 + 10) = +1.
+    /// In this case, we can simply add the components of the duration together.
+    /// For example, let A = (-1, NANOSECONDS_PER_CENTURY - 2), and B = (-1, NANOSECONDS_PER_CENTURY - 1). Respectively, A is _two_ nanoseconds _before_ Duration::ZERO
+    /// and B is _one_ nanosecond before Duration::ZERO. Then, A-B should be one nanoseconds before zero, i.e. (-1, NANOSECONDS_PER_CENTURY - 1).
+    /// This is because we _subtract_ "negative one nanosecond" from a "negative minus two nanoseconds", which corresponds to _adding_ the opposite, and the
+    /// opposite of "negative one nanosecond" is "positive one nanosecond".
+    ///
+    /// ```
+    /// use hifitime::{Duration, NANOSECONDS_PER_CENTURY};
+    ///
+    /// let a = Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - 9);
+    /// let b = Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - 10);
+    /// let c = Duration::from_parts(0, 1);
+    /// assert_eq!(a - b, c);
+    /// ```
+    ///
+    /// ### A < B, both are negative
+    ///
+    /// Just like in the prior case, we try to stick to normal arithmatics: (-10 - -9) = (-10 + 9) = -1.
+    ///
+    /// ```
+    /// use hifitime::{Duration, NANOSECONDS_PER_CENTURY};
+    ///
+    /// let a = Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - 10);
+    /// let b = Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - 9);
+    /// let c = Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - 1);
+    /// assert_eq!(a - b, c);
+    /// ```
+    ///
+    /// ### MIN is the minimum
+    ///
+    /// One cannot subtract anything from the MIN.
+    ///
+    /// ```
+    /// use hifitime::Duration;
+    ///
+    /// let one_ns = Duration::from_parts(0, 1);
+    /// assert_eq!(Duration::MIN - one_ns, Duration::MIN);
+    /// ```
+    fn sub(self, rhs: Self) -> Self {
         let mut me = self;
         match me.centuries.checked_sub(rhs.centuries) {
             None => {
-                // Underflowed, so we've hit the max
+                // Underflowed, so we've hit the min
                 return Self::MIN;
             }
             Some(centuries) => {
@@ -967,17 +1096,19 @@ impl Sub for Duration {
         match me.nanoseconds.checked_sub(rhs.nanoseconds) {
             None => {
                 // Decrease the number of centuries, and realign
-                me.centuries -= 1;
-                me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
+                match me.centuries.checked_sub(1) {
+                    Some(centuries) => {
+                        me.centuries = centuries;
+                        me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
+                    }
+                    None => {
+                        // We're at the min number of centuries already, and we have extra nanos, so we're saturated the duration limit
+                        return Self::MIN;
+                    }
+                };
+                // me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
             }
-            Some(nanos) => {
-                if self.centuries >= 0 && rhs.centuries < 0 {
-                    // Account for zero crossing
-                    me.nanoseconds = nanos + 1
-                } else {
-                    me.nanoseconds = nanos
-                }
-            }
+            Some(nanos) => me.nanoseconds = nanos,
         };
 
         me.normalize();
@@ -986,17 +1117,17 @@ impl Sub for Duration {
 }
 
 impl SubAssign for Duration {
-    fn sub_assign(&mut self, rhs: Duration) {
+    fn sub_assign(&mut self, rhs: Self) {
         *self = *self - rhs;
     }
 }
 
 // Allow adding with a Unit directly
 impl Add<Unit> for Duration {
-    type Output = Duration;
+    type Output = Self;
 
     #[allow(clippy::identity_op)]
-    fn add(self, rhs: Unit) -> Duration {
+    fn add(self, rhs: Unit) -> Self {
         self + rhs * 1
     }
 }
@@ -1051,10 +1182,27 @@ impl Neg for Duration {
 
     #[must_use]
     fn neg(self) -> Self::Output {
-        Self::from_parts(
-            -self.centuries - 1,
-            NANOSECONDS_PER_CENTURY - self.nanoseconds,
-        )
+        if self == Self::MIN {
+            Self::MAX
+        } else if self == Self::MAX {
+            Self::MIN
+        } else {
+            match NANOSECONDS_PER_CENTURY.checked_sub(self.nanoseconds) {
+                Some(nanoseconds) => {
+                    // yay
+                    Self::from_parts(-self.centuries - 1, nanoseconds)
+                }
+                None => {
+                    if self > Duration::ZERO {
+                        let dur_to_max = Self::MAX - self;
+                        Self::MIN + dur_to_max
+                    } else {
+                        let dur_to_min = Self::MIN + self;
+                        Self::MAX - dur_to_min
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -1190,14 +1338,6 @@ impl From<std::time::Duration> for Duration {
     }
 }
 
-#[cfg(kani)]
-#[kani::proof]
-fn formal_normalize_any() {
-    let centuries: i16 = kani::any();
-    let nanoseconds: u64 = kani::any();
-    let _dur = Duration::from_parts(centuries, nanoseconds);
-}
-
 #[test]
 #[cfg(feature = "serde")]
 fn test_serdes() {
@@ -1206,4 +1346,111 @@ fn test_serdes() {
     assert_eq!(content, serde_json::to_string(&dt).unwrap());
     let parsed: Duration = serde_json::from_str(content).unwrap();
     assert_eq!(dt, parsed);
+}
+
+#[test]
+fn test_bounds() {
+    let min = Duration::MIN;
+    assert_eq!(min.centuries, i16::MIN);
+    assert_eq!(min.nanoseconds, 0);
+
+    let max = Duration::MAX;
+    assert_eq!(max.centuries, i16::MAX);
+    assert_eq!(max.nanoseconds, NANOSECONDS_PER_CENTURY);
+
+    let min_p = Duration::MIN_POSITIVE;
+    assert_eq!(min_p.centuries, 0);
+    assert_eq!(min_p.nanoseconds, 1);
+
+    let min_n = Duration::MIN_NEGATIVE;
+    assert_eq!(min_n.centuries, -1);
+    assert_eq!(min_n.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
+
+    let min_n1 = Duration::MIN - 1 * Unit::Nanosecond;
+    assert_eq!(min_n1, Duration::MIN);
+
+    let max_n1 = Duration::MAX - 1 * Unit::Nanosecond;
+    assert_eq!(max_n1.centuries, i16::MAX);
+    assert_eq!(max_n1.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_duration_normalize_any() {
+    let dur: Duration = kani::any();
+    // Check that decompose never fails
+    dur.decompose();
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_duration_truncated_ns_reciprocity() {
+    let nanoseconds: i64 = kani::any();
+    let dur_from_part = Duration::from_truncated_nanoseconds(nanoseconds);
+
+    let u_ns = dur_from_part.nanoseconds;
+    let centuries = dur_from_part.centuries;
+    if centuries <= -3 || centuries >= 3 {
+        // Then it does not fit on a i64, so this function should return an error
+        assert_eq!(
+            dur_from_part.try_truncated_nanoseconds(),
+            Err(Errors::Overflow)
+        );
+    } else if centuries == -1 {
+        // If we are negative by just enough that the centuries is negative, then the truncated seconds
+        // should be the unsigned nanoseconds wrapped by the number of nanoseconds per century.
+
+        let expect_rslt = -((NANOSECONDS_PER_CENTURY - u_ns) as i64);
+
+        let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
+        assert_eq!(recip_ns, expect_rslt);
+    } else if centuries < 0 {
+        // We fit on a i64 but we need to account for the number of nanoseconds wrapped to the negative centuries.
+
+        let nanos = u_ns.rem_euclid(NANOSECONDS_PER_CENTURY);
+        let expect_rslt = i64::from(centuries + 1) * NANOSECONDS_PER_CENTURY as i64 + nanos as i64;
+
+        let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
+        assert_eq!(recip_ns, expect_rslt);
+    } else {
+        // Positive duration but enough to fit on an i64.
+        let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
+
+        assert_eq!(recip_ns, nanoseconds);
+    }
+}
+
+// #[cfg(kani)]
+// #[kani::proof]
+#[test]
+fn formal_duration_seconds() {
+    // let seconds: f64 = kani::any();
+    let seconds =
+        f64::from_bits(0b01000000010111111011010000110111101001100000110111100000_00000001);
+
+    // kani::assume(seconds > 1e-9);
+    // kani::assume(seconds < 1e14);
+
+    if seconds.is_finite() {
+        let big_seconds = seconds * 1e9;
+        let floored = big_seconds.floor();
+        // Remove the sub nanoseconds -- but this can lead to rounding errors!
+        let truncated_ns = floored * 1e-9;
+
+        let duration: Duration = Duration::from_seconds(truncated_ns);
+        let truncated_out = duration.to_seconds();
+        let floored_out = truncated_out * 1e9;
+        // So we check that the data times 1e9 matches the rounded data
+        if floored != floored_out {
+            let floored_out_bits = floored_out.to_bits();
+            let floored_bits = floored.to_bits();
+            // Allow for ONE bit error on the LSB
+            if floored_out_bits > floored_bits {
+                assert_eq!(floored_out_bits - floored_bits, 1);
+            } else {
+                assert_eq!(floored_bits - floored_out_bits, 1);
+            }
+        }
+        assert_eq!(floored_out, floored);
+    }
 }

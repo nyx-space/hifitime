@@ -34,7 +34,7 @@ pub const JDE_OFFSET_SECONDS: f64 = JDE_OFFSET_DAYS * SECONDS_PER_DAY;
 pub const DAYS_PER_YEAR: f64 = 365.25;
 /// `DAYS_PER_YEAR_NLD` corresponds to the number of days per year **without leap days**.
 pub const DAYS_PER_YEAR_NLD: f64 = 365.0;
-/// `DAYS_PER_CENTURY` corresponds to the number of days per centuy in the Julian calendar.
+/// `DAYS_PER_CENTURY` corresponds to the number of days per century in the Julian calendar.
 pub const DAYS_PER_CENTURY: f64 = 36525.0;
 pub const DAYS_PER_CENTURY_I64: i64 = 36525;
 /// `SECONDS_PER_MINUTE` defines the number of seconds per minute.
@@ -51,8 +51,14 @@ pub const SECONDS_PER_YEAR: f64 = 31_557_600.0;
 pub const SECONDS_PER_YEAR_I64: i64 = 31_557_600;
 /// `SECONDS_PER_TROPICAL_YEAR` corresponds to the number of seconds per tropical year from [NAIF SPICE](https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/tyear_c.html).
 pub const SECONDS_PER_TROPICAL_YEAR: f64 = 31_556_925.974_7;
-/// `SECONDS_PER_SIDERAL_YEAR` corresponds to the number of seconds per sideral year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
+/// `SECONDS_PER_SIDERAL_YEAR` corresponds to the number of seconds per sidereal year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
+#[deprecated(
+    since = "3.8.0",
+    note = "Use SECONDS_PER_SIDEREAL_YEAR instead (does not have the typo)"
+)]
 pub const SECONDS_PER_SIDERAL_YEAR: f64 = 31_558_150.0;
+/// `SECONDS_PER_SIDEREAL_YEAR` corresponds to the number of seconds per sidereal year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
+pub const SECONDS_PER_SIDEREAL_YEAR: f64 = 31_558_150.0;
 
 /// The duration between J2000 and J1900: one century **minus** twelve hours. J1900 starts at _noon_ but J2000 is at midnight.
 pub const J2000_TO_J1900_DURATION: Duration = Duration {
@@ -138,7 +144,7 @@ pub enum Errors {
     ParseError(ParsingErrors),
     /// Raised when trying to initialize an Epoch or Duration from its hi and lo values, but these overlap
     ConversionOverlapError(f64, f64),
-    /// Raised if an overflow occured
+    /// Raised if an overflow occurred
     Overflow,
     /// Raised if the initialization from system time failed
     SystemTimeError,
@@ -167,7 +173,7 @@ impl fmt::Display for Errors {
             }
             Self::Overflow => write!(
                 f,
-                "overflow occured when trying to convert Duration information"
+                "overflow occurred when trying to convert Duration information"
             ),
             Self::SystemTimeError => write!(f, "std::time::SystemTime returned an error"),
         }
