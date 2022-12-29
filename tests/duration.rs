@@ -298,6 +298,9 @@ fn test_extremes() {
         Duration::from_truncated_nanoseconds(d.truncated_nanoseconds()),
         d
     );
+
+    let past_min = Duration::from_total_nanoseconds(i128::MIN);
+    assert_eq!(past_min, Duration::MIN);
 }
 
 #[test]

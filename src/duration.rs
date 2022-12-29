@@ -164,16 +164,13 @@ impl Duration {
     pub fn from_truncated_nanoseconds(nanos: i64) -> Self {
         if nanos < 0 {
             let ns = nanos.unsigned_abs();
+            // Note: i64::MIN corresponds to a duration just past -3 centuries, so we can't hit the Duration::MIN here.
             let extra_centuries = ns.div_euclid(NANOSECONDS_PER_CENTURY);
-            if extra_centuries > i16::MAX as u64 {
-                Self::MIN
-            } else {
-                let rem_nanos = ns.rem_euclid(NANOSECONDS_PER_CENTURY);
-                Self::from_parts(
-                    -1 - (extra_centuries as i16),
-                    NANOSECONDS_PER_CENTURY - rem_nanos,
-                )
-            }
+            let rem_nanos = ns.rem_euclid(NANOSECONDS_PER_CENTURY);
+            Self::from_parts(
+                -1 - (extra_centuries as i16),
+                NANOSECONDS_PER_CENTURY - rem_nanos,
+            )
         } else {
             Self::from_parts(0, nanos.unsigned_abs())
         }
@@ -975,9 +972,21 @@ impl Add for Duration {
                 }
             }
         } else {
-            // We can safely add two nanoseconds together because we can fit five centuries in one u64
-            // cf. https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=b4011b1d5c06c38a72f28d0a9e6a5574
-            me.nanoseconds += rhs.nanoseconds;
+            match me.nanoseconds.checked_add(rhs.nanoseconds) {
+                Some(nanoseconds) => me.nanoseconds = nanoseconds,
+                None => {
+                    // Rare case where somehow the input data was not normalized. So let's normalize it and call add again.
+                    let mut rhs = rhs;
+                    rhs.normalize();
+
+                    match me.centuries.checked_add(rhs.centuries) {
+                        None => return Self::MAX,
+                        Some(centuries) => me.centuries = centuries,
+                    };
+                    // Now it will fit!
+                    me.nanoseconds += rhs.nanoseconds;
+                }
+            }
         }
 
         me.normalize();
@@ -1367,7 +1376,7 @@ fn test_bounds() {
 
 #[cfg(kani)]
 #[kani::proof]
-fn formal_normalize_any() {
+fn formal_duration_normalize_any() {
     let dur: Duration = kani::any();
     // Check that decompose never fails
     dur.decompose();
@@ -1375,7 +1384,7 @@ fn formal_normalize_any() {
 
 #[cfg(kani)]
 #[kani::proof]
-fn formal_truncated_ns_reciprocity() {
+fn formal_duration_truncated_ns_reciprocity() {
     let nanoseconds: i64 = kani::any();
     let dur_from_part = Duration::from_truncated_nanoseconds(nanoseconds);
 
@@ -1408,5 +1417,40 @@ fn formal_truncated_ns_reciprocity() {
         let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
 
         assert_eq!(recip_ns, nanoseconds);
+    }
+}
+
+#[cfg(kani)]
+#[kani::proof]
+// #[test]
+fn formal_duration_seconds() {
+    let seconds: f64 = kani::any();
+    // let seconds =
+    //     f64::from_bits(0b01000000010111111011010000110111101001100000110111100000_00000001);
+
+    kani::assume(seconds > 1e-9);
+    kani::assume(seconds < 1e14);
+
+    if seconds.is_finite() {
+        let big_seconds = seconds * 1e9;
+        let floored = big_seconds.floor();
+        // Remove the sub nanoseconds -- but this can lead to rounding errors!
+        let truncated_ns = floored * 1e-9;
+
+        let duration: Duration = Duration::from_seconds(truncated_ns);
+        let truncated_out = duration.to_seconds();
+        let floored_out = truncated_out * 1e9;
+        // So we check that the data times 1e9 matches the rounded data
+        if floored != floored_out {
+            let floored_out_bits = floored_out.to_bits();
+            let floored_bits = floored.to_bits();
+            // Allow for ONE bit error on the LSB
+            if floored_out_bits > floored_bits {
+                assert_eq!(floored_out_bits - floored_bits, 1);
+            } else {
+                assert_eq!(floored_bits - floored_out_bits, 1);
+            }
+        }
+        assert_eq!(floored_out, floored);
     }
 }

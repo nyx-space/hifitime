@@ -2971,6 +2971,17 @@ fn formal_epoch_reciprocity_tai() {
     let time_scale: TimeScale = TimeScale::TAI;
     let epoch: Epoch = Epoch::from_duration(duration, time_scale);
     assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
+
+    // Check that no error occurs on initialization
+    let seconds: f64 = kani::any();
+    if seconds.is_finite() {
+        Epoch::from_tai_seconds(seconds);
+    }
+
+    let days: f64 = kani::any();
+    if days.is_finite() {
+        Epoch::from_tai_days(days);
+    }
 }
 
 #[cfg(kani)]
@@ -2986,8 +2997,18 @@ fn formal_epoch_reciprocity_tt() {
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
     }
+
+    // Check that no error occurs on initialization
+    let seconds: f64 = kani::any();
+    if seconds.is_finite() {
+        Epoch::from_tt_seconds(seconds);
+    }
+    // No TT Days initializer
 }
 
+// Skip ET, kani chokes on the Newton Raphson loop.
+
+// Skip TDB
 // #[cfg(kani)]
 // #[kani::proof]
 #[test]
@@ -3015,13 +3036,12 @@ fn formal_epoch_reciprocity_tdb() {
     }
 }
 
+// Skip UTC, kani chokes on the leap seconds counting.
+
 #[cfg(kani)]
 #[kani::proof]
 fn formal_epoch_reciprocity_gpst() {
     let duration: Duration = kani::any();
-
-    // Skip UTC, kani chokes on the leap seconds counting.
-    // Skip ET, kani chokes on the Newton Raphson loop.
 
     // GPST
     let time_scale: TimeScale = TimeScale::GPST;
@@ -3030,6 +3050,14 @@ fn formal_epoch_reciprocity_gpst() {
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
     }
+
+    // Check that no error occurs on initialization
+    let seconds: f64 = kani::any();
+    if seconds.is_finite() {
+        Epoch::from_gpst_seconds(seconds);
+    }
+
+    Epoch::from_gpst_nanoseconds(kani::any());
 }
 
 #[cfg(kani)]
@@ -3044,6 +3072,19 @@ fn formal_epoch_reciprocity_gst() {
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
     }
+
+    // Check that no error occurs on initialization
+    let seconds: f64 = kani::any();
+    if seconds.is_finite() {
+        Epoch::from_gst_seconds(seconds);
+    }
+
+    let days: f64 = kani::any();
+    if days.is_finite() {
+        Epoch::from_gst_days(days);
+    }
+
+    Epoch::from_gst_nanoseconds(kani::any());
 }
 
 #[cfg(kani)]
@@ -3058,18 +3099,28 @@ fn formal_epoch_reciprocity_bdt() {
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
     }
+
+    // Check that no error occurs on initialization
+    let seconds: f64 = kani::any();
+    if seconds.is_finite() {
+        Epoch::from_bdt_seconds(seconds);
+    }
+
+    let days: f64 = kani::any();
+    if days.is_finite() {
+        Epoch::from_bdt_days(days);
+    }
+
+    Epoch::from_bdt_nanoseconds(kani::any());
 }
 
 #[cfg(kani)]
 #[kani::proof]
-fn formal_epoch_in_days() {
+fn formal_epoch_julian() {
     let days: f64 = kani::any();
 
     if days.is_finite() {
         // The initializers will fail on subnormal days.
-        Epoch::from_bdt_days(days);
-        Epoch::from_tai_days(days);
-        Epoch::from_gst_days(days);
         Epoch::from_mjd_bdt(days);
         Epoch::from_mjd_gpst(days);
         Epoch::from_mjd_gst(days);
@@ -3080,23 +3131,5 @@ fn formal_epoch_in_days() {
         Epoch::from_jde_tai(days);
         Epoch::from_jde_et(days);
         Epoch::from_jde_tai(days);
-        // NOTE: We cannot test the UTC initializers because kani seems to fail on the leap second counting loop.
-    }
-}
-
-#[cfg(kani)]
-#[kani::proof]
-fn formal_epoch_in_seconds() {
-    let seconds: f64 = kani::any();
-
-    if seconds.is_finite() {
-        // The initializers will fail on subnormal days.
-        Epoch::from_bdt_seconds(seconds);
-        Epoch::from_tt_seconds(seconds);
-        Epoch::from_et_seconds(seconds);
-        Epoch::from_tdb_seconds(seconds);
-        Epoch::from_tai_seconds(seconds);
-        Epoch::from_gst_seconds(seconds);
-        Epoch::from_gpst_seconds(seconds);
     }
 }
