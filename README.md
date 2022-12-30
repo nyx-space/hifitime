@@ -292,7 +292,12 @@ Thanks again to [@gwbres](https://github.com/gwbres) for his work in this releas
 + Fix CI of the formal verification and upload artifacts, cf. [#179](https://github.com/nyx-space/hifitime/pull/179)
 + Introduce time of week construction and conversion by [@gwbres](https://github.com/gwbres), cf.[#180](https://github.com/nyx-space/hifitime/pull/180) and [#188](https://github.com/nyx-space/hifitime/pull/188)
 + Fix minor typo in `src/timeunits.rs` by [@gwbres](https://github.com/gwbres), cf. [#189](https://github.com/nyx-space/hifitime/pull/189)
-+ Significantly extend formal verification of `Duration` and `Epoch`, and introduce `kani::Arbitrary` to `Duration` and `Epoch` for others to formally verify their use of time, cf. [#192](https://github.com/nyx-space/hifitime/pull/192)
++ Significantly extend formal verification of `Duration` and `Epoch`, and introduce `kani::Arbitrary` to `Duration` and `Epoch` for users to formally verify their use of time, cf. [#192](https://github.com/nyx-space/hifitime/pull/192)
++ It is now possible to specify a Leap Seconds file (in IERS format) using the `LeapSecondsFile::from_path` (requires the `std` feature to read the file), cf. [#43](https://github.com/nyx-space/hifitime/issues/43).
++ UT1 time scale is now supported! You must build a `Ut1Provider` structure with data from the JPL Earth Orientation Parameters, or just use `Ut1Provider::download_short_from_jpl()` to automatically download the data from NASA JPL.
++ `strptime` and `strftime` equivalents from C89 are now supported, cf. [#181](https://github.com/nyx-space/hifitime/issues/181). Please refer to the [documentation](https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html) for important limitations and how to build a custom formatter.
++ ISO Day of Year and Day In Year are now supported for initialization of an Epoch (provided a time scale and a year), and formatting, cf. [#182](https://github.com/nyx-space/hifitime/issues/182).
++ **Python:** the representation of an epoch is now in the time scale it was initialized in
 
 ## 3.7.0
 Huge thanks to [@gwbres](https://github.com/gwbres) who put in all of the work for this release. These usability changes allow [Rinex](https://crates.io/crates/rinex) to use hifitime, check out this work.

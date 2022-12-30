@@ -176,7 +176,7 @@ pub const RFC3339: Format = Format {
         Some(Item {
             token: Token::Second,
             sep_char: Some('.'),
-            second_sep_char: Some('Z'),
+            second_sep_char: None,
             optional: false,
         }),
         Some(Item {

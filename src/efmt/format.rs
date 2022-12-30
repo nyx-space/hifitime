@@ -185,6 +185,10 @@ impl Format {
                         ts = TimeScale::from_str(s[idx..].trim())?;
                     }
                     break;
+                } else if char == 'Z' {
+                    // This is a single character to represent UTC
+                    // UTC is the default time scale, so we don't need to do anything.
+                    break;
                 }
                 prev_item = cur_item;
                 prev_token = cur_token;
