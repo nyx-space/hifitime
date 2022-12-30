@@ -4,9 +4,11 @@ Scientifically accurate date and time handling with guaranteed nanosecond precis
 Formally verified to not crash on operations on epochs and durations using the [`Kani`](https://model-checking.github.io/kani/) model checking.
 
 [![hifitime on crates.io][cratesio-image]][cratesio]
-[![Build Status](https://github.com/nyx-space/hifitime/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/nyx-space/hifitime/actions)
 [![hifitime on docs.rs][docsrs-image]][docsrs]
 [![minimum rustc: 1.58](https://img.shields.io/badge/minimum%20rustc-1.58-yellowgreen?logo=rust)](https://www.whatrustisit.com)
+[![Build Status](https://github.com/nyx-space/hifitime/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/nyx-space/hifitime/actions)
+[![Build Status](https://github.com/nyx-space/hifitime/actions/workflows/formal_verification.yml/badge.svg?branch=master)](https://github.com/nyx-space/hifitime/actions)
+[![codecov](https://codecov.io/gh/nyx-space/hifitime/branch/master/graph/badge.svg?token=l7zU57rUGs)](https://codecov.io/gh/nyx-space/hifitime)
 
 [cratesio-image]: https://img.shields.io/crates/v/hifitime.svg
 [cratesio]: https://crates.io/crates/hifitime

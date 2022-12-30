@@ -46,6 +46,12 @@ impl Weekday {
     pub(crate) const DAYS_PER_WEEK: f64 = 7.0;
     /// Trivial, but avoid magic numbers.
     pub(crate) const DAYS_PER_WEEK_I128: i128 = 7;
+
+    // C89 defines Sunday as zero (which is stupid)
+    pub(crate) fn to_c89_weekday(self) -> u8 {
+        let c89_weekday: u8 = (self + 1).into();
+        c89_weekday
+    }
 }
 
 impl From<u8> for Weekday {
@@ -87,14 +93,14 @@ impl FromStr for Weekday {
     type Err = ParsingErrors;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.trim() {
-            "monday" | "Monday" | "MONDAY" => Ok(Self::Monday),
-            "tuesday" | "Tuesday" | "TUESDAY" => Ok(Self::Tuesday),
-            "wednesday" | "Wednesday" | "WEDNESDAY" => Ok(Self::Wednesday),
-            "thursday" | "Thursday" | "THURSDAY" => Ok(Self::Thursday),
-            "friday" | "Friday" | "FRIDAY" => Ok(Self::Friday),
-            "saturday" | "Saturday" | "SATURDAY" => Ok(Self::Saturday),
-            "sunday" | "Sunday" | "SUNDAY" => Ok(Self::Sunday),
-            _ => Err(ParsingErrors::ParseWeekdayError),
+            "mon" | "Mon" | "MON" | "monday" | "Monday" | "MONDAY" => Ok(Self::Monday),
+            "tue" | "Tue" | "TUE" | "tuesday" | "Tuesday" | "TUESDAY" => Ok(Self::Tuesday),
+            "wed" | "Wed" | "WED" | "wednesday" | "Wednesday" | "WEDNESDAY" => Ok(Self::Wednesday),
+            "thu" | "Thu" | "THU" | "thursday" | "Thursday" | "THURSDAY" => Ok(Self::Thursday),
+            "fri" | "Fri" | "FRI" | "friday" | "Friday" | "FRIDAY" => Ok(Self::Friday),
+            "sat" | "Sat" | "SAT" | "saturday" | "Saturday" | "SATURDAY" => Ok(Self::Saturday),
+            "sun" | "Sun" | "SUN" | "sunday" | "Sunday" | "SUNDAY" => Ok(Self::Sunday),
+            _ => Err(ParsingErrors::UnknownWeekday),
         }
     }
 }
@@ -152,6 +158,21 @@ impl fmt::Display for Weekday {
     }
 }
 
+/// LowerHex allows printing the week day in its shortened form in English
+impl fmt::LowerHex for Weekday {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Monday => write!(f, "Mon"),
+            Self::Tuesday => write!(f, "Tue"),
+            Self::Wednesday => write!(f, "Wed"),
+            Self::Thursday => write!(f, "Thu"),
+            Self::Friday => write!(f, "Fri"),
+            Self::Saturday => write!(f, "Sat"),
+            Self::Sunday => write!(f, "Sun"),
+        }
+    }
+}
+
 #[test]
 fn test_wrapping() {
     assert_eq!(Weekday::default(), Weekday::Monday);
@@ -169,4 +190,15 @@ fn test_wrapping() {
         );
         // Test FromStr
     }
+}
+
+#[test]
+fn test_iso_weekday() {
+    assert_eq!(Weekday::Sunday.to_c89_weekday(), 0);
+    assert_eq!(Weekday::Monday.to_c89_weekday(), 1);
+    assert_eq!(Weekday::Tuesday.to_c89_weekday(), 2);
+    assert_eq!(Weekday::Wednesday.to_c89_weekday(), 3);
+    assert_eq!(Weekday::Thursday.to_c89_weekday(), 4);
+    assert_eq!(Weekday::Friday.to_c89_weekday(), 5);
+    assert_eq!(Weekday::Saturday.to_c89_weekday(), 6);
 }

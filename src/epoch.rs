@@ -11,11 +11,14 @@
 use crate::duration::{Duration, Unit};
 use crate::parser::Token;
 use crate::{
-    Errors, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S, GPST_REF_EPOCH, GST_REF_EPOCH,
-    J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_DAY,
+    Errors, MonthName, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S, GPST_REF_EPOCH,
+    GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_DAY,
     NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32,
     UNIX_REF_EPOCH,
 };
+
+use crate::efmt::format::Format;
+
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
 use core::hash::{Hash, Hasher};
@@ -994,7 +997,7 @@ impl Epoch {
                 }
                 let prev_token = cur_token;
 
-                let pos = cur_token.pos();
+                let pos = cur_token.gregorian_position().unwrap();
 
                 let end_idx = if idx != s.len() - 1 || !char.is_numeric() {
                     // Only advance the token if we aren't at the end of the string
@@ -1040,30 +1043,23 @@ impl Epoch {
             i64::from(decomposed[7]) * Unit::Hour + i64::from(decomposed[8]) * Unit::Minute
         };
 
-        let epoch = if ts == TimeScale::UTC {
-            Self::maybe_from_gregorian_utc(
-                decomposed[0],
-                decomposed[1].try_into().unwrap(),
-                decomposed[2].try_into().unwrap(),
-                decomposed[3].try_into().unwrap(),
-                decomposed[4].try_into().unwrap(),
-                decomposed[5].try_into().unwrap(),
-                decomposed[6].try_into().unwrap(),
-            )
-        } else {
-            Self::maybe_from_gregorian(
-                decomposed[0],
-                decomposed[1].try_into().unwrap(),
-                decomposed[2].try_into().unwrap(),
-                decomposed[3].try_into().unwrap(),
-                decomposed[4].try_into().unwrap(),
-                decomposed[5].try_into().unwrap(),
-                decomposed[6].try_into().unwrap(),
-                ts,
-            )
-        };
+        let epoch = Self::maybe_from_gregorian(
+            decomposed[0],
+            decomposed[1].try_into().unwrap(),
+            decomposed[2].try_into().unwrap(),
+            decomposed[3].try_into().unwrap(),
+            decomposed[4].try_into().unwrap(),
+            decomposed[5].try_into().unwrap(),
+            decomposed[6].try_into().unwrap(),
+            ts,
+        );
 
         Ok(epoch? + tz)
+    }
+
+    /// Initializes an Epoch from the provided Format.
+    pub fn from_str_with_format(s_in: &str, format: Format) -> Result<Self, Errors> {
+        format.parse(s_in)
     }
 
     fn delta_et_tai(seconds: f64) -> f64 {
@@ -1082,7 +1078,7 @@ impl Epoch {
         1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
     }
 
-    fn compute_gregorian(duration_j1900: Duration) -> (i32, u8, u8, u8, u8, u8, u32) {
+    pub(crate) fn compute_gregorian(duration_j1900: Duration) -> (i32, u8, u8, u8, u8, u8, u32) {
         let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
             duration_j1900.decompose();
 
@@ -1123,7 +1119,7 @@ impl Epoch {
                 days_next_month += 1.0;
             }
 
-            if days_so_far + days_next_month > days_in_year {
+            if days_so_far + days_next_month > days_in_year || month == 12 {
                 // We've found the month and can calculate the days
                 day = if sign >= 0 {
                     days_in_year - days_so_far + 1.0
@@ -1207,9 +1203,20 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Builds an UTC Epoch from given `week`: elapsed weeks counter and "ns" amount of nanoseconds since closest Sunday Midnight.
+    /// Builds a UTC Epoch from given `week`: elapsed weeks counter and "ns" amount of nanoseconds since closest Sunday Midnight.
     pub fn from_time_of_week_utc(week: u32, nanoseconds: u64) -> Self {
         Self::from_time_of_week(week, nanoseconds, TimeScale::UTC)
+    }
+
+    #[must_use]
+    /// Builds an Epoch from the provided year, days in the year, and a time scale.
+    ///
+    /// # Limitations
+    /// In the TDB or ET time scales, there may be an error of up to 750 nanoseconds when initializing an Epoch this way.
+    /// This is because we first initialize the epoch in Gregorian scale and then apply the TDB/ET offset, but that offset actually depends on the precise time.
+    pub fn from_day_of_year(year: i32, days: f64, time_scale: TimeScale) -> Self {
+        let start_of_year = Self::from_gregorian(year, 1, 1, 0, 0, 0, 0, time_scale);
+        start_of_year + days * Unit::Day
     }
 }
 
@@ -2289,6 +2296,7 @@ impl Epoch {
             .into()
     }
 
+    #[must_use]
     /// Returns weekday (uses the TAI representation for this calculation).
     pub fn weekday(&self) -> Weekday {
         // J1900 was a Monday so we just have to modulo the number of days by the number of days per week.
@@ -2296,11 +2304,13 @@ impl Epoch {
         self.weekday_in_time_scale(TimeScale::TAI)
     }
 
+    #[must_use]
     /// Returns weekday in UTC timescale
     pub fn weekday_utc(&self) -> Weekday {
         self.weekday_in_time_scale(TimeScale::UTC)
     }
 
+    #[must_use]
     /// Returns the next weekday.
     ///
     /// ```
@@ -2325,14 +2335,17 @@ impl Epoch {
         }
     }
 
+    #[must_use]
     pub fn next_weekday_at_midnight(&self, weekday: Weekday) -> Self {
         self.next(weekday).with_hms_strict(0, 0, 0)
     }
 
+    #[must_use]
     pub fn next_weekday_at_noon(&self, weekday: Weekday) -> Self {
         self.next(weekday).with_hms_strict(12, 0, 0)
     }
 
+    #[must_use]
     /// Returns the next weekday.
     ///
     /// ```
@@ -2356,14 +2369,17 @@ impl Epoch {
         }
     }
 
+    #[must_use]
     pub fn previous_weekday_at_midnight(&self, weekday: Weekday) -> Self {
         self.previous(weekday).with_hms_strict(0, 0, 0)
     }
 
+    #[must_use]
     pub fn previous_weekday_at_noon(&self, weekday: Weekday) -> Self {
         self.previous(weekday).with_hms_strict(12, 0, 0)
     }
 
+    #[must_use]
     /// Returns the duration since the start of the year
     pub fn duration_in_year(&self) -> Duration {
         let year = Self::compute_gregorian(self.to_duration()).0;
@@ -2371,9 +2387,19 @@ impl Epoch {
         self.to_duration() - start_of_year.to_duration()
     }
 
+    #[must_use]
     /// Returns the number of days since the start of the year.
     pub fn day_of_year(&self) -> f64 {
         self.duration_in_year().to_unit(Unit::Day)
+    }
+
+    #[must_use]
+    /// Returns the year and the days in the year so far (days of year).
+    pub fn year_days_of_year(&self) -> (i32, f64) {
+        (
+            Self::compute_gregorian(self.to_duration()).0,
+            self.day_of_year(),
+        )
     }
 
     /// Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in.
@@ -2427,6 +2453,79 @@ impl Epoch {
         )
     }
 
+    /// Returns a copy of self where the hours, minutes, seconds is set to the time of the provided epoch but the
+    /// sub-second parts are kept from the current epoch.
+    ///
+    /// ```
+    /// use hifitime::prelude::*;
+    ///
+    /// let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
+    /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
+    /// let other = other_utc.in_time_scale(TimeScale::TDB);
+    ///
+    /// assert_eq!(
+    ///     epoch.with_hms_from(other),
+    ///     Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 13)
+    /// );
+    /// ```
+    pub fn with_hms_from(&self, other: Self) -> Self {
+        let (sign, days, _, _, _, milliseconds, microseconds, nanoseconds) =
+            self.to_duration().decompose();
+        // Shadow other with the provided other epoch but in the correct time scale.
+        let other = other.in_time_scale(self.time_scale);
+        Self::from_duration(
+            Duration::compose(
+                sign,
+                days,
+                other.hours(),
+                other.minutes(),
+                other.seconds(),
+                milliseconds,
+                microseconds,
+                nanoseconds,
+            ),
+            self.time_scale,
+        )
+    }
+
+    /// Returns a copy of self where all of the time components (hours, minutes, seconds, and sub-seconds) are set to the time of the provided epoch.
+    ///
+    /// ```
+    /// use hifitime::prelude::*;
+    ///
+    /// let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
+    /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
+    /// // If the other Epoch is in another time scale, it does not matter, it will be converted to the correct time scale.
+    /// let other = other_utc.in_time_scale(TimeScale::TDB);
+    ///
+    /// assert_eq!(
+    ///     epoch.with_time_from(other),
+    ///     Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 23)
+    /// );
+    /// ```
+    pub fn with_time_from(&self, other: Self) -> Self {
+        // Grab days from self
+        let (sign, days, _, _, _, _, _, _) = self.to_duration().decompose();
+
+        // Grab everything else from other
+        let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
+            other.to_duration_in_time_scale(self.time_scale).decompose();
+
+        Self::from_duration(
+            Duration::compose(
+                sign,
+                days,
+                hours,
+                minutes,
+                seconds,
+                milliseconds,
+                microseconds,
+                nanoseconds,
+            ),
+            self.time_scale,
+        )
+    }
+
     /// Returns a copy of self where the time is set to the provided hours, minutes, seconds
     /// Invalid number of hours, minutes, and seconds will overflow into their higher unit.
     /// Warning: this will set the subdivisions of seconds to zero.
@@ -2436,6 +2535,43 @@ impl Epoch {
             Duration::compose(sign, days, hours, minutes, seconds, 0, 0, 0),
             self.time_scale,
         )
+    }
+
+    /// Returns a copy of self where the time is set to the time of the other epoch but the subseconds are set to zero.
+    ///
+    /// ```
+    /// use hifitime::prelude::*;
+    ///
+    /// let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
+    /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
+    /// let other = other_utc.in_time_scale(TimeScale::TDB);
+    ///
+    /// assert_eq!(
+    ///     epoch.with_hms_strict_from(other),
+    ///     Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 0)
+    /// );
+    /// ```
+    pub fn with_hms_strict_from(&self, other: Self) -> Self {
+        let (sign, days, _, _, _, _, _, _) = self.to_duration().decompose();
+        let other = other.in_time_scale(self.time_scale);
+        Self::from_duration(
+            Duration::compose(
+                sign,
+                days,
+                other.hours(),
+                other.minutes(),
+                other.seconds(),
+                0,
+                0,
+                0,
+            ),
+            self.time_scale,
+        )
+    }
+
+    pub fn month_name(&self) -> MonthName {
+        let month = Self::compute_gregorian(self.to_duration()).1;
+        month.into()
     }
 
     // Python helpers
@@ -2492,6 +2628,10 @@ impl Epoch {
         }
     }
 
+    #[deprecated(
+        since = "3.8.0",
+        note = "Prefer using `format!(\"{}\", epoch)` directly"
+    )]
     #[cfg(feature = "std")]
     #[must_use]
     /// Converts the Epoch to UTC Gregorian in the ISO8601 format.
@@ -2499,6 +2639,10 @@ impl Epoch {
         format!("{}", self)
     }
 
+    #[deprecated(
+        since = "3.8.0",
+        note = "Prefer using `format!(\"{:x}\", epoch)` directly"
+    )]
     #[cfg(feature = "std")]
     #[must_use]
     /// Converts the Epoch to TAI Gregorian in the ISO8601 format with " TAI" appended to the string

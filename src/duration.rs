@@ -269,6 +269,17 @@ impl Duration {
             me
         }
     }
+
+    /// Initializes a Duration from a timezone offset
+    #[must_use]
+    pub fn from_tz_offset(sign: i8, hours: i64, minutes: i64) -> Self {
+        let dur = hours * Unit::Hour + minutes * Unit::Minute;
+        if sign < 0 {
+            -dur
+        } else {
+            dur
+        }
+    }
 }
 
 #[cfg_attr(feature = "python", pymethods)]
@@ -548,6 +559,47 @@ impl Duration {
         } else {
             ceiled
         }
+    }
+
+    /// Rounds this duration to the largest units represented in this duration.
+    ///
+    /// This is useful to provide an approximate human duration. Under the hood, this function uses `round`,
+    /// so the "tipping point" of the rounding is half way to the next increment of the greatest unit.
+    /// As shown below, one example is that 35 hours and 59 minutes rounds to 1 day, but 36 hours and 1 minute rounds
+    /// to 2 days because 2 days is closer to 36h 1 min than 36h 1 min is to 1 day.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hifitime::{Duration, TimeUnits};
+    ///
+    /// assert_eq!((2.hours() + 3.minutes()).approx(), 2.hours());
+    /// assert_eq!((24.hours() + 3.minutes()).approx(), 1.days());
+    /// assert_eq!((35.hours() + 59.minutes()).approx(), 1.days());
+    /// assert_eq!((36.hours() + 1.minutes()).approx(), 2.days());
+    /// assert_eq!((47.hours() + 3.minutes()).approx(), 2.days());
+    /// assert_eq!((49.hours() + 3.minutes()).approx(), 2.days());
+    /// ```
+    pub fn approx(&self) -> Self {
+        let (_, days, hours, minutes, seconds, milli, us, _) = self.decompose();
+
+        let round_to = if days > 0 {
+            1 * Unit::Day
+        } else if hours > 0 {
+            1 * Unit::Hour
+        } else if minutes > 0 {
+            1 * Unit::Minute
+        } else if seconds > 0 {
+            1 * Unit::Second
+        } else if milli > 0 {
+            1 * Unit::Millisecond
+        } else if us > 0 {
+            1 * Unit::Microsecond
+        } else {
+            1 * Unit::Nanosecond
+        };
+
+        self.round(round_to)
     }
 
     /// Returns the minimum of the two durations.
@@ -1220,6 +1272,7 @@ impl FromStr for Duration {
     ///  + ms, millisecond, milliseconds
     ///  + us, microsecond, microseconds
     ///  + ns, nanosecond, nanoseconds
+    ///  + `+` or `-` indicates a timezone offset
     ///
     /// # Example
     /// ```
@@ -1233,6 +1286,8 @@ impl FromStr for Duration {
     /// assert_eq!(Duration::from_str("10.598 seconds").unwrap(), Unit::Second * 10.598);
     /// assert_eq!(Duration::from_str("10.598 nanosecond").unwrap(), Unit::Nanosecond * 10.598);
     /// assert_eq!(Duration::from_str("5 h 256 ms 1 ns").unwrap(), 5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond);
+    /// assert_eq!(Duration::from_str("-01:15:30").unwrap(), -(1 * Unit::Hour + 15 * Unit::Minute + 30 * Unit::Second));
+    /// assert_eq!(Duration::from_str("+3615").unwrap(), 36 * Unit::Hour + 15 * Unit::Minute);
     /// ```
     fn from_str(s_in: &str) -> Result<Self, Self::Err> {
         // Each part of a duration as days, hours, minutes, seconds, millisecond, microseconds, and nanoseconds
@@ -1243,6 +1298,86 @@ impl FromStr for Duration {
         let mut latest_value = 0.0;
 
         let s = s_in.trim();
+
+        if s.is_empty() {
+            return Err(Errors::ParseError(ParsingErrors::ValueError));
+        }
+
+        // There is at least one character, so we can unwrap this.
+        if let Some(char) = s.chars().next() {
+            if char == '+' || char == '-' {
+                // This is a timezone offset.
+                let offset_sign = if char == '-' { -1 } else { 1 };
+
+                let indexes: (usize, usize, usize) = (1, 3, 5);
+                let colon = if s.len() == 3 || s.len() == 5 || s.len() == 7 {
+                    // There is a zero or even number of separators between the hours, minutes, and seconds.
+                    // Only zero (or one) characters separator is supported. This will return a ValueError later if there is
+                    // an even but greater than one character separator.
+                    0
+                } else if s.len() == 4 || s.len() == 6 || s.len() == 9 {
+                    // There is an odd number of characters as a separator between the hours, minutes, and seconds.
+                    // Only one character separator is supported. This will return a ValueError later if there is
+                    // an odd but greater than one character separator.
+                    1
+                } else {
+                    // This invalid
+                    return Err(Errors::ParseError(ParsingErrors::ValueError));
+                };
+
+                // Fetch the hours
+                let hours: i64 = match lexical_core::parse(s[indexes.0..indexes.1].as_bytes()) {
+                    Ok(val) => val,
+                    Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
+                };
+
+                let mut minutes: i64 = 0;
+                let mut seconds: i64 = 0;
+
+                match s.get(indexes.1 + colon..indexes.2 + colon) {
+                    None => {
+                        //Do nothing, we've reached the end of the useful data.
+                    }
+                    Some(subs) => {
+                        // Fetch the minutes
+                        match lexical_core::parse(subs.as_bytes()) {
+                            Ok(val) => minutes = val,
+                            Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
+                        }
+
+                        match s.get(indexes.2 + 2 * colon..) {
+                            None => {
+                                // Do nothing, there are no seconds inthis offset
+                            }
+                            Some(subs) => {
+                                if !subs.is_empty() {
+                                    // Fetch the seconds
+                                    match lexical_core::parse(subs.as_bytes()) {
+                                        Ok(val) => seconds = val,
+                                        Err(_) => {
+                                            return Err(Errors::ParseError(
+                                                ParsingErrors::ValueError,
+                                            ))
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Return the constructed offset
+                if offset_sign == -1 {
+                    return Ok(-(hours * Unit::Hour
+                        + minutes * Unit::Minute
+                        + seconds * Unit::Second));
+                } else {
+                    return Ok(hours * Unit::Hour
+                        + minutes * Unit::Minute
+                        + seconds * Unit::Second);
+                }
+            }
+        };
 
         for (idx, char) in s.chars().enumerate() {
             if char == ' ' || idx == s.len() - 1 {

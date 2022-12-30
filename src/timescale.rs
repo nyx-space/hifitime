@@ -244,6 +244,20 @@ fn test_serdes() {
     assert_eq!(ts, parsed);
 }
 
+#[test]
+fn test_ts() {
+    for ts_u8 in 0..u8::MAX {
+        let ts = TimeScale::from(ts_u8);
+        let ts_u8_back: u8 = ts.into();
+        // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
+        if ts_u8 < 8 {
+            assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
+        } else {
+            assert_eq!(ts, TimeScale::TAI);
+        }
+    }
+}
+
 #[cfg(kani)]
 #[kani::proof]
 fn formal_time_scale() {

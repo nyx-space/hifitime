@@ -202,16 +202,16 @@ fn test_ops() {
         -5 * Unit::Nanosecond
     );
 
-    let halfhour = 0.5.hours();
-    let quarterhour = 0.5 * halfhour;
-    assert_eq!(quarterhour, 15.minutes());
+    let half_hour = 0.5.hours();
+    let quarter_hour = 0.5 * half_hour;
+    assert_eq!(quarter_hour, 15.minutes());
     #[cfg(feature = "std")]
-    println!("{}", quarterhour);
+    println!("{}", quarter_hour);
 
-    let min_quarterhour = -0.5 * halfhour;
-    assert_eq!(min_quarterhour, -15.minutes());
+    let min_quarter_hour = -0.5 * half_hour;
+    assert_eq!(min_quarter_hour, -15.minutes());
     #[cfg(feature = "std")]
-    println!("{}", min_quarterhour);
+    println!("{}", min_quarter_hour);
 }
 
 #[test]
@@ -309,6 +309,8 @@ fn duration_enum_eq() {
     assert!(Freq::GigaHertz == Freq::GigaHertz);
     assert!(Unit::Century == Unit::Century);
     assert!(1 * Unit::Century == Unit::Century);
+    assert!(1 * Unit::Century >= Unit::Century);
+    assert!(1 * Unit::Century <= Unit::Century);
     assert!(1 * Unit::Century > Unit::Day);
 }
 
@@ -316,6 +318,8 @@ fn duration_enum_eq() {
 fn duration_enum_orq() {
     // Check the equality compiles (if one compiles, then all asserts will work)
     assert!(Unit::Century > Unit::Day);
+    assert_eq!(Unit::Century.min(Unit::Day), Unit::Day);
+    assert_eq!(Unit::Century.max(Unit::Day), Unit::Century);
     // Frequencies are converted to durations, and that's what compared!
     assert!(Freq::GigaHertz < Freq::MegaHertz);
 }
@@ -453,6 +457,73 @@ fn duration_from_str() {
             == Err(Errors::ParseError(ParsingErrors::UnknownOrMissingUnit)),
         "should return an unknown unit error"
     );
+
+    // Test the offset initialization
+    assert_eq!(
+        Duration::from_str("-01:15:30").unwrap(),
+        -(1 * Unit::Hour + 15 * Unit::Minute + 30 * Unit::Second)
+    );
+
+    assert_eq!(
+        Duration::from_str("+01:15:30").unwrap(),
+        1 * Unit::Hour + 15 * Unit::Minute + 30 * Unit::Second
+    );
+
+    assert_eq!(
+        Duration::from_str("-01:15").unwrap(),
+        -(1 * Unit::Hour + 15 * Unit::Minute)
+    );
+
+    assert_eq!(
+        Duration::from_str("+01:15").unwrap(),
+        1 * Unit::Hour + 15 * Unit::Minute
+    );
+
+    // Test offsets without colon
+    assert_eq!(
+        Duration::from_str("-011530").unwrap(),
+        -(1 * Unit::Hour + 15 * Unit::Minute + 30 * Unit::Second)
+    );
+
+    assert_eq!(
+        Duration::from_str("+011530").unwrap(),
+        1 * Unit::Hour + 15 * Unit::Minute + 30 * Unit::Second
+    );
+
+    assert_eq!(
+        Duration::from_str("-0115").unwrap(),
+        -(1 * Unit::Hour + 15 * Unit::Minute)
+    );
+
+    assert_eq!(
+        Duration::from_str("+0115").unwrap(),
+        1 * Unit::Hour + 15 * Unit::Minute
+    );
+
+    assert_eq!(
+        Duration::from_str("+2515").unwrap(),
+        25 * Unit::Hour + 15 * Unit::Minute
+    );
+
+    assert_eq!(
+        Duration::from_tz_offset(1, 1, 15),
+        1 * Unit::Hour + 15 * Unit::Minute
+    );
+
+    assert_eq!(
+        Duration::from_tz_offset(-1, 1, 15),
+        -(1 * Unit::Hour + 15 * Unit::Minute)
+    );
+
+    assert_eq!(
+        Duration::from_str(""),
+        Err(Errors::ParseError(ParsingErrors::ValueError))
+    );
+
+    assert_eq!(
+        Duration::from_str("+"),
+        Err(Errors::ParseError(ParsingErrors::ValueError))
+    );
 }
 
 #[cfg(feature = "std")]
@@ -466,6 +537,10 @@ fn std_time_duration() {
 
     let hf_return: Duration = std_duration.into();
     assert_eq!(hf_return, hf_duration);
+
+    // Check that a negative hifitime duration is zero in std time
+    let std_duration: StdDuration = (-hf_duration).into();
+    assert_eq!(std_duration, StdDuration::ZERO);
 }
 
 #[test]
@@ -500,7 +575,7 @@ fn test_decompose() {
 }
 
 #[test]
-fn test_minmax() {
+fn test_min_max() {
     use hifitime::TimeUnits;
 
     let d0 = 20.seconds();
