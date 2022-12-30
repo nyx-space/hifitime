@@ -45,7 +45,7 @@ impl LeapSecondsFile {
         let mut me = Self::default();
 
         for line in contents.lines() {
-            if let Some(first_char) = line.chars().nth(0) {
+            if let Some(first_char) = line.chars().next() {
                 if first_char == '#' {
                     continue;
                 } else {
@@ -55,17 +55,15 @@ impl LeapSecondsFile {
                         return Err(Errors::ParseError(ParsingErrors::UnknownFormat));
                     }
 
-                    let timestamp_tai_s: u64;
-                    match lexical_core::parse(data[0].as_bytes()) {
-                        Ok(val) => timestamp_tai_s = val,
+                    let timestamp_tai_s: u64 = match lexical_core::parse(data[0].as_bytes()) {
+                        Ok(val) => val,
                         Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
-                    }
+                    };
 
-                    let delta_at: u8;
-                    match lexical_core::parse(data[1].as_bytes()) {
-                        Ok(val) => delta_at = val,
+                    let delta_at: u8 = match lexical_core::parse(data[1].as_bytes()) {
+                        Ok(val) => val,
                         Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
-                    }
+                    };
 
                     me.data.push(LeapSecond {
                         timestamp_tai_s: (timestamp_tai_s as f64),
