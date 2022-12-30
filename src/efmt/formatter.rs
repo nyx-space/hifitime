@@ -57,6 +57,22 @@ impl Item {
 
         me
     }
+
+    pub(crate) fn sep_char_is(&self, c_in: char) -> bool {
+        self.sep_char.is_some() && self.sep_char.unwrap() == c_in
+    }
+
+    pub(crate) fn sep_char_is_not(&self, c_in: char) -> bool {
+        self.sep_char.is_some() && self.sep_char.unwrap() != c_in
+    }
+
+    pub(crate) fn second_sep_char_is(&self, c_in: char) -> bool {
+        self.second_sep_char.is_some() && self.second_sep_char.unwrap() == c_in
+    }
+
+    pub(crate) fn second_sep_char_is_not(&self, c_in: char) -> bool {
+        self.second_sep_char.is_some() && self.second_sep_char.unwrap() != c_in
+    }
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]

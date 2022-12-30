@@ -44,7 +44,6 @@ impl Default for MonthName {
 }
 
 impl MonthName {
-    /// Max: last weekday <=> `Sunday`, used only for conversion to/from u8.
     const MAX: u8 = 12;
 }
 

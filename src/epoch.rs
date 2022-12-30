@@ -17,7 +17,6 @@ use crate::{
     UNIX_REF_EPOCH,
 };
 
-#[cfg(feature = "fmt")]
 use crate::efmt::format::Format;
 
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
@@ -998,7 +997,7 @@ impl Epoch {
                 }
                 let prev_token = cur_token;
 
-                let pos = cur_token.gregorian_position();
+                let pos = cur_token.gregorian_position().unwrap();
 
                 let end_idx = if idx != s.len() - 1 || !char.is_numeric() {
                     // Only advance the token if we aren't at the end of the string
@@ -1044,34 +1043,21 @@ impl Epoch {
             i64::from(decomposed[7]) * Unit::Hour + i64::from(decomposed[8]) * Unit::Minute
         };
 
-        let epoch = if ts == TimeScale::UTC {
-            Self::maybe_from_gregorian_utc(
-                decomposed[0],
-                decomposed[1].try_into().unwrap(),
-                decomposed[2].try_into().unwrap(),
-                decomposed[3].try_into().unwrap(),
-                decomposed[4].try_into().unwrap(),
-                decomposed[5].try_into().unwrap(),
-                decomposed[6].try_into().unwrap(),
-            )
-        } else {
-            Self::maybe_from_gregorian(
-                decomposed[0],
-                decomposed[1].try_into().unwrap(),
-                decomposed[2].try_into().unwrap(),
-                decomposed[3].try_into().unwrap(),
-                decomposed[4].try_into().unwrap(),
-                decomposed[5].try_into().unwrap(),
-                decomposed[6].try_into().unwrap(),
-                ts,
-            )
-        };
+        let epoch = Self::maybe_from_gregorian(
+            decomposed[0],
+            decomposed[1].try_into().unwrap(),
+            decomposed[2].try_into().unwrap(),
+            decomposed[3].try_into().unwrap(),
+            decomposed[4].try_into().unwrap(),
+            decomposed[5].try_into().unwrap(),
+            decomposed[6].try_into().unwrap(),
+            ts,
+        );
 
         Ok(epoch? + tz)
     }
 
     /// Initializes an Epoch from the provided Format.
-    #[cfg(feature = "fmt")]
     pub fn from_str_with_format(s_in: &str, format: Format) -> Result<Self, Errors> {
         format.parse(s_in)
     }

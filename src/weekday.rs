@@ -93,13 +93,13 @@ impl FromStr for Weekday {
     type Err = ParsingErrors;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.trim() {
-            "monday" | "Monday" | "MONDAY" => Ok(Self::Monday),
-            "tuesday" | "Tuesday" | "TUESDAY" => Ok(Self::Tuesday),
-            "wednesday" | "Wednesday" | "WEDNESDAY" => Ok(Self::Wednesday),
-            "thursday" | "Thursday" | "THURSDAY" => Ok(Self::Thursday),
-            "friday" | "Friday" | "FRIDAY" => Ok(Self::Friday),
-            "saturday" | "Saturday" | "SATURDAY" => Ok(Self::Saturday),
-            "sunday" | "Sunday" | "SUNDAY" => Ok(Self::Sunday),
+            "mon" | "Mon" | "MON" | "monday" | "Monday" | "MONDAY" => Ok(Self::Monday),
+            "tue" | "Tue" | "TUE" | "tuesday" | "Tuesday" | "TUESDAY" => Ok(Self::Tuesday),
+            "wed" | "Wed" | "WED" | "wednesday" | "Wednesday" | "WEDNESDAY" => Ok(Self::Wednesday),
+            "thu" | "Thu" | "THU" | "thursday" | "Thursday" | "THURSDAY" => Ok(Self::Thursday),
+            "fri" | "Fri" | "FRI" | "friday" | "Friday" | "FRIDAY" => Ok(Self::Friday),
+            "sat" | "Sat" | "SAT" | "saturday" | "Saturday" | "SATURDAY" => Ok(Self::Saturday),
+            "sun" | "Sun" | "SUN" | "sunday" | "Sunday" | "SUNDAY" => Ok(Self::Sunday),
             _ => Err(ParsingErrors::UnknownWeekday),
         }
     }

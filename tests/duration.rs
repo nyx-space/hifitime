@@ -202,16 +202,16 @@ fn test_ops() {
         -5 * Unit::Nanosecond
     );
 
-    let halfhour = 0.5.hours();
-    let quarterhour = 0.5 * halfhour;
-    assert_eq!(quarterhour, 15.minutes());
+    let half_hour = 0.5.hours();
+    let quarter_hour = 0.5 * half_hour;
+    assert_eq!(quarter_hour, 15.minutes());
     #[cfg(feature = "std")]
-    println!("{}", quarterhour);
+    println!("{}", quarter_hour);
 
-    let min_quarterhour = -0.5 * halfhour;
-    assert_eq!(min_quarterhour, -15.minutes());
+    let min_quarter_hour = -0.5 * half_hour;
+    assert_eq!(min_quarter_hour, -15.minutes());
     #[cfg(feature = "std")]
-    println!("{}", min_quarterhour);
+    println!("{}", min_quarter_hour);
 }
 
 #[test]
@@ -575,7 +575,7 @@ fn test_decompose() {
 }
 
 #[test]
-fn test_minmax() {
+fn test_min_max() {
     use hifitime::TimeUnits;
 
     let d0 = 20.seconds();

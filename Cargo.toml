@@ -18,22 +18,22 @@ crate-type = ["cdylib", "rlib"]
 name = "hifitime"
 
 [dependencies]
-serde = {version = "1.0.145", optional = true}
-serde_derive = {version = "1.0.145", optional = true}
-der = {version = "0.6.0", features = ["derive", "real"], optional = true}
-pyo3 = { version = "0.17.2", features = ["extension-module"], optional = true}
+serde = {version = "1.0.152", optional = true}
+serde_derive = {version = "1.0.152", optional = true}
+der = {version = "0.6.1", features = ["derive", "real"], optional = true}
+pyo3 = { version = "0.17.3", features = ["extension-module"], optional = true}
 num-traits = {version = "0.2.15", default-features = false, features = ["libm"]}
 lexical-core = {version = "0.8.5", default-features = false, features = ["parse-integers", "parse-floats"]}
 
 [dev-dependencies]
-serde_json = "1"
+serde_json = "1.0.91"
 criterion = "0.4.0"
+iai = "0.1"
 
 [features]
-default = ["std", "fmt"]
+default = ["std"]
 std = ["serde", "serde_derive"]
 asn1der = ["der"]
-fmt = []
 python = ["std", "asn1der", "pyo3"]
 
 [[bench]]
@@ -42,4 +42,12 @@ harness = false
 
 [[bench]]
 name = "bench_duration"
+harness = false
+
+[[bench]]
+name = "iai_duration"
+harness = false
+
+[[bench]]
+name = "iai_epoch"
 harness = false

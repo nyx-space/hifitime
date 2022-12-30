@@ -15,6 +15,8 @@ use core::num::ParseIntError;
 #[cfg(feature = "std")]
 use std::error::Error;
 
+use crate::Weekday;
+
 /// Errors handles all oddities which may occur in this library.
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Errors {
@@ -45,6 +47,15 @@ pub enum ParsingErrors {
     UnknownWeekday,
     UnknownMonthName,
     UnknownFormattingToken(char),
+    UnexpectedCharacter {
+        found: char,
+        option1: Option<char>,
+        option2: Option<char>,
+    },
+    WeekdayMismatch {
+        found: Weekday,
+        expected: Weekday,
+    },
 }
 
 impl fmt::Display for Errors {

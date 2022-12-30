@@ -75,6 +75,10 @@ pub const ISO8601: Format = Format {
 };
 
 /// The ISO8601 format unless the subseconds are zero, then they are not printed. The time scale is also only printed if it is different from UTC.
+///
+/// # Limitation
+/// When parsing a date, the time scale is only allowed if the subseconds are set.
+/// For example, `2015-02-07T11:22:33 UTC` is _invalid_ but `2015-02-07T11:22:33.0 UTC` is valid.
 pub const ISO8601_FLEX: Format = Format {
     items: [
         Some(Item {
@@ -172,7 +176,7 @@ pub const RFC3339: Format = Format {
         Some(Item {
             token: Token::Second,
             sep_char: Some('.'),
-            second_sep_char: None,
+            second_sep_char: Some('Z'),
             optional: false,
         }),
         Some(Item {
@@ -388,6 +392,11 @@ pub const RFC2822: Format = Format {
     num_items: 7,
 };
 
+/// RFC 2822 date time format
+///
+/// # Parsing limitation
+///
+/// When parsing, if the month is provided in short (but valid) form, then the parsing will still succeed. For example, if the month is `Feb` instead of `February`, then the parsing will still succeed.
 pub const RFC2822_LONG: Format = Format {
     items: [
         Some(Item {

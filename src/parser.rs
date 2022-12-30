@@ -107,18 +107,18 @@ impl Token {
     }
 
     /// Returns the position in the array for a Gregorian date for this token
-    pub fn gregorian_position(&self) -> usize {
+    pub(crate) fn gregorian_position(&self) -> Option<usize> {
         match &self {
-            Token::Year => 0,
-            Token::Month => 1,
-            Token::Day => 2,
-            Token::Hour => 3,
-            Token::Minute => 4,
-            Token::Second => 5,
-            Token::Subsecond => 6,
-            Token::OffsetHours => 7,
-            Token::OffsetMinutes => 8,
-            _ => unreachable!(),
+            Token::Year => Some(0),
+            Token::Month => Some(1),
+            Token::Day => Some(2),
+            Token::Hour => Some(3),
+            Token::Minute => Some(4),
+            Token::Second => Some(5),
+            Token::Subsecond => Some(6),
+            Token::OffsetHours => Some(7),
+            Token::OffsetMinutes => Some(8),
+            _ => None,
         }
     }
 
@@ -211,5 +211,16 @@ impl Token {
             }
             _ => Ok(()),
         }
+    }
+
+    pub(crate) const fn is_numeric(self) -> bool {
+        !matches!(
+            self,
+            Token::Timescale
+                | Token::Weekday
+                | Token::WeekdayShort
+                | Token::MonthName
+                | Token::MonthNameShort
+        )
     }
 }
