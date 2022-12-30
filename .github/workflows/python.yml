@@ -17,8 +17,8 @@ jobs:
 
       - name: Install OpenSSL
         run: |
-          apt-get update
-          apt-get install pkg-config libssl-dev -y
+          sudo apt-get update
+          sudo apt-get install pkg-config libssl-dev -y
 
       - uses: messense/maturin-action@v1
         with:
