@@ -1803,7 +1803,7 @@ fn test_epoch_formatter() {
     let init_str = "1994-11-05T08:15:30-05:00";
     let e = Epoch::from_str(init_str).unwrap();
 
-    let fmt = Format::from_str("%Y-%m-%dT%H:%M:%S.Z%f%z").unwrap();
+    let fmt = Format::from_str("%Y-%m-%dT%H:%M:%S.%f%z").unwrap();
     assert_eq!(fmt, RFC3339);
 
     let fmtd = Formatter::with_timezone(e, Duration::from_str("-05:00").unwrap(), RFC3339_FLEX);
