@@ -15,6 +15,12 @@ use core::num::ParseIntError;
 #[cfg(feature = "std")]
 use std::error::Error;
 
+#[cfg(feature = "std")]
+use std::io::ErrorKind as IOError;
+
+#[cfg(feature = "ut1")]
+use reqwest::StatusCode;
+
 use crate::Weekday;
 
 /// Errors handles all oddities which may occur in this library.
@@ -56,6 +62,10 @@ pub enum ParsingErrors {
         found: Weekday,
         expected: Weekday,
     },
+    #[cfg(feature = "std")]
+    IOError(IOError),
+    #[cfg(feature = "ut1")]
+    DownloadError(StatusCode),
 }
 
 impl fmt::Display for Errors {

@@ -9,6 +9,7 @@
  */
 
 use crate::duration::{Duration, Unit};
+use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
 use crate::parser::Token;
 use crate::{
     Errors, MonthName, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S, GPST_REF_EPOCH,
@@ -33,6 +34,9 @@ use pyo3::prelude::*;
 #[cfg(feature = "python")]
 use pyo3::pyclass::CompareOp;
 
+#[cfg(feature = "python")]
+use crate::leap_seconds_file::LeapSecondsFile;
+
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
 
@@ -42,6 +46,9 @@ use std::time::SystemTime;
 
 #[cfg(not(feature = "std"))]
 use num_traits::{Euclid, Float};
+
+#[cfg(feature = "ut1")]
+use crate::ut1::Ut1Provider;
 
 const TT_OFFSET_MS: i64 = 32_184;
 const ET_OFFSET_US: i64 = 32_184_935;
@@ -54,54 +61,6 @@ pub const NAIF_M1: f64 = 1.99096871e-7;
 pub const NAIF_EB: f64 = 1.671e-2;
 /// NAIF leap second kernel data used to calculate the difference between ET and TAI.
 pub const NAIF_K: f64 = 1.657e-3;
-
-/// List of leap seconds from https://www.ietf.org/timezones/data/leap-seconds.list .
-/// This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
-/// The unannoucned leap seconds come from dat.c in the SOFA library.
-const LEAP_SECONDS: [(f64, f64, bool); 42] = [
-    (1_893_369_600.0, 1.417818, false), // SOFA: 01 Jan 1960
-    (1_924_992_000.0, 1.422818, false), // SOFA: 01 Jan 1961
-    (1_943_308_800.0, 1.372818, false), // SOFA: 01 Aug 1961
-    (1_956_528_000.0, 1.845858, false), // SOFA: 01 Jan 1962
-    (2_014_329_600.0, 1.945858, false), // SOFA: 01 Jan 1963
-    (2_019_600_000.0, 3.24013, false),  // SOFA: 01 Jan 1964
-    (2_027_462_400.0, 3.34013, false),  // SOFA: 01 Apr 1964
-    (2_040_681_600.0, 3.44013, false),  // SOFA: 01 Sep 1964
-    (2_051_222_400.0, 3.54013, false),  // SOFA: 01 Jan 1965
-    (2_056_320_000.0, 3.64013, false),  // SOFA: 01 Mar 1965
-    (2_066_860_800.0, 3.74013, false),  // SOFA: 01 Jul 1965
-    (2_072_217_600.0, 3.84013, false),  // SOFA: 01 Sep 1965
-    (2_082_758_400.0, 4.31317, false),  // SOFA: 01 Jan 1966
-    (2_148_508_800.0, 4.21317, false),  // SOFA: 01 Feb 1968
-    (2_272_060_800.0, 10.0, true),      // IERS: 01 Jan 1972
-    (2_287_785_600.0, 11.0, true),      // IERS: 01 Jul 1972
-    (2_303_683_200.0, 12.0, true),      // IERS: 01 Jan 1973
-    (2_335_219_200.0, 13.0, true),      // IERS: 01 Jan 1974
-    (2_366_755_200.0, 14.0, true),      // IERS: 01 Jan 1975
-    (2_398_291_200.0, 15.0, true),      // IERS: 01 Jan 1976
-    (2_429_913_600.0, 16.0, true),      // IERS: 01 Jan 1977
-    (2_461_449_600.0, 17.0, true),      // IERS: 01 Jan 1978
-    (2_492_985_600.0, 18.0, true),      // IERS: 01 Jan 1979
-    (2_524_521_600.0, 19.0, true),      // IERS: 01 Jan 1980
-    (2_571_782_400.0, 20.0, true),      // IERS: 01 Jul 1981
-    (2_603_318_400.0, 21.0, true),      // IERS: 01 Jul 1982
-    (2_634_854_400.0, 22.0, true),      // IERS: 01 Jul 1983
-    (2_698_012_800.0, 23.0, true),      // IERS: 01 Jul 1985
-    (2_776_982_400.0, 24.0, true),      // IERS: 01 Jan 1988
-    (2_840_140_800.0, 25.0, true),      // IERS: 01 Jan 1990
-    (2_871_676_800.0, 26.0, true),      // IERS: 01 Jan 1991
-    (2_918_937_600.0, 27.0, true),      // IERS: 01 Jul 1992
-    (2_950_473_600.0, 28.0, true),      // IERS: 01 Jul 1993
-    (2_982_009_600.0, 29.0, true),      // IERS: 01 Jul 1994
-    (3_029_443_200.0, 30.0, true),      // IERS: 01 Jan 1996
-    (3_076_704_000.0, 31.0, true),      // IERS: 01 Jul 1997
-    (3_124_137_600.0, 32.0, true),      // IERS: 01 Jan 1999
-    (3_345_062_400.0, 33.0, true),      // IERS: 01 Jan 2006
-    (3_439_756_800.0, 34.0, true),      // IERS: 01 Jan 2009
-    (3_550_089_600.0, 35.0, true),      // IERS: 01 Jul 2012
-    (3_644_697_600.0, 36.0, true),      // IERS: 01 Jul 2015
-    (3_692_217_600.0, 37.0, true),      // IERS: 01 Jan 2017
-];
 
 /// Years when January had the leap second
 const fn january_years(year: i32) -> bool {
@@ -281,6 +240,26 @@ impl Ord for Epoch {
 
 // Defines the methods that should be staticmethods in Python, but must be redefined as per https://github.com/PyO3/pyo3/issues/1003#issuecomment-844433346
 impl Epoch {
+    /// Get the accumulated number of leap seconds up to this Epoch from the provided LeapSecondProvider.
+    /// Returns None if the epoch is before 1960, year at which UTC was defined.
+    ///
+    /// # Why does this function return an `Option` when the other returns a value
+    /// This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960.
+    pub fn leap_seconds_with<L: LeapSecondProvider>(
+        &self,
+        iers_only: bool,
+        provider: L,
+    ) -> Option<f64> {
+        for leap_second in provider.rev() {
+            if self.duration_since_j1900_tai.to_seconds() >= leap_second.timestamp_tai_s
+                && (!iers_only || leap_second.announced_by_iers)
+            {
+                return Some(leap_second.delta_at);
+            }
+        }
+        None
+    }
+
     /// Makes a copy of self and sets the duration and time scale appropriately given the new duration
     #[must_use]
     pub fn from_duration(new_duration: Duration, time_scale: TimeScale) -> Self {
@@ -1062,6 +1041,23 @@ impl Epoch {
         format.parse(s_in)
     }
 
+    #[cfg(feature = "ut1")]
+    #[must_use]
+    /// Initialize an Epoch from the provided UT1 duration since 1900 January 01 at midnight
+    ///
+    /// # Warning
+    /// The time scale of this Epoch will be set to TAI! This is to ensure that no additional computations will change the duration since it's stored in TAI.
+    /// However, this also means that calling `to_duration()` on this Epoch will return the TAI duration and not the UT1 duration!
+    pub fn from_ut1_duration(duration: Duration, provider: Ut1Provider) -> Self {
+        let mut e = Self::from_tai_duration(duration);
+        // Compute the TAI to UT1 offset at this time.
+        // We have the time in TAI. But we were given UT1.
+        // The offset is provided as offset = TAI - UT1 <=> TAI = UT1 + offset
+        e.duration_since_j1900_tai += e.ut1_offset(provider).unwrap_or(Duration::ZERO);
+        e.time_scale = TimeScale::TAI;
+        e
+    }
+
     fn delta_et_tai(seconds: f64) -> f64 {
         // Calculate M, the mean anomaly.4
         let m = NAIF_M0 + seconds * NAIF_M1;
@@ -1237,12 +1233,32 @@ impl Epoch {
     /// # Why does this function return an `Option` when the other returns a value
     /// This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960.
     pub fn leap_seconds(&self, iers_only: bool) -> Option<f64> {
-        for (tai_ts, delta_at, announced) in LEAP_SECONDS.iter().rev() {
-            if self.duration_since_j1900_tai.to_seconds() >= *tai_ts && (!iers_only || *announced) {
-                return Some(*delta_at);
+        self.leap_seconds_with(iers_only, LatestLeapSeconds::default())
+    }
+
+    #[cfg(feature = "ut1")]
+    /// Get the accumulated offset between this epoch and UT1, assuming that the provider includes all data.
+    pub fn ut1_offset(&self, provider: Ut1Provider) -> Option<Duration> {
+        for delta_tai_ut1 in provider.rev() {
+            if self > &delta_tai_ut1.epoch {
+                return Some(delta_tai_ut1.delta_tai_minus_ut1);
             }
         }
         None
+    }
+
+    /// Get the accumulated number of leap seconds up to this Epoch from the provided LeapSecondProvider.
+    /// Returns None if the epoch is before 1960, year at which UTC was defined.
+    ///
+    /// # Why does this function return an `Option` when the other returns a value
+    /// This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960.
+    #[cfg(feature = "python")]
+    pub fn leap_seconds_with_file(
+        &self,
+        iers_only: bool,
+        provider: LeapSecondsFile,
+    ) -> Option<f64> {
+        self.leap_seconds_with(iers_only, provider)
     }
 
     #[cfg(feature = "python")]
@@ -2195,6 +2211,25 @@ impl Epoch {
         Self::compute_gregorian(self.to_tai_duration())
     }
 
+    #[cfg(feature = "ut1")]
+    #[must_use]
+    /// Returns this time in a Duration past J1900 counted in UT1
+    pub fn to_ut1_duration(&self, provider: Ut1Provider) -> Duration {
+        // TAI = UT1 + offset <=> UTC = TAI - offset
+        self.duration_since_j1900_tai - self.ut1_offset(provider).unwrap_or(Duration::ZERO)
+    }
+
+    #[cfg(feature = "ut1")]
+    #[must_use]
+    /// Returns this time in a Duration past J1900 counted in UT1
+    pub fn to_ut1(&self, provider: Ut1Provider) -> Self {
+        let mut me = *self;
+        // TAI = UT1 + offset <=> UTC = TAI - offset
+        me.duration_since_j1900_tai -= self.ut1_offset(provider).unwrap_or(Duration::ZERO);
+        me.time_scale = TimeScale::TAI;
+        me
+    }
+
     #[must_use]
     /// Floors this epoch to the closest provided duration
     ///
@@ -2598,7 +2633,7 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     fn __repr__(&self) -> String {
-        format!("{self}")
+        format!("{self:?}")
     }
 
     #[cfg(feature = "python")]

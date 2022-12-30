@@ -12,6 +12,10 @@ use pyo3::{exceptions::PyException, prelude::*};
 
 use crate::prelude::*;
 
+use crate::leap_seconds::{LatestLeapSeconds, LeapSecondsFile};
+
+use crate::ut1::Ut1Provider;
+
 impl std::convert::From<Errors> for PyErr {
     fn from(err: Errors) -> PyErr {
         PyException::new_err(err.to_string())
@@ -25,5 +29,8 @@ fn hifitime(_py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<TimeSeries>()?;
     m.add_class::<Duration>()?;
     m.add_class::<Unit>()?;
+    m.add_class::<LatestLeapSeconds>()?;
+    m.add_class::<LeapSecondsFile>()?;
+    m.add_class::<Ut1Provider>()?;
     Ok(())
 }
