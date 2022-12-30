@@ -33,7 +33,7 @@ criterion = "0.4.0"
 iai = "0.1"
 
 [features]
-default = ["std", "ut1"]
+default = ["std"]
 std = ["serde", "serde_derive"]
 asn1der = ["der"]
 python = ["std", "asn1der", "pyo3", "ut1"]
