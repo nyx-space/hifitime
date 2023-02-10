@@ -21,7 +21,7 @@ name = "hifitime"
 serde = {version = "1.0.152", optional = true}
 serde_derive = {version = "1.0.152", optional = true}
 der = {version = "0.6.1", features = ["derive", "real"], optional = true}
-pyo3 = { version = "0.17.3", features = ["extension-module"], optional = true}
+pyo3 = { version = "0.18.1", features = ["extension-module"], optional = true}
 num-traits = {version = "0.2.15", default-features = false, features = ["libm"]}
 lexical-core = {version = "0.8.5", default-features = false, features = ["parse-integers", "parse-floats"]}
 reqwest = { version = "0.11", features = ["blocking", "json"], optional = true}
