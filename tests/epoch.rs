@@ -32,7 +32,7 @@ fn utc_epochs() {
 
     // Tests are chronological dates.
     // All of the following examples are cross validated against NASA HEASARC,
-    // refered to as "X-Val" for "cross validation."
+    // referred to as "X-Val" for "cross validation."
 
     // X-Val: 03 January 1938 04:12:48 - https://www.timeanddate.com/date/durationresult.html?m1=1&d1=1&y1=1900&m2=1&d2=03&y2=1938&h1=0&i1=0&s1=0&h2=4&i2=12&s2=48
     let this_epoch = Epoch::from_tai_seconds(1_199_333_568.0);
