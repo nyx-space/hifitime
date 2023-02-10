@@ -61,7 +61,7 @@ jobs:
 
       - name: Test (no default features)
         run: cargo test --no-default-features
-      
+
       - name: Test (serde)
         run: cargo test --features serde
 
@@ -97,7 +97,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           profile: minimal
-          toolchain: stable
+          toolchain: 1.64 # Run lints using the MSRV not latest
           override: true
           components: rustfmt, clippy
 
