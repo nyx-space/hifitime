@@ -35,7 +35,7 @@ pub enum Errors {
     ParseError(ParsingErrors),
     /// Raised when trying to initialize an Epoch or Duration from its hi and lo values, but these overlap
     ConversionOverlapError(f64, f64),
-    /// Raised if an overflow occured
+    /// Raised if an overflow occurred
     Overflow,
     /// Raised if the initialization from system time failed
     SystemTimeError,
@@ -78,7 +78,7 @@ impl fmt::Display for Errors {
             }
             Self::Overflow => write!(
                 f,
-                "overflow occured when trying to convert Duration information"
+                "overflow occurred when trying to convert Duration information"
             ),
             Self::SystemTimeError => write!(f, "std::time::SystemTime returned an error"),
         }

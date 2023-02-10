@@ -121,7 +121,7 @@ let at_noon_tai = Epoch::from_gregorian_tai_at_noon(2020, 11, 2);
 assert_eq!(format!("{}", at_noon_tai - at_midnight_utc), "11 h 59 min 23 s".to_string());
 ```
 
-Timeunits and frequency units are trivially supported. Hifitime only supports up to nanosecond precision (but guarantees it for 64 millenia), so any duration less than one nanosecond is truncated.
+Timeunits and frequency units are trivially supported. Hifitime only supports up to nanosecond precision (but guarantees it for 64 millennia), so any duration less than one nanosecond is truncated.
 
 ```rust
 use hifitime::{Epoch, Unit, Freq, Duration, TimeUnits};
