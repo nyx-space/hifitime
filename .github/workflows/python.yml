@@ -21,7 +21,7 @@ jobs:
           args: --release --sdist -o dist --find-interpreter -F python
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: wheels
           path: dist
@@ -35,7 +35,7 @@ jobs:
           command: build
           args: --release -o dist --find-interpreter -F python
       - name: Upload wheels
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: wheels
           path: dist
@@ -49,7 +49,7 @@ jobs:
           command: build
           args: --release -o dist --universal2 --find-interpreter -F python
       - name: Upload wheels
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: wheels
           path: dist
@@ -60,7 +60,7 @@ jobs:
     if: github.ref_type == 'tag'
     needs: [macos, windows, linux]
     steps:
-      - uses: actions/download-artifact@v2
+      - uses: actions/download-artifact@v3
         with:
           name: wheels
       - name: Publish to PyPI
