@@ -21,10 +21,9 @@ jobs:
       - name: Checkout sources
         uses: actions/checkout@v3
       - name: Install stable toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-          override: true
 
       - name: Install Kani
         run: |
