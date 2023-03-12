@@ -35,7 +35,7 @@ jobs:
         run: |
           # Remove `cdylib` from targets in Cargo.toml because it confuses Kani
           sed '17d' Cargo.toml > Cargo.toml.new
-          cat Cargo.toml.new
+          rm  -fr  /usr/local/rust/registry | echo "Nothing to delete in /usr/local"
           mv Cargo.toml.new Cargo.toml
           cargo kani
 
