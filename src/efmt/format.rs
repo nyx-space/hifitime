@@ -42,7 +42,8 @@ const MAX_TOKENS: usize = 16;
 /// | `%j` | Day of year, zero-padded to 3 digits | `059` for 29 February 2000 | N/A |
 /// | `%A` | Weekday name in long form | `Monday` | N/A |
 /// | `%a` | Weekday name in short form | `Mon` for Monday | N/A |
-/// | `%H` | Minute number, zero-padded to 2 digits | `39` for the 39th minutes of the hour | N/A |
+/// | `%H` | Hour number, zero-padded to 2 digits | `02` for the 2nd hour of the day | N/A |
+/// | `%M` | Minute number, zero-padded to 2 digits | `39` for the 39th minutes of the hour | N/A |
 /// | `%S` | Seconds, zero-padded to 2 digits | `27` for the 27th second of the minute | N/A |
 /// | `%f` | Sub-seconds, zero-padded to 9 digits | `000000007` for the 7th nanosecond past the second | (2) |
 /// | `%w` | Weekday in decimal form with C89 standard | `01` for Dynamical barycentric time | (3) |

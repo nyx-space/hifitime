@@ -3,6 +3,7 @@ use hifitime::prelude::*;
 
 #[test]
 fn epoch_parse_with_format() {
+    use core::str::FromStr;
     let e = Epoch::from_gregorian_utc_hms(2015, 2, 7, 11, 22, 33);
 
     assert_eq!(
@@ -28,6 +29,10 @@ fn epoch_parse_with_format() {
             .unwrap(),
         Epoch::from_gregorian_utc_at_midnight(2015, 2, 7) // Ordinal removes the knowledge below days
     );
+
+    // Confirmation that https://github.com/nyx-space/hifitime/issues/202 is a documentation problem and not a functionality problem.
+    let fmtd = Formatter::new(e, Format::from_str("%H:%M").unwrap());
+    assert_eq!(format!("{fmtd}"), format!("11:22"));
 }
 
 #[test]

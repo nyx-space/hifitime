@@ -1555,16 +1555,15 @@ fn formal_duration_truncated_ns_reciprocity() {
     }
 }
 
-// #[cfg(kani)]
-// #[kani::proof]
-#[test]
+#[cfg(kani)]
+#[kani::proof]
 fn formal_duration_seconds() {
-    // let seconds: f64 = kani::any();
-    let seconds =
-        f64::from_bits(0b01000000010111111011010000110111101001100000110111100000_00000001);
+    let seconds: f64 = kani::any();
+    // let seconds =
+    //     f64::from_bits(0b01000000010111111011010000110111101001100000110111100000_00000001);
 
-    // kani::assume(seconds > 1e-9);
-    // kani::assume(seconds < 1e14);
+    kani::assume(seconds > 1e-9);
+    kani::assume(seconds < 1e14);
 
     if seconds.is_finite() {
         let big_seconds = seconds * 1e9;
