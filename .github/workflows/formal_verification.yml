@@ -35,7 +35,7 @@ jobs:
         run: |
           # Remove `cdylib` from targets in Cargo.toml because it confuses Kani
           sed '17d' Cargo.toml > Cargo.toml.new
-          rm  -fr  /home/runner/.cargo/registry | echo "Nothing to delete in /home/runner/.cargo/"
+          cargo update
           mv Cargo.toml.new Cargo.toml
           cargo kani
 
