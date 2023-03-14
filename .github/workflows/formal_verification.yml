@@ -20,29 +20,12 @@ jobs:
     steps:
       - name: Checkout sources
         uses: actions/checkout@v3
-      - name: Install stable toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
 
-      - name: Install Kani
-        run: |
-          sudo apt install python3-testresources
-          cargo install --locked kani-verifier
-          cargo-kani setup
-
-      - name: Run Kani with and without reports
+      - name: Clean Cargo.toml for Kani
         run: |
           # Remove `cdylib` from targets in Cargo.toml because it confuses Kani
           sed '17d' Cargo.toml > Cargo.toml.new
-          rm -rf $(dirname `which cargo`)/../registry/
-          cargo update
           mv Cargo.toml.new Cargo.toml
-          cargo kani
 
-      - name: Save formal verification artifacts
-        uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: formal-verification-report
-          path: target/report*/html/**/*
+      - name: Kani Rust Verifier
+        uses: model-checking/kani-github-action@0.23
