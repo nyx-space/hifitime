@@ -1557,34 +1557,231 @@ fn formal_duration_truncated_ns_reciprocity() {
 
 #[cfg(kani)]
 #[kani::proof]
-fn formal_duration_seconds() {
-    let seconds: f64 = kani::any();
-    // let seconds =
-    //     f64::from_bits(0b01000000010111111011010000110111101001100000110111100000_00000001);
+fn formal_duration_seconds_0() {
+    // We duplicate this test because if there are too many permutations, Kani will take a while to complete.
+    // Kani does not yet support powi_f64, so the following does not build yet:
+    // let bounds: Vec<f64> = (-9..14).map(|i| 10_f64.powi(i)).collect();
+    // let bounds = [1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1e-3, 1e-2, 1e-1];
+    let bounds = [1e-9, 1e-8, 1e-7, 1e-6, 1e-5];
 
-    kani::assume(seconds > 1e-9);
-    kani::assume(seconds < 1e14);
+    for pair in bounds.windows(2) {
+        let seconds: f64 = kani::any();
 
-    if seconds.is_finite() {
-        let big_seconds = seconds * 1e9;
-        let floored = big_seconds.floor();
-        // Remove the sub nanoseconds -- but this can lead to rounding errors!
-        let truncated_ns = floored * 1e-9;
+        kani::assume(seconds > pair[0]);
+        kani::assume(seconds < pair[1]);
 
-        let duration: Duration = Duration::from_seconds(truncated_ns);
-        let truncated_out = duration.to_seconds();
-        let floored_out = truncated_out * 1e9;
-        // So we check that the data times 1e9 matches the rounded data
-        if floored != floored_out {
-            let floored_out_bits = floored_out.to_bits();
-            let floored_bits = floored.to_bits();
-            // Allow for ONE bit error on the LSB
-            if floored_out_bits > floored_bits {
-                assert_eq!(floored_out_bits - floored_bits, 1);
+        if seconds.is_finite() {
+            let big_seconds = seconds * 1e9;
+            let floored = big_seconds.floor();
+            // Remove the sub nanoseconds -- but this can lead to rounding errors!
+            let truncated_ns = floored * 1e-9;
+
+            let duration: Duration = Duration::from_seconds(truncated_ns);
+            let truncated_out = duration.to_seconds();
+            let floored_out = truncated_out * 1e9;
+            // So we check that the data times 1e9 matches the rounded data
+            if floored != floored_out {
+                let floored_out_bits = floored_out.to_bits();
+                let floored_bits = floored.to_bits();
+                // Allow for ONE bit error on the LSB
+                if floored_out_bits > floored_bits {
+                    assert_eq!(floored_out_bits - floored_bits, 1);
+                } else {
+                    assert_eq!(floored_bits - floored_out_bits, 1);
+                }
             } else {
-                assert_eq!(floored_bits - floored_out_bits, 1);
+                assert_eq!(floored_out, floored);
             }
         }
-        assert_eq!(floored_out, floored);
+    }
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_duration_seconds_1() {
+    // We duplicate this test because if there are too many permutations, Kani will take a while to complete.
+    let bounds = [1e-5, 1e-4, 1e-3, 1e-2, 1e-1];
+
+    for pair in bounds.windows(2) {
+        let seconds: f64 = kani::any();
+
+        kani::assume(seconds > pair[0]);
+        kani::assume(seconds < pair[1]);
+
+        if seconds.is_finite() {
+            let big_seconds = seconds * 1e9;
+            let floored = big_seconds.floor();
+            // Remove the sub nanoseconds -- but this can lead to rounding errors!
+            let truncated_ns = floored * 1e-9;
+
+            let duration: Duration = Duration::from_seconds(truncated_ns);
+            let truncated_out = duration.to_seconds();
+            let floored_out = truncated_out * 1e9;
+            // So we check that the data times 1e9 matches the rounded data
+            if floored != floored_out {
+                let floored_out_bits = floored_out.to_bits();
+                let floored_bits = floored.to_bits();
+                // Allow for ONE bit error on the LSB
+                if floored_out_bits > floored_bits {
+                    assert_eq!(floored_out_bits - floored_bits, 1);
+                } else {
+                    assert_eq!(floored_bits - floored_out_bits, 1);
+                }
+            } else {
+                assert_eq!(floored_out, floored);
+            }
+        }
+    }
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_duration_seconds_2() {
+    // We duplicate this test because if there are too many permutations, Kani will take a while to complete.
+    let bounds = [1e-1, 1e0, 1e1, 1e2, 1e3];
+
+    for pair in bounds.windows(2) {
+        let seconds: f64 = kani::any();
+
+        kani::assume(seconds > pair[0]);
+        kani::assume(seconds < pair[1]);
+
+        if seconds.is_finite() {
+            let big_seconds = seconds * 1e9;
+            let floored = big_seconds.floor();
+            // Remove the sub nanoseconds -- but this can lead to rounding errors!
+            let truncated_ns = floored * 1e-9;
+
+            let duration: Duration = Duration::from_seconds(truncated_ns);
+            let truncated_out = duration.to_seconds();
+            let floored_out = truncated_out * 1e9;
+            // So we check that the data times 1e9 matches the rounded data
+            if floored != floored_out {
+                let floored_out_bits = floored_out.to_bits();
+                let floored_bits = floored.to_bits();
+                // Allow for ONE bit error on the LSB
+                if floored_out_bits > floored_bits {
+                    assert_eq!(floored_out_bits - floored_bits, 1);
+                } else {
+                    assert_eq!(floored_bits - floored_out_bits, 1);
+                }
+            } else {
+                assert_eq!(floored_out, floored);
+            }
+        }
+    }
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_duration_seconds_3() {
+    // We duplicate this test because if there are too many permutations, Kani will take a while to complete.
+    let bounds = [1e3, 1e4, 1e5, 1e6, 1e7];
+
+    for pair in bounds.windows(2) {
+        let seconds: f64 = kani::any();
+
+        kani::assume(seconds > pair[0]);
+        kani::assume(seconds < pair[1]);
+
+        if seconds.is_finite() {
+            let big_seconds = seconds * 1e9;
+            let floored = big_seconds.floor();
+            // Remove the sub nanoseconds -- but this can lead to rounding errors!
+            let truncated_ns = floored * 1e-9;
+
+            let duration: Duration = Duration::from_seconds(truncated_ns);
+            let truncated_out = duration.to_seconds();
+            let floored_out = truncated_out * 1e9;
+            // So we check that the data times 1e9 matches the rounded data
+            if floored != floored_out {
+                let floored_out_bits = floored_out.to_bits();
+                let floored_bits = floored.to_bits();
+                // Allow for ONE bit error on the LSB
+                if floored_out_bits > floored_bits {
+                    assert_eq!(floored_out_bits - floored_bits, 1);
+                } else {
+                    assert_eq!(floored_bits - floored_out_bits, 1);
+                }
+            } else {
+                assert_eq!(floored_out, floored);
+            }
+        }
+    }
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_duration_seconds_4() {
+    // We duplicate this test because if there are too many permutations, Kani will take a while to complete.
+    let bounds = [1e7, 1e8, 1e9, 1e10, 1e11];
+
+    for pair in bounds.windows(2) {
+        let seconds: f64 = kani::any();
+
+        kani::assume(seconds > pair[0]);
+        kani::assume(seconds < pair[1]);
+
+        if seconds.is_finite() {
+            let big_seconds = seconds * 1e9;
+            let floored = big_seconds.floor();
+            // Remove the sub nanoseconds -- but this can lead to rounding errors!
+            let truncated_ns = floored * 1e-9;
+
+            let duration: Duration = Duration::from_seconds(truncated_ns);
+            let truncated_out = duration.to_seconds();
+            let floored_out = truncated_out * 1e9;
+            // So we check that the data times 1e9 matches the rounded data
+            if floored != floored_out {
+                let floored_out_bits = floored_out.to_bits();
+                let floored_bits = floored.to_bits();
+                // Allow for ONE bit error on the LSB
+                if floored_out_bits > floored_bits {
+                    assert_eq!(floored_out_bits - floored_bits, 1);
+                } else {
+                    assert_eq!(floored_bits - floored_out_bits, 1);
+                }
+            } else {
+                assert_eq!(floored_out, floored);
+            }
+        }
+    }
+}
+
+#[cfg(kani)]
+#[kani::proof]
+fn formal_duration_seconds_5() {
+    // We duplicate this test because if there are too many permutations, Kani will take a while to complete.
+    let bounds = [1e11, 1e12, 1e13, 1e14];
+
+    for pair in bounds.windows(2) {
+        let seconds: f64 = kani::any();
+
+        kani::assume(seconds > pair[0]);
+        kani::assume(seconds < pair[1]);
+
+        if seconds.is_finite() {
+            let big_seconds = seconds * 1e9;
+            let floored = big_seconds.floor();
+            // Remove the sub nanoseconds -- but this can lead to rounding errors!
+            let truncated_ns = floored * 1e-9;
+
+            let duration: Duration = Duration::from_seconds(truncated_ns);
+            let truncated_out = duration.to_seconds();
+            let floored_out = truncated_out * 1e9;
+            // So we check that the data times 1e9 matches the rounded data
+            if floored != floored_out {
+                let floored_out_bits = floored_out.to_bits();
+                let floored_bits = floored.to_bits();
+                // Allow for ONE bit error on the LSB
+                if floored_out_bits > floored_bits {
+                    assert_eq!(floored_out_bits - floored_bits, 1);
+                } else {
+                    assert_eq!(floored_bits - floored_out_bits, 1);
+                }
+            } else {
+                assert_eq!(floored_out, floored);
+            }
+        }
     }
 }
