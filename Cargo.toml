@@ -1,13 +1,13 @@
 [package]
 name = "hifitime"
-version = "3.8.0"
+version = "3.8.1"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
 description = "Ultra-precise date and time handling in Rust for scientific applications with leap second support"
 homepage = "https://nyxspace.com/"
 documentation = "https://docs.rs/hifitime/"
 repository = "https://github.com/nyx-space/hifitime"
 keywords = ["date", "time", "science", "leap-second", "no-std"]
-categories = ["date-and-time"]
+categories = ["date-and-time", "no-std"]
 readme = "README.md"
 license = "Apache-2.0"
 exclude = ["*.tar.gz", "data/"]
@@ -18,8 +18,8 @@ crate-type = ["cdylib", "rlib"]
 name = "hifitime"
 
 [dependencies]
-serde = {version = "1.0.152", optional = true}
-serde_derive = {version = "1.0.152", optional = true}
+serde = {version = "1.0.155", optional = true}
+serde_derive = {version = "1.0.155", optional = true}
 der = {version = "0.6.1", features = ["derive", "real"], optional = true}
 pyo3 = { version = "0.18.1", features = ["extension-module"], optional = true}
 num-traits = {version = "0.2.15", default-features = false, features = ["libm"]}

@@ -1,11 +1,9 @@
-use core::str::FromStr;
-
-use hifitime::Epoch;
-
 #[cfg(feature = "ut1")]
 #[test]
 fn test_ut1_from_file() {
+    use core::str::FromStr;
     use hifitime::ut1::Ut1Provider;
+    use hifitime::Epoch;
 
     let provider = Ut1Provider::from_eop_file("data/eop-2021-10-12--2023-01-04.short").unwrap();
 
@@ -28,7 +26,9 @@ fn test_ut1_from_file() {
 #[cfg(feature = "ut1")]
 #[test]
 fn test_ut1_from_jpl() {
+    use core::str::FromStr;
     use hifitime::ut1::Ut1Provider;
+    use hifitime::Epoch;
 
     let provider = Ut1Provider::download_short_from_jpl().unwrap();
 

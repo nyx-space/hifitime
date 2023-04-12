@@ -286,6 +286,10 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 
 # Changelog
 
+## 3.8.1 (unreleased)
++ Fix documentation for the formatter, cf. [#202](https://github.com/nyx-space/hifitime/pull/202)
++ Update MSRV to 1.59 for rayon v 1.10
+
 ## 3.8.0
 Thanks again to [@gwbres](https://github.com/gwbres) for his work in this release!
 
