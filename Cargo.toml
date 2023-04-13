@@ -25,7 +25,7 @@ pyo3 = { version = "0.18.1", features = ["extension-module"], optional = true}
 num-traits = {version = "0.2.15", default-features = false, features = ["libm"]}
 lexical-core = {version = "0.8.5", default-features = false, features = ["parse-integers", "parse-floats"]}
 reqwest = { version = "0.11", features = ["blocking", "json"], optional = true}
-tabled = {version = "0.10.0", optional = true}
+tabled = {version = "0.11.1", optional = true}
 openssl = { version = "0.10", features = ["vendored"], optional = true }
 
 [dev-dependencies]
