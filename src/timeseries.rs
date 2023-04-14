@@ -353,4 +353,21 @@ mod tests {
         assert_eq!(times.len(), steps as usize);
         assert_eq!(times.len(), times.size_hint().0);
     }
+
+    #[test]
+    fn ts_over_leap_second() {
+        panic!("This is a bug!");
+        let start = Epoch::from_gregorian_utc(2016, 12, 31, 23, 59, 59, 0);
+        let times = TimeSeries::exclusive(start, start + Unit::Second * 5, Unit::Second * 1);
+        let mut cnt = 0;
+
+        for epoch in times {
+            #[cfg(feature = "std")]
+            println!("{:?}", epoch);
+            assert!(start < epoch);
+            cnt += 1;
+        }
+
+        assert_eq!(cnt, 10);
+    }
 }
