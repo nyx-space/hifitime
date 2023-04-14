@@ -52,6 +52,9 @@ jobs:
 
       - name: Test (ASN1)
         run: cargo test --features asn1der
+      
+      - name: Test (UT1)
+        run: cargo test --features ut1
 
       - name: Test (no default features)
         run: cargo test --no-default-features

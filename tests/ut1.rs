@@ -30,7 +30,8 @@ fn test_ut1_from_jpl() {
     use hifitime::ut1::Ut1Provider;
     use hifitime::Epoch;
 
-    let provider = Ut1Provider::download_short_from_jpl().unwrap();
+    // Download a specific version of the UT1 file
+    let provider = Ut1Provider::download_from_jpl("221222_190002-marge_eop2.short").unwrap();
 
     println!("{}", provider);
 
@@ -41,9 +42,10 @@ fn test_ut1_from_jpl() {
     // <Time object: scale='ut1' format='iso' value=2022-01-03 03:05:06.679>
     // >>>
     //
-    let epoch = Epoch::from_str("2022-01-03 03:05:06.7891").unwrap();
+    let epoch = Epoch::from_str("2022-01-03 03:05:06.7891 UTC").unwrap();
+    let ut1_epoch = epoch.to_ut1(provider);
     assert_eq!(
-        format!("{:x}", epoch.to_ut1(provider)),
-        "2022-01-03T03:05:06.679020600 TAI"
+        format!("{:x}", ut1_epoch),
+        "2022-01-03T03:05:06.679020600 TAI",
     );
 }
