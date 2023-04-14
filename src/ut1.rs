@@ -13,7 +13,8 @@ use pyo3::prelude::*;
 
 use reqwest::{blocking::get, StatusCode};
 
-use tabled::{Style, Table, Tabled};
+use tabled::settings::Style;
+use tabled::{Table, Tabled};
 
 use std::{fs::File, io::Read};
 
@@ -38,9 +39,17 @@ pub struct Ut1Provider {
 }
 
 impl Ut1Provider {
-    /// Build a UT1 provider by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.short> (short time scale UT1 data) and parsing it.
+    /// Builds a UT1 provided by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.short> (short time scale UT1 data) and parsing it.
     pub fn download_short_from_jpl() -> Result<Self, Errors> {
-        match get("https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.short") {
+        Self::download_from_jpl("latest_eop2.short")
+    }
+
+    /// Build a UT1 provider by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.long> (long time scale UT1 data) and parsing it.
+    pub fn download_from_jpl(version: &str) -> Result<Self, Errors> {
+        match get(format!(
+            "https://eop2-external.jpl.nasa.gov/eop2/{}",
+            version
+        )) {
             Ok(resp) => {
                 let eop_data = String::from_utf8(resp.bytes().unwrap().to_vec()).unwrap();
                 Self::from_eop_data(eop_data)
