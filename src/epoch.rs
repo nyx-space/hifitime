@@ -35,6 +35,9 @@ use pyo3::prelude::*;
 use pyo3::pyclass::CompareOp;
 
 #[cfg(feature = "python")]
+use pyo3::types::PyType;
+
+#[cfg(feature = "python")]
 use crate::leap_seconds_file::LeapSecondsFile;
 
 #[cfg(feature = "serde")]
@@ -1041,6 +1044,13 @@ impl Epoch {
         format.parse(s_in)
     }
 
+    /// Initializes an Epoch from the Format as a string.
+    pub fn from_format_str(s_in: &str, format_str: &str) -> Result<Self, Errors> {
+        Format::from_str(format_str)
+            .map_err(Errors::ParseError)?
+            .parse(s_in)
+    }
+
     #[cfg(feature = "ut1")]
     #[must_use]
     /// Initialize an Epoch from the provided UT1 duration since 1900 January 01 at midnight
@@ -1647,6 +1657,20 @@ impl Epoch {
         second: u8,
     ) -> Self {
         Self::from_gregorian_utc_hms(year, month, day, hour, minute, second)
+    }
+
+    #[cfg(feature = "python")]
+    #[classmethod]
+    /// Equivalent to `datetime.strptime, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
+    fn strptime(_cls: &PyType, epoch_str: String, format_str: String) -> PyResult<Self> {
+        Self::from_format_str(epoch_str, format_str).map_err(|e| PyErr::from(e))
+    }
+
+    #[cfg(feature = "python")]
+    /// Equivalent to `datetime.strftime, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
+    fn strftime(&self, format_str: String) -> PyResult<String> {
+        let fmt = Format::from_str(format_str).map_err(|e| PyErr::from(e))?;
+        Ok(format!("{}", Formatter::new(self, fmt)))
     }
 
     /// Returns this epoch with respect to the time scale this epoch was created in.
