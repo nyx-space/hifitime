@@ -5,7 +5,7 @@ Formally verified to not crash on operations on epochs and durations using the [
 
 [![hifitime on crates.io][cratesio-image]][cratesio]
 [![hifitime on docs.rs][docsrs-image]][docsrs]
-[![minimum rustc: 1.58](https://img.shields.io/badge/minimum%20rustc-1.58-yellowgreen?logo=rust)](https://www.whatrustisit.com)
+[![minimum rustc: 1.64](https://img.shields.io/badge/minimum%20rustc-1.64-yellowgreen?logo=rust)](https://www.whatrustisit.com)
 [![Build Status](https://github.com/nyx-space/hifitime/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/nyx-space/hifitime/actions)
 [![Build Status](https://github.com/nyx-space/hifitime/actions/workflows/formal_verification.yml/badge.svg?branch=master)](https://github.com/nyx-space/hifitime/actions)
 [![codecov](https://codecov.io/gh/nyx-space/hifitime/branch/master/graph/badge.svg?token=l7zU57rUGs)](https://codecov.io/gh/nyx-space/hifitime)
@@ -50,7 +50,7 @@ Put this in your `Cargo.toml`:
 
 ```toml
 [dependencies]
-hifitime = "3.7"
+hifitime = "3.8"
 ```
 
 ## Examples:
