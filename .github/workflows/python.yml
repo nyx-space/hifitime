@@ -110,7 +110,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --find-interpreter
+          args: --release --out dist --find-interpreter -F python
           sccache: 'true'
       - name: Upload wheels
         uses: actions/upload-artifact@v3
@@ -134,7 +134,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           command: sdist
-          args: --out dist
+          args: --out dist -F python
       - name: Upload sdist
         uses: actions/upload-artifact@v3
         with:
