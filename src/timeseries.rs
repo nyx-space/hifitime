@@ -28,9 +28,9 @@ NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/iter
 #[cfg_attr(feature = "python", pyclass)]
 pub struct TimeSeries {
     start: Epoch,
-    end: Epoch,
+    duration: Duration,
     step: Duration,
-    cur: Epoch,
+    cur_offset: Duration,
     incl: bool,
 }
 
@@ -54,9 +54,9 @@ impl TimeSeries {
         // Start one step prior to start because next() just moves forward
         Self {
             start,
-            end,
+            duration: end - start,
             step,
-            cur: start - step,
+            cur_offset: -step,
             incl: false,
         }
     }
@@ -80,9 +80,9 @@ impl TimeSeries {
         // Start one step prior to start because next() just moves forward
         Self {
             start,
-            end,
+            duration: end - start,
             step,
-            cur: start - step,
+            cur_offset: -step,
             incl: true,
         }
     }
@@ -96,9 +96,9 @@ impl fmt::Display for TimeSeries {
             "TimeSeries [{} : {} : {}]",
             self.start,
             if self.incl {
-                self.end
+                self.start + self.duration
             } else {
-                self.end - self.step
+                self.start + self.duration - self.step
             },
             self.step
         )
@@ -113,9 +113,9 @@ impl fmt::LowerHex for TimeSeries {
             "TimeSeries [{:x} : {:x} : {}]",
             self.start,
             if self.incl {
-                self.end
+                self.start + self.duration
             } else {
-                self.end - self.step
+                self.start + self.duration - self.step
             },
             self.step
         )
@@ -130,9 +130,9 @@ impl fmt::UpperHex for TimeSeries {
             "TimeSeries [{:X} : {:X} : {}]",
             self.start,
             if self.incl {
-                self.end
+                self.start + self.duration
             } else {
-                self.end - self.step
+                self.start + self.duration - self.step
             },
             self.step
         )
@@ -147,9 +147,9 @@ impl fmt::LowerExp for TimeSeries {
             "TimeSeries [{:e} : {:e} : {}]",
             self.start,
             if self.incl {
-                self.end
+                self.start + self.duration
             } else {
-                self.end - self.step
+                self.start + self.duration - self.step
             },
             self.step
         )
@@ -164,9 +164,9 @@ impl fmt::UpperExp for TimeSeries {
             "TimeSeries [{:E} : {:E} : {}]",
             self.start,
             if self.incl {
-                self.end
+                self.start + self.duration
             } else {
-                self.end - self.step
+                self.start + self.duration - self.step
             },
             self.step
         )
@@ -181,9 +181,9 @@ impl fmt::Pointer for TimeSeries {
             "TimeSeries [{:p} : {:p} : {}]",
             self.start,
             if self.incl {
-                self.end
+                self.start + self.duration
             } else {
-                self.end - self.step
+                self.start + self.duration - self.step
             },
             self.step
         )
@@ -198,9 +198,9 @@ impl fmt::Octal for TimeSeries {
             "TimeSeries [{:o} : {:o} : {}]",
             self.start,
             if self.incl {
-                self.end
+                self.start + self.duration
             } else {
-                self.end - self.step
+                self.start + self.duration - self.step
             },
             self.step
         )
@@ -244,12 +244,14 @@ impl Iterator for TimeSeries {
 
     #[inline]
     fn next(&mut self) -> Option<Epoch> {
-        let next_item = self.cur + self.step;
-        if (!self.incl && next_item >= self.end) || (self.incl && next_item > self.end) {
+        let next_offset = self.cur_offset + self.step;
+        if (!self.incl && next_offset >= self.duration)
+            || (self.incl && next_offset > self.duration)
+        {
             None
         } else {
-            self.cur = next_item;
-            Some(next_item)
+            self.cur_offset = next_offset;
+            Some(self.start + next_offset)
         }
     }
 
@@ -261,11 +263,13 @@ impl Iterator for TimeSeries {
 impl DoubleEndedIterator for TimeSeries {
     #[inline]
     fn next_back(&mut self) -> Option<Epoch> {
-        let next_item = self.cur - self.step;
-        if next_item < self.start {
+        // Offset from the end of the iterator
+        let offset = self.cur_offset - self.step;
+        if offset < -self.duration - self.step {
             None
         } else {
-            Some(next_item)
+            self.cur_offset = offset;
+            Some(self.start - offset)
         }
     }
 }
@@ -275,7 +279,7 @@ where
     TimeSeries: Iterator,
 {
     fn len(&self) -> usize {
-        let approx = ((self.end - self.start).to_seconds() / self.step.to_seconds()).abs();
+        let approx = (self.duration.to_seconds() / self.step.to_seconds()).abs();
         if self.incl {
             if approx.ceil() >= usize::MAX as f64 {
                 usize::MAX
@@ -356,18 +360,37 @@ mod tests {
 
     #[test]
     fn ts_over_leap_second() {
-        panic!("This is a bug!");
         let start = Epoch::from_gregorian_utc(2016, 12, 31, 23, 59, 59, 0);
         let times = TimeSeries::exclusive(start, start + Unit::Second * 5, Unit::Second * 1);
+        let expect_end = start + Unit::Second * 4;
         let mut cnt = 0;
+        let mut cur_epoch = start;
 
         for epoch in times {
-            #[cfg(feature = "std")]
-            println!("{:?}", epoch);
-            assert!(start < epoch);
             cnt += 1;
+            cur_epoch = epoch;
         }
 
-        assert_eq!(cnt, 10);
+        assert_eq!(cnt, 5); // Five because the first item is always inclusive
+        assert_eq!(cur_epoch, expect_end, "incorrect last item in iterator");
+    }
+
+    #[test]
+    fn ts_backward() {
+        let start = Epoch::from_gregorian_utc(2015, 1, 1, 12, 0, 0, 0);
+        let times = TimeSeries::exclusive(start, start + Unit::Second * 5, Unit::Second * 1);
+        let expect_end = start + Unit::Second * 4;
+        let mut cnt = 0;
+        let mut cur_epoch = start;
+
+        for epoch in times.rev() {
+            cnt += 1;
+            cur_epoch = epoch;
+            let expect = start + Unit::Second * (5 - cnt);
+            println!("{epoch}\twant: {expect}");
+        }
+
+        assert_eq!(cnt, 5); // Five because the first item is always inclusive
+        assert_eq!(cur_epoch, expect_end, "incorrect last item in iterator");
     }
 }
