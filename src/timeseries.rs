@@ -30,7 +30,7 @@ pub struct TimeSeries {
     start: Epoch,
     duration: Duration,
     step: Duration,
-    cur_offset: Duration,
+    cur: i64,
     incl: bool,
 }
 
@@ -56,7 +56,7 @@ impl TimeSeries {
             start,
             duration: end - start,
             step,
-            cur_offset: -step,
+            cur: 0,
             incl: false,
         }
     }
@@ -82,7 +82,7 @@ impl TimeSeries {
             start,
             duration: end - start,
             step,
-            cur_offset: -step,
+            cur: 0,
             incl: true,
         }
     }
@@ -244,13 +244,13 @@ impl Iterator for TimeSeries {
 
     #[inline]
     fn next(&mut self) -> Option<Epoch> {
-        let next_offset = self.cur_offset + self.step;
+        let next_offset = self.cur * self.step;
         if (!self.incl && next_offset >= self.duration)
             || (self.incl && next_offset > self.duration)
         {
             None
         } else {
-            self.cur_offset = next_offset;
+            self.cur += 1;
             Some(self.start + next_offset)
         }
     }
@@ -264,12 +264,15 @@ impl DoubleEndedIterator for TimeSeries {
     #[inline]
     fn next_back(&mut self) -> Option<Epoch> {
         // Offset from the end of the iterator
-        let offset = self.cur_offset - self.step;
-        if offset < -self.duration - self.step {
+        self.cur += 1;
+        let offset = self.cur * self.step;
+        // if offset < -self.duration - self.step {
+        if (!self.incl && offset > self.duration)
+            || (self.incl && offset > self.duration + self.step)
+        {
             None
         } else {
-            self.cur_offset = offset;
-            Some(self.start - offset)
+            Some(self.start + self.duration - offset)
         }
     }
 }
@@ -379,7 +382,6 @@ mod tests {
     fn ts_backward() {
         let start = Epoch::from_gregorian_utc(2015, 1, 1, 12, 0, 0, 0);
         let times = TimeSeries::exclusive(start, start + Unit::Second * 5, Unit::Second * 1);
-        let expect_end = start + Unit::Second * 4;
         let mut cnt = 0;
         let mut cur_epoch = start;
 
@@ -387,10 +389,10 @@ mod tests {
             cnt += 1;
             cur_epoch = epoch;
             let expect = start + Unit::Second * (5 - cnt);
-            println!("{epoch}\twant: {expect}");
+            assert_eq!(expect, epoch, "incorrect item in iterator");
         }
 
         assert_eq!(cnt, 5); // Five because the first item is always inclusive
-        assert_eq!(cur_epoch, expect_end, "incorrect last item in iterator");
+        assert_eq!(cur_epoch, start, "incorrect last item in iterator");
     }
 }
