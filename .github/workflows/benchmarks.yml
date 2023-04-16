@@ -53,7 +53,7 @@ jobs:
 
 
   iai_duration:
-    name: Benchmark iai
+    name: Benchmark iai duration
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
@@ -74,7 +74,7 @@ jobs:
 
 
   iai_epoch:
-    name: Benchmark iai
+    name: Benchmark iai epoch
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
