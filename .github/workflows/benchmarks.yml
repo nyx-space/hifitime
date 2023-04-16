@@ -28,11 +28,8 @@ jobs:
       - name: Bench (no default features)
         run: cargo bench --no-default-features --bench crit_duration
 
-      - name: Parse benchmark output
-        run: python benches/parse_crit_benchmark.py < crit_duration.txt > benchmark_table.md
-    
-      - name: Add benchmark results to GitHub Actions summary
-        run: cat benchmark_table.md >> $GITHUB_STEP_SUMMARY
+      - name: Parse benchmark output and add benchmark results to GitHub Actions summary
+        run: python benches/parse_crit_benchmark.py < crit_duration.txt >> $GITHUB_STEP_SUMMARY
 
   epoch:
     name: Benchmark epoch
@@ -51,11 +48,9 @@ jobs:
       - name: Bench (no default features)
         run: cargo bench --no-default-features --bench crit_epoch
       
-      - name: Parse benchmark output
-        run: python benches/parse_crit_benchmark.py < crit_epoch.txt > benchmark_table.md
-    
-      - name: Add benchmark results to GitHub Actions summary
-        run: cat benchmark_table.md >> $GITHUB_STEP_SUMMARY
+      - name: Parse benchmark output and add benchmark results to GitHub Actions summary
+        run: python benches/parse_crit_benchmark.py < crit_epoch.txt >> $GITHUB_STEP_SUMMARY
+
 
   iai_duration:
     name: Benchmark iai
@@ -74,11 +69,9 @@ jobs:
       - name: Bench (no default features)
         run: cargo bench --no-default-features --bench iai_duration
       
-      - name: Parse benchmark output
-        run: python benches/parse_iai_benchmark.py < iai_duration.txt > benchmark_table.md
-    
-      - name: Add benchmark results to GitHub Actions summary
-        run: cat benchmark_table.md >> $GITHUB_STEP_SUMMARY
+      - name: Parse benchmark output and add benchmark results to GitHub Actions summary
+        run: python benches/parse_iai_benchmark.py < iai_duration.txt  >> $GITHUB_STEP_SUMMARY
+
 
   iai_epoch:
     name: Benchmark iai
@@ -97,9 +90,7 @@ jobs:
       - name: Bench (no default features)
         run: cargo bench --no-default-features --bench iai_epoch
       
-      - name: Parse benchmark output
-        run: python benches/parse_iai_benchmark.py < iai_epoch.txt > benchmark_table.md
+      - name: Parse benchmark output and add benchmark results to GitHub Actions summary
+        run: python benches/parse_iai_benchmark.py < iai_epoch.txt >> $GITHUB_STEP_SUMMARY
     
-      - name: Add benchmark results to GitHub Actions summary
-        run: cat benchmark_table.md >> $GITHUB_STEP_SUMMARY
       
