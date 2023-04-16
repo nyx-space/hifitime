@@ -241,7 +241,7 @@ impl Ord for Epoch {
     }
 }
 
-// Defines the methods that should be staticmethods in Python, but must be redefined as per https://github.com/PyO3/pyo3/issues/1003#issuecomment-844433346
+// Defines the methods that should be classmethods in Python, but must be redefined as per https://github.com/PyO3/pyo3/issues/1003#issuecomment-844433346
 impl Epoch {
     /// Get the accumulated number of leap seconds up to this Epoch from the provided LeapSecondProvider.
     /// Returns None if the epoch is before 1960, year at which UTC was defined.
@@ -1272,228 +1272,229 @@ impl Epoch {
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch.
-    const fn init_from_tai_duration(duration: Duration) -> Self {
+    const fn init_from_tai_duration(_cls: &PyType, duration: Duration) -> Self {
         Self::from_tai_duration(duration)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch.
-    fn init_from_tai_parts(centuries: i16, nanoseconds: u64) -> Self {
+    fn init_from_tai_parts(_cls: &PyType, centuries: i16, nanoseconds: u64) -> Self {
         Self::from_tai_parts(centuries, nanoseconds)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
-    fn init_from_tai_seconds(seconds: f64) -> Self {
+    fn init_from_tai_seconds(_cls: &PyType, seconds: f64) -> Self {
         Self::from_tai_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight
-    fn init_from_tai_days(days: f64) -> Self {
+    fn init_from_tai_days(_cls: &PyType, days: f64) -> Self {
         Self::from_tai_days(days)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
-    fn init_from_utc_seconds(seconds: f64) -> Self {
+    fn init_from_utc_seconds(_cls: &PyType, seconds: f64) -> Self {
         Self::from_utc_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight
-    fn init_from_utc_days(days: f64) -> Self {
+    fn init_from_utc_days(_cls: &PyType, days: f64) -> Self {
         Self::from_utc_days(days)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from given MJD in TAI time scale
-    fn init_from_mjd_tai(days: f64) -> Self {
+    fn init_from_mjd_tai(_cls: &PyType, days: f64) -> Self {
         Self::from_mjd_tai(days)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from given MJD in UTC time scale
-    fn init_from_mjd_utc(days: f64) -> Self {
+    fn init_from_mjd_utc(_cls: &PyType, days: f64) -> Self {
         Self::from_mjd_utc(days)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from given JDE in TAI time scale
-    fn init_from_jde_tai(days: f64) -> Self {
+    fn init_from_jde_tai(_cls: &PyType, days: f64) -> Self {
         Self::from_jde_tai(days)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from given JDE in UTC time scale
-    fn init_from_jde_utc(days: f64) -> Self {
+    fn init_from_jde_utc(_cls: &PyType, days: f64) -> Self {
         Self::from_jde_utc(days)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
-    fn init_from_tt_seconds(seconds: f64) -> Self {
+    fn init_from_tt_seconds(_cls: &PyType, seconds: f64) -> Self {
         Self::from_tt_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
-    fn init_from_tt_duration(duration: Duration) -> Self {
+    fn init_from_tt_duration(_cls: &PyType, duration: Duration) -> Self {
         Self::from_tt_duration(duration)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)
-    fn init_from_et_seconds(seconds_since_j2000: f64) -> Epoch {
+    fn init_from_et_seconds(_cls: &PyType, seconds_since_j2000: f64) -> Epoch {
         Self::from_et_seconds(seconds_since_j2000)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the Ephemeris Time duration past 2000 JAN 01 (J2000 reference)
-    fn init_from_et_duration(duration_since_j2000: Duration) -> Self {
+    fn init_from_et_duration(_cls: &PyType, duration_since_j2000: Duration) -> Self {
         Self::from_et_duration(duration_since_j2000)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from Dynamic Barycentric Time (TDB) seconds past 2000 JAN 01 midnight (difference than SPICE)
     /// NOTE: This uses the ESA algorithm, which is a notch more complicated than the SPICE algorithm, but more precise.
     /// In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ESA algorithm should be exactly correct.
-    fn init_from_tdb_seconds(seconds_j2000: f64) -> Epoch {
+    fn init_from_tdb_seconds(_cls: &PyType, seconds_j2000: f64) -> Epoch {
         Self::from_tdb_seconds(seconds_j2000)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI.
-    fn init_from_tdb_duration(duration_since_j2000: Duration) -> Epoch {
+    fn init_from_tdb_duration(_cls: &PyType, duration_since_j2000: Duration) -> Epoch {
         Self::from_tdb_duration(duration_since_j2000)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize from the JDE days
-    fn init_from_jde_et(days: f64) -> Self {
+    fn init_from_jde_et(_cls: &PyType, days: f64) -> Self {
         Self::from_jde_et(days)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days
-    fn init_from_jde_tdb(days: f64) -> Self {
+    fn init_from_jde_tdb(_cls: &PyType, days: f64) -> Self {
         Self::from_jde_tdb(days)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the number of seconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
-    fn init_from_gpst_seconds(seconds: f64) -> Self {
+    fn init_from_gpst_seconds(_cls: &PyType, seconds: f64) -> Self {
         Self::from_gpst_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the number of days since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
-    fn init_from_gpst_days(days: f64) -> Self {
+    fn init_from_gpst_days(_cls: &PyType, days: f64) -> Self {
         Self::from_gpst_days(days)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use GPS as a time source.
-    fn init_from_gpst_nanoseconds(nanoseconds: u64) -> Self {
+    fn init_from_gpst_nanoseconds(_cls: &PyType, nanoseconds: u64) -> Self {
         Self::from_gpst_nanoseconds(nanoseconds)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the number of seconds since the Galileo Time Epoch,
     /// starting on August 21st 1999 Midnight UT,
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
-    fn init_from_gst_seconds(seconds: f64) -> Self {
+    fn init_from_gst_seconds(_cls: &PyType, seconds: f64) -> Self {
         Self::from_gst_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the number of days since the Galileo Time Epoch,
     /// starting on August 21st 1999 Midnight UT,
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
-    fn init_from_gst_days(days: f64) -> Self {
+    fn init_from_gst_days(_cls: &PyType, days: f64) -> Self {
         Self::from_gst_days(days)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the number of nanoseconds since the Galileo Time Epoch,
     /// starting on August 21st 1999 Midnight UT,
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use GST as a time source.
-    fn init_from_gst_nanoseconds(nanoseconds: u64) -> Self {
+    fn init_from_gst_nanoseconds(_cls: &PyType, nanoseconds: u64) -> Self {
         Self::from_gst_nanoseconds(nanoseconds)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the number of seconds since the BeiDou Time Epoch,
     /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
-    fn init_from_bdt_seconds(seconds: f64) -> Self {
+    fn init_from_bdt_seconds(_cls: &PyType, seconds: f64) -> Self {
         Self::from_bdt_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the number of days since the BeiDou Time Epoch,
     /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
-    fn init_from_bdt_days(days: f64) -> Self {
+    fn init_from_bdt_days(_cls: &PyType, days: f64) -> Self {
         Self::from_bdt_days(days)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the number of days since the BeiDou Time Epoch,
     /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use BDT as a time source.
-    fn init_from_bdt_nanoseconds(nanoseconds: u64) -> Self {
+    fn init_from_bdt_nanoseconds(_cls: &PyType, nanoseconds: u64) -> Self {
         Self::from_bdt_nanoseconds(nanoseconds)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01.
-    fn init_from_unix_seconds(seconds: f64) -> Self {
+    fn init_from_unix_seconds(_cls: &PyType, seconds: f64) -> Self {
         Self::from_unix_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01.
-    fn init_from_unix_milliseconds(milliseconds: f64) -> Self {
+    fn init_from_unix_milliseconds(_cls: &PyType, milliseconds: f64) -> Self {
         Self::from_unix_milliseconds(milliseconds)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     fn init_from_gregorian(
+        _cls: &PyType,
         year: i32,
         month: u8,
         day: u8,
@@ -1507,14 +1508,21 @@ impl Epoch {
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
-    fn init_from_gregorian_at_noon(year: i32, month: u8, day: u8, time_scale: TimeScale) -> Self {
+    #[classmethod]
+    fn init_from_gregorian_at_noon(
+        _cls: &PyType,
+        year: i32,
+        month: u8,
+        day: u8,
+        time_scale: TimeScale,
+    ) -> Self {
         Self::from_gregorian_at_noon(year, month, day, time_scale)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     fn init_from_gregorian_at_midnight(
+        _cls: &PyType,
         year: i32,
         month: u8,
         day: u8,
@@ -1524,9 +1532,10 @@ impl Epoch {
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Attempts to build an Epoch from the provided Gregorian date and time in TAI.
     fn maybe_init_from_gregorian_tai(
+        _cls: &PyType,
         year: i32,
         month: u8,
         day: u8,
@@ -1539,11 +1548,12 @@ impl Epoch {
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Attempts to build an Epoch from the provided Gregorian date and time in the provided time scale.
     /// NOTE: If the time scale is TDB, this function assumes that the SPICE format is used
     #[allow(clippy::too_many_arguments)]
     fn maybe_init_from_gregorian(
+        _cls: &PyType,
         year: i32,
         month: u8,
         day: u8,
@@ -1557,10 +1567,11 @@ impl Epoch {
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian_tai if unsure.
     fn init_from_gregorian_tai(
+        _cls: &PyType,
         year: i32,
         month: u8,
         day: u8,
@@ -1573,23 +1584,24 @@ impl Epoch {
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize from the Gregorian date at midnight in TAI.
-    fn init_from_gregorian_tai_at_midnight(year: i32, month: u8, day: u8) -> Self {
+    fn init_from_gregorian_tai_at_midnight(_cls: &PyType, year: i32, month: u8, day: u8) -> Self {
         Self::from_gregorian_tai_at_midnight(year, month, day)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize from the Gregorian date at noon in TAI
-    fn init_from_gregorian_tai_at_noon(year: i32, month: u8, day: u8) -> Self {
+    fn init_from_gregorian_tai_at_noon(_cls: &PyType, year: i32, month: u8, day: u8) -> Self {
         Self::from_gregorian_tai_at_noon(year, month, day)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize from the Gregorian date and time (without the nanoseconds) in TAI
     fn init_from_gregorian_tai_hms(
+        _cls: &PyType,
         year: i32,
         month: u8,
         day: u8,
@@ -1601,9 +1613,10 @@ impl Epoch {
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Attempts to build an Epoch from the provided Gregorian date and time in UTC.
     fn maybe_init_from_gregorian_utc(
+        _cls: &PyType,
         year: i32,
         month: u8,
         day: u8,
@@ -1616,10 +1629,11 @@ impl Epoch {
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian_tai if unsure.
     fn init_from_gregorian_utc(
+        _cls: &PyType,
         year: i32,
         month: u8,
         day: u8,
@@ -1632,23 +1646,24 @@ impl Epoch {
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize from Gregorian date in UTC at midnight
-    fn init_from_gregorian_utc_at_midnight(year: i32, month: u8, day: u8) -> Self {
+    fn init_from_gregorian_utc_at_midnight(_cls: &PyType, year: i32, month: u8, day: u8) -> Self {
         Self::from_gregorian_utc_at_midnight(year, month, day)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize from Gregorian date in UTC at noon
-    fn init_from_gregorian_utc_at_noon(year: i32, month: u8, day: u8) -> Self {
+    fn init_from_gregorian_utc_at_noon(_cls: &PyType, year: i32, month: u8, day: u8) -> Self {
         Self::from_gregorian_utc_at_noon(year, month, day)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Initialize from the Gregorian date and time (without the nanoseconds) in UTC
     fn init_from_gregorian_utc_hms(
+        _cls: &PyType,
         year: i32,
         month: u8,
         day: u8,
@@ -2648,8 +2663,8 @@ impl Epoch {
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
-    fn system_now() -> Result<Self, Errors> {
+    #[classmethod]
+    fn system_now(_cls: &PyType) -> Result<Self, Errors> {
         Self::now()
     }
 
@@ -2800,7 +2815,7 @@ impl Epoch {
     }
 }
 
-// This is in its separate impl far away from the Python feature because pyO3's staticmethod does not work with cfg_attr
+// This is in its separate impl far away from the Python feature because pyO3's classmethod does not work with cfg_attr
 #[cfg(feature = "std")]
 impl Epoch {
     /// Initializes a new Epoch from `now`.
