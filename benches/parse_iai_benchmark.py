@@ -2,7 +2,8 @@ import sys
 import re
 
 
-def main(input_data):
+def main():
+    input_data = sys.stdin.read()
     table_header = "\n\n| Benchmark | Instructions | L1 Accesses | L2 Accesses | RAM Accesses | Estimated Cycles |\n| --- | --- | --- | --- | --- | --- |\n"
     table_body = ""
 
@@ -26,4 +27,4 @@ def main(input_data):
 
 
 if __name__ == "__main__":
-    main(sys.stdin.read())
+    main()
