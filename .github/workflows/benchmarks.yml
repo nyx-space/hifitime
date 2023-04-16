@@ -23,13 +23,13 @@ jobs:
           toolchain: stable
 
       - name: Bench (with default features)
-        run: cargo bench --bench bench_duration > bench_duration.txt
+        run: cargo bench --bench crit_duration > crit_duration.txt
 
       - name: Bench (no default features)
-        run: cargo bench --no-default-features --bench bench_duration
+        run: cargo bench --no-default-features --bench crit_duration
 
       - name: Parse benchmark output
-        run: python benches/parse_crit_benchmark.py < bench_duration.txt > benchmark_table.md
+        run: python benches/parse_crit_benchmark.py < crit_duration.txt > benchmark_table.md
     
       - name: Add benchmark results to GitHub Actions summary
         run: cat benchmark_table.md >> $GITHUB_STEP_SUMMARY
@@ -46,13 +46,13 @@ jobs:
           toolchain: stable
 
       - name: Bench (with default features)
-        run: cargo bench --bench bench_epoch > bench_epoch.txt
+        run: cargo bench --bench crit_epoch > crit_epoch.txt
 
       - name: Bench (no default features)
-        run: cargo bench --no-default-features --bench bench_epoch
+        run: cargo bench --no-default-features --bench crit_epoch
       
       - name: Parse benchmark output
-        run: python benches/parse_crit_benchmark.py < bench_epoch.txt > benchmark_table.md
+        run: python benches/parse_crit_benchmark.py < crit_epoch.txt > benchmark_table.md
     
       - name: Add benchmark results to GitHub Actions summary
         run: cat benchmark_table.md >> $GITHUB_STEP_SUMMARY
