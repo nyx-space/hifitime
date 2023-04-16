@@ -147,3 +147,17 @@ impl Index<usize> for LatestLeapSeconds {
 }
 
 impl LeapSecondProvider for LatestLeapSeconds {}
+
+#[test]
+fn leap_second_fetch() {
+    let leap_seconds = LatestLeapSeconds::default();
+
+    assert_eq!(
+        leap_seconds[0],
+        LeapSecond::new(1_893_369_600.0, 1.417818, false),
+    );
+    assert_eq!(
+        leap_seconds[41],
+        LeapSecond::new(3_692_217_600.0, 37.0, true)
+    );
+}

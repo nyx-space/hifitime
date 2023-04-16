@@ -99,11 +99,10 @@ impl Ut1Provider {
                 return Err(Errors::ParseError(ParsingErrors::UnknownFormat));
             }
 
-            let mjd_tai_days: f64;
-            match lexical_core::parse(data[0].trim().as_bytes()) {
-                Ok(val) => mjd_tai_days = val,
+            let mjd_tai_days: f64 = match lexical_core::parse(data[0].trim().as_bytes()) {
+                Ok(val) => val,
                 Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
-            }
+            };
 
             let delta_ut1_ms: f64;
             match lexical_core::parse(data[3].trim().as_bytes()) {
