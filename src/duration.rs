@@ -28,9 +28,10 @@ use core::str::FromStr;
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
-
 #[cfg(feature = "python")]
 use pyo3::pyclass::CompareOp;
+#[cfg(feature = "python")]
+use pyo3::types::PyType;
 
 #[cfg(not(feature = "std"))]
 use num_traits::Float;
@@ -112,7 +113,7 @@ impl Default for Duration {
     }
 }
 
-// Defines the methods that should be staticmethods in Python, but must be redefined as per https://github.com/PyO3/pyo3/issues/1003#issuecomment-844433346
+// Defines the methods that should be classmethods in Python, but must be redefined as per https://github.com/PyO3/pyo3/issues/1003#issuecomment-844433346
 impl Duration {
     /// Builds a new duration from the number of centuries and the number of nanoseconds
     #[must_use]
@@ -743,54 +744,55 @@ impl Duration {
     // Python constructors
 
     #[cfg(feature = "python")]
-    #[staticmethod]
-    fn zero() -> Duration {
+    #[classmethod]
+    fn zero(_cls: &PyType) -> Duration {
         Duration::ZERO
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
-    fn epsilon() -> Duration {
+    #[classmethod]
+    fn epsilon(_cls: &PyType) -> Duration {
         Duration::EPSILON
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
-    fn init_from_max() -> Duration {
+    #[classmethod]
+    fn init_from_max(_cls: &PyType) -> Duration {
         Duration::MAX
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
-    fn init_from_min() -> Duration {
+    #[classmethod]
+    fn init_from_min(_cls: &PyType) -> Duration {
         Duration::MIN
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
-    fn min_positive() -> Duration {
+    #[classmethod]
+    fn min_positive(_cls: &PyType) -> Duration {
         Duration::MIN_POSITIVE
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
-    fn min_negative() -> Duration {
+    #[classmethod]
+    fn min_negative(_cls: &PyType) -> Duration {
         Duration::MIN_NEGATIVE
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Create a normalized duration from its parts
-    fn init_from_parts(centuries: i16, nanoseconds: u64) -> Self {
+    fn init_from_parts(_cls: &PyType, centuries: i16, nanoseconds: u64) -> Self {
         Self::from_parts(centuries, nanoseconds)
     }
 
     /// Creates a new duration from its parts
     #[allow(clippy::too_many_arguments)]
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     #[must_use]
     fn init_from_all_parts(
+        _cls: &PyType,
         sign: i8,
         days: u64,
         hours: u64,
@@ -813,15 +815,15 @@ impl Duration {
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
-    fn init_from_total_nanoseconds(nanos: i128) -> Self {
+    #[classmethod]
+    fn init_from_total_nanoseconds(_cls: &PyType, nanos: i128) -> Self {
         Self::from_total_nanoseconds(nanos)
     }
 
     #[cfg(feature = "python")]
-    #[staticmethod]
+    #[classmethod]
     /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
-    fn init_from_truncated_nanoseconds(nanos: i64) -> Self {
+    fn init_from_truncated_nanoseconds(_cls: &PyType, nanos: i64) -> Self {
         Self::from_truncated_nanoseconds(nanos)
     }
 }
