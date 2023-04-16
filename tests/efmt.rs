@@ -90,4 +90,14 @@ fn epoch_format_rfc2822() {
         format!("{}", Formatter::new(epoch - 2 * Unit::Microsecond, RFC2822)),
         "Sat, 07 Feb 2015 11:22:32"
     );
+
+    assert_eq!(
+        Epoch::from_format_str("Sat, 07 Feb 2015 11:22:33", "%a, %d %b %Y %H:%M:%S").unwrap(),
+        epoch
+    );
+
+    assert_eq!(
+        Epoch::from_str_with_format("Sat, 07 Feb 2015 11:22:33", RFC2822).unwrap(),
+        epoch
+    );
 }
