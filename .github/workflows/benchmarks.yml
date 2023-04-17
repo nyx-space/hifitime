@@ -23,10 +23,13 @@ jobs:
           toolchain: stable
 
       - name: Bench (with default features)
-        run: cargo bench --bench bench_duration
+        run: cargo bench --bench crit_duration > crit_duration.txt
 
       - name: Bench (no default features)
-        run: cargo bench --no-default-features --bench bench_duration
+        run: cargo bench --no-default-features --bench crit_duration
+
+      - name: Parse benchmark output and add benchmark results to GitHub Actions summary
+        run: python benches/parse_crit_benchmark.py < crit_duration.txt >> $GITHUB_STEP_SUMMARY
 
   epoch:
     name: Benchmark epoch
@@ -40,7 +43,54 @@ jobs:
           toolchain: stable
 
       - name: Bench (with default features)
-        run: cargo bench --bench bench_epoch
+        run: cargo bench --bench crit_epoch > crit_epoch.txt
 
       - name: Bench (no default features)
-        run: cargo bench --no-default-features --bench bench_epoch
+        run: cargo bench --no-default-features --bench crit_epoch
+      
+      - name: Parse benchmark output and add benchmark results to GitHub Actions summary
+        run: python benches/parse_crit_benchmark.py < crit_epoch.txt >> $GITHUB_STEP_SUMMARY
+
+
+  iai_duration:
+    name: Benchmark iai duration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Bench (with default features)
+        run: cargo bench --bench iai_duration > iai_duration.txt
+
+      - name: Bench (no default features)
+        run: cargo bench --no-default-features --bench iai_duration
+      
+      - name: Parse benchmark output and add benchmark results to GitHub Actions summary
+        run: python benches/parse_iai_benchmark.py < iai_duration.txt  >> $GITHUB_STEP_SUMMARY
+
+
+  iai_epoch:
+    name: Benchmark iai epoch
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v3
+      - name: Install stable toolchain
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+
+      - name: Bench (with default features)
+        run: cargo bench --bench iai_epoch > iai_epoch.txt
+
+      - name: Bench (no default features)
+        run: cargo bench --no-default-features --bench iai_epoch
+      
+      - name: Parse benchmark output and add benchmark results to GitHub Actions summary
+        run: python benches/parse_iai_benchmark.py < iai_epoch.txt >> $GITHUB_STEP_SUMMARY
+    
+      

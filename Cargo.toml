@@ -41,11 +41,11 @@ python = ["std", "asn1der", "pyo3", "ut1"]
 ut1 = ["std", "reqwest", "tabled", "openssl"]
 
 [[bench]]
-name = "bench_epoch"
+name = "crit_epoch"
 harness = false 
 
 [[bench]]
-name = "bench_duration"
+name = "crit_duration"
 harness = false
 
 [[bench]]

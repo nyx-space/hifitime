@@ -11,7 +11,7 @@
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
-use std::{fs::File, io::Read};
+use std::{fs::File, io::Read, path::Path};
 
 use core::ops::Index;
 
@@ -31,7 +31,7 @@ pub struct LeapSecondsFile {
 
 impl LeapSecondsFile {
     /// Builds a leap second provider from the provided Leap Seconds file in IERS format as found on <https://www.ietf.org/timezones/data/leap-seconds.list> .
-    pub fn from_path(path: &str) -> Result<Self, Errors> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, Errors> {
         let mut f = match File::open(path) {
             Ok(f) => f,
             Err(e) => return Err(Errors::ParseError(ParsingErrors::IOError(e.kind()))),
@@ -120,3 +120,31 @@ impl Index<usize> for LeapSecondsFile {
 }
 
 impl LeapSecondProvider for LeapSecondsFile {}
+
+#[test]
+fn leap_second_fetch() {
+    use crate::leap_seconds::LatestLeapSeconds;
+    use std::env;
+    use std::path::PathBuf;
+    let latest_leap_seconds = LatestLeapSeconds::default();
+
+    // Load the IERS data
+    let path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
+        .join("data")
+        .join("leap-seconds.list");
+    let leap_seconds = LeapSecondsFile::from_path(path.to_str().unwrap()).unwrap();
+
+    assert_eq!(
+        leap_seconds[0],
+        LeapSecond::new(2_272_060_800.0, 10.0, true),
+    );
+    assert_eq!(
+        leap_seconds[27],
+        LeapSecond::new(3_692_217_600.0, 37.0, true)
+    );
+
+    for (lsi, leap_second) in leap_seconds.enumerate() {
+        // The index offset is because the latest leap seconds include those not announced by the IERS, but the IERS file does not.
+        assert_eq!(leap_second, latest_leap_seconds[lsi + 14]);
+    }
+}
