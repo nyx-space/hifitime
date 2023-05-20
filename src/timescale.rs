@@ -182,7 +182,7 @@ impl TimeScale {
 }
 
 /// Allows conversion of a TimeSystem into a u8
-/// Mapping: TAI: 0; TT: 1; ET: 2; TDB: 3; UTC: 4; GPST: 5; GST: 6; BDT: 7;
+/// Mapping: TAI: 0; TT: 1; ET: 2; TDB: 3; UTC: 4; GPST: 5; GST: 6; BDT: 7; QZSST: 8;
 impl From<TimeScale> for u8 {
     fn from(ts: TimeScale) -> Self {
         match ts {
