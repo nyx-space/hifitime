@@ -78,12 +78,15 @@ pub enum TimeScale {
     TDB,
     /// Universal Coordinated Time
     UTC,
-    /// GPST Time also applies to QZSS, IRNSS and GAL constellations
+    /// GPS Time scale
     GPST,
     /// Galileo Time scale
     GST,
     /// BeiDou Time scale
     BDT,
+    /// QZSS Time scale has the same properties as GPST,
+    /// but with dedicated clocks
+    QZSST,
 }
 
 #[cfg(kani)]
@@ -91,7 +94,6 @@ impl Arbitrary for TimeScale {
     #[inline(always)]
     fn any() -> Self {
         let ts_u8: u8 = kani::any();
-
         Self::from(ts_u8)
     }
 }
@@ -111,6 +113,7 @@ impl Default for TimeScale {
 impl TimeScale {
     pub(crate) const fn formatted_len(&self) -> usize {
         match &self {
+            Self::QZSST => 5,
             Self::GPST => 4,
             Self::TAI | Self::TDB | Self::UTC | Self::GST | Self::BDT => 3,
             Self::ET | Self::TT => 2,
@@ -119,7 +122,7 @@ impl TimeScale {
 
     /// Returns true if Self is based off a GNSS constellation
     pub const fn is_gnss(&self) -> bool {
-        matches!(self, Self::GPST | Self::GST | Self::BDT)
+        matches!(self, Self::GPST | Self::GST | Self::BDT | Self::QZSST)
     }
 
     /// Returns Reference Epoch (t(0)) for given timescale
@@ -132,6 +135,8 @@ impl TimeScale {
             Self::TDB => J2000_REF_EPOCH_TDB,
             // Explicit on purpose in case more time scales end up being supported.
             Self::TT | Self::TAI | Self::UTC => J1900_REF_EPOCH,
+            // QZSS time shares the same starting point as GPST
+            Self::QZSST => GPST_REF_EPOCH,
         }
     }
 }
@@ -148,6 +153,7 @@ impl fmt::Display for TimeScale {
             Self::GPST => write!(f, "GPST"),
             Self::GST => write!(f, "GST"),
             Self::BDT => write!(f, "BDT"),
+            Self::QZSST => write!(f, "QZSST"),
         }
     }
 }
@@ -160,6 +166,7 @@ impl fmt::LowerHex for TimeScale {
             Self::GPST => write!(f, "GPS"),
             Self::GST => write!(f, "GAL"),
             Self::BDT => write!(f, "BDS"),
+            Self::QZSST => write!(f, "QZSS"),
             _ => write!(f, "{self}"),
         }
     }
@@ -186,6 +193,7 @@ impl From<TimeScale> for u8 {
             TimeScale::GPST => 5,
             TimeScale::GST => 6,
             TimeScale::BDT => 7,
+            TimeScale::QZSST => 8,
         }
     }
 }
@@ -202,6 +210,7 @@ impl From<u8> for TimeScale {
             5 => Self::GPST,
             6 => Self::GST,
             7 => Self::BDT,
+            8 => Self::QZSST,
             _ => Self::TAI,
         }
     }
@@ -228,6 +237,8 @@ impl FromStr for TimeScale {
             Ok(Self::GST)
         } else if val == "BDT" || val == "BDS" {
             Ok(Self::BDT)
+        } else if val == "QZSST" || val == "QZSS" {
+            Ok(Self::QZSST)
         } else {
             Err(Errors::ParseError(ParsingErrors::TimeSystem))
         }
@@ -250,7 +261,7 @@ fn test_ts() {
         let ts = TimeScale::from(ts_u8);
         let ts_u8_back: u8 = ts.into();
         // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
-        if ts_u8 < 8 {
+        if ts_u8 < 9 {
             assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
         } else {
             assert_eq!(ts, TimeScale::TAI);

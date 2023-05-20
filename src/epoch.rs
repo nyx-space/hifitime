@@ -272,7 +272,8 @@ impl Epoch {
             TimeScale::ET => Self::from_et_duration(new_duration),
             TimeScale::TDB => Self::from_tdb_duration(new_duration),
             TimeScale::UTC => Self::from_utc_duration(new_duration),
-            TimeScale::GPST => Self::from_gpst_duration(new_duration),
+            // GPST and QZSST share the same properties
+            TimeScale::GPST | TimeScale::QZSST => Self::from_gpst_duration(new_duration),
             TimeScale::GST => Self::from_gst_duration(new_duration),
             TimeScale::BDT => Self::from_bdt_duration(new_duration),
         }
@@ -728,7 +729,8 @@ impl Epoch {
             TimeScale::ET => Self::from_et_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
             TimeScale::TDB => Self::from_tdb_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
             TimeScale::UTC => Self::from_utc_duration(duration_wrt_1900),
-            TimeScale::GPST => {
+            // GPST and QZSST share the same properties
+            TimeScale::GPST | TimeScale::QZSST => {
                 Self::from_gpst_duration(duration_wrt_1900 - GPST_REF_EPOCH.to_tai_duration())
             }
             TimeScale::GST => {
@@ -1712,9 +1714,10 @@ impl Epoch {
             TimeScale::ET => self.to_et_duration(),
             TimeScale::TDB => self.to_tdb_duration(),
             TimeScale::UTC => self.to_utc_duration(),
-            TimeScale::GPST => self.to_gpst_duration(),
             TimeScale::BDT => self.to_bdt_duration(),
             TimeScale::GST => self.to_gst_duration(),
+            // GPST and QZSST share the same properties
+            TimeScale::GPST | TimeScale::QZSST => self.to_gpst_duration(),
         }
     }
 
@@ -1747,7 +1750,10 @@ impl Epoch {
             TimeScale::TT => self.to_tt_duration(),
             TimeScale::TDB => self.to_tdb_duration_since_j1900(),
             TimeScale::UTC => self.to_utc_duration(),
-            TimeScale::GPST => self.to_gpst_duration() + GPST_REF_EPOCH.to_tai_duration(),
+            // GPST and QZSST share the same properties
+            TimeScale::GPST | TimeScale::QZSST => {
+                self.to_gpst_duration() + GPST_REF_EPOCH.to_tai_duration()
+            }
             TimeScale::GST => self.to_gst_duration() + GST_REF_EPOCH.to_tai_duration(),
             TimeScale::BDT => self.to_bdt_duration() + BDT_REF_EPOCH.to_tai_duration(),
         }
@@ -1762,7 +1768,8 @@ impl Epoch {
             TimeScale::ET => Self::from_et_duration(new_duration),
             TimeScale::TDB => Self::from_tdb_duration(new_duration),
             TimeScale::UTC => Self::from_utc_duration(new_duration),
-            TimeScale::GPST => Self::from_gpst_duration(new_duration),
+            // GPST and QZSST share the same properties
+            TimeScale::GPST | TimeScale::QZSST => Self::from_gpst_duration(new_duration),
             TimeScale::GST => Self::from_gst_duration(new_duration),
             TimeScale::BDT => Self::from_bdt_duration(new_duration),
         }
@@ -2737,7 +2744,8 @@ impl Epoch {
             TimeScale::ET => self.to_et_duration_since_j1900(),
             TimeScale::TDB => self.to_tdb_duration_since_j1900(),
             TimeScale::UTC => self.to_utc_duration(),
-            TimeScale::GPST => self.to_utc_duration(),
+            // GPST and QZSST share the same properties
+            TimeScale::GPST | TimeScale::QZSST => self.to_utc_duration(),
             TimeScale::GST => self.to_utc_duration(),
             TimeScale::BDT => self.to_utc_duration(),
         });

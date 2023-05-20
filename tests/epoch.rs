@@ -955,6 +955,7 @@ fn test_format() {
                     TimeScale::GPST => format!("{epoch:x}").replace("TAI", "GPST"),
                     TimeScale::GST => format!("{epoch:x}").replace("TAI", "GST"),
                     TimeScale::BDT => format!("{epoch:x}").replace("TAI", "BDT"),
+                    TimeScale::QZSST => format!("{epoch:x}").replace("TAI", "QZSST"),
                 }
             );
 

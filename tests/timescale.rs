@@ -12,6 +12,7 @@ fn test_from_str() {
         ("GPST", TimeScale::GPST),
         ("GST", TimeScale::GST),
         ("BDT", TimeScale::BDT),
+        ("QZSST", TimeScale::QZSST),
     ];
     for value in values {
         let (descriptor, expected) = value;
@@ -26,6 +27,7 @@ fn test_from_str() {
             TimeScale::GPST => "GPS",
             TimeScale::GST => "GAL",
             TimeScale::BDT => "BDS",
+            TimeScale::QZSST => "QZSS",
             _ => descriptor, // untouched
         };
         assert_eq!(format!("{:x}", ts), expected);
@@ -41,6 +43,7 @@ fn test_from_rinex_format() {
     assert_eq!(TimeScale::from_str("GPS"), Ok(TimeScale::GPST));
     assert_eq!(TimeScale::from_str("GAL"), Ok(TimeScale::GST));
     assert_eq!(TimeScale::from_str("BDS"), Ok(TimeScale::BDT));
+    assert_eq!(TimeScale::from_str("QZSS"), Ok(TimeScale::QZSST));
     // Check error
     assert_eq!(
         TimeScale::from_str("FAK"),
@@ -58,6 +61,8 @@ fn test_is_gnss() {
     assert!(!ts.is_gnss());
     let ts = TimeScale::TAI;
     assert!(!ts.is_gnss());
+    let ts = TimeScale::QZSST;
+    assert!(ts.is_gnss());
 }
 
 #[test]

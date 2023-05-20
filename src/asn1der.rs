@@ -62,7 +62,8 @@ impl<'a> Decode<'a> for Epoch {
             TimeScale::ET => Self::from_et_duration(duration),
             TimeScale::TDB => Self::from_tdb_duration(duration),
             TimeScale::UTC => Self::from_utc_duration(duration),
-            TimeScale::GPST => Self::from_gpst_duration(duration),
+            // GPST and QZSST share the same properties
+            TimeScale::GPST | TimeScale::QZSST => Self::from_gpst_duration(duration),
             TimeScale::GST => Self::from_gst_duration(duration),
             TimeScale::BDT => Self::from_bdt_duration(duration),
         })
@@ -107,9 +108,10 @@ fn test_encdec() {
             TimeScale::TT => epoch.to_tt_duration(),
             TimeScale::TDB => epoch.to_tdb_duration(),
             TimeScale::UTC => epoch.to_utc_duration(),
-            TimeScale::GPST => epoch.to_gpst_duration(),
             TimeScale::GST => epoch.to_gst_duration(),
             TimeScale::BDT => epoch.to_bdt_duration(),
+            // GPST and QZSST share the same properties
+            TimeScale::GPST | TimeScale::QZSST => epoch.to_gpst_duration(),
         };
 
         let e_dur = epoch.to_duration();
