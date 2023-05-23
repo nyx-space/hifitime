@@ -335,12 +335,31 @@ fn gpst() {
     let ref_gps = Epoch::from_gregorian_utc_at_midnight(1980, 01, 06);
 
     // Test 1sec into GPS timescale
-    let gnss = Epoch::from_gpst_seconds(1.0);
-    assert_eq!(gnss, ref_gps + 1.0 * Unit::Second);
+    let gps_1sec = Epoch::from_gpst_seconds(1.0);
+    assert_eq!(gps_1sec, ref_gps + 1.0 * Unit::Second);
+
+    // 1sec into QZSS time scale returns the same date
+    let qzss_1sec = Epoch::from_qzsst_seconds(1.0);
+    assert_eq!(gps_1sec.to_utc_duration(), qzss_1sec.to_utc_duration());
+
+    // GPS and QZSS share the same properties at all times
+    assert_eq!(gps_1sec.to_gpst_seconds(), qzss_1sec.to_qzsst_seconds());
+    assert_eq!(
+        gps_1sec.to_gpst_nanoseconds(),
+        qzss_1sec.to_qzsst_nanoseconds()
+    );
 
     // Test 1+1/2 day into GPS timescale
-    let gnss = Epoch::from_gpst_days(1.5);
-    assert_eq!(gnss, ref_gps + 1.5 * Unit::Day);
+    let gps = Epoch::from_gpst_days(1.5);
+    assert_eq!(gps, ref_gps + 1.5 * Unit::Day);
+
+    // 1sec into QZSS time scale returns the same date
+    let qzss = Epoch::from_qzsst_days(1.5);
+    assert_eq!(gps.to_utc_duration(), qzss.to_utc_duration());
+
+    // GPS and QZSS share the same properties at all times
+    assert_eq!(gps.to_gpst_seconds(), qzss.to_qzsst_seconds());
+    assert_eq!(gps.to_gpst_nanoseconds(), qzss.to_qzsst_nanoseconds());
 
     let now = Epoch::from_gregorian_tai_hms(2019, 8, 24, 3, 49, 9);
     assert_eq!(
@@ -390,6 +409,28 @@ fn gpst() {
     let epoch = Epoch::from_gregorian_utc_at_midnight(1980, 1, 1);
     assert!((epoch.to_gpst_seconds() + 5.0 * SECONDS_PER_DAY).abs() < EPSILON);
     assert!((epoch.to_gpst_days() + 5.0).abs() < EPSILON);
+
+    // test other GPS / QZSS equalities
+    assert_eq!(
+        Epoch::from_mjd_gpst(0.77).to_utc_duration(),
+        Epoch::from_mjd_qzsst(0.77).to_utc_duration()
+    );
+    assert_eq!(
+        Epoch::from_jde_gpst(1.23).to_utc_duration(),
+        Epoch::from_jde_qzsst(1.23).to_utc_duration()
+    );
+    assert_eq!(
+        Epoch::from_qzsst_seconds(1024.768).to_utc_duration(),
+        Epoch::from_gpst_seconds(1024.768).to_utc_duration()
+    );
+    assert_eq!(
+        Epoch::from_qzsst_days(987.654).to_utc_duration(),
+        Epoch::from_gpst_days(987.654).to_utc_duration()
+    );
+    assert_eq!(
+        Epoch::from_qzsst_nanoseconds(543210987).to_utc_duration(),
+        Epoch::from_gpst_nanoseconds(543210987).to_utc_duration()
+    );
 }
 
 #[test]
@@ -955,6 +996,8 @@ fn test_format() {
                     TimeScale::GPST => format!("{epoch:x}").replace("TAI", "GPST"),
                     TimeScale::GST => format!("{epoch:x}").replace("TAI", "GST"),
                     TimeScale::BDT => format!("{epoch:x}").replace("TAI", "BDT"),
+                    TimeScale::QZSST => format!("{epoch:x}").replace("TAI", "QZSST"),
+                    _ => format!("{epoch:x}").replace("TAI", "GNSS"), // non exhaustive GNSS time scales
                 }
             );
 
@@ -1548,6 +1591,13 @@ fn test_time_of_week() {
         Epoch::from_time_of_week(utc_wk, utc_tow, TimeScale::UTC),
         epoch_utc
     );
+
+    // GPST and QZSST share the same properties at all times
+    let epoch_qzsst = epoch.in_time_scale(TimeScale::QZSST);
+    assert_eq!(epoch.to_gregorian_utc(), epoch_qzsst.to_gregorian_utc());
+
+    let gps_qzss_offset = TimeScale::GPST.ref_epoch() - TimeScale::QZSST.ref_epoch();
+    assert_eq!(gps_qzss_offset.total_nanoseconds(), 0); // no offset
 
     // 06/01/1980 01:00:00 = 1H into GPST <=> (0, 3_618_000_000_000)
     let epoch = Epoch::from_time_of_week(0, 3_618_000_000_000, TimeScale::GPST);
