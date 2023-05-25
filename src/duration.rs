@@ -360,7 +360,7 @@ impl Duration {
         } else {
             // Centuries negative by a decent amount
             Ok(
-                i64::from(self.centuries + 1) * NANOSECONDS_PER_CENTURY as i64
+                i64::from(self.centuries) * NANOSECONDS_PER_CENTURY as i64
                     + self.nanoseconds as i64,
             )
         }
