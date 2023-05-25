@@ -14,7 +14,7 @@ If building from source, note that the Python package is only built if the `pyth
 
 ```rust
 use hifitime::prelude::*;
-use std::str::FromStr;
+use core::str::FromStr;
 // Create an epoch in UTC
 let epoch = Epoch::from_gregorian_utc(2000, 2, 29, 14, 57, 29, 37);
 // Or from a string
@@ -84,8 +84,9 @@ assert_eq!(
 **Need some custom format? Hifitime also supports the C89 token, cf. [the documentation](https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html).**
 
 ```rust
+use core::str::FromStr;
 use hifitime::prelude::*;
-use std::str::FromStr;
+
 let epoch = Epoch::from_gregorian_utc_hms(2015, 2, 7, 11, 22, 33);
 
 // Parsing with a custom format
@@ -106,9 +107,12 @@ assert_eq!(
 ```rust
 use hifitime::prelude::*;
 
-let now = Epoch::now().unwrap();
-println!("{}", now.next(Weekday::Tuesday));
-println!("{}", now.previous(Weekday::Sunday));
+#[cfg(feature = "std")]
+{
+    let now = Epoch::now().unwrap();
+    println!("{}", now.next(Weekday::Tuesday));
+    println!("{}", now.previous(Weekday::Sunday));
+}
 ```
 
 **Oftentimes, we'll want to query something at a fixed step between two epochs. Hifitime makes this trivial with `TimeSeries`.**
@@ -123,6 +127,7 @@ let step = 2.hours();
 let time_series = TimeSeries::inclusive(start, end, step);
 let mut cnt = 0;
 for epoch in time_series {
+    #[cfg(feature = "std")]
     println!("{}", epoch);
     cnt += 1
 }
