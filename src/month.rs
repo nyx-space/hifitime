@@ -43,10 +43,6 @@ impl Default for MonthName {
     }
 }
 
-impl MonthName {
-    const MAX: u8 = 12;
-}
-
 impl FromStr for MonthName {
     type Err = ParsingErrors;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
