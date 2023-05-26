@@ -2,6 +2,8 @@
 
 Hifitime is a powerful Rust and Python library designed for time management. It provides extensive functionalities with precise operations for time calculation in different time scales, making it suitable for engineering and scientific applications where general relativity and time dilation matter. Hifitime guarantees nanosecond precision for 65,536 years around 01 January 1900 TAI. Hifitime is also formally verified using the [`Kani` model checker](https://model-checking.github.io/kani/), read more about it [this verification here](https://model-checking.github.io/kani-verifier-blog/2023/03/31/how-kani-helped-find-bugs-in-hifitime.html).
 
+Most users of Hifitime will only need to rely on the `Epoch` and `Duration` structures, and optionally the `Weekday` enum for week based computations. Scientific applications may make use of the `TimeScale` enum as well.
+
 ## Usage
 
 First, install `hifitime` either with `cargo add hifitime` in your Rust project or `pip install hifitime` in Python.
@@ -131,7 +133,7 @@ for epoch in time_series {
     println!("{}", epoch);
     cnt += 1
 }
-// Check that there are indeed six two-hour periods in a half a day,
+// Check that there are indeed seven two-hour periods in a half a day,
 // including start and end times.
 assert_eq!(cnt, 7)
 ```
@@ -307,12 +309,11 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 
 # Changelog
 
-## 3.8.2
-+ Clarify README
-
-## 3.8.1 (unreleased)
+## 3.8.1 (work in progress)
 + Fix documentation for the formatter, cf. [#202](https://github.com/nyx-space/hifitime/pull/202)
 + Update MSRV to 1.59 for rayon v 1.10
++ Clarify README and add a section comparing Hifitime to `time` and `chrono`, cf. [#221](https://github.com/nyx-space/hifitime/issues/221)
++ Fix incorrect printing of Gregorian dates prior to to 1900, cf. [#204](https://github.com/nyx-space/hifitime/issues/204)
 
 ## 3.8.0
 Thanks again to [@gwbres](https://github.com/gwbres) for his work in this release!
