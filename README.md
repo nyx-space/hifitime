@@ -309,7 +309,7 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 
 # Changelog
 
-## 3.8.1 (work in progress)
+## 3.8.1
 + Fix documentation for the formatter, cf. [#202](https://github.com/nyx-space/hifitime/pull/202)
 + Update MSRV to 1.59 for rayon v 1.10
 + Clarify README and add a section comparing Hifitime to `time` and `chrono`, cf. [#221](https://github.com/nyx-space/hifitime/issues/221)
