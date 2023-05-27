@@ -309,11 +309,13 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 
 # Changelog
 
-## 3.8.1
-+ Fix documentation for the formatter, cf. [#202](https://github.com/nyx-space/hifitime/pull/202)
-+ Update MSRV to 1.59 for rayon v 1.10
+## 3.8.2
 + Clarify README and add a section comparing Hifitime to `time` and `chrono`, cf. [#221](https://github.com/nyx-space/hifitime/issues/221)
 + Fix incorrect printing of Gregorian dates prior to to 1900, cf. [#204](https://github.com/nyx-space/hifitime/issues/204)
+
+## 3.8.1 (unreleased)
++ Fix documentation for the formatter, cf. [#202](https://github.com/nyx-space/hifitime/pull/202)
++ Update MSRV to 1.59 for rayon v 1.10
 
 ## 3.8.0
 Thanks again to [@gwbres](https://github.com/gwbres) for his work in this release!
