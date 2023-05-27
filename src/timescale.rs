@@ -40,6 +40,9 @@ pub const SECONDS_GPS_TAI_OFFSET: f64 = 2_524_953_619.0;
 pub const SECONDS_GPS_TAI_OFFSET_I64: i64 = 2_524_953_619;
 pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
 
+/// QZSS and GPS share the same reference epoch
+pub const QZSST_REF_EPOCH: Epoch = GPST_REF_EPOCH;
+
 /// GST (Galileo) reference epoch is 13 seconds before 1999 August 21 UTC at midnight.
 pub const GST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
@@ -126,18 +129,18 @@ impl TimeScale {
         matches!(self, Self::GPST | Self::GST | Self::BDT | Self::QZSST)
     }
 
-    /// Returns Reference Epoch (t(0)) for given timescale
-    pub const fn ref_epoch(&self) -> Epoch {
+    /// Returns Self's Reference Epoch: Time Scale initialization date,
+    /// expressed as an Epoch in TAI
+    pub const fn tai_reference_epoch(&self) -> Epoch {
         match self {
             Self::GPST => GPST_REF_EPOCH,
             Self::GST => GST_REF_EPOCH,
             Self::BDT => BDT_REF_EPOCH,
             Self::ET => J2000_REF_EPOCH_ET,
             Self::TDB => J2000_REF_EPOCH_TDB,
+            Self::QZSST => QZSST_REF_EPOCH,
             // Explicit on purpose in case more time scales end up being supported.
             Self::TT | Self::TAI | Self::UTC => J1900_REF_EPOCH,
-            // QZSS time shares the same starting point as GPST
-            Self::QZSST => GPST_REF_EPOCH,
         }
     }
 }
