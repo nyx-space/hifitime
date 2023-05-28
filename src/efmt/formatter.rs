@@ -127,7 +127,8 @@ impl fmt::Display for Formatter {
 
         if self.format.need_gregorian() {
             // This is a specific branch so we don't recompute the gregorian information for each token.
-            let (y, mm, dd, hh, min, s, nanos) = Epoch::compute_gregorian(self.epoch.to_duration());
+            let (y, mm, dd, hh, min, s, nanos) =
+                Epoch::compute_gregorian(self.epoch.to_duration_in_time_scale(TimeScale::TAI));
             // And format.
             for (i, maybe_item) in self
                 .format

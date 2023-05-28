@@ -302,7 +302,7 @@ mod tests {
     use crate::{Epoch, TimeSeries, Unit};
 
     #[test]
-    fn test_timeseries() {
+    fn test_exclusive_timeseries() {
         let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
         let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
         let step = Unit::Hour * 2;
@@ -319,13 +319,20 @@ mod tests {
                 assert_ne!(epoch, end, "Ending epoch of exclusive time series is wrong");
             }
             #[cfg(feature = "std")]
-            println!("{}", epoch);
+            println!("tests::exclusive_timeseries::{}", epoch);
             count += 1;
         }
 
         assert_eq!(count, 6, "Should have five items in this iterator");
+    }
 
-        count = 0;
+    #[test]
+    fn test_inclusive_timeseries() {
+        let start = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
+        let end = Epoch::from_gregorian_utc_at_noon(2017, 1, 14);
+        let step = Unit::Hour * 2;
+
+        let mut count = 0;
         let time_series = TimeSeries::inclusive(start, end, step);
         for epoch in time_series {
             if count == 0 {
@@ -337,7 +344,7 @@ mod tests {
                 assert_eq!(epoch, end, "Ending epoch of inclusive time series is wrong");
             }
             #[cfg(feature = "std")]
-            println!("{}", epoch);
+            println!("tests::inclusive_timeseries::{}", epoch);
             count += 1;
         }
 

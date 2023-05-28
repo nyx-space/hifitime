@@ -22,7 +22,7 @@ use crate::efmt::format::Format;
 
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
-use core::hash::{Hash, Hasher};
+use core::hash::Hash;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 use crate::ParsingErrors;
@@ -123,7 +123,7 @@ const CUMULATIVE_DAYS_FOR_MONTH: [u16; 12] = {
 /// Defines a nanosecond-precision Epoch.
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
-#[derive(Copy, Clone, Eq, Default)]
+#[derive(Copy, Clone, Default, Eq, Hash)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -234,12 +234,6 @@ impl PartialEq for Epoch {
     }
 }
 
-impl Hash for Epoch {
-    fn hash<H: Hasher>(&self, hasher: &mut H) {
-        self.duration.hash(hasher);
-    }
-}
-
 impl PartialOrd for Epoch {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(
@@ -297,10 +291,40 @@ impl Epoch {
     pub fn to_time_scale(&self, ts: TimeScale) -> Self {
         match ts {
             TimeScale::TAI => {
-                // conversion to TAI: remove time scale reference point
                 let mut new_epoch = self.clone();
+                // if previous time scale supported leap seconds: remove them
+                if self.time_scale.uses_leap_seconds() {
+                    new_epoch -= new_epoch.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
+                }
+                // conversion to TAI: remove time scale reference point
                 new_epoch.duration -= ts.tai_reference_epoch().duration;
                 new_epoch.with_time_scale(TimeScale::TAI)
+            }
+            TimeScale::ET => {
+                // first convert back to TAI
+                let mut tai_epoch = self.to_time_scale(TimeScale::TAI);
+                // seconds past J2000
+                //TODO: this operation is not feasible is Self is not PAST J2000
+                let duration_since_j2000 = tai_epoch - J2000_REF_EPOCH;
+                let mut seconds_since_j2000 = duration_since_j2000.to_seconds();
+                for _ in 0..5 {
+                    seconds_since_j2000 += -NAIF_K
+                        * (NAIF_M0
+                            + NAIF_M1 * seconds_since_j2000
+                            + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds_since_j2000).sin())
+                        .sin();
+                }
+                // At this point, we have a good estimate of the number of seconds
+                // of this epoch. Reverse the algorithm:
+                let delta_et_tai = Self::delta_et_tai(
+                    seconds_since_j2000 - (TT_OFFSET_MS * Unit::Millisecond).to_seconds(),
+                );
+                // Match the SPICE by changing the UTC definition
+                Self {
+                    duration: (tai_epoch.duration.to_seconds() - delta_et_tai) * Unit::Second
+                        + J2000_TO_J1900_DURATION,
+                    time_scale: TimeScale::ET,
+                }
             }
             TimeScale::TDB => {
                 // first convert back to TAI
@@ -312,7 +336,7 @@ impl Epoch {
                 let gamma = Self::inner_g(seconds_since_j2000);
                 let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
                 tai_epoch += delta_tdb_tai;
-                tai_epoch -= J2000_TO_J1900_DURATION; // TDB time scale is expressed past J2000
+                tai_epoch += J2000_TO_J1900_DURATION; // TDB time scale is expressed past J2000
                 tai_epoch.with_time_scale(TimeScale::TDB)
             }
             ts => {
@@ -320,7 +344,7 @@ impl Epoch {
                 let mut tai_epoch = self.to_time_scale(TimeScale::TAI);
                 // leap second management
                 if ts.uses_leap_seconds() {
-                    // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
+                    // new time scale supports leap seconds: add them
                     tai_epoch += tai_epoch.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
                 }
                 // time scale specificities
@@ -775,7 +799,7 @@ impl Epoch {
 
         Ok(Self {
             duration: duration_wrt_1900,
-            time_scale: TimeScale::TAI,
+            time_scale: TimeScale::UTC,
         }
         .to_time_scale(time_scale))
     }
@@ -834,15 +858,8 @@ impl Epoch {
         second: u8,
         nanos: u32,
     ) -> Result<Self, Errors> {
-        let mut if_tai =
-            Self::maybe_from_gregorian_tai(year, month, day, hour, minute, second, nanos)?;
-        // Compute the TAI to UTC offset at this time.
-        // We have the time in TAI. But we were given UTC.
-        // Hence, we need to _add_ the leap seconds to get the actual TAI time.
-        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        if_tai.duration += if_tai.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
-        if_tai.time_scale = TimeScale::UTC;
-        Ok(if_tai)
+        let if_tai = Self::maybe_from_gregorian_tai(year, month, day, hour, minute, second, nanos)?;
+        Ok(if_tai.to_time_scale(TimeScale::UTC))
     }
 
     #[must_use]
@@ -3310,12 +3327,9 @@ fn formal_epoch_reciprocity_tdb() {
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         let out_duration = epoch.to_duration_in_time_scale(time_scale);
         assert_eq!(out_duration.centuries, duration.centuries);
-        if out_duration.nanoseconds > duration.nanoseconds {
-            assert!(out_duration.nanoseconds - duration.nanoseconds < 500_000);
-        } else if out_duration.nanoseconds < duration.nanoseconds {
-            assert!(duration.nanoseconds - out_duration.nanoseconds < 500_000);
-        }
-        // Else: they match and we're happy.
+        assert_eq!(out_duration.nanoseconds, duration.nanoseconds);
+        let error = (out_duration.nanoseconds - duration.nanoseconds) as f64;
+        assert!(error.abs() < 500_000.0, "error: {}", error);
     }
 }
 
