@@ -126,7 +126,7 @@ fn test_encdec() {
         let encdec_epoch = Epoch::from_der(&buf).unwrap();
         // Check that the duration in J1900 TAI is the same
         assert_eq!(
-            encdec_epoch.duration_since_j1900_tai, epoch.duration_since_j1900_tai,
+            encdec_epoch.duration, epoch.duration,
             "Decoded epoch incorrect ({ts:?}):\ngot: {encdec_epoch}\nexp: {epoch}",
         );
         // Check that the time scale used is preserved

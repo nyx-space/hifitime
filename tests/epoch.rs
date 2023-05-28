@@ -381,7 +381,7 @@ fn gpst() {
     assert_eq!(format!("{:o}", gps_epoch), "0");
     assert_eq!(
         Epoch::from_gpst_days(0.0).to_duration_since_j1900(),
-        gps_epoch.duration_since_j1900_tai
+        gps_epoch.duration
     );
 
     assert_eq!(
@@ -460,7 +460,7 @@ fn galileo_time_scale() {
     assert_eq!(format!("{:x}", GST_REF_EPOCH), "1999-08-22T00:00:19 TAI");
     assert_eq!(
         Epoch::from_gst_days(0.0).to_duration_since_j1900(),
-        gst_epoch.duration_since_j1900_tai
+        gst_epoch.duration
     );
 
     assert_eq!(
@@ -505,7 +505,7 @@ fn beidou_time_scale() {
 
     assert_eq!(
         Epoch::from_bdt_days(0.0).to_duration_since_j1900(),
-        bdt_epoch.duration_since_j1900_tai
+        bdt_epoch.duration
     );
 
     assert_eq!(
@@ -973,11 +973,11 @@ fn test_format() {
                 match i {
                     0 => assert_eq!(format!("{epoch:x}"), "2020-09-06T23:24:29.000000002 TAI"),
                     1 => {
-                        assert_eq!(epoch.duration_since_j1900_tai, 1 * Unit::Second);
+                        assert_eq!(epoch.duration, 1 * Unit::Second);
                         assert_eq!(format!("{epoch:x}"), "1900-01-01T00:00:01 TAI")
                     }
                     2 => {
-                        assert_eq!(epoch.duration_since_j1900_tai, -1 * Unit::Second);
+                        assert_eq!(epoch.duration, -1 * Unit::Second);
                         assert_eq!(format!("{epoch:x}"), "1899-12-31T23:59:59 TAI")
                     }
                     3 => assert_eq!(format!("{epoch:x}"), "1820-09-06T23:24:29.000000002 TAI"),
@@ -1010,8 +1010,8 @@ fn test_format() {
                             (rebuilt - *epoch) < 30.0 * Unit::Microsecond,
                             "#{i} error = {}\ngot = {}\nwant: {}",
                             rebuilt - *epoch,
-                            rebuilt.duration_since_j1900_tai,
-                            epoch.duration_since_j1900_tai
+                            rebuilt.duration,
+                            epoch.duration
                         )
                     } else {
                         assert_eq!(
@@ -1019,15 +1019,15 @@ fn test_format() {
                             epoch,
                             "#{i} error = {}\ngot = {}\nwant: {}",
                             rebuilt - *epoch,
-                            rebuilt.duration_since_j1900_tai,
-                            epoch.duration_since_j1900_tai
+                            rebuilt.duration,
+                            epoch.duration
                         )
                     }
                 }
                 Err(e) => {
                     panic!(
                         "#{i} {e:?} with {epoch:?} (duration since j1900 = {})",
-                        epoch.duration_since_j1900_tai
+                        epoch.duration
                     )
                 }
             };
@@ -1042,8 +1042,8 @@ fn test_format() {
     let epoch_post = Epoch::from_gregorian_tai_hms(1900, 1, 1, 0, 0, 1);
     let epoch_pre = Epoch::from_gregorian_tai_hms(1899, 12, 31, 23, 59, 59);
 
-    assert_eq!(epoch_post.duration_since_j1900_tai.decompose().0, 0);
-    assert_eq!(epoch_pre.duration_since_j1900_tai.decompose().0, -1);
+    assert_eq!(epoch_post.duration.decompose().0, 0);
+    assert_eq!(epoch_pre.duration.decompose().0, -1);
 }
 
 #[test]

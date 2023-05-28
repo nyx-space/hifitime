@@ -68,7 +68,7 @@ pub const J2000_TO_J1900_DURATION: Duration = Duration {
 
 /// The Ephemeris Time reference epoch J2000.
 pub const J2000_REF_EPOCH_ET: Epoch = Epoch {
-    duration_since_j1900_tai: Duration {
+    duration: Duration {
         centuries: 0,
         nanoseconds: 3_155_716_767_816_072_748,
     },
@@ -77,7 +77,7 @@ pub const J2000_REF_EPOCH_ET: Epoch = Epoch {
 
 /// The Dynamic Barycentric Time reference epoch J2000.
 pub const J2000_REF_EPOCH_TDB: Epoch = Epoch {
-    duration_since_j1900_tai: Duration {
+    duration: Duration {
         centuries: 0,
         nanoseconds: 3_155_716_767_816_072_704,
     },
