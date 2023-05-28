@@ -78,14 +78,16 @@ impl Epoch {
         self.to_duration_since_j1900()
     }
 
-    #[must_use]
-    #[deprecated(
-        note = "Prefix for this function is now `to_` instead of `as_`.",
-        since = "3.5.0"
-    )]
-    pub fn as_duration_since_j1900_in_time_scale(&self, time_scale: TimeScale) -> Duration {
-        self.to_duration_since_j1900_in_time_scale(time_scale)
-    }
+    /*
+        #[must_use]
+        #[deprecated(
+            note = "Prefix for this function is now `to_` instead of `as_`.",
+            since = "3.5.0"
+        )]
+        pub fn as_duration_since_j1900_in_time_scale(&self, time_scale: TimeScale) -> Duration {
+            self.to_duration_since_j1900_in_time_scale(time_scale)
+        }
+    */
 
     #[must_use]
     #[deprecated(
@@ -96,14 +98,16 @@ impl Epoch {
         self.to_tai_seconds()
     }
 
-    #[must_use]
-    #[deprecated(
-        note = "Prefix for this function is now `to_` instead of `as_`.",
-        since = "3.5.0"
-    )]
-    pub const fn as_tai_duration(&self) -> Duration {
-        self.to_tai_duration()
-    }
+    /*
+        #[must_use]
+        #[deprecated(
+            note = "Prefix for this function is now `to_` instead of `as_`.",
+            since = "3.5.0"
+        )]
+        pub const fn as_tai_duration(&self) -> Duration {
+            self.to_tai_duration()
+        }
+    */
 
     #[must_use]
     #[deprecated(

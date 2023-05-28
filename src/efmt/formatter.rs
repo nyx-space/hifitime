@@ -99,8 +99,8 @@ impl Formatter {
         }
     }
 
-    pub fn in_time_scale(epoch: Epoch, format: Format, time_scale: TimeScale) -> Self {
-        Self::new(epoch.in_time_scale(time_scale), format)
+    pub fn to_time_scale(epoch: Epoch, format: Format, time_scale: TimeScale) -> Self {
+        Self::new(epoch.to_time_scale(time_scale), format)
     }
 
     pub fn set_timezone(&mut self, offset: Duration) {
