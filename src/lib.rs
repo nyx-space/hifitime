@@ -37,6 +37,8 @@ pub const DAYS_PER_YEAR_NLD: f64 = 365.0;
 /// `DAYS_PER_CENTURY` corresponds to the number of days per century in the Julian calendar.
 pub const DAYS_PER_CENTURY: f64 = 36525.0;
 pub const DAYS_PER_CENTURY_I64: i64 = 36525;
+pub const DAYS_PER_WEEK: f64 = 7.0;
+pub const DAYS_PER_WEEK_I64: i64 = 7;
 /// `SECONDS_PER_MINUTE` defines the number of seconds per minute.
 pub const SECONDS_PER_MINUTE: f64 = 60.0;
 /// `SECONDS_PER_HOUR` defines the number of seconds per hour.
