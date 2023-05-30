@@ -272,7 +272,9 @@ impl Epoch {
         None
     }
 
-    /// Creates an epoch from given duration expressed in given timescale.
+    /// Creates an epoch from given duration expressed in given timescale, i.e. since the given time scale's reference epoch.
+    /// 
+    /// For example, if the duration is 1 day and the time scale is Ephemeris Time, then this will create an epoch of 2000-01-02 at midnight ET. If the duration is 1 day and the time scale is TAI, this will create an epoch of 1900-01-02 at noon, because the TAI reference epoch in Hifitime is chosen to be the J1900 epoch.
     /// In case of ET, TDB Timescales, a duration since J2000 is expected.
     #[must_use]
     pub fn from_duration(duration: Duration, ts: TimeScale) -> Self {
