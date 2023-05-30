@@ -290,7 +290,7 @@ impl Epoch {
 
     #[must_use]
     /// Converts self to another time scale
-    pub fn to_time_scale(&self, ts: TimeScale) -> Self {
+    pub fn into_time_scale(&self, ts: TimeScale) -> Self {
         match ts {
             TimeScale::TAI => {
                 let mut new_epoch = self.clone();
