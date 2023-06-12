@@ -53,12 +53,6 @@ pub const SECONDS_PER_YEAR: f64 = 31_557_600.0;
 pub const SECONDS_PER_YEAR_I64: i64 = 31_557_600;
 /// `SECONDS_PER_TROPICAL_YEAR` corresponds to the number of seconds per tropical year from [NAIF SPICE](https://naif.jpl.nasa.gov/pub/naif/toolkit_docs/C/cspice/tyear_c.html).
 pub const SECONDS_PER_TROPICAL_YEAR: f64 = 31_556_925.974_7;
-/// `SECONDS_PER_SIDERAL_YEAR` corresponds to the number of seconds per sidereal year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
-#[deprecated(
-    since = "3.8.0",
-    note = "Use SECONDS_PER_SIDEREAL_YEAR instead (does not have the typo)"
-)]
-pub const SECONDS_PER_SIDERAL_YEAR: f64 = 31_558_150.0;
 /// `SECONDS_PER_SIDEREAL_YEAR` corresponds to the number of seconds per sidereal year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
 pub const SECONDS_PER_SIDEREAL_YEAR: f64 = 31_558_150.0;
 
@@ -123,15 +117,11 @@ mod leap_seconds_file;
 #[cfg(feature = "ut1")]
 pub mod ut1;
 
-/// This module defines all of the deprecated methods.
-mod deprecated;
-
 #[allow(deprecated)]
 pub mod prelude {
     pub use crate::efmt::{Format, Formatter};
     pub use crate::{
-        deprecated::TimeSystem, Duration, Epoch, Errors, Freq, Frequencies, TimeScale, TimeSeries,
-        TimeUnits, Unit, Weekday,
+        Duration, Epoch, Errors, Freq, Frequencies, TimeScale, TimeSeries, TimeUnits, Unit, Weekday,
     };
 }
 

@@ -41,7 +41,7 @@ use pyo3::types::PyType;
 use crate::leap_seconds_file::LeapSecondsFile;
 
 #[cfg(feature = "serde")]
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use core::str::FromStr;
 #[cfg(feature = "std")]
@@ -126,12 +126,31 @@ const CUMULATIVE_DAYS_FOR_MONTH: [u16; 12] = {
 #[derive(Copy, Clone, Default, Eq, Hash)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Epoch {
     /// An Epoch is always stored as the duration since the beginning of its time scale
     pub duration: Duration,
     /// Time scale used during the initialization of this Epoch.
     pub time_scale: TimeScale,
+}
+
+impl Serialize for Epoch {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = self.to_string(); // Assuming `Display` is implemented for `Epoch`
+        serializer.serialize_str(&s)
+    }
+}
+
+impl<'de> Deserialize<'de> for Epoch {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Epoch::from_str(&s).map_err(serde::de::Error::custom)
+    }
 }
 
 impl Sub for Epoch {
@@ -291,75 +310,80 @@ impl Epoch {
     #[must_use]
     /// Converts self to another time scale
     pub fn into_time_scale(&self, ts: TimeScale) -> Self {
-        match ts {
-            TimeScale::TAI => {
-                let mut new_epoch = self.clone();
-                // if previous time scale supported leap seconds: remove them
-                if self.time_scale.uses_leap_seconds() {
-                    new_epoch -= new_epoch.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
-                }
-                // conversion to TAI: remove time scale reference point
-                new_epoch.duration -= ts.tai_reference_epoch().duration;
-                new_epoch.time_scale = TimeScale::TAI;
-                new_epoch
-            }
-            TimeScale::ET => {
-                // first convert back to TAI
-                let mut tai_epoch = self.into_time_scale(TimeScale::TAI);
-                // seconds past J2000
-                //NB: this operation is not feasible is Self is not PAST J2000
-                let duration_since_j2000 = tai_epoch - J2000_REF_EPOCH;
-                let mut seconds_since_j2000 = duration_since_j2000.to_seconds();
-                for _ in 0..5 {
-                    seconds_since_j2000 += -NAIF_K
-                        * (NAIF_M0
-                            + NAIF_M1 * seconds_since_j2000
-                            + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds_since_j2000).sin())
-                        .sin();
-                }
-                // At this point, we have a good estimate of the number of seconds
-                // of this epoch. Reverse the algorithm:
-                let delta_et_tai = Self::delta_et_tai(
-                    seconds_since_j2000 - (TT_OFFSET_MS * Unit::Millisecond).to_seconds(),
-                );
-                // Match the SPICE by changing the UTC definition
-                Self {
-                    duration: (tai_epoch.duration.to_seconds() - delta_et_tai) * Unit::Second
-                        + J2000_TO_J1900_DURATION,
-                    time_scale: TimeScale::ET,
-                }
-            }
-            TimeScale::TDB => {
-                // first convert back to TAI
-                let mut tai_epoch = self.into_time_scale(TimeScale::TAI);
-                // seconds past J2000
-                //NB: this operation is not feasible is Self is not PAST J2000
-                //let duration_since_j2000 = tai_epoch - J2000_REF_EPOCH;
-                let duration_since_j2000 = tai_epoch - J2000_REF_EPOCH;
-                let seconds_since_j2000 = duration_since_j2000.to_seconds();
-                let gamma = Self::inner_g(seconds_since_j2000);
-                let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
-                tai_epoch -= delta_tdb_tai;
-                tai_epoch.time_scale = TimeScale::TDB;
-                tai_epoch
-            }
-            ts => {
-                // first convert back to TAI
-                let mut tai_epoch = self.into_time_scale(TimeScale::TAI);
-                // leap second management
-                if ts.uses_leap_seconds() {
-                    // new time scale supports leap seconds: add them
-                    tai_epoch += tai_epoch.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
-                }
-                // time scale specificities
-                match ts {
-                    TimeScale::TT => {
-                        tai_epoch -= TT_OFFSET_MS * Unit::Millisecond;
+        if ts == self.time_scale {
+            // Do nothing
+            *self
+        } else {
+            match ts {
+                TimeScale::TAI => {
+                    let mut new_epoch = *self;
+                    // if previous time scale supported leap seconds: remove them
+                    if self.time_scale.uses_leap_seconds() {
+                        new_epoch -= new_epoch.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
                     }
-                    _ => {}
+                    // conversion to TAI: remove time scale reference point
+                    new_epoch.duration -= ts.tai_reference_epoch().duration;
+                    new_epoch.time_scale = TimeScale::TAI;
+                    new_epoch
                 }
-                tai_epoch.time_scale = ts;
-                tai_epoch
+                TimeScale::ET => {
+                    // first convert back to TAI
+                    let tai_epoch = self.into_time_scale(TimeScale::TAI);
+                    // seconds past J2000
+                    //NB: this operation is not feasible is Self is not PAST J2000
+                    let duration_since_j2000 = tai_epoch - J2000_REF_EPOCH;
+                    let mut seconds_since_j2000 = duration_since_j2000.to_seconds();
+                    for _ in 0..5 {
+                        seconds_since_j2000 += -NAIF_K
+                            * (NAIF_M0
+                                + NAIF_M1 * seconds_since_j2000
+                                + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds_since_j2000).sin())
+                            .sin();
+                    }
+                    // At this point, we have a good estimate of the number of seconds
+                    // of this epoch. Reverse the algorithm:
+                    let delta_et_tai = Self::delta_et_tai(
+                        seconds_since_j2000 - (TT_OFFSET_MS * Unit::Millisecond).to_seconds(),
+                    );
+                    // Match the SPICE by changing the UTC definition
+                    Self {
+                        duration: (tai_epoch.duration.to_seconds() - delta_et_tai) * Unit::Second
+                            + J2000_TO_J1900_DURATION,
+                        time_scale: TimeScale::ET,
+                    }
+                }
+                TimeScale::TDB => {
+                    // first convert back to TAI
+                    let mut tai_epoch = self.into_time_scale(TimeScale::TAI);
+                    // seconds past J2000
+                    //NB: this operation is not feasible is Self is not PAST J2000
+                    //let duration_since_j2000 = tai_epoch - J2000_REF_EPOCH;
+                    let duration_since_j2000 = tai_epoch - J2000_REF_EPOCH;
+                    let seconds_since_j2000 = duration_since_j2000.to_seconds();
+                    let gamma = Self::inner_g(seconds_since_j2000);
+                    let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
+                    tai_epoch -= delta_tdb_tai;
+                    tai_epoch.time_scale = TimeScale::TDB;
+                    tai_epoch
+                }
+                ts => {
+                    // first convert back to TAI
+                    let mut tai_epoch = self.into_time_scale(TimeScale::TAI);
+                    // leap second management
+                    if ts.uses_leap_seconds() {
+                        // new time scale supports leap seconds: add them
+                        tai_epoch += tai_epoch.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
+                    }
+                    // time scale specificities
+                    match ts {
+                        TimeScale::TT => {
+                            tai_epoch -= TT_OFFSET_MS * Unit::Millisecond;
+                        }
+                        _ => {}
+                    }
+                    tai_epoch.time_scale = ts;
+                    tai_epoch
+                }
             }
         }
     }
@@ -793,9 +817,8 @@ impl Epoch {
 
         Ok(Self {
             duration: duration_wrt_1900,
-            time_scale: TimeScale::TAI,
-        }
-        .into_time_scale(time_scale))
+            time_scale,
+        })
     }
 
     #[must_use]
@@ -3252,8 +3275,7 @@ fn cumulative_days_for_month() {
 #[cfg(feature = "serde")]
 fn test_serdes() {
     let e = Epoch::from_gregorian_utc(2020, 01, 01, 0, 0, 0, 0);
-    let content =
-        r#"{"duration":{"centuries":1,"nanoseconds":631065637000000000},"time_scale":"UTC"}"#;
+    let content = r#""2020-01-01T00:00:00 UTC""#;
     assert_eq!(content, serde_json::to_string(&e).unwrap());
     let parsed: Epoch = serde_json::from_str(content).unwrap();
     assert_eq!(e, parsed);
