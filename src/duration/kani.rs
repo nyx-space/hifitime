@@ -56,7 +56,7 @@ fn formal_duration_truncated_ns_reciprocity() {
         // We fit on a i64 but we need to account for the number of nanoseconds wrapped to the negative centuries.
 
         let nanos = u_ns.rem_euclid(NANOSECONDS_PER_CENTURY);
-        let expect_rslt = i64::from(centuries + 1) * NANOSECONDS_PER_CENTURY as i64 + nanos as i64;
+        let expect_rslt = i64::from(centuries) * NANOSECONDS_PER_CENTURY as i64 + nanos as i64;
 
         let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
         assert_eq!(recip_ns, expect_rslt);
