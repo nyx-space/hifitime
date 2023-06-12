@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2022 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. AUTHORS.md)
+ * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -626,14 +626,14 @@ impl Epoch {
     /// Initialize an Epoch from the number of seconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn from_gpst_seconds(seconds: f64) -> Self {
-        Self::from_duration(Duration::from_f64(seconds, Unit::Second), TimeScale::GPST)
+        Self::from_duration(seconds * Unit::Second, TimeScale::GPST)
     }
 
     #[must_use]
     /// Initialize an Epoch from the number of days since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn from_gpst_days(days: f64) -> Self {
-        Self::from_duration(Duration::from_f64(days, Unit::Day), TimeScale::GPST)
+        Self::from_duration(days * Unit::Day, TimeScale::GPST)
     }
 
     #[must_use]
@@ -648,14 +648,14 @@ impl Epoch {
     /// Initialize an Epoch from the number of seconds since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn from_qzsst_seconds(seconds: f64) -> Self {
-        Self::from_duration(Duration::from_f64(seconds, Unit::Second), TimeScale::QZSST)
+        Self::from_duration(seconds * Unit::Second, TimeScale::QZSST)
     }
 
     #[must_use]
     /// Initialize an Epoch from the number of days since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn from_qzsst_days(days: f64) -> Self {
-        Self::from_duration(Duration::from_f64(days, Unit::Day), TimeScale::QZSST)
+        Self::from_duration(days * Unit::Day, TimeScale::QZSST)
     }
 
     #[must_use]
@@ -2996,7 +2996,7 @@ impl FromStr for Epoch {
                     TimeScale::TDB => Ok(Self::from_tdb_seconds(value)),
                     TimeScale::TT => Ok(Self::from_tt_seconds(value)),
                     ts => {
-                        let secs = Duration::from_f64(value, Unit::Second);
+                        let secs = value * Unit::Second;
                         Ok(Self::from_duration(secs, ts))
                     }
                 },
