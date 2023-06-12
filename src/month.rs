@@ -43,10 +43,6 @@ impl Default for MonthName {
     }
 }
 
-impl MonthName {
-    const MAX: u8 = 12;
-}
-
 impl FromStr for MonthName {
     type Err = ParsingErrors;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -70,7 +66,7 @@ impl FromStr for MonthName {
 
 impl From<u8> for MonthName {
     fn from(u: u8) -> Self {
-        match u.rem_euclid(Self::MAX) {
+        match u {
             1 => Self::January,
             2 => Self::February,
             3 => Self::March,

@@ -1894,3 +1894,24 @@ fn test_leap_seconds_file() {
         }
     }
 }
+
+#[test]
+fn regression_test_gh_204() {
+    use core::str::FromStr;
+    use hifitime::Epoch;
+
+    let e1700 = Epoch::from_str("1700-01-01T00:00:00 TAI").unwrap();
+    assert_eq!(format!("{e1700:x}"), "1700-01-01T00:00:00 TAI");
+
+    let e1700 = Epoch::from_str("1700-04-17T02:10:09 TAI").unwrap();
+    assert_eq!(format!("{e1700:x}"), "1700-04-17T02:10:09 TAI");
+
+    let e1799 = Epoch::from_str("1799-01-01T00:00:01 TAI").unwrap();
+    assert_eq!(format!("{e1799:x}"), "1799-01-01T00:00:01 TAI");
+
+    let e1899 = Epoch::from_str("1899-01-01T00:00:00 TAI").unwrap();
+    assert_eq!(format!("{e1899:x}"), "1899-01-01T00:00:00 TAI");
+
+    let e1900_m1 = Epoch::from_str("1899-12-31T23:59:59 TAI").unwrap();
+    assert_eq!(format!("{e1900_m1:x}"), "1899-12-31T23:59:59 TAI");
+}

@@ -751,6 +751,7 @@ impl Epoch {
 
         // Add the seconds for the months prior to the current month
         duration_wrt_1900 += Unit::Day * i64::from(CUMULATIVE_DAYS_FOR_MONTH[(month - 1) as usize]);
+
         if is_leap_year(year) && month > 2 {
             // NOTE: If on 29th of February, then the day is not finished yet, and therefore
             // the extra seconds are added below as per a normal day.
@@ -1180,7 +1181,7 @@ impl Epoch {
                 day = if sign >= 0 {
                     days_in_year - days_so_far + 1.0
                 } else {
-                    days_in_year - days_so_far - 1.0
+                    days_in_year - days_so_far
                 };
                 break;
             }
@@ -1200,9 +1201,6 @@ impl Epoch {
             } else {
                 usual_days_per_month(11) as f64
             };
-        } else if sign < 0 {
-            // Must add one day because just below, we'll be ignoring the days when rebuilding the time.
-            day += 1.0;
         }
 
         if sign < 0 {
@@ -1216,6 +1214,15 @@ impl Epoch {
                 microseconds,
                 nanos,
             );
+
+            // Last check on the validity of the Gregorian date
+
+            if time == Duration::ZERO || month == 12 && day == 32.0 {
+                // We've underflowed since we're before 1900.
+                year += 1;
+                month = 1;
+                day = 1.0;
+            }
 
             let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanos) =
                 (24 * Unit::Hour + time).decompose();
