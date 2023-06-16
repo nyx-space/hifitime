@@ -35,13 +35,13 @@ fn test_const_ops() {
 fn test_from_gregorian() {
     let utc_epoch = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
     let tai_epoch = Epoch::from_gregorian_at_midnight(2017, 1, 14, TimeScale::TAI);
-    assert_eq!(utc_epoch.into_time_scale(TimeScale::TAI), tai_epoch);
-    assert_eq!(utc_epoch, tai_epoch.into_time_scale(TimeScale::UTC));
+    assert_eq!(utc_epoch.to_time_scale(TimeScale::TAI), tai_epoch);
+    assert_eq!(utc_epoch, tai_epoch.to_time_scale(TimeScale::UTC));
 
     let utc_epoch = Epoch::from_gregorian_utc(2016, 12, 31, 23, 59, 59, 0);
     let tai_epoch = Epoch::from_gregorian(2016, 12, 31, 23, 59, 59, 0, TimeScale::TAI);
-    assert_eq!(utc_epoch.into_time_scale(TimeScale::TAI), tai_epoch);
-    assert_eq!(utc_epoch, tai_epoch.into_time_scale(TimeScale::UTC));
+    assert_eq!(utc_epoch.to_time_scale(TimeScale::TAI), tai_epoch);
+    assert_eq!(utc_epoch, tai_epoch.to_time_scale(TimeScale::UTC));
 }
 
 #[allow(clippy::float_equality_without_abs)]
@@ -185,10 +185,12 @@ fn utc_tai() {
     assert_eq!(flp_from_secs_tai, flp_from_greg_tai);
     // Right after the discontinuity, UTC time should be ten seconds behind TAI, i.e. TAI is ten seconds ahead of UTC
     // In other words, the following date times are equal:
+    let in_tai = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 10);
+    let in_utc = Epoch::from_gregorian_utc_at_midnight(1972, 1, 1);
     assert_eq!(
-        Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 10),
-        Epoch::from_gregorian_utc_at_midnight(1972, 1, 1),
-        "UTC discontinuity failed"
+        in_tai, in_utc,
+        "UTC discontinuity failed:\n{:?}\t{:?}",
+        in_tai.duration, in_utc.duration
     );
     // Noon UTC after the first leap second is in fact ten seconds _after_ noon TAI.
     // Hence, there are as many TAI seconds since Epoch between UTC Noon and TAI Noon + 10s.
@@ -583,11 +585,11 @@ fn unix() {
     let unix_epoch = Epoch::from_gregorian_utc_at_midnight(1970, 1, 1);
 
     assert_eq!(
-        format!("{}", unix_epoch.into_time_scale(TimeScale::UTC)),
+        format!("{}", unix_epoch.to_time_scale(TimeScale::UTC)),
         "1970-01-01T00:00:00 UTC"
     );
     assert_eq!(
-        format!("{:x}", unix_epoch.into_time_scale(TimeScale::TAI)),
+        format!("{:x}", unix_epoch.to_time_scale(TimeScale::TAI)),
         "1970-01-01T00:00:00 TAI"
     );
     // Print as UNIX seconds
@@ -1345,7 +1347,7 @@ fn test_add_durations_over_leap_seconds() {
     // Noon UTC after the first leap second is in fact ten seconds _after_ noon TAI.
     // Hence, there are as many TAI seconds since Epoch between UTC Noon and TAI Noon + 10s.
     let pre_ls_utc = Epoch::from_gregorian_utc_at_noon(1971, 12, 31);
-    let pre_ls_tai = pre_ls_utc.into_time_scale(TimeScale::TAI);
+    let pre_ls_tai = pre_ls_utc.to_time_scale(TimeScale::TAI);
 
     // Before the first leap second, there is no time difference between both epochs (because only IERS announced leap seconds are accounted for by default).
     assert_eq!(pre_ls_utc - pre_ls_tai, Duration::ZERO);
@@ -1446,7 +1448,7 @@ fn test_weekday() {
             TimeScale::TT,
             TimeScale::UTC,
         ] {
-            let e_ts = e.into_time_scale(new_time_scale);
+            let e_ts = e.to_time_scale(new_time_scale);
             assert_eq!(e_ts.weekday(), expect, "error with {new_time_scale}");
         }
     };
@@ -1526,7 +1528,7 @@ fn test_get_time() {
 
     let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
     let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
-    let other = other_utc.into_time_scale(TimeScale::TDB);
+    let other = other_utc.to_time_scale(TimeScale::TDB);
 
     assert_eq!(
         epoch.with_hms_from(other),
@@ -1584,7 +1586,7 @@ fn test_time_of_week() {
     assert_eq!(epoch.to_time_of_week(), (0, 10 * 1_000_000_000 + 10));
 
     // TAI<=>UTC
-    let epoch_utc = epoch.into_time_scale(TimeScale::UTC);
+    let epoch_utc = epoch.to_time_scale(TimeScale::UTC);
     let (week, tow) = epoch_utc.to_time_of_week();
     assert_eq!(
         Epoch::from_time_of_week(week, tow, TimeScale::UTC),
@@ -1604,7 +1606,7 @@ fn test_time_of_week() {
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 01, 00, 00, 00, 00));
     assert_eq!(epoch.to_time_of_week(), (2238, 345_618_000_000_000));
 
-    let epoch_utc = epoch.into_time_scale(TimeScale::UTC);
+    let epoch_utc = epoch.to_time_scale(TimeScale::UTC);
     let (utc_wk, utc_tow) = epoch_utc.to_time_of_week();
     assert_eq!(
         Epoch::from_time_of_week(utc_wk, utc_tow, TimeScale::UTC),
@@ -1612,7 +1614,7 @@ fn test_time_of_week() {
     );
 
     // GPST and QZSST share the same properties at all times
-    let epoch_qzsst = epoch.into_time_scale(TimeScale::QZSST);
+    let epoch_qzsst = epoch.to_time_scale(TimeScale::QZSST);
     assert_eq!(epoch.to_gregorian_utc(), epoch_qzsst.to_gregorian_utc());
 
     let gps_qzss_offset =
@@ -1624,7 +1626,7 @@ fn test_time_of_week() {
     assert_eq!(epoch.to_gregorian_utc(), (1980, 01, 06, 01, 00, 0 + 18, 00));
     assert_eq!(epoch.to_time_of_week(), (0, 3_618_000_000_000));
 
-    let epoch_utc = epoch.into_time_scale(TimeScale::UTC);
+    let epoch_utc = epoch.to_time_scale(TimeScale::UTC);
     let (utc_wk, utc_tow) = epoch_utc.to_time_of_week();
     assert_eq!(
         Epoch::from_time_of_week(utc_wk, utc_tow, TimeScale::UTC),
@@ -1645,7 +1647,7 @@ fn test_time_of_week() {
     assert_eq!(epoch.to_time_of_week(), (24, 306_457_000_000_000));
 
     // <=>UTC
-    let epoch_utc = epoch.into_time_scale(TimeScale::UTC);
+    let epoch_utc = epoch.to_time_scale(TimeScale::UTC);
     let (week, tow) = epoch_utc.to_time_of_week();
     assert_eq!(
         Epoch::from_time_of_week(week, tow, TimeScale::UTC),
@@ -1657,7 +1659,7 @@ fn test_time_of_week() {
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 01, 00, 00, 00, 01));
 
     // <=>UTC
-    let epoch_utc = epoch.into_time_scale(TimeScale::UTC);
+    let epoch_utc = epoch.to_time_scale(TimeScale::UTC);
     let (week, tow) = epoch_utc.to_time_of_week();
     assert_eq!(
         Epoch::from_time_of_week(week, tow, TimeScale::UTC),
@@ -1669,7 +1671,7 @@ fn test_time_of_week() {
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 02, 12, 00, 00, 00));
 
     // <=>UTC
-    let epoch_utc = epoch.into_time_scale(TimeScale::UTC);
+    let epoch_utc = epoch.to_time_scale(TimeScale::UTC);
     let (week, tow) = epoch_utc.to_time_of_week();
     assert_eq!(
         Epoch::from_time_of_week(week, tow, TimeScale::UTC),
@@ -1681,7 +1683,7 @@ fn test_time_of_week() {
     assert_eq!(epoch.to_gregorian_utc(), (2022, 12, 02, 15, 27, 19, 10));
 
     // <=>UTC
-    let epoch_utc = epoch.into_time_scale(TimeScale::UTC);
+    let epoch_utc = epoch.to_time_scale(TimeScale::UTC);
     let (week, tow) = epoch_utc.to_time_of_week();
     assert_eq!(
         Epoch::from_time_of_week(week, tow, TimeScale::UTC),
@@ -1695,7 +1697,7 @@ fn test_time_of_week() {
     assert_eq!(epoch.to_time_of_week(), (0, 3_600_000_000_000));
 
     // <=>UTC
-    let epoch_utc = epoch.into_time_scale(TimeScale::UTC);
+    let epoch_utc = epoch.to_time_scale(TimeScale::UTC);
     let (week, tow) = epoch_utc.to_time_of_week();
     assert_eq!(
         Epoch::from_time_of_week(week, tow, TimeScale::UTC),
@@ -1711,7 +1713,7 @@ fn test_time_of_week() {
     assert_eq!(epoch.to_time_of_week(), (1, 128 * 3600 * 1_000_000_000));
 
     // <=>UTC
-    let epoch_utc = epoch.into_time_scale(TimeScale::UTC);
+    let epoch_utc = epoch.to_time_scale(TimeScale::UTC);
     let (week, tow) = epoch_utc.to_time_of_week();
     assert_eq!(
         Epoch::from_time_of_week(week, tow, TimeScale::UTC),
@@ -1732,7 +1734,7 @@ fn test_time_of_week() {
     );
 
     // <=>UTC
-    let epoch_utc = epoch.into_time_scale(TimeScale::UTC);
+    let epoch_utc = epoch.to_time_scale(TimeScale::UTC);
     let (week, tow) = epoch_utc.to_time_of_week();
     assert_eq!(
         Epoch::from_time_of_week(week, tow, TimeScale::UTC),
@@ -1755,7 +1757,7 @@ fn test_time_of_week() {
     );
 
     // <=>UTC
-    let epoch_utc = epoch.into_time_scale(TimeScale::UTC);
+    let epoch_utc = epoch.to_time_scale(TimeScale::UTC);
     let (week, tow) = epoch_utc.to_time_of_week();
     assert_eq!(
         Epoch::from_time_of_week(week, tow, TimeScale::UTC),
@@ -1776,7 +1778,7 @@ fn test_day_of_year() {
             TimeScale::ET,
             TimeScale::TDB,
         ] {
-            let epoch = utc_epoch.into_time_scale(*ts);
+            let epoch = utc_epoch.to_time_scale(*ts);
             let (year, days) = epoch.year_days_of_year();
             let rebuilt = Epoch::from_day_of_year(year, days, *ts);
             if *ts == TimeScale::ET || *ts == TimeScale::TDB {
@@ -1901,9 +1903,9 @@ fn test_epoch_formatter() {
 #[test]
 fn test_to_tai_time_scale() {
     let j1900_ref = J1900_REF_EPOCH;
-    assert_eq!(j1900_ref, j1900_ref.into_time_scale(TimeScale::TAI));
+    assert_eq!(j1900_ref, j1900_ref.to_time_scale(TimeScale::TAI));
     let j2000_ref = J2000_REF_EPOCH;
-    assert_eq!(j2000_ref, j2000_ref.into_time_scale(TimeScale::TAI));
+    assert_eq!(j2000_ref, j2000_ref.to_time_scale(TimeScale::TAI));
     let j2000_to_j1900 = j2000_ref - j1900_ref;
     assert_eq!(j2000_to_j1900, J2000_TO_J1900_DURATION);
 }
@@ -1913,13 +1915,13 @@ fn test_to_utc_time_scale() {
     let gpst_tai_ref = TimeScale::GPST.tai_reference_epoch();
     // there were 19 leap seconds on the day GPST was "started"
     let gpst_utc_delta = 19.0; // leaps
-    let gpst_utc_ref = gpst_tai_ref.into_time_scale(TimeScale::UTC);
+    let gpst_utc_ref = gpst_tai_ref.to_time_scale(TimeScale::UTC);
     assert_eq!((gpst_utc_ref - gpst_tai_ref).to_seconds(), gpst_utc_delta);
 
     let bdt_tai_ref = TimeScale::BDT.tai_reference_epoch();
     // there were 33 leap seconds on the day BDT was "started"
     let bdt_utc_delta = 33.0; // leaps
-    let bdt_utc_ref = bdt_tai_ref.into_time_scale(TimeScale::UTC);
+    let bdt_utc_ref = bdt_tai_ref.to_time_scale(TimeScale::UTC);
     assert_eq!((bdt_utc_ref - bdt_tai_ref).to_seconds(), bdt_utc_delta);
 }
 

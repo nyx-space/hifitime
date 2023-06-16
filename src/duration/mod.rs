@@ -338,7 +338,7 @@ impl Duration {
                 + i128::from(self.nanoseconds)
         } else {
             // Centuries negative by a decent amount
-            i128::from(self.centuries + 1) * i128::from(NANOSECONDS_PER_CENTURY)
+            i128::from(self.centuries) * i128::from(NANOSECONDS_PER_CENTURY)
                 - i128::from(self.nanoseconds)
         }
     }
