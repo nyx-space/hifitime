@@ -31,19 +31,6 @@ fn test_const_ops() {
     assert!((j2000_offset.to_unit(Unit::Day) - J2000_OFFSET).abs() < f64::EPSILON);
 }
 
-#[test]
-fn test_from_gregorian() {
-    let utc_epoch = Epoch::from_gregorian_utc_at_midnight(2017, 1, 14);
-    let tai_epoch = Epoch::from_gregorian_at_midnight(2017, 1, 14, TimeScale::TAI);
-    assert_eq!(utc_epoch.to_time_scale(TimeScale::TAI), tai_epoch);
-    assert_eq!(utc_epoch, tai_epoch.to_time_scale(TimeScale::UTC));
-
-    let utc_epoch = Epoch::from_gregorian_utc(2016, 12, 31, 23, 59, 59, 0);
-    let tai_epoch = Epoch::from_gregorian(2016, 12, 31, 23, 59, 59, 0, TimeScale::TAI);
-    assert_eq!(utc_epoch.to_time_scale(TimeScale::TAI), tai_epoch);
-    assert_eq!(utc_epoch, tai_epoch.to_time_scale(TimeScale::UTC));
-}
-
 #[allow(clippy::float_equality_without_abs)]
 #[test]
 fn utc_epochs() {

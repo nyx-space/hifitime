@@ -13,8 +13,8 @@ use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
 use crate::parser::Token;
 use crate::{
     Errors, MonthName, TimeScale, TimeUnits, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S,
-    GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J2000_REF_EPOCH, J2000_TO_J1900_DURATION,
-    MJD_OFFSET, NANOSECONDS_PER_DAY, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
+    GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET,
+    NANOSECONDS_PER_DAY, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
     NANOSECONDS_PER_SECOND_U32, QZSST_REF_EPOCH, UNIX_REF_EPOCH,
 };
 
@@ -22,7 +22,7 @@ use crate::efmt::format::Format;
 
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
-use core::hash::Hash;
+use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 use crate::ParsingErrors;
@@ -123,7 +123,7 @@ const CUMULATIVE_DAYS_FOR_MONTH: [u16; 12] = {
 /// Defines a nanosecond-precision Epoch.
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
-#[derive(Copy, Clone, Default, Eq, Hash)]
+#[derive(Copy, Clone, Default, Eq)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
 pub struct Epoch {
@@ -131,6 +131,13 @@ pub struct Epoch {
     pub duration: Duration,
     /// Time scale used during the initialization of this Epoch.
     pub time_scale: TimeScale,
+}
+
+impl Hash for Epoch {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.duration.hash(state);
+        self.time_scale.hash(state);
+    }
 }
 
 impl Serialize for Epoch {
@@ -252,7 +259,19 @@ impl PartialEq for Epoch {
         if self.time_scale == other.time_scale {
             self.duration == other.duration
         } else {
-            self.duration == other.to_time_scale(self.time_scale).duration
+            // If one of the two time scales does not include leap seconds,
+            // we always convert the time scale with leap seconds into the
+            // time scale that does NOT have leap seconds.
+            if self.time_scale.uses_leap_seconds() != other.time_scale.uses_leap_seconds() {
+                if self.time_scale.uses_leap_seconds() {
+                    self.to_time_scale(other.time_scale).duration == other.duration
+                } else {
+                    self.duration == other.to_time_scale(self.time_scale).duration
+                }
+            } else {
+                // Otherwise it does not matter
+                self.duration == other.to_time_scale(self.time_scale).duration
+            }
         }
     }
 }
@@ -286,7 +305,7 @@ impl Epoch {
         provider: L,
     ) -> Option<f64> {
         for leap_second in provider.rev() {
-            if self.duration.to_seconds() >= leap_second.timestamp_tai_s
+            if self.to_tai_duration().to_seconds() >= leap_second.timestamp_tai_s
                 && (!iers_only || leap_second.announced_by_iers)
             {
                 return Some(leap_second.delta_at);
@@ -322,6 +341,7 @@ impl Epoch {
             *self
         } else {
             // Now we need to convert from the current time scale into the desired time scale.
+            // Let's first compute this epoch from its current time scale into TAI.
             let j1900_tai_offset = match self.time_scale {
                 TimeScale::TAI => self.duration,
                 TimeScale::TT => self.duration - TT_OFFSET_MS.milliseconds(),
@@ -353,22 +373,22 @@ impl Epoch {
                     // Offset back to J1900.
                     self.duration - delta_tdb_tai + J2000_TO_J1900_DURATION
                 }
-                TimeScale::UTC => self.duration + self.leap_seconds(true).unwrap_or(0.0).seconds(),
+                TimeScale::UTC => {
+                    // Assume this is TAI
+                    let mut tai_assumption = *self;
+                    tai_assumption.time_scale = TimeScale::TAI;
+                    self.duration + tai_assumption.leap_seconds(true).unwrap_or(0.0).seconds()
+                }
                 TimeScale::GPST => self.duration + GPST_REF_EPOCH.to_tai_duration(),
                 TimeScale::GST => self.duration + GST_REF_EPOCH.to_tai_duration(),
                 TimeScale::BDT => self.duration + BDT_REF_EPOCH.to_tai_duration(),
                 TimeScale::QZSST => self.duration + QZSST_REF_EPOCH.to_tai_duration(),
             };
+
             // Convert to the desired time scale from the TAI duration
-            match ts {
-                TimeScale::TAI => Self {
-                    duration: j1900_tai_offset,
-                    time_scale: TimeScale::TAI,
-                },
-                TimeScale::TT => Self {
-                    duration: j1900_tai_offset + TT_OFFSET_MS.milliseconds(),
-                    time_scale: TimeScale::TT,
-                },
+            let ts_ref_offset = match ts {
+                TimeScale::TAI => j1900_tai_offset,
+                TimeScale::TT => j1900_tai_offset + TT_OFFSET_MS.milliseconds(),
                 TimeScale::ET => {
                     // Run a Newton Raphston to convert find the correct value of the
                     let mut seconds = (j1900_tai_offset - J2000_TO_J1900_DURATION).to_seconds();
@@ -387,11 +407,7 @@ impl Epoch {
                     );
 
                     // Match SPICE by changing the UTC definition.
-                    Self {
-                        duration: j1900_tai_offset + delta_et_tai.seconds()
-                            - J2000_TO_J1900_DURATION,
-                        time_scale: TimeScale::ET,
-                    }
+                    j1900_tai_offset + delta_et_tai.seconds() - J2000_TO_J1900_DURATION
                 }
                 TimeScale::TDB => {
                     // Iterate to convert find the correct value of the
@@ -413,37 +429,26 @@ impl Epoch {
                         Self::inner_g(seconds + (TT_OFFSET_MS * Unit::Millisecond).to_seconds());
                     let delta_tdb_tai = gamma.seconds() + TT_OFFSET_MS.milliseconds();
 
-                    Self {
-                        duration: j1900_tai_offset + delta_tdb_tai - J2000_TO_J1900_DURATION,
-                        time_scale: TimeScale::TDB,
-                    }
+                    j1900_tai_offset + delta_tdb_tai - J2000_TO_J1900_DURATION
                 }
                 TimeScale::UTC => {
                     // Assume it's TAI
-                    let mut epoch = Self {
+                    let epoch = Self {
                         duration: j1900_tai_offset,
-                        time_scale: TimeScale::UTC,
+                        time_scale: TimeScale::TAI,
                     };
                     // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-                    epoch.duration -= epoch.leap_seconds(true).unwrap_or(0.0).seconds();
-                    epoch
+                    j1900_tai_offset - epoch.leap_seconds(true).unwrap_or(0.0).seconds()
                 }
-                TimeScale::GPST => Self {
-                    duration: j1900_tai_offset - GPST_REF_EPOCH.to_tai_duration(),
-                    time_scale: TimeScale::GPST,
-                },
-                TimeScale::GST => Self {
-                    duration: j1900_tai_offset - GST_REF_EPOCH.to_tai_duration(),
-                    time_scale: TimeScale::GST,
-                },
-                TimeScale::BDT => Self {
-                    duration: j1900_tai_offset - BDT_REF_EPOCH.to_tai_duration(),
-                    time_scale: TimeScale::BDT,
-                },
-                TimeScale::QZSST => Self {
-                    duration: j1900_tai_offset - QZSST_REF_EPOCH.to_tai_duration(),
-                    time_scale: TimeScale::QZSST,
-                },
+                TimeScale::GPST => j1900_tai_offset - GPST_REF_EPOCH.to_tai_duration(),
+                TimeScale::GST => j1900_tai_offset - GST_REF_EPOCH.to_tai_duration(),
+                TimeScale::BDT => j1900_tai_offset - BDT_REF_EPOCH.to_tai_duration(),
+                TimeScale::QZSST => j1900_tai_offset - QZSST_REF_EPOCH.to_tai_duration(),
+            };
+
+            Self {
+                duration: ts_ref_offset,
+                time_scale: ts,
             }
         }
     }
@@ -452,7 +457,7 @@ impl Epoch {
     /// Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch.
     pub const fn from_tai_duration(duration: Duration) -> Self {
         Self {
-            duration: duration,
+            duration,
             time_scale: TimeScale::TAI,
         }
     }
