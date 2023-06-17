@@ -1933,13 +1933,13 @@ impl Epoch {
     #[must_use]
     /// Returns the epoch as a floating point value in the provided unit
     pub fn to_tai(&self, unit: Unit) -> f64 {
-        self.duration.to_unit(unit)
+        self.to_tai_duration().to_unit(unit)
     }
 
     #[must_use]
     /// Returns the TAI parts of this duration
-    pub const fn to_tai_parts(&self) -> (i16, u64) {
-        self.duration.to_parts()
+    pub fn to_tai_parts(&self) -> (i16, u64) {
+        self.to_tai_duration().to_parts()
     }
 
     #[must_use]
@@ -1988,7 +1988,7 @@ impl Epoch {
     #[must_use]
     /// Returns this epoch as a duration in the requested units in MJD TAI
     pub fn to_mjd_tai(&self, unit: Unit) -> f64 {
-        (self.duration + Unit::Day * J1900_OFFSET).to_unit(unit)
+        (self.to_tai_duration() + Unit::Day * J1900_OFFSET).to_unit(unit)
     }
 
     #[must_use]
@@ -2026,7 +2026,7 @@ impl Epoch {
     #[must_use]
     /// Returns the Julian Days from epoch 01 Jan -4713 12:00 (noon) as a Duration
     pub fn to_jde_tai_duration(&self) -> Duration {
-        self.duration + Unit::Day * J1900_OFFSET + Unit::Day * MJD_OFFSET
+        self.to_tai_duration() + Unit::Day * J1900_OFFSET + Unit::Day * MJD_OFFSET
     }
 
     #[must_use]
@@ -2062,7 +2062,7 @@ impl Epoch {
     #[must_use]
     /// Returns `Duration` past TAI epoch in Terrestrial Time (TT).
     pub fn to_tt_duration(&self) -> Duration {
-        self.duration + Unit::Millisecond * TT_OFFSET_MS
+        self.to_time_scale(TimeScale::TT).duration
     }
 
     #[must_use]
@@ -2401,7 +2401,7 @@ impl Epoch {
     /// Returns this time in a Duration past J1900 counted in UT1
     pub fn to_ut1_duration(&self, provider: Ut1Provider) -> Duration {
         // TAI = UT1 + offset <=> UTC = TAI - offset
-        self.duration - self.ut1_offset(provider).unwrap_or(Duration::ZERO)
+        self.to_tai_duration() - self.ut1_offset(provider).unwrap_or(Duration::ZERO)
     }
 
     #[cfg(feature = "ut1")]
