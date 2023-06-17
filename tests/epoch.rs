@@ -150,6 +150,7 @@ fn utc_epochs() {
     // Just after to the 2017 leap second, there should be an offset of 37 seconds between UTC and TAI
     let this_epoch = Epoch::from_tai_seconds(3_692_217_600.0);
     let epoch_utc = Epoch::from_gregorian_utc_hms(2016, 12, 31, 23, 59, 24);
+
     assert_eq!(epoch_utc, this_epoch, "Incorrect epoch");
     assert!(this_epoch.to_tai_seconds() - epoch_utc.to_utc_seconds() - 37.0 < EPSILON);
 
@@ -425,7 +426,7 @@ fn gpst() {
     assert!(
         (epoch.to_tai_seconds() - SECONDS_GPS_TAI_OFFSET - epoch.to_gpst_seconds()).abs() < EPSILON
     );
-    assert!((epoch.to_tai_days() - DAYS_GPS_TAI_OFFSET - epoch.to_gpst_days()).abs() < 1e-11);
+    assert!(dbg!(epoch.to_tai_days() - DAYS_GPS_TAI_OFFSET - epoch.to_gpst_days()).abs() < 1e-11);
 
     // 1 Jan 1980 is 5 days before the GPS epoch.
     let epoch = Epoch::from_gregorian_utc_at_midnight(1980, 1, 1);
@@ -772,7 +773,7 @@ fn spice_et_tdb() {
     // Check reciprocity
     let from_et_s = Epoch::from_tdb_seconds(expected_et_s);
     assert!((from_et_s.to_tdb_seconds() - expected_et_s).abs() < EPSILON);
-    // Validate UTC to ET when initialization from UTC
+    // Validate UTC to ET when initializing from UTC
     assert!(dbg!(sp_ex.to_et_seconds() - expected_et_s).abs() < max_prec.to_seconds());
     assert!(dbg!(sp_ex.to_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.to_seconds());
     assert!(dbg!(sp_ex.to_jde_utc_days() - 2455964.9739931).abs() < 1e-7);

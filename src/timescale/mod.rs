@@ -15,14 +15,13 @@ use pyo3::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 
 #[cfg(kani)]
-use kani::Arbitrary;
+mod kani;
 
-use core::fmt;
-use core::str::FromStr;
+mod fmt;
 
 use crate::{
-    Duration, Epoch, Errors, ParsingErrors, J2000_REF_EPOCH_ET, J2000_REF_EPOCH_TDB,
-    J2000_TO_J1900_DURATION, SECONDS_PER_DAY,
+    Duration, Epoch, J2000_REF_EPOCH_ET, J2000_REF_EPOCH_TDB, J2000_TO_J1900_DURATION,
+    SECONDS_PER_DAY,
 };
 
 /// The J1900 reference epoch (1900-01-01 at noon) TAI.
@@ -88,28 +87,13 @@ pub enum TimeScale {
     GST,
     /// BeiDou Time scale
     BDT,
-    /// QZSS Time scale has the same properties as GPST,
-    /// but with dedicated clocks
+    /// QZSS Time scale has the same properties as GPST but with dedicated clocks
     QZSST,
-}
-
-#[cfg(kani)]
-impl Arbitrary for TimeScale {
-    #[inline(always)]
-    fn any() -> Self {
-        let ts_u8: u8 = kani::any();
-        Self::from(ts_u8)
-    }
 }
 
 impl Default for TimeScale {
     /// Builds default TAI time scale
     fn default() -> Self {
-        /*
-         * We use TAI as default Time scale,
-         * because `Epoch` is always defined with respect to TAI.
-         * Also, a default `Epoch` is then a null duration into TAI.
-         */
         Self::TAI
     }
 }
@@ -141,37 +125,6 @@ impl TimeScale {
             Self::QZSST => QZSST_REF_EPOCH,
             // Explicit on purpose in case more time scales end up being supported.
             Self::TT | Self::TAI | Self::UTC => J1900_REF_EPOCH,
-        }
-    }
-}
-
-impl fmt::Display for TimeScale {
-    /// Prints given TimeScale
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::TAI => write!(f, "TAI"),
-            Self::TT => write!(f, "TT"),
-            Self::ET => write!(f, "ET"),
-            Self::TDB => write!(f, "TDB"),
-            Self::UTC => write!(f, "UTC"),
-            Self::GPST => write!(f, "GPST"),
-            Self::GST => write!(f, "GST"),
-            Self::BDT => write!(f, "BDT"),
-            Self::QZSST => write!(f, "QZSST"),
-        }
-    }
-}
-
-impl fmt::LowerHex for TimeScale {
-    /// Prints given TimeScale in RINEX format
-    /// ie., standard GNSS constellation name is preferred when possible
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::GPST => write!(f, "GPS"),
-            Self::GST => write!(f, "GAL"),
-            Self::BDT => write!(f, "BDS"),
-            Self::QZSST => write!(f, "QZSS"),
-            _ => write!(f, "{self}"),
         }
     }
 }
@@ -220,61 +173,31 @@ impl From<u8> for TimeScale {
     }
 }
 
-impl FromStr for TimeScale {
-    type Err = Errors;
+#[cfg(test)]
+mod unit_test_timescale {
+    use super::TimeScale;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let val = s.trim();
-        if val == "UTC" {
-            Ok(Self::UTC)
-        } else if val == "TT" {
-            Ok(Self::TT)
-        } else if val == "TAI" {
-            Ok(Self::TAI)
-        } else if val == "TDB" {
-            Ok(Self::TDB)
-        } else if val == "ET" {
-            Ok(Self::ET)
-        } else if val == "GPST" || val == "GPS" {
-            Ok(Self::GPST)
-        } else if val == "GST" || val == "GAL" {
-            Ok(Self::GST)
-        } else if val == "BDT" || val == "BDS" {
-            Ok(Self::BDT)
-        } else if val == "QZSST" || val == "QZSS" {
-            Ok(Self::QZSST)
-        } else {
-            Err(Errors::ParseError(ParsingErrors::TimeSystem))
+    #[test]
+    #[cfg(feature = "serde")]
+    fn test_serdes() {
+        let ts = TimeScale::UTC;
+        let content = "\"UTC\"";
+        assert_eq!(content, serde_json::to_string(&ts).unwrap());
+        let parsed: TimeScale = serde_json::from_str(content).unwrap();
+        assert_eq!(ts, parsed);
+    }
+
+    #[test]
+    fn test_ts() {
+        for ts_u8 in 0..u8::MAX {
+            let ts = TimeScale::from(ts_u8);
+            let ts_u8_back: u8 = ts.into();
+            // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
+            if ts_u8 < 9 {
+                assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
+            } else {
+                assert_eq!(ts, TimeScale::TAI);
+            }
         }
     }
-}
-
-#[test]
-#[cfg(feature = "serde")]
-fn test_serdes() {
-    let ts = TimeScale::UTC;
-    let content = "\"UTC\"";
-    assert_eq!(content, serde_json::to_string(&ts).unwrap());
-    let parsed: TimeScale = serde_json::from_str(content).unwrap();
-    assert_eq!(ts, parsed);
-}
-
-#[test]
-fn test_ts() {
-    for ts_u8 in 0..u8::MAX {
-        let ts = TimeScale::from(ts_u8);
-        let ts_u8_back: u8 = ts.into();
-        // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
-        if ts_u8 < 9 {
-            assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
-        } else {
-            assert_eq!(ts, TimeScale::TAI);
-        }
-    }
-}
-
-#[cfg(kani)]
-#[kani::proof]
-fn formal_time_scale() {
-    let _time_scale: TimeScale = kani::any();
 }
