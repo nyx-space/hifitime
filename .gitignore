@@ -5,3 +5,4 @@ Cargo.lock
 dist/
 .venv
 src/epoch.rs
+.vscode/settings.json

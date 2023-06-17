@@ -873,10 +873,9 @@ fn test_from_str() {
     let greg = "2020-01-31T00:00:00 TDB";
     assert_eq!(greg, format!("{:e}", Epoch::from_str(greg).unwrap()));
 
-    // Newton Raphson of ET leads to an 11 nanosecond error in this case.
     let greg = "2020-01-31T00:00:00 ET";
     assert_eq!(
-        "2020-01-31T00:00:00.000000011 ET",
+        "2020-01-31T00:00:00 ET",
         format!("{:E}", Epoch::from_str(greg).unwrap())
     );
 

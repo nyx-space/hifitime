@@ -762,3 +762,20 @@ fn test_bounds() {
     assert_eq!(max_n1.centuries, i16::MAX);
     assert_eq!(max_n1.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
 }
+
+#[test]
+fn test_decompose() {
+    let d = -73000.days();
+    let out_days = d.to_unit(Unit::Day);
+    assert_eq!(out_days, -73000.0);
+    let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
+        d.decompose();
+    assert_eq!(sign, -1);
+    assert_eq!(days, 73000);
+    assert_eq!(hours, 0);
+    assert_eq!(minutes, 0);
+    assert_eq!(seconds, 0);
+    assert_eq!(milliseconds, 0);
+    assert_eq!(microseconds, 0);
+    assert_eq!(nanoseconds, 0);
+}

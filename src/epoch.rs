@@ -840,8 +840,14 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let years_since_ref = year - time_scale.ref_year();
-        let mut duration_wrt_ref = Unit::Day * i64::from(365 * years_since_ref);
+        let years_since_ref = dbg!(year - time_scale.ref_year());
+        let mut duration_wrt_ref = Unit::Day * i64::from(dbg!(365 * years_since_ref));
+
+        println!(
+            "{}\t{}",
+            Epoch::from_tai_duration(duration_wrt_ref),
+            duration_wrt_ref
+        );
 
         // Now add the leap days for all the years prior to the current year
         if year >= time_scale.ref_year() {
@@ -3487,8 +3493,8 @@ fn formal_epoch_julian() {
 }
 
 #[test]
-fn test_from_str_tdb2() {
+fn delete_me_test_from_str_ut() {
     use core::str::FromStr;
-    let greg = "2020-01-31T00:00:00 TDB";
-    assert_eq!(greg, format!("{:e}", Epoch::from_str(greg).unwrap()));
+    let e1700 = Epoch::from_str("1700-01-01T00:00:00 TAI").unwrap();
+    assert_eq!(format!("{e1700:x}"), "1700-01-01T00:00:00 TAI");
 }
