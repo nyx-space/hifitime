@@ -127,6 +127,14 @@ impl TimeScale {
             Self::TT | Self::TAI | Self::UTC => J1900_REF_EPOCH,
         }
     }
+
+    /// Returns the reference year of this time scale, used to convert the Gregorian format
+    pub(crate) const fn ref_year(&self) -> i32 {
+        match self {
+            TimeScale::ET | TimeScale::TDB => 2000,
+            _ => 1900,
+        }
+    }
 }
 
 #[cfg_attr(feature = "python", pymethods)]

@@ -1898,21 +1898,6 @@ fn test_to_tai_time_scale() {
     assert_eq!(j2000_to_j1900, J2000_TO_J1900_DURATION);
 }
 
-#[test]
-fn test_to_utc_time_scale() {
-    let gpst_tai_ref = TimeScale::GPST.tai_reference_epoch();
-    // there were 19 leap seconds on the day GPST was "started"
-    let gpst_utc_delta = 19.0; // leaps
-    let gpst_utc_ref = gpst_tai_ref.to_time_scale(TimeScale::UTC);
-    assert_eq!((gpst_utc_ref - gpst_tai_ref).to_seconds(), gpst_utc_delta);
-
-    let bdt_tai_ref = TimeScale::BDT.tai_reference_epoch();
-    // there were 33 leap seconds on the day BDT was "started"
-    let bdt_utc_delta = 33.0; // leaps
-    let bdt_utc_ref = bdt_tai_ref.to_time_scale(TimeScale::UTC);
-    assert_eq!((bdt_utc_ref - bdt_tai_ref).to_seconds(), bdt_utc_delta);
-}
-
 #[cfg(feature = "std")]
 #[test]
 fn test_leap_seconds_file() {

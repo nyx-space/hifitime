@@ -840,37 +840,34 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let years_since_1900 = year - 1900;
-        let mut duration_wrt_1900 = Unit::Day * i64::from(365 * years_since_1900);
+        let years_since_ref = year - time_scale.ref_year();
+        let mut duration_wrt_ref = Unit::Day * i64::from(365 * years_since_ref);
 
-        // count leap years
-        if years_since_1900 > 0 {
-            // we don't count the leap year in 1904, since jan 1904 hasn't had the leap yet,
-            // so we push it back to 1905, same for all other leap years
-            let years_after_1900 = years_since_1900 - 1;
-            duration_wrt_1900 += Unit::Day * i64::from(years_after_1900 / 4);
-            duration_wrt_1900 -= Unit::Day * i64::from(years_after_1900 / 100);
-            // every 400 years we correct our correction. The first one after 1900 is 2000 (years_since_1900 = 100)
-            // so we add 300 to correct the offset
-            duration_wrt_1900 += Unit::Day * i64::from((years_after_1900 + 300) / 400);
+        // Now add the leap days for all the years prior to the current year
+        if year >= time_scale.ref_year() {
+            for year in time_scale.ref_year()..year {
+                if is_leap_year(year) {
+                    duration_wrt_ref += Unit::Day;
+                }
+            }
         } else {
-            // we don't need to fix the offset, since jan 1896 has had the leap, when counting back from 1900
-            duration_wrt_1900 += Unit::Day * i64::from(years_since_1900 / 4);
-            duration_wrt_1900 -= Unit::Day * i64::from(years_since_1900 / 100);
-            // every 400 years we correct our correction. The first one before 1900 is 1600 (years_since_1900 = -300)
-            // so we subtract 100 to correct the offset
-            duration_wrt_1900 += Unit::Day * i64::from((years_since_1900 - 100) / 400);
-        };
+            // Remove days
+            for year in year..time_scale.ref_year() {
+                if is_leap_year(year) {
+                    duration_wrt_ref -= Unit::Day;
+                }
+            }
+        }
 
         // Add the seconds for the months prior to the current month
-        duration_wrt_1900 += Unit::Day * i64::from(CUMULATIVE_DAYS_FOR_MONTH[(month - 1) as usize]);
+        duration_wrt_ref += Unit::Day * i64::from(CUMULATIVE_DAYS_FOR_MONTH[(month - 1) as usize]);
 
         if is_leap_year(year) && month > 2 {
             // NOTE: If on 29th of February, then the day is not finished yet, and therefore
             // the extra seconds are added below as per a normal day.
-            duration_wrt_1900 += Unit::Day;
+            duration_wrt_ref += Unit::Day;
         }
-        duration_wrt_1900 += Unit::Day * i64::from(day - 1)
+        duration_wrt_ref += Unit::Day * i64::from(day - 1)
             + Unit::Hour * i64::from(hour)
             + Unit::Minute * i64::from(minute)
             + Unit::Second * i64::from(second)
@@ -878,11 +875,11 @@ impl Epoch {
         if second == 60 {
             // Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
             // same number of second after J1900.0.
-            duration_wrt_1900 -= Unit::Second;
+            duration_wrt_ref -= Unit::Second;
         }
 
         Ok(Self {
-            duration: duration_wrt_1900,
+            duration: duration_wrt_ref,
             time_scale,
         })
     }
@@ -1236,11 +1233,8 @@ impl Epoch {
         duration: Duration,
         ts: TimeScale,
     ) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let ts_offset = ts.tai_reference_epoch();
-        let offset_duration = duration + ts_offset.duration;
-
         let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-            offset_duration.decompose();
+            duration.decompose();
 
         let days_f64 = if sign < 0 {
             -(days as f64)
@@ -1249,18 +1243,18 @@ impl Epoch {
         };
 
         let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
-        year += 1900; // NB: this assumes all known time scales started after J1900
+        year += ts.ref_year(); // NB: this assumes all known time scales started after J1900
 
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
         // between 1900 and `year`
-        if year >= 1900 {
-            for year in 1900..year {
+        if year >= ts.ref_year() {
+            for year in ts.ref_year()..year {
                 if is_leap_year(year) {
                     days_in_year -= 1.0;
                 }
             }
         } else {
-            for year in year..1900 {
+            for year in year..ts.ref_year() {
                 if is_leap_year(year) {
                     days_in_year += 1.0;
                 }
@@ -3490,4 +3484,11 @@ fn formal_epoch_julian() {
         Epoch::from_jde_et(days);
         Epoch::from_jde_tai(days);
     }
+}
+
+#[test]
+fn test_from_str_tdb2() {
+    use core::str::FromStr;
+    let greg = "2020-01-31T00:00:00 TDB";
+    assert_eq!(greg, format!("{:e}", Epoch::from_str(greg).unwrap()));
 }
