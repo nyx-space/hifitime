@@ -135,6 +135,13 @@ impl TimeScale {
             _ => 1900,
         }
     }
+
+    pub(crate) const fn ref_hour(&self) -> i64 {
+        match self {
+            TimeScale::ET | TimeScale::TDB => 0,
+            _ => 12,
+        }
+    }
 }
 
 #[cfg_attr(feature = "python", pymethods)]

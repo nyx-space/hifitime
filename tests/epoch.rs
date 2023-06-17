@@ -900,11 +900,13 @@ fn test_from_str() {
 }
 
 #[test]
-fn test_from_str_tdb() {
-    use core::str::FromStr;
-
-    let greg = "2020-01-31T00:00:00 TDB";
-    assert_eq!(greg, format!("{:e}", Epoch::from_str(greg).unwrap()));
+fn test_ref_epoch_delta() {
+    let e_tai = Epoch::from_gregorian_at_noon(2022, 9, 6, TimeScale::TAI);
+    let e_tdb = Epoch::from_gregorian_at_noon(2022, 9, 6, TimeScale::TDB);
+    // Since we store the durations with respect to their time scale reference epochs,
+    // the difference between the same epoch but in different time scales should be
+    // exactly the difference between the reference epochs.
+    assert_eq!(e_tai.duration - e_tdb.duration, J2000_TO_J1900_DURATION);
 }
 
 #[test]
