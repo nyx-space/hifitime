@@ -15,7 +15,6 @@ pub use crate::{Freq, Frequencies, TimeUnits, Unit};
 #[cfg(feature = "std")]
 mod std;
 use core::cmp::Ordering;
-use core::convert::TryInto;
 use core::fmt;
 use core::hash::{Hash, Hasher};
 
@@ -429,60 +428,34 @@ impl Duration {
     /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns
     #[must_use]
     pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
-        let sign = self.signum();
+        let mut me = *self;
+        let sign = me.signum();
+        me = me.abs();
+        let days = me.to_unit(Unit::Day).floor();
+        me -= days.days();
+        let hours = me.to_unit(Unit::Hour).floor();
+        me -= hours.hours();
+        let minutes = me.to_unit(Unit::Minute).floor();
+        me -= minutes.minutes();
+        let seconds = me.to_unit(Unit::Second).floor();
+        me -= seconds.seconds();
+        let milliseconds = me.to_unit(Unit::Millisecond).floor();
+        me -= milliseconds.milliseconds();
+        let microseconds = me.to_unit(Unit::Microsecond).floor();
+        me -= microseconds.microseconds();
+        let nanoseconds = me.to_unit(Unit::Nanosecond).round();
 
-        match self.try_truncated_nanoseconds() {
-            Ok(total_ns) => {
-                let ns_left = total_ns.abs();
-
-                let (days, ns_left) = div_rem_i64(ns_left, NANOSECONDS_PER_DAY as i64);
-                let (hours, ns_left) = div_rem_i64(ns_left, NANOSECONDS_PER_HOUR as i64);
-                let (minutes, ns_left) = div_rem_i64(ns_left, NANOSECONDS_PER_MINUTE as i64);
-                let (seconds, ns_left) = div_rem_i64(ns_left, NANOSECONDS_PER_SECOND as i64);
-                let (milliseconds, ns_left) =
-                    div_rem_i64(ns_left, NANOSECONDS_PER_MILLISECOND as i64);
-                let (microseconds, ns_left) =
-                    div_rem_i64(ns_left, NANOSECONDS_PER_MICROSECOND as i64);
-
-                // Everything should fit in the expected types now
-                (
-                    sign,
-                    days.try_into().unwrap(),
-                    hours.try_into().unwrap(),
-                    minutes.try_into().unwrap(),
-                    seconds.try_into().unwrap(),
-                    milliseconds.try_into().unwrap(),
-                    microseconds.try_into().unwrap(),
-                    ns_left.try_into().unwrap(),
-                )
-            }
-            Err(_) => {
-                // Doesn't fit on a i64, so let's use the slower i128
-                let total_ns = self.total_nanoseconds();
-                let ns_left = total_ns.abs();
-
-                let (days, ns_left) = div_rem_i128(ns_left, i128::from(NANOSECONDS_PER_DAY));
-                let (hours, ns_left) = div_rem_i128(ns_left, i128::from(NANOSECONDS_PER_HOUR));
-                let (minutes, ns_left) = div_rem_i128(ns_left, i128::from(NANOSECONDS_PER_MINUTE));
-                let (seconds, ns_left) = div_rem_i128(ns_left, i128::from(NANOSECONDS_PER_SECOND));
-                let (milliseconds, ns_left) =
-                    div_rem_i128(ns_left, i128::from(NANOSECONDS_PER_MILLISECOND));
-                let (microseconds, ns_left) =
-                    div_rem_i128(ns_left, i128::from(NANOSECONDS_PER_MICROSECOND));
-
-                // Everything should fit in the expected types now
-                (
-                    sign,
-                    days.try_into().unwrap(),
-                    hours.try_into().unwrap(),
-                    minutes.try_into().unwrap(),
-                    seconds.try_into().unwrap(),
-                    milliseconds.try_into().unwrap(),
-                    microseconds.try_into().unwrap(),
-                    ns_left.try_into().unwrap(),
-                )
-            }
-        }
+        // Everything should fit in the expected types now
+        (
+            sign,
+            days as u64,
+            hours as u64,
+            minutes as u64,
+            seconds as u64,
+            milliseconds as u64,
+            microseconds as u64,
+            nanoseconds as u64,
+        )
     }
 
     /// Floors this duration to the closest duration from the bottom
@@ -717,14 +690,6 @@ impl PartialOrd<Unit> for Duration {
             Some(Ordering::Equal)
         }
     }
-}
-
-const fn div_rem_i128(me: i128, rhs: i128) -> (i128, i128) {
-    (me.div_euclid(rhs), me.rem_euclid(rhs))
-}
-
-const fn div_rem_i64(me: i64, rhs: i64) -> (i64, i64) {
-    (me.div_euclid(rhs), me.rem_euclid(rhs))
 }
 
 #[test]
