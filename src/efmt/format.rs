@@ -530,6 +530,7 @@ fn epoch_format_from_str() {
     assert_eq!(fmt, crate::efmt::consts::RFC2822);
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn gh_248_regression() {
     let e = Epoch::from_format_str("2023-117T12:55:26", "%Y-%jT%H:%M:%S").unwrap();

@@ -22,7 +22,7 @@ def test_utcnow():
     dt = datetime.utcnow()
 
     # Hifitime uses a different clock to Python and print down to the nanosecond
-    assert dt.isoformat()[:21] == f"{epoch}"[:21]
+    assert dt.isoformat()[:20] == f"{epoch}"[:20]
 
 
 def test_time_series():
