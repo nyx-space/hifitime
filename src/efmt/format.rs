@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2022 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. AUTHORS.md)
+ * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. AUTHORS.md)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -309,7 +309,14 @@ impl Format {
         };
 
         let epoch = match day_of_year {
-            Some(days) => Epoch::from_day_of_year(decomposed[0], days, ts),
+            Some(days) => {
+                // Parse the elapsed time in the given day
+                let elapsed = (decomposed[3] as i64) * Unit::Hour
+                    + (decomposed[4] as i64) * Unit::Minute
+                    + (decomposed[5] as i64) * Unit::Second
+                    + (decomposed[6] as i64) * Unit::Nanosecond;
+                Epoch::from_day_of_year(decomposed[0], days, ts) + elapsed
+            }
             None => Epoch::maybe_from_gregorian(
                 decomposed[0],
                 decomposed[1].try_into().unwrap(),
@@ -521,4 +528,12 @@ fn epoch_format_from_str() {
 
     let fmt = Format::from_str("%a, %d %b %Y %H:%M:%S").unwrap();
     assert_eq!(fmt, crate::efmt::consts::RFC2822);
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn gh_248_regression() {
+    let e = Epoch::from_format_str("2023-117T12:55:26", "%Y-%jT%H:%M:%S").unwrap();
+
+    assert_eq!(format!("{e}"), "2023-04-28T12:55:26 UTC");
 }
