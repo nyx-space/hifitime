@@ -20,7 +20,7 @@ mod kani;
 mod fmt;
 
 use crate::{
-    Duration, Epoch, J2000_REF_EPOCH_ET, J2000_REF_EPOCH_TDB, J2000_TO_J1900_DURATION,
+    Duration, Epoch, Unit, J2000_REF_EPOCH_ET, J2000_REF_EPOCH_TDB, J2000_TO_J1900_DURATION,
     SECONDS_PER_DAY,
 };
 
@@ -131,13 +131,13 @@ impl TimeScale {
             Self::TT | Self::TAI | Self::UTC => J1900_REF_EPOCH,
         }
     }
-
-    /// Returns the reference year of this time scale, used to convert the Gregorian format
-    pub(crate) const fn ref_year(&self) -> i32 {
-        match self {
-            TimeScale::ET | TimeScale::TDB => 2000,
-            _ => 1900,
-        }
+    
+    /// Returns the year offset compared to J1900 TAI.
+    /// This assues all supported time scales were "started" past J1900.
+    pub(crate) fn initial_year(&self) -> i32 {
+        self.tai_reference_epoch()
+            .to_tai_duration()
+            .to_unit(Unit::Day).floor() as i32 / 365 + 1900
     }
 
     pub(crate) const fn ref_hour(&self) -> i64 {
@@ -217,6 +217,20 @@ mod unit_test_timescale {
             } else {
                 assert_eq!(ts, TimeScale::TAI);
             }
+        }
+    }
+
+    #[test]
+    fn test_initial_year() {
+        for (ts, y0) in vec![
+            (TimeScale::TAI, 1900),
+            (TimeScale::UTC, 1900),
+            (TimeScale::GPST, 1980),
+            (TimeScale::BDT, 2006),
+            (TimeScale::GST, 1999),
+        ] {
+            let y = ts.initial_year();
+            assert_eq!(y, y0, "wrong initial year of {} for {}", y, ts);
         }
     }
 }

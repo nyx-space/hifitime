@@ -921,7 +921,7 @@ fn test_timescale_leapsec() {
         let epoch = Epoch::from_duration(duration, ts);
         let utc_epoch = epoch.to_time_scale(TimeScale::UTC);
         assert_eq!(
-            (epoch - utc_epoch).abs().to_seconds(), 
+            (epoch - utc_epoch).to_seconds(), 
             leap_t0 as f64,
             "|{} - {}| should be {} secs", epoch, utc_epoch, leap_t0);
     }
