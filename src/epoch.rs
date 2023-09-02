@@ -777,8 +777,8 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let (ts_year, ts_day, ts_month, ts_hh, ts_mm_, ts_ss, ts_ns) = time_scale.decompose();
-        let ts_year = ts_year as i32;
+        let (ts_year, ts_month, ts_day, ts_hh, ts_mm_, ts_ss, ts_ns) = time_scale.decompose();
+        println!("{:?}", time_scale.decompose());
 
         let years_since_ref = match year > ts_year {
             true => year - ts_year,
@@ -786,6 +786,10 @@ impl Epoch {
         };
 
         let mut duration_wrt_ref = Unit::Day * i64::from(365 * years_since_ref);
+
+        if ts_day > 1 {
+            duration_wrt_ref -= i64::from(ts_day) * Unit::Day;
+        }
 
         // Now add the leap days for all the years prior to the current year
         if year >= ts_year {
@@ -1177,7 +1181,7 @@ impl Epoch {
         duration: Duration,
         ts: TimeScale,
     ) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+        let (sign, mut days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
             duration.decompose();
 
         let days_f64 = if sign < 0 {
@@ -2998,22 +3002,20 @@ impl fmt::Debug for Epoch {
 }
 
 impl fmt::Display for Epoch {
-    /// The default format of an epoch is in UTC
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let ts = TimeScale::UTC;
         let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
+            Self::compute_gregorian(self.duration, self.time_scale);
         if nanos == 0 {
             write!(
                 f,
                 "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {}",
-                y, mm, dd, hh, min, s, ts
+                y, mm, dd, hh, min, s, self.time_scale
             )
         } else {
             write!(
                 f,
                 "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {}",
-                y, mm, dd, hh, min, s, nanos, ts
+                y, mm, dd, hh, min, s, nanos, self.time_scale
             )
         }
     }

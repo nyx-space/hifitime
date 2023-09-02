@@ -35,7 +35,7 @@ pub const J2000_REF_EPOCH: Epoch = Epoch::from_tai_duration(J2000_TO_J1900_DURAT
 /// |UTC - TAI| = 19 Leap Seconds on that day.
 pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
-    nanoseconds: 2_524_953_600_000_000_000, // XXX
+    nanoseconds: 2_524_953_619_000_000_000, // XXX
 });
 pub const SECONDS_GPS_TAI_OFFSET: f64 = 2_524_953_619.0;
 pub const SECONDS_GPS_TAI_OFFSET_I64: i64 = 2_524_953_619;

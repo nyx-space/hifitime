@@ -346,6 +346,8 @@ fn gpst() {
 
     // Test 1sec into GPS timescale
     let gps_1sec = Epoch::from_gpst_seconds(1.0);
+    assert_eq!(gps_1sec.to_string(), "1980-01-06T00:00:01 GPST");
+
     assert_eq!(gps_1sec, ref_gps + 1.0 * Unit::Second);
 
     // 1sec into QZSS time scale returns the same date
