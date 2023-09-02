@@ -373,12 +373,10 @@ impl Epoch {
         }
         match ts {
             TimeScale::UTC => {
-                let tai = self.to_time_scale(TimeScale::TAI);
-                Self {
-                    duration: tai.duration
-                        - Duration::from_seconds(tai.leap_seconds(true).unwrap_or(0.0)),
-                    time_scale: ts,
-                }
+                let mut utc = self.to_time_scale(TimeScale::TAI);
+                utc.time_scale = TimeScale::UTC;
+                utc.duration += utc.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
+                utc
             }
             TimeScale::GPST | TimeScale::BDT | TimeScale::GST | TimeScale::QZSST => Self {
                 duration: {
