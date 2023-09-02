@@ -131,13 +131,16 @@ impl TimeScale {
             Self::TT | Self::TAI | Self::UTC => J1900_REF_EPOCH,
         }
     }
-    
+
     /// Returns the year offset compared to J1900 TAI.
     /// This assues all supported time scales were "started" past J1900.
     pub(crate) fn initial_year(&self) -> i32 {
         self.tai_reference_epoch()
             .to_tai_duration()
-            .to_unit(Unit::Day).floor() as i32 / 365 + 1900
+            .to_unit(Unit::Day)
+            .floor() as i32
+            / 365
+            + 1900
     }
 
     pub(crate) const fn ref_hour(&self) -> i64 {
