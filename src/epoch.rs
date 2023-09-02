@@ -777,7 +777,7 @@ impl Epoch {
         }
 
         let (ts_year, ts_day, ts_month, ts_hh, ts_mm_, ts_ss, ts_ns) = time_scale.decompose();
-        let mut ts_year = ts_year as i32;
+        let ts_year = ts_year as i32;
 
         let years_since_ref = match year > ts_year {
             true => year - ts_year,
@@ -1873,7 +1873,11 @@ impl Epoch {
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in TAI
     pub fn to_tai_duration(&self) -> Duration {
-        self.duration + self.time_scale.tai_reference_epoch().duration
+        let mut dur = self.duration + self.time_scale.tai_reference_epoch().duration;
+        if self.time_scale.uses_leap_seconds() {
+            dur += self.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
+        }
+        dur
     }
 
     #[must_use]
