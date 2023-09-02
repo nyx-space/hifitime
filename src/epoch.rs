@@ -259,19 +259,20 @@ impl PartialEq for Epoch {
         if self.time_scale == other.time_scale {
             self.duration == other.duration
         } else {
-            // If one of the two time scales does not include leap seconds,
-            // we always convert the time scale with leap seconds into the
-            // time scale that does NOT have leap seconds.
-            if self.time_scale.uses_leap_seconds() != other.time_scale.uses_leap_seconds() {
-                if self.time_scale.uses_leap_seconds() {
-                    self.to_time_scale(other.time_scale).duration == other.duration
-                } else {
-                    self.duration == other.to_time_scale(self.time_scale).duration
-                }
-            } else {
-                // Otherwise it does not matter
-                self.duration == other.to_time_scale(self.time_scale).duration
-            }
+            self.duration == other.to_time_scale(self.time_scale).duration
+            //// If one of the two time scales does not include leap seconds,
+            //// we always convert the time scale with leap seconds into the
+            //// time scale that does NOT have leap seconds.
+            //if self.time_scale.uses_leap_seconds() != other.time_scale.uses_leap_seconds() {
+            //    if self.time_scale.uses_leap_seconds() {
+            //        self.to_time_scale(other.time_scale).duration == other.duration
+            //    } else {
+            //        self.duration == other.to_time_scale(self.time_scale).duration
+            //    }
+            //} else {
+            //    // Otherwise it does not matter
+            //    self.duration == other.to_time_scale(self.time_scale).duration
+            //}
         }
     }
 }
@@ -347,7 +348,11 @@ impl Epoch {
                 TimeScale::ET => unreachable!("ET"),
                 TimeScale::TDB => unreachable!("TDB"),
                 TimeScale::UTC => {
-                    return *self - Duration::from_seconds(self.leap_seconds(true).unwrap_or(0.0));
+                    return Self {
+                        duration: self.duration
+                            - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second,
+                        time_scale: ts,
+                    };
                 }
                 _ => {
                     /*
@@ -368,8 +373,12 @@ impl Epoch {
         }
         match ts {
             TimeScale::UTC => {
-                self.to_time_scale(TimeScale::TAI)
-                    + Duration::from_seconds(self.leap_seconds(true).unwrap_or(0.0))
+                let tai = self.to_time_scale(TimeScale::TAI);
+                Self {
+                    duration: tai.duration
+                        - Duration::from_seconds(tai.leap_seconds(true).unwrap_or(0.0)),
+                    time_scale: ts,
+                }
             }
             TimeScale::GPST | TimeScale::BDT | TimeScale::GST | TimeScale::QZSST => Self {
                 duration: {
@@ -769,7 +778,10 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let years_since_ref = year - time_scale.initial_year();
+        let years_since_ref = match year > time_scale.initial_year() {
+            true => year - time_scale.initial_year(),
+            false => time_scale.initial_year() - year,
+        };
         let mut duration_wrt_ref = Unit::Day * i64::from(365 * years_since_ref);
 
         // Now add the leap days for all the years prior to the current year
