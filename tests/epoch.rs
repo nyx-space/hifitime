@@ -371,42 +371,48 @@ fn gpst() {
     assert_eq!(gps.to_gpst_seconds(), qzss.to_qzsst_seconds());
     assert_eq!(gps.to_gpst_nanoseconds(), qzss.to_qzsst_nanoseconds());
 
-    let now = Epoch::from_gregorian_tai_hms(2019, 8, 24, 3, 49, 9);
-    assert_eq!(
-        Epoch::from_gpst_nanoseconds(now.to_gpst_nanoseconds().unwrap()),
-        now,
-        "To/from (recip.) GPST nanoseconds failed"
-    );
+    let gpst = Epoch::from_gregorian(2019, 8, 24, 3, 49, 9, 0, TimeScale::GPST);
+
+    let nanos = gpst.to_gpst_nanoseconds();
+    assert!(nanos.is_ok(), "to_gpst_nanos should have been feasible");
+    let nanos = nanos.unwrap();
+
+    let recip = Epoch::from_gpst_nanoseconds(nanos);
+    assert_eq!(gpst, recip, "GPST reciprocal failure");
+
     assert!(
-        (now.to_tai_seconds() - SECONDS_GPS_TAI_OFFSET - now.to_gpst_seconds()).abs() < EPSILON
+        (gpst.to_tai_seconds() - SECONDS_GPS_TAI_OFFSET - gpst.to_gpst_seconds()).abs() < EPSILON
     );
+
     assert!(
-        now.to_gpst_seconds() + SECONDS_GPS_TAI_OFFSET > now.to_utc_seconds(),
+        gpst.to_gpst_seconds() < gpst.to_utc_seconds(),
         "GPS Time is not ahead of UTC"
     );
 
-    let gps_epoch = Epoch::from_tai_seconds(SECONDS_GPS_TAI_OFFSET);
     assert_eq!(format!("{}", GPST_REF_EPOCH), "1980-01-06T00:00:00 UTC");
     assert_eq!(format!("{:x}", GPST_REF_EPOCH), "1980-01-06T00:00:19 TAI");
-    assert_eq!(format!("{:o}", gps_epoch), "0");
+    assert_eq!(format!("{:o}", GPST_REF_EPOCH), "0");
+
     assert_eq!(
         Epoch::from_gpst_days(0.0).to_duration_since_j1900(),
-        gps_epoch.duration
+        GPST_REF_EPOCH.duration
     );
 
     assert_eq!(
-        gps_epoch.to_tai_seconds(),
+        GPST_REF_EPOCH.to_utc_seconds(),
         Epoch::from_gregorian_utc_at_midnight(1980, 1, 6).to_tai_seconds()
     );
+
     assert!(
-        gps_epoch.to_gpst_seconds().abs() < EPSILON,
+        GPST_REF_EPOCH.to_gpst_seconds().abs() < EPSILON,
         "The number of seconds from the GPS epoch was not 0: {}",
-        gps_epoch.to_gpst_seconds()
+        GPST_REF_EPOCH.to_gpst_seconds()
     );
+
     assert!(
-        gps_epoch.to_gpst_days().abs() < EPSILON,
+        GPST_REF_EPOCH.to_gpst_days().abs() < EPSILON,
         "The number of days from the GPS epoch was not 0: {}",
-        gps_epoch.to_gpst_days()
+        GPST_REF_EPOCH.to_gpst_days()
     );
 
     let epoch = Epoch::from_gregorian_utc_at_midnight(1972, 1, 1);

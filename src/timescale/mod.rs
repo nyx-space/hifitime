@@ -132,15 +132,13 @@ impl TimeScale {
         }
     }
 
-    /// Returns the year offset compared to J1900 TAI.
-    /// This assues all supported time scales were "started" past J1900.
-    pub(crate) fn initial_year(&self) -> i32 {
-        self.tai_reference_epoch()
-            .to_tai_duration()
-            .to_unit(Unit::Day)
-            .floor() as i32
-            / 365
-            + 1900
+    pub(crate) fn decompose(&self) -> (i32, u8, u8, u8, u8, u8, u32) {
+        match self {
+            Self::GPST => (1980, 01, 06, 00, 00, 00, 00),
+            Self::BDT => (2005, 01, 01, 00, 00, 00, 00),
+            Self::GST => (1999, 21, 07, 00, 00, 00, 00),
+            _ => (1900, 01, 01, 00, 00, 00, 00),
+        }
     }
 
     pub(crate) const fn ref_hour(&self) -> i64 {
@@ -224,16 +222,21 @@ mod unit_test_timescale {
     }
 
     #[test]
-    fn test_initial_year() {
-        for (ts, y0) in vec![
-            (TimeScale::TAI, 1900),
-            (TimeScale::UTC, 1900),
-            (TimeScale::GPST, 1980),
-            (TimeScale::BDT, 2006),
-            (TimeScale::GST, 1999),
+    fn ts_decompose() {
+        for (ts, decomposed) in vec![
+            (TimeScale::TAI, (1900, 01, 01, 00, 00, 00, 00)),
+            (TimeScale::UTC, (1900, 01, 01, 00, 00, 00, 00)),
+            (TimeScale::GPST, (1980, 01, 06, 00, 00, 00, 00)),
+            (TimeScale::BDT, (2005, 01, 01, 00, 00, 00, 00)),
+            (TimeScale::GST, (1999, 21, 07, 00, 00, 00, 00)),
         ] {
-            let y = ts.initial_year();
-            assert_eq!(y, y0, "wrong initial year of {} for {}", y, ts);
+            assert_eq!(
+                ts.decompose(),
+                decomposed,
+                "wrong {} t(=0) decomposition {:?}",
+                ts,
+                decomposed
+            );
         }
     }
 }

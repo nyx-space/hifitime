@@ -375,16 +375,16 @@ impl Epoch {
             TimeScale::UTC => {
                 let mut utc = self.to_time_scale(TimeScale::TAI);
                 utc.time_scale = TimeScale::UTC;
-                utc.duration += utc.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
+                utc.duration -= utc.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
                 utc
             }
-            TimeScale::GPST | TimeScale::BDT | TimeScale::GST | TimeScale::QZSST => Self {
-                duration: {
-                    self.to_duration_in_time_scale(TimeScale::TAI)
-                        - ts.tai_reference_epoch().duration
-                },
-                time_scale: ts,
-            },
+            TimeScale::GPST | TimeScale::BDT | TimeScale::GST | TimeScale::QZSST => {
+                let tai = self.to_time_scale(TimeScale::TAI);
+                Self {
+                    duration: tai.duration + ts.tai_reference_epoch().duration,
+                    time_scale: ts,
+                }
+            }
             _ => unreachable!(),
         }
     }
@@ -776,22 +776,26 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let years_since_ref = match year > time_scale.initial_year() {
-            true => year - time_scale.initial_year(),
-            false => time_scale.initial_year() - year,
+        let (ts_year, ts_day, ts_month, ts_hh, ts_mm_, ts_ss, ts_ns) = time_scale.decompose();
+        let mut ts_year = ts_year as i32;
+
+        let years_since_ref = match year > ts_year {
+            true => year - ts_year,
+            false => ts_year - year,
         };
+
         let mut duration_wrt_ref = Unit::Day * i64::from(365 * years_since_ref);
 
         // Now add the leap days for all the years prior to the current year
-        if year >= time_scale.initial_year() {
-            for year in time_scale.initial_year()..year {
+        if year >= ts_year {
+            for year in ts_year..year {
                 if is_leap_year(year) {
                     duration_wrt_ref += Unit::Day;
                 }
             }
         } else {
             // Remove days
-            for year in year..time_scale.initial_year() {
+            for year in year..ts_year {
                 if is_leap_year(year) {
                     duration_wrt_ref -= Unit::Day;
                 }
@@ -1182,18 +1186,21 @@ impl Epoch {
         };
 
         let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
-        year += ts.initial_year(); // NB: this assumes time scales all started after J1900
+
+        let (ts_year, ts_month, ts_day, ts_hh, ts_mm, ts_ss, ts_ns) = ts.decompose();
+        let ts_year = ts_year as i32;
+        year += ts_year; // NB: this assumes time scales all started after J1900
 
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
         // between 1900 and `year`
-        if year >= ts.initial_year() {
-            for year in ts.initial_year()..year {
+        if year >= ts_year {
+            for year in ts_year..year {
                 if is_leap_year(year) {
                     days_in_year -= 1.0;
                 }
             }
         } else {
-            for year in year..ts.initial_year() {
+            for year in year..ts_year {
                 if is_leap_year(year) {
                     days_in_year += 1.0;
                 }
@@ -1866,10 +1873,7 @@ impl Epoch {
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in TAI
     pub fn to_tai_duration(&self) -> Duration {
-        Duration::from_seconds(
-            self.duration.to_seconds()
-                + self.time_scale.tai_reference_epoch().duration.to_seconds(),
-        )
+        self.duration + self.time_scale.tai_reference_epoch().duration
     }
 
     #[must_use]
@@ -1905,7 +1909,7 @@ impl Epoch {
     #[must_use]
     /// Returns the number of UTC seconds since the TAI epoch
     pub fn to_utc(&self, unit: Unit) -> f64 {
-        self.to_utc_duration().to_unit(unit)
+        self.to_time_scale(TimeScale::UTC).duration.to_unit(unit)
     }
 
     #[must_use]
