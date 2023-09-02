@@ -28,9 +28,11 @@ use crate::{
 pub const J1900_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration::ZERO);
 
 /// The J2000 reference epoch (2000-01-01 at midnight) TAI.
+/// |UTC - TAI| = XX Leap Seconds on that day.
 pub const J2000_REF_EPOCH: Epoch = Epoch::from_tai_duration(J2000_TO_J1900_DURATION);
 
 /// GPS reference epoch is UTC midnight between 05 January and 06 January 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>.
+/// |UTC - TAI| = 19 Leap Seconds on that day.
 pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
     nanoseconds: 2_524_953_619_000_000_000, // XXX
@@ -39,10 +41,11 @@ pub const SECONDS_GPS_TAI_OFFSET: f64 = 2_524_953_619.0;
 pub const SECONDS_GPS_TAI_OFFSET_I64: i64 = 2_524_953_619;
 pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
 
-/// QZSS and GPS share the same reference epoch
+/// QZSS and GPS share the same reference epoch.
 pub const QZSST_REF_EPOCH: Epoch = GPST_REF_EPOCH;
 
 /// GST (Galileo) reference epoch is 13 seconds before 1999 August 21 UTC at midnight.
+/// |UTC - TAI| = XX Leap Seconds on that day.
 pub const GST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
     nanoseconds: 3_144_268_819_000_000_000,
@@ -52,6 +55,7 @@ pub const SECONDS_GST_TAI_OFFSET_I64: i64 = 3_144_268_819;
 
 /// BDT(BeiDou): 2005 Dec 31st Midnight
 /// BDT (BeiDou) reference epoch is 2005 December 31st UTC at midnight. **This time scale is synchronized with UTC.**
+/// |UTC - TAI| = XX Leap Seconds on that day.
 pub const BDT_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 1,
     nanoseconds: 189_302_433_000_000_000,

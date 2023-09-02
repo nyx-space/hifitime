@@ -900,13 +900,31 @@ fn test_from_str() {
 }
 
 #[test]
-fn test_ref_epoch_delta() {
-    let e_tai = Epoch::from_gregorian_at_noon(2022, 9, 6, TimeScale::TAI);
-    let e_tdb = Epoch::from_gregorian_at_noon(2022, 9, 6, TimeScale::TDB);
-    // Since we store the durations with respect to their time scale reference epochs,
-    // the difference between the same epoch but in different time scales should be
-    // exactly the difference between the reference epochs.
-    assert_eq!(e_tai.duration - e_tdb.duration, J2000_TO_J1900_DURATION);
+fn test_timescale_leapsec() {
+    /*
+     * Time difference between Time Scales that do not support leap sec.
+     * and UTC, is always the amount of UTC leap seconds on the day
+     * said time scale was "initiated"
+     */
+    for (ts, leap_t0) in vec![
+        (TimeScale::GPST, 19),
+        (TimeScale::QZSST, 19),
+        (TimeScale::GST, 0),
+        (TimeScale::BDT, 0),
+        (TimeScale::TDB, 0),
+        (TimeScale::ET, 0),
+        (TimeScale::TT, 0),
+    ] {
+        assert!(!ts.uses_leap_seconds());
+        //let duration: Duration = kani::any(); 
+        let duration = Duration::from_seconds(12349.433_f64);
+        let epoch = Epoch::from_duration(duration, ts);
+        let utc_epoch = epoch.to_time_scale(TimeScale::UTC);
+        assert_eq!(
+            (epoch - utc_epoch).abs().to_seconds(), 
+            leap_t0 as f64,
+            "|{} - {}| should be {} secs", epoch, utc_epoch, leap_t0);
+    }
 }
 
 #[test]

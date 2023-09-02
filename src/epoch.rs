@@ -338,118 +338,117 @@ impl Epoch {
     pub fn to_time_scale(&self, ts: TimeScale) -> Self {
         if ts == self.time_scale {
             // Do nothing, just return a copy
-            *self
-        } else {
-            // Now we need to convert from the current time scale into the desired time scale.
-            // Let's first compute this epoch from its current time scale into TAI.
-            let j1900_tai_offset = match self.time_scale {
-                TimeScale::TAI => self.duration,
-                TimeScale::TT => self.duration - TT_OFFSET_MS.milliseconds(),
-                TimeScale::ET => {
-                    // Run a Newton Raphston to convert find the correct value of the
-                    let mut seconds_j2000 = self.duration.to_seconds();
-                    for _ in 0..5 {
-                        seconds_j2000 += -NAIF_K
-                            * (NAIF_M0
-                                + NAIF_M1 * seconds_j2000
-                                + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds_j2000).sin())
-                            .sin();
-                    }
-
-                    // At this point, we have a good estimate of the number of seconds of this epoch.
-                    // Reverse the algorithm:
-                    let delta_et_tai = Self::delta_et_tai(
-                        seconds_j2000 - (TT_OFFSET_MS * Unit::Millisecond).to_seconds(),
-                    );
-
-                    // Match SPICE by changing the UTC definition.
-                    (self.duration.to_seconds() - delta_et_tai).seconds() + J2000_TO_J1900_DURATION
+            return *self;
+        } 
+        // Now we need to convert from the current time scale into the desired time scale.
+        // Let's first compute this epoch from its current time scale into TAI.
+        let j1900_tai_offset = match self.time_scale {
+            TimeScale::TAI => self.duration,
+            TimeScale::TT => self.duration - TT_OFFSET_MS.milliseconds(),
+            TimeScale::ET => {
+                // Run a Newton Raphston to convert find the correct value of the
+                let mut seconds_j2000 = self.duration.to_seconds();
+                for _ in 0..5 {
+                    seconds_j2000 += -NAIF_K
+                        * (NAIF_M0
+                            + NAIF_M1 * seconds_j2000
+                            + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds_j2000).sin())
+                        .sin();
                 }
-                TimeScale::TDB => {
-                    let gamma = Self::inner_g(self.duration.to_seconds());
 
-                    let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
+                // At this point, we have a good estimate of the number of seconds of this epoch.
+                // Reverse the algorithm:
+                let delta_et_tai = Self::delta_et_tai(
+                    seconds_j2000 - (TT_OFFSET_MS * Unit::Millisecond).to_seconds(),
+                );
 
-                    // Offset back to J1900.
-                    self.duration - delta_tdb_tai + J2000_TO_J1900_DURATION
-                }
-                TimeScale::UTC => {
-                    // Assume this is TAI
-                    let mut tai_assumption = *self;
-                    tai_assumption.time_scale = TimeScale::TAI;
-                    self.duration + tai_assumption.leap_seconds(true).unwrap_or(0.0).seconds()
-                }
-                TimeScale::GPST => self.duration + GPST_REF_EPOCH.to_tai_duration(),
-                TimeScale::GST => self.duration + GST_REF_EPOCH.to_tai_duration(),
-                TimeScale::BDT => self.duration + BDT_REF_EPOCH.to_tai_duration(),
-                TimeScale::QZSST => self.duration + QZSST_REF_EPOCH.to_tai_duration(),
-            };
-
-            // Convert to the desired time scale from the TAI duration
-            let ts_ref_offset = match ts {
-                TimeScale::TAI => j1900_tai_offset,
-                TimeScale::TT => j1900_tai_offset + TT_OFFSET_MS.milliseconds(),
-                TimeScale::ET => {
-                    // Run a Newton Raphston to convert find the correct value of the
-                    let mut seconds = (j1900_tai_offset - J2000_TO_J1900_DURATION).to_seconds();
-                    for _ in 0..5 {
-                        seconds -= -NAIF_K
-                            * (NAIF_M0
-                                + NAIF_M1 * seconds
-                                + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds).sin())
-                            .sin();
-                    }
-
-                    // At this point, we have a good estimate of the number of seconds of this epoch.
-                    // Reverse the algorithm:
-                    let delta_et_tai = Self::delta_et_tai(
-                        seconds + (TT_OFFSET_MS * Unit::Millisecond).to_seconds(),
-                    );
-
-                    // Match SPICE by changing the UTC definition.
-                    j1900_tai_offset + delta_et_tai.seconds() - J2000_TO_J1900_DURATION
-                }
-                TimeScale::TDB => {
-                    // Iterate to convert find the correct value of the
-                    let mut seconds = (j1900_tai_offset - J2000_TO_J1900_DURATION).to_seconds();
-                    let mut delta = 1e8; // Arbitrary large number, greater than first step of Newton Raphson.
-                    for _ in 0..5 {
-                        let next = seconds - Self::inner_g(seconds);
-                        let new_delta = (next - seconds).abs();
-                        if (new_delta - delta).abs() < 1e-9 {
-                            break;
-                        }
-                        seconds = next; // Loop
-                        delta = new_delta;
-                    }
-
-                    // At this point, we have a good estimate of the number of seconds of this epoch.
-                    // Reverse the algorithm:
-                    let gamma =
-                        Self::inner_g(seconds + (TT_OFFSET_MS * Unit::Millisecond).to_seconds());
-                    let delta_tdb_tai = gamma.seconds() + TT_OFFSET_MS.milliseconds();
-
-                    j1900_tai_offset + delta_tdb_tai - J2000_TO_J1900_DURATION
-                }
-                TimeScale::UTC => {
-                    // Assume it's TAI
-                    let epoch = Self {
-                        duration: j1900_tai_offset,
-                        time_scale: TimeScale::TAI,
-                    };
-                    // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-                    j1900_tai_offset - epoch.leap_seconds(true).unwrap_or(0.0).seconds()
-                }
-                TimeScale::GPST => j1900_tai_offset - GPST_REF_EPOCH.to_tai_duration(),
-                TimeScale::GST => j1900_tai_offset - GST_REF_EPOCH.to_tai_duration(),
-                TimeScale::BDT => j1900_tai_offset - BDT_REF_EPOCH.to_tai_duration(),
-                TimeScale::QZSST => j1900_tai_offset - QZSST_REF_EPOCH.to_tai_duration(),
-            };
-
-            Self {
-                duration: ts_ref_offset,
-                time_scale: ts,
+                // Match SPICE by changing the UTC definition.
+                (self.duration.to_seconds() - delta_et_tai).seconds() + J2000_TO_J1900_DURATION
             }
+            TimeScale::TDB => {
+                let gamma = Self::inner_g(self.duration.to_seconds());
+
+                let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
+
+                // Offset back to J1900.
+                self.duration - delta_tdb_tai + J2000_TO_J1900_DURATION
+            }
+            TimeScale::UTC => {
+                // Assume this is TAI
+                let mut tai_assumption = *self;
+                tai_assumption.time_scale = TimeScale::TAI;
+                self.duration + tai_assumption.leap_seconds(true).unwrap_or(0.0).seconds()
+            }
+            TimeScale::GPST => self.duration + GPST_REF_EPOCH.to_tai_duration(),
+            TimeScale::GST => self.duration + GST_REF_EPOCH.to_tai_duration(),
+            TimeScale::BDT => self.duration + BDT_REF_EPOCH.to_tai_duration(),
+            TimeScale::QZSST => self.duration + QZSST_REF_EPOCH.to_tai_duration(),
+        };
+
+        // Convert to the desired time scale from the TAI duration
+        let ts_ref_offset = match ts {
+            TimeScale::TAI => j1900_tai_offset,
+            TimeScale::TT => j1900_tai_offset + TT_OFFSET_MS.milliseconds(),
+            TimeScale::ET => {
+                // Run a Newton Raphston to convert find the correct value of the
+                let mut seconds = (j1900_tai_offset - J2000_TO_J1900_DURATION).to_seconds();
+                for _ in 0..5 {
+                    seconds -= -NAIF_K
+                        * (NAIF_M0
+                            + NAIF_M1 * seconds
+                            + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds).sin())
+                        .sin();
+                }
+
+                // At this point, we have a good estimate of the number of seconds of this epoch.
+                // Reverse the algorithm:
+                let delta_et_tai = Self::delta_et_tai(
+                    seconds + (TT_OFFSET_MS * Unit::Millisecond).to_seconds(),
+                );
+
+                // Match SPICE by changing the UTC definition.
+                j1900_tai_offset + delta_et_tai.seconds() - J2000_TO_J1900_DURATION
+            }
+            TimeScale::TDB => {
+                // Iterate to convert find the correct value of the
+                let mut seconds = (j1900_tai_offset - J2000_TO_J1900_DURATION).to_seconds();
+                let mut delta = 1e8; // Arbitrary large number, greater than first step of Newton Raphson.
+                for _ in 0..5 {
+                    let next = seconds - Self::inner_g(seconds);
+                    let new_delta = (next - seconds).abs();
+                    if (new_delta - delta).abs() < 1e-9 {
+                        break;
+                    }
+                    seconds = next; // Loop
+                    delta = new_delta;
+                }
+
+                // At this point, we have a good estimate of the number of seconds of this epoch.
+                // Reverse the algorithm:
+                let gamma =
+                    Self::inner_g(seconds + (TT_OFFSET_MS * Unit::Millisecond).to_seconds());
+                let delta_tdb_tai = gamma.seconds() + TT_OFFSET_MS.milliseconds();
+
+                j1900_tai_offset + delta_tdb_tai - J2000_TO_J1900_DURATION
+            }
+            TimeScale::UTC => {
+                // Assume it's TAI
+                let epoch = Self {
+                    duration: j1900_tai_offset,
+                    time_scale: TimeScale::TAI,
+                };
+                // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
+                j1900_tai_offset - epoch.leap_seconds(true).unwrap_or(0.0).seconds()
+            }
+            TimeScale::GPST => j1900_tai_offset - GPST_REF_EPOCH.to_tai_duration(),
+            TimeScale::GST => j1900_tai_offset - GST_REF_EPOCH.to_tai_duration(),
+            TimeScale::BDT => j1900_tai_offset - BDT_REF_EPOCH.to_tai_duration(),
+            TimeScale::QZSST => j1900_tai_offset - QZSST_REF_EPOCH.to_tai_duration(),
+        };
+
+        Self {
+            duration: ts_ref_offset,
+            time_scale: ts,
         }
     }
 
@@ -1243,7 +1242,7 @@ impl Epoch {
         };
 
         let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
-        year += ts.ref_year(); // NB: this assumes all known time scales started after J1900
+        year += ts.ref_year(); // NB: this assumes time scales all started after J1900
 
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
         // between 1900 and `year`
