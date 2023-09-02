@@ -40,14 +40,14 @@ impl<'a> Decode<'a> for Duration {
 impl Encode for Epoch {
     fn encoded_len(&self) -> der::Result<der::Length> {
         let ts: u8 = self.time_scale.into();
-        ts.encoded_len()? + self.to_duration().encoded_len()?
+        ts.encoded_len()? + self.duration.encoded_len()?
     }
 
     fn encode(&self, encoder: &mut dyn Writer) -> der::Result<()> {
         let ts: u8 = self.time_scale.into();
 
         ts.encode(encoder)?;
-        self.to_duration().encode(encoder)
+        self.duration.encode(encoder)
     }
 }
 
@@ -114,7 +114,7 @@ fn test_encdec() {
             TimeScale::QZSST => epoch.to_qzsst_duration(),
         };
 
-        let e_dur = epoch.to_duration();
+        let e_dur = epoch.duration;
 
         assert_eq!(e_dur, duration, "{ts:?}");
 

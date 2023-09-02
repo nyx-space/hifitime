@@ -179,7 +179,7 @@ impl Sub<Duration> for Epoch {
 
     fn sub(self, duration: Duration) -> Self {
         Self {
-            duration: self.to_duration() - duration,
+            duration: self.duration - duration,
             time_scale: self.time_scale,
         }
     }
@@ -192,7 +192,7 @@ impl Add<f64> for Epoch {
 
     fn add(self, seconds: f64) -> Self {
         Self {
-            duration: self.to_duration() + seconds * Unit::Second,
+            duration: self.duration + seconds * Unit::Second,
             time_scale: self.time_scale,
         }
     }
@@ -203,7 +203,7 @@ impl Add<Duration> for Epoch {
 
     fn add(self, duration: Duration) -> Self {
         Self {
-            duration: self.to_duration() + duration,
+            duration: self.duration + duration,
             time_scale: self.time_scale,
         }
     }
@@ -229,7 +229,7 @@ impl Sub<Unit> for Epoch {
     #[allow(clippy::identity_op)]
     fn sub(self, unit: Unit) -> Self {
         Self {
-            duration: self.to_duration() - unit * 1,
+            duration: self.duration - unit * 1,
             time_scale: self.time_scale,
         }
     }
@@ -241,7 +241,7 @@ impl Add<Unit> for Epoch {
     #[allow(clippy::identity_op)]
     fn add(self, unit: Unit) -> Self {
         Self {
-            duration: self.to_duration() + unit * 1,
+            duration: self.duration + unit * 1,
             time_scale: self.time_scale,
         }
     }
@@ -364,7 +364,8 @@ impl Epoch {
                      */
                     return Self {
                         duration: {
-                            self.time_scale.tai_reference_epoch().to_tai_duration() + self.duration
+                            let mut dur = self.time_scale.tai_reference_epoch() + self.duration;
+                            dur.duration
                         },
                         time_scale: TimeScale::TAI,
                     };
@@ -1145,7 +1146,7 @@ impl Epoch {
     ///
     /// # Warning
     /// The time scale of this Epoch will be set to TAI! This is to ensure that no additional computations will change the duration since it's stored in TAI.
-    /// However, this also means that calling `to_duration()` on this Epoch will return the TAI duration and not the UT1 duration!
+    /// However, this also means that calling `duration` on this Epoch will return the TAI duration and not the UT1 duration!
     pub fn from_ut1_duration(duration: Duration, provider: Ut1Provider) -> Self {
         let mut e = Self::from_tai_duration(duration);
         // Compute the TAI to UT1 offset at this time.
@@ -1815,17 +1816,6 @@ impl Epoch {
         Ok(format!("{}", Formatter::new(*self, fmt)))
     }
 
-    /// Returns this epoch with respect to the time scale this epoch was created in.
-    /// This is needed to correctly perform duration conversions in dynamical time scales (e.g. TDB).
-    ///
-    /// # Examples
-    /// 1. If an epoch was initialized as Epoch::from_..._utc(...) then the duration will be the UTC duration from J1900.
-    /// 2. If an epoch was initialized as Epoch::from_..._tdb(...) then the duration will be the UTC duration from J2000 because the TDB reference epoch is J2000.
-    #[must_use]
-    pub fn to_duration(&self) -> Duration {
-        self.duration
-    }
-
     #[must_use]
     /// Returns this epoch with respect to the provided time scale.
     /// This is needed to correctly perform duration conversions in dynamical time scales (e.g. TDB).
@@ -1873,11 +1863,7 @@ impl Epoch {
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in TAI
     pub fn to_tai_duration(&self) -> Duration {
-        let mut dur = self.duration + self.time_scale.tai_reference_epoch().duration;
-        if self.time_scale.uses_leap_seconds() {
-            dur += self.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
-        }
-        dur
+        (self.time_scale.tai_reference_epoch() + self.duration).duration
     }
 
     #[must_use]
@@ -2385,7 +2371,7 @@ impl Epoch {
     /// );
     /// ```
     pub fn floor(&self, duration: Duration) -> Self {
-        Self::from_duration(self.to_duration().floor(duration), self.time_scale)
+        Self::from_duration(self.duration.floor(duration), self.time_scale)
     }
 
     #[must_use]
@@ -2409,7 +2395,7 @@ impl Epoch {
     /// );
     /// ```
     pub fn ceil(&self, duration: Duration) -> Self {
-        Self::from_duration(self.to_duration().ceil(duration), self.time_scale)
+        Self::from_duration(self.duration.ceil(duration), self.time_scale)
     }
 
     #[must_use]
@@ -2426,7 +2412,7 @@ impl Epoch {
     /// );
     /// ```
     pub fn round(&self, duration: Duration) -> Self {
-        Self::from_duration(self.to_duration().round(duration), self.time_scale)
+        Self::from_duration(self.duration.round(duration), self.time_scale)
     }
 
     #[must_use]
@@ -2434,7 +2420,7 @@ impl Epoch {
     /// and the number of nanoseconds elapsed in current week (since closest Sunday midnight).
     /// This is usually how GNSS receivers describe a timestamp.
     pub fn to_time_of_week(&self) -> (u32, u64) {
-        let total_nanoseconds = self.to_duration().total_nanoseconds();
+        let total_nanoseconds = self.duration.total_nanoseconds();
         let weeks = total_nanoseconds / NANOSECONDS_PER_DAY as i128 / Weekday::DAYS_PER_WEEK_I128;
         // elapsed nanoseconds in current week:
         //   remove previously determined nb of weeks
@@ -2546,7 +2532,7 @@ impl Epoch {
     pub fn duration_in_year(&self) -> Duration {
         let year = Self::compute_gregorian(self.duration, self.time_scale).0;
         let start_of_year = Self::from_gregorian(year, 1, 1, 0, 0, 0, 0, self.time_scale);
-        self.to_duration() - start_of_year.to_duration()
+        self.duration - start_of_year.duration
     }
 
     #[must_use]
@@ -2566,32 +2552,32 @@ impl Epoch {
 
     /// Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn hours(&self) -> u64 {
-        self.to_duration().decompose().2
+        self.duration.decompose().2
     }
 
     /// Returns the minutes of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn minutes(&self) -> u64 {
-        self.to_duration().decompose().3
+        self.duration.decompose().3
     }
 
     /// Returns the seconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn seconds(&self) -> u64 {
-        self.to_duration().decompose().4
+        self.duration.decompose().4
     }
 
     /// Returns the milliseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn milliseconds(&self) -> u64 {
-        self.to_duration().decompose().5
+        self.duration.decompose().5
     }
 
     /// Returns the microseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn microseconds(&self) -> u64 {
-        self.to_duration().decompose().6
+        self.duration.decompose().6
     }
 
     /// Returns the nanoseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn nanoseconds(&self) -> u64 {
-        self.to_duration().decompose().7
+        self.duration.decompose().7
     }
 
     /// Returns a copy of self where the time is set to the provided hours, minutes, seconds
@@ -2599,7 +2585,7 @@ impl Epoch {
     /// Warning: this does _not_ set the subdivisions of second to zero.
     pub fn with_hms(&self, hours: u64, minutes: u64, seconds: u64) -> Self {
         let (sign, days, _, _, _, milliseconds, microseconds, nanoseconds) =
-            self.to_duration().decompose();
+            self.duration.decompose();
         Self::from_duration(
             Duration::compose(
                 sign,
@@ -2632,7 +2618,7 @@ impl Epoch {
     /// ```
     pub fn with_hms_from(&self, other: Self) -> Self {
         let (sign, days, _, _, _, milliseconds, microseconds, nanoseconds) =
-            self.to_duration().decompose();
+            self.duration.decompose();
         // Shadow other with the provided other epoch but in the correct time scale.
         let other = other.to_time_scale(self.time_scale);
         Self::from_duration(
@@ -2667,7 +2653,7 @@ impl Epoch {
     /// ```
     pub fn with_time_from(&self, other: Self) -> Self {
         // Grab days from self
-        let (sign, days, _, _, _, _, _, _) = self.to_duration().decompose();
+        let (sign, days, _, _, _, _, _, _) = self.duration.decompose();
 
         // Grab everything else from other
         let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
@@ -2692,7 +2678,7 @@ impl Epoch {
     /// Invalid number of hours, minutes, and seconds will overflow into their higher unit.
     /// Warning: this will set the subdivisions of seconds to zero.
     pub fn with_hms_strict(&self, hours: u64, minutes: u64, seconds: u64) -> Self {
-        let (sign, days, _, _, _, _, _, _) = self.to_duration().decompose();
+        let (sign, days, _, _, _, _, _, _) = self.duration.decompose();
         Self::from_duration(
             Duration::compose(sign, days, hours, minutes, seconds, 0, 0, 0),
             self.time_scale,
@@ -2714,7 +2700,7 @@ impl Epoch {
     /// );
     /// ```
     pub fn with_hms_strict_from(&self, other: Self) -> Self {
-        let (sign, days, _, _, _, _, _, _) = self.to_duration().decompose();
+        let (sign, days, _, _, _, _, _, _) = self.duration.decompose();
         let other = other.to_time_scale(self.time_scale);
         Self::from_duration(
             Duration::compose(
