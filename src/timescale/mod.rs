@@ -132,8 +132,18 @@ impl TimeScale {
         }
     }
 
-    pub(crate) const fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
+    pub(crate) fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
         self.tai_reference_epoch().duration.decompose()
+    }
+
+    pub(crate) const fn ref_year(&self) -> u32 {
+        match self {
+            TimeScale::TT | TimeScale::ET | TimeScale::TDB => 2000,
+            TimeScale::UTC | TimeScale::TAI => 1900,
+            TimeScale::GPST | TimeScale::QZSST => 1980,
+            TimeScale::BDT => 2006,
+            TimeScale::GST => 1997,
+        }
     }
 
     pub(crate) const fn ref_hour(&self) -> i64 {
