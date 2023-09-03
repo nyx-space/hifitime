@@ -132,13 +132,8 @@ impl TimeScale {
         }
     }
 
-    pub(crate) fn decompose(&self) -> (i32, u8, u8, u8, u8, u8, u32) {
-        match self {
-            Self::GPST => (1980, 01, 06, 00, 00, 00, 00),
-            Self::BDT => (2005, 01, 01, 00, 00, 00, 00),
-            Self::GST => (1999, 21, 07, 00, 00, 00, 00),
-            _ => (1900, 01, 01, 00, 00, 00, 00),
-        }
+    pub(crate) const fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
+        self.tai_reference_epoch().duration.decompose()
     }
 
     pub(crate) const fn ref_hour(&self) -> i64 {
@@ -218,25 +213,6 @@ mod unit_test_timescale {
             } else {
                 assert_eq!(ts, TimeScale::TAI);
             }
-        }
-    }
-
-    #[test]
-    fn ts_decompose() {
-        for (ts, decomposed) in vec![
-            (TimeScale::TAI, (1900, 01, 01, 00, 00, 00, 00)),
-            (TimeScale::UTC, (1900, 01, 01, 00, 00, 00, 00)),
-            (TimeScale::GPST, (1980, 01, 06, 00, 00, 00, 00)),
-            (TimeScale::BDT, (2005, 01, 01, 00, 00, 00, 00)),
-            (TimeScale::GST, (1999, 21, 07, 00, 00, 00, 00)),
-        ] {
-            assert_eq!(
-                ts.decompose(),
-                decomposed,
-                "wrong {} t(=0) decomposition {:?}",
-                ts,
-                decomposed
-            );
         }
     }
 }

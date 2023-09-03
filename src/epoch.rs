@@ -259,20 +259,20 @@ impl PartialEq for Epoch {
         if self.time_scale == other.time_scale {
             self.duration == other.duration
         } else {
-            self.duration == other.to_time_scale(self.time_scale).duration
-            //// If one of the two time scales does not include leap seconds,
-            //// we always convert the time scale with leap seconds into the
-            //// time scale that does NOT have leap seconds.
-            //if self.time_scale.uses_leap_seconds() != other.time_scale.uses_leap_seconds() {
-            //    if self.time_scale.uses_leap_seconds() {
-            //        self.to_time_scale(other.time_scale).duration == other.duration
-            //    } else {
-            //        self.duration == other.to_time_scale(self.time_scale).duration
-            //    }
-            //} else {
-            //    // Otherwise it does not matter
-            //    self.duration == other.to_time_scale(self.time_scale).duration
-            //}
+            // self.duration == other.to_time_scale(self.time_scale).duration
+            // If one of the two time scales does not include leap seconds,
+            // we always convert the time scale with leap seconds into the
+            // time scale that does NOT have leap seconds.
+            if self.time_scale.uses_leap_seconds() != other.time_scale.uses_leap_seconds() {
+                if self.time_scale.uses_leap_seconds() {
+                    self.to_time_scale(other.time_scale).duration == other.duration
+                } else {
+                    self.duration == other.to_time_scale(self.time_scale).duration
+                }
+            } else {
+                // Otherwise it does not matter
+                self.duration == other.to_time_scale(self.time_scale).duration
+            }
         }
     }
 }
@@ -835,8 +835,8 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let (ts_year, ts_month, ts_day, ts_hh, ts_mm_, ts_ss, ts_ns) = time_scale.decompose();
-        println!("{:?}", time_scale.decompose());
+        let (ts_sign, ts_days, ts_hours, ts_minutes, ts_seconds, ts_ms, ts_us, ts_nanos) =
+            time_scale.decompose();
 
         let years_since_ref = match year > ts_year {
             true => year - ts_year,
@@ -844,10 +844,6 @@ impl Epoch {
         };
 
         let mut duration_wrt_ref = Unit::Day * i64::from(365 * years_since_ref);
-
-        if ts_day > 1 {
-            duration_wrt_ref -= i64::from(ts_day) * Unit::Day;
-        }
 
         // Now add the leap days for all the years prior to the current year
         if year >= ts_year {
@@ -1239,8 +1235,24 @@ impl Epoch {
         duration: Duration,
         ts: TimeScale,
     ) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let (sign, mut days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-            duration.decompose();
+        let (
+            sign,
+            mut days,
+            mut hours,
+            mut minutes,
+            mut seconds,
+            mut milliseconds,
+            mut microseconds,
+            mut nanos,
+        ) = duration.decompose();
+
+        let (ts_sign, ts_days, ts_hours, ts_minutes, ts_seconds, ts_ms, ts_us, ts_nanos) =
+            ts.decompose();
+
+        // days += ts_days as u64;
+        // hours += ts_hours;
+        // seconds += ts_seconds;
+        // nanos += ts_nanos;
 
         let days_f64 = if sign < 0 {
             -(days as f64)
@@ -1249,10 +1261,6 @@ impl Epoch {
         };
 
         let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
-
-        let (ts_year, ts_month, ts_day, ts_hh, ts_mm, ts_ss, ts_ns) = ts.decompose();
-        let ts_year = ts_year as i32;
-        year += ts_year; // NB: this assumes time scales all started after J1900
 
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
         // between 1900 and `year`
