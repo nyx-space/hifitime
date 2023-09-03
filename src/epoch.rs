@@ -835,37 +835,35 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let years_since_1900 = year + time_scale.ref_year() as i32;
-        let mut duration_wrt_1900 = Unit::Day * i64::from(365 * years_since_1900);
+        let years_since_ref = year - time_scale.ref_year();
+        let mut duration_wrt_ref = Unit::Day * i64::from(365 * years_since_ref);
+        let ref_year = time_scale.ref_year();
 
-        // count leap years
-        if years_since_1900 > 0 {
-            // we don't count the leap year in 1904, since jan 1904 hasn't had the leap yet,
-            // so we push it back to 1905, same for all other leap years
-            let years_after_1900 = years_since_1900 - 1;
-            duration_wrt_1900 += Unit::Day * i64::from(years_after_1900 / 4);
-            duration_wrt_1900 -= Unit::Day * i64::from(years_after_1900 / 100);
-            // every 400 years we correct our correction. The first one after 1900 is 2000 (years_since_1900 = 100)
-            // so we add 300 to correct the offset
-            duration_wrt_1900 += Unit::Day * i64::from((years_after_1900 + 300) / 400);
-        } else {
-            // we don't need to fix the offset, since jan 1896 has had the leap, when counting back from 1900
-            duration_wrt_1900 += Unit::Day * i64::from(years_since_1900 / 4);
-            duration_wrt_1900 -= Unit::Day * i64::from(years_since_1900 / 100);
-            // every 400 years we correct our correction. The first one before 1900 is 1600 (years_since_1900 = -300)
-            // so we subtract 100 to correct the offset
-            duration_wrt_1900 += Unit::Day * i64::from((years_since_1900 - 100) / 400);
-        };
+        // Now add the leap days for all years prior the current year
+        if year >= ref_year {
+            for year in ref_year..year {
+                if is_leap_year(year) {
+                    duration_wrt_ref += Unit::Day;
+                }
+            }
+        }
+
+        // Remove days
+        for year in year..ref_year {
+            if is_leap_year(year) {
+                duration_wrt_ref -= Unit::Day;
+            }
+        }
 
         // Add the seconds for the months prior to the current month
-        duration_wrt_1900 += Unit::Day * i64::from(CUMULATIVE_DAYS_FOR_MONTH[(month - 1) as usize]);
+        duration_wrt_ref += Unit::Day * i64::from(CUMULATIVE_DAYS_FOR_MONTH[(month - 1) as usize]);
 
         if is_leap_year(year) && month > 2 {
             // NOTE: If on 29th of February, then the day is not finished yet, and therefore
             // the extra seconds are added below as per a normal day.
-            duration_wrt_1900 += Unit::Day;
+            duration_wrt_ref += Unit::Day;
         }
-        duration_wrt_1900 += Unit::Day * i64::from(day - 1)
+        duration_wrt_ref += Unit::Day * i64::from(day - 1)
             + Unit::Hour * i64::from(hour)
             + Unit::Minute * i64::from(minute)
             + Unit::Second * i64::from(second)
@@ -873,28 +871,12 @@ impl Epoch {
         if second == 60 {
             // Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
             // same number of second afters J1900.0.
-            duration_wrt_1900 -= Unit::Second;
+            duration_wrt_ref -= Unit::Second;
         }
 
-        // NOTE: For ET and TDB, we make sure to offset the duration back to J2000 since those functions expect a J2000 input.
-        Ok(match time_scale {
-            TimeScale::TAI => Self::from_tai_duration(duration_wrt_1900),
-            TimeScale::TT => Self::from_tt_duration(duration_wrt_1900),
-            TimeScale::ET => Self::from_et_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
-            TimeScale::TDB => Self::from_tdb_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
-            TimeScale::UTC => Self::from_utc_duration(duration_wrt_1900),
-            TimeScale::GPST => {
-                Self::from_gpst_duration(duration_wrt_1900 - GPST_REF_EPOCH.to_tai_duration())
-            }
-            TimeScale::QZSST => {
-                Self::from_qzsst_duration(duration_wrt_1900 - GPST_REF_EPOCH.to_tai_duration())
-            }
-            TimeScale::GST => {
-                Self::from_gst_duration(duration_wrt_1900 - GST_REF_EPOCH.to_tai_duration())
-            }
-            TimeScale::BDT => {
-                Self::from_bdt_duration(duration_wrt_1900 - BDT_REF_EPOCH.to_tai_duration())
-            }
+        Ok(Self {
+            duration: duration_wrt_ref,
+            time_scale,
         })
     }
 
@@ -1258,19 +1240,17 @@ impl Epoch {
             mut nanos,
         ) = duration.decompose();
 
-        let (ts_sign, ts_days, ts_hours, ts_minutes, ts_seconds, ts_ms, ts_us, ts_nanos) =
-            ts.decompose();
+        // let (ts_sign, ts_days, ts_hours, ts_minutes, ts_seconds, ts_ms, ts_us, ts_nanos) =
+        //     ts.decompose();
 
-        // apply the time scale reference offset
-        days += ts_days;
-        hours += ts_hours;
-        minutes += ts_minutes;
-        seconds += ts_seconds;
-        milliseconds += ts_ms;
-        microseconds += ts_us;
-        nanos += ts_nanos;
-
-        let ts_year = ts.ref_year() as i32;
+        // // apply the time scale reference offset
+        // days += ts_days;
+        // hours += ts_hours;
+        // minutes += ts_minutes;
+        // seconds += ts_seconds;
+        // milliseconds += ts_ms;
+        // microseconds += ts_us;
+        // nanos += ts_nanos;
 
         let days_f64 = if sign < 0 {
             -(days as f64)
@@ -1278,18 +1258,20 @@ impl Epoch {
             days as f64
         };
 
+        let ref_year = ts.ref_year();
         let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
+        year += ref_year;
 
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
         // between 1900 and `year`
-        if year >= ts_year {
-            for year in ts_year..year {
+        if year >= ref_year {
+            for year in ref_year..year {
                 if is_leap_year(year) {
                     days_in_year -= 1.0;
                 }
             }
         } else {
-            for year in year..ts_year {
+            for year in year..ref_year {
                 if is_leap_year(year) {
                     days_in_year += 1.0;
                 }

@@ -136,7 +136,7 @@ impl TimeScale {
         self.tai_reference_epoch().duration.decompose()
     }
 
-    pub(crate) const fn ref_year(&self) -> u32 {
+    pub(crate) const fn ref_year(&self) -> i32 {
         match self {
             TimeScale::TT | TimeScale::ET | TimeScale::TDB => 2000,
             TimeScale::UTC | TimeScale::TAI => 1900,
