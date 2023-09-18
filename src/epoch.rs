@@ -3047,23 +3047,9 @@ impl FromStr for Epoch {
 }
 
 impl fmt::Debug for Epoch {
-    /// Print this epoch in Gregorian in the time scale used at initialization
+    /// Prints Self as a [Duration] within the associated [TimeScale]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.duration, self.time_scale);
-        if nanos == 0 {
-            write!(
-                f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {}",
-                y, mm, dd, hh, min, s, self.time_scale
-            )
-        } else {
-            write!(
-                f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {}",
-                y, mm, dd, hh, min, s, nanos, self.time_scale
-            )
-        }
+        write!(f, "{}({})", self.duration, self.time_scale,)
     }
 }
 
