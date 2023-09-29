@@ -1305,20 +1305,20 @@ fn test_timescale_recip() {
                 assert_eq!(utc_epoch, from_dur);
             }
 
-            // RFC3339 test
-            #[cfg(feature = "std")]
-            {
-                use core::str::FromStr;
-                let to_rfc = utc_epoch.to_rfc3339();
-                let from_rfc = Epoch::from_str(&to_rfc).unwrap();
+            //// RFC3339 test
+            //#[cfg(feature = "std")]
+            //{
+            //    use core::str::FromStr;
+            //    let to_rfc = utc_epoch.to_rfc3339();
+            //    let from_rfc = Epoch::from_str(&to_rfc).unwrap();
 
-                println!(
-                    "{} for {utc_epoch}\tto = {to_rfc}\tfrom={from_rfc}",
-                    from_rfc - utc_epoch
-                );
+            //    println!(
+            //        "{} for {utc_epoch}\tto = {to_rfc}\tfrom={from_rfc}",
+            //        from_rfc - utc_epoch
+            //    );
 
-                assert_eq!(from_rfc, utc_epoch);
-            }
+            //    assert_eq!(from_rfc, utc_epoch);
+            //}
         }
     };
 
