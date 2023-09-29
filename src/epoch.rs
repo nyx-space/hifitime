@@ -256,24 +256,8 @@ impl AddAssign<Duration> for Epoch {
 /// Equality only checks the duration since J1900 match in TAI, because this is how all of the epochs are referenced.
 impl PartialEq for Epoch {
     fn eq(&self, other: &Self) -> bool {
-        if self.time_scale == other.time_scale {
-            self.duration == other.duration
-        } else {
-            // self.duration == other.to_time_scale(self.time_scale).duration
-            // If one of the two time scales does not include leap seconds,
-            // we always convert the time scale with leap seconds into the
-            // time scale that does NOT have leap seconds.
-            if self.time_scale.uses_leap_seconds() != other.time_scale.uses_leap_seconds() {
-                if self.time_scale.uses_leap_seconds() {
-                    self.to_time_scale(other.time_scale).duration == other.duration
-                } else {
-                    self.duration == other.to_time_scale(self.time_scale).duration
-                }
-            } else {
-                // Otherwise it does not matter
-                self.duration == other.to_time_scale(self.time_scale).duration
-            }
-        }
+        self.time_scale == other.time_scale
+            && self.duration == other.duration
     }
 }
 
