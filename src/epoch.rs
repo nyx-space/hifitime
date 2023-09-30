@@ -2173,7 +2173,7 @@ impl Epoch {
     #[must_use]
     /// Returns `Duration` past BDT (BeiDou) time Epoch.
     pub fn to_bdt_duration(&self) -> Duration {
-        self.to_tai_duration() - BDT_REF_EPOCH.to_tai_duration()
+        self.to_time_scale(TimeScale::BDT).duration
     }
 
     #[must_use]
