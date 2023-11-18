@@ -729,6 +729,26 @@ impl Duration {
         *self == other
     }
 
+    #[cfg(feature = "python")]
+    fn __le__(&self, other: Self) -> bool {
+        *self <= other
+    }
+
+    #[cfg(feature = "python")]
+    fn __lt__(&self, other: Self) -> bool {
+        *self < other
+    }
+
+    #[cfg(feature = "python")]
+    fn __ge__(&self, other: Self) -> bool {
+        *self >= other
+    }
+
+    #[cfg(feature = "python")]
+    fn __gt__(&self, other: Self) -> bool {
+        *self > other
+    }
+
     // Python constructors
 
     #[cfg(feature = "python")]
