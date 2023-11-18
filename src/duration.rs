@@ -730,15 +730,23 @@ impl Duration {
     }
 
     #[cfg(feature = "python")]
-    fn __richcmp__(&self, other: Self, op: CompareOp) -> bool {
-        match op {
-            CompareOp::Lt => *self < other,
-            CompareOp::Le => *self <= other,
-            CompareOp::Eq => *self == other,
-            CompareOp::Ne => *self != other,
-            CompareOp::Gt => *self > other,
-            CompareOp::Ge => *self >= other,
-        }
+    fn __le__(&self, other: Self) -> bool {
+        *self <= other
+    }
+
+    #[cfg(feature = "python")]
+    fn __lt__(&self, other: Self) -> bool {
+        *self < other
+    }
+
+    #[cfg(feature = "python")]
+    fn __ge__(&self, other: Self) -> bool {
+        *self >= other
+    }
+
+    #[cfg(feature = "python")]
+    fn __gt__(&self, other: Self) -> bool {
+        *self > other
     }
 
     // Python constructors

@@ -1,4 +1,4 @@
-from hifitime import Epoch, TimeSeries, Unit
+from hifitime import Epoch, TimeSeries, Unit, Duration
 from datetime import datetime
 
 
@@ -44,3 +44,14 @@ def test_time_series():
         print(f"#{num}:\t{epoch}")
 
     assert num == 10
+
+def test_duration_eq():
+    """
+    Checks that Duration comparisons work
+    """
+
+    assert Unit.Second * 0.0 == Duration("0 ns")
+    assert Unit.Second * 1.0 >= Duration("0 ns")
+    assert Unit.Second * 1.0 > Duration("0 ns")
+    assert Duration("0 ns") <= Unit.Second * 1.0
+    assert Duration("0 ns") < Unit.Second * 1.0
