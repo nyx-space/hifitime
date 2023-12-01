@@ -1865,3 +1865,28 @@ fn regression_test_gh_204() {
     let e1900_m1 = Epoch::from_str("1899-12-31T23:59:59 TAI").unwrap();
     assert_eq!(format!("{e1900_m1:x}"), "1899-12-31T23:59:59 TAI");
 }
+
+#[test]
+fn regression_test_gh_261() {
+    let mut test: Epoch;
+    println!("Dates and JDE for year 1607");
+    for i in 25..=31 {
+        test = Epoch::from_gregorian_utc(1606, 12, i, 0, 0, 0, 0);
+        println!("{} - {}", test, test.to_jde_utc_days());
+        assert_eq!(test.year_days_of_year().0, 1606);
+    }
+    for i in 25..=31 {
+        test = Epoch::from_gregorian_utc(1607, 12, i, 0, 0, 0, 0);
+        println!("{} - {}", test, test.to_jde_utc_days());
+    }
+    println!("Dates and JDE for year 1608");
+    for i in 1..=5 {
+        test = Epoch::from_gregorian_utc(1608, 1, i, 0, 0, 0, 0);
+        println!("{} - {}", test, test.to_jde_utc_days());
+    }
+    println!("Dates and JDE for year 2023");
+    for i in 1..=5 {
+        test = Epoch::from_gregorian_utc(2023, 1, i, 0, 0, 0, 0);
+        println!("{} - {}", test, test.to_jde_utc_days());
+    }
+}
