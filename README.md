@@ -214,7 +214,7 @@ In Python:
 
 [![hifitime on crates.io][cratesio-image]][cratesio]
 [![hifitime on docs.rs][docsrs-image]][docsrs]
-[![minimum rustc: 1.64](https://img.shields.io/badge/minimum%20rustc-1.64-yellowgreen?logo=rust)](https://www.whatrustisit.com)
+[![minimum rustc: 1.70](https://img.shields.io/badge/minimum%20rustc-1.70-yellowgreen?logo=rust)](https://www.whatrustisit.com)
 [![Build Status](https://github.com/nyx-space/hifitime/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/nyx-space/hifitime/actions)
 [![Build Status](https://github.com/nyx-space/hifitime/actions/workflows/formal_verification.yml/badge.svg?branch=master)](https://github.com/nyx-space/hifitime/actions)
 [![codecov](https://codecov.io/gh/nyx-space/hifitime/branch/master/graph/badge.svg?token=l7zU57rUGs)](https://codecov.io/gh/nyx-space/hifitime)
@@ -308,6 +308,12 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 
 
 # Changelog
+
+## 3.8.5
+
+Changes from 3.8.2 are only dependency upgrades until this release.
+
+Minimum Supported Rust version bumped from 1.64 to **1.70**.
 
 ## 3.8.2
 + Clarify README and add a section comparing Hifitime to `time` and `chrono`, cf. [#221](https://github.com/nyx-space/hifitime/issues/221)
