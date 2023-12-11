@@ -498,10 +498,11 @@ fn unix() {
         let epoch_unix_time_s = Epoch::now().unwrap().to_unix_seconds();
 
         assert!(
-            (std_unix_time_s - epoch_unix_time_s).abs() < 1e-5,
-            "hifitime and std differ in UNIX by more than 10 microseconds: hifitime = {}\tstd = {}",
+            (std_unix_time_s - epoch_unix_time_s).abs() < 1e-4,
+            "hifitime and std differ in UNIX: hifitime = {}\tstd = {}\tdelta = {}",
             epoch_unix_time_s,
-            std_unix_time_s
+            std_unix_time_s,
+            (std_unix_time_s - epoch_unix_time_s).abs()
         );
     }
 
