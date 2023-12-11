@@ -44,8 +44,6 @@ use crate::leap_seconds_file::LeapSecondsFile;
 use serde_derive::{Deserialize, Serialize};
 
 use core::str::FromStr;
-#[cfg(feature = "std")]
-use std::time::SystemTime;
 
 #[cfg(not(feature = "std"))]
 use num_traits::{Euclid, Float};
@@ -628,6 +626,12 @@ impl Epoch {
             },
             TimeScale::BDT,
         )
+    }
+
+    #[must_use]
+    /// Initialize an Epoch from the provided duration since UTC midnight 1970 January 01.
+    pub fn from_unix_duration(duration: Duration) -> Self {
+        Self::from_utc_duration(UNIX_REF_EPOCH.to_utc_duration() + duration)
     }
 
     #[must_use]
@@ -2827,12 +2831,11 @@ impl Epoch {
 impl Epoch {
     /// Initializes a new Epoch from `now`.
     /// WARNING: This assumes that the system time returns the time in UTC (which is the case on Linux)
-    /// Uses [`std::time::SystemTime::now`](https://doc.rust-lang.org/std/time/struct.SystemTime.html#method.now) under the hood
+    /// Uses [`std::time::SystemTime::now`](https://doc.rust-lang.org/std/time/struct.SystemTime.html#method.now)
+    /// or javascript interop under the hood
     pub fn now() -> Result<Self, Errors> {
-        match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-            Ok(std_duration) => Ok(Self::from_unix_seconds(std_duration.as_secs_f64())),
-            Err(_) => Err(Errors::SystemTimeError),
-        }
+        let duration = crate::system_time::duration_since_unix_epoch()?;
+        Ok(Self::from_unix_duration(duration))
     }
 }
 
