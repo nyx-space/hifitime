@@ -1820,6 +1820,11 @@ fn test_epoch_formatter() {
         "EpochFormat:`Weekday,?`"
     );
 
+    assert_eq!(
+        format!("{:?}", Format::from_str("%y,?").unwrap()),
+        "EpochFormat:`YearShort,?`"
+    );
+
     // Test an invalid token
     assert_eq!(
         Format::from_str("%p"),
