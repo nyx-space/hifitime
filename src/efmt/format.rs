@@ -35,6 +35,7 @@ const MAX_TOKENS: usize = 16;
 /// | Token | Explanation | Example | Notes
 /// | :-- | :-- | :-- | :-- |
 /// | `%Y` | Proleptic Gregorian year, zero-padded to 4 digits | `2022` | (1) |
+/// | `%y` | Proleptic Gregorian year after 2000, on two digits | `23` | N/A |
 /// | `%m` | Month number, zero-padded to 2 digits | `03` for March | N/A |
 /// | `%b` | Month name in short form | `Mar` for March | N/A |
 /// | `%B` | Month name in long form | `March` | N/A |
@@ -117,6 +118,7 @@ impl Format {
         for item in self.items.iter().take(self.num_items) {
             match item.as_ref().unwrap().token {
                 Token::Year
+                | Token::YearShort
                 | Token::Month
                 | Token::MonthName
                 | Token::MonthNameShort
@@ -228,6 +230,12 @@ impl Format {
                 let sub_str = &s[prev_idx..end_idx];
 
                 match prev_token {
+                    Token::YearShort => {
+                        decomposed[0] = sub_str
+                            .parse::<i32>()
+                            .map_err(|_| Errors::ParseError(ParsingErrors::ValueError))?
+                            + 2000;
+                    }
                     Token::DayOfYear => {
                         // We must parse this as a floating point value.
                         match lexical_core::parse(sub_str.as_bytes()) {
@@ -374,6 +382,14 @@ impl FromStr for Format {
                     'Y' => {
                         me.items[me.num_items] = Some(Item::new(
                             Token::Year,
+                            token.chars().nth(1),
+                            token.chars().nth(2),
+                        ));
+                        me.num_items += 1;
+                    }
+                    'y' => {
+                        me.items[me.num_items] = Some(Item::new(
+                            Token::YearShort,
                             token.chars().nth(1),
                             token.chars().nth(2),
                         ));

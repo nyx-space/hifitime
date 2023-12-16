@@ -100,4 +100,9 @@ fn epoch_format_rfc2822() {
         Epoch::from_str_with_format("Sat, 07 Feb 2015 11:22:33", RFC2822).unwrap(),
         epoch
     );
+
+    assert_eq!(
+        Epoch::from_format_str("Sat, 07 Feb 15 11:22:33", "%a, %d %b %y %H:%M:%S").unwrap(),
+        epoch
+    );
 }
