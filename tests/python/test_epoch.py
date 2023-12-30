@@ -53,6 +53,7 @@ def test_time_series():
     # so the pickling will return something different
     assert pickle.loads(pickle.dumps(time_series)) != time_series
 
+
 def test_duration_eq():
     """
     Checks that Duration comparisons work
