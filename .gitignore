@@ -2,4 +2,5 @@
 **/*.rs.bk
 Cargo.lock
 .env
+.venv
 dist/

@@ -1,5 +1,6 @@
 from hifitime import Epoch, TimeSeries, Unit, Duration
 from datetime import datetime
+import pickle
 
 
 def test_strtime():
@@ -15,6 +16,8 @@ def test_strtime():
     assert epoch_fmt == dt_fmt
 
     assert Epoch.strptime(dt_fmt, "%A, %d %B %Y %H:%M:%S") == epoch
+
+    assert pickle.loads(pickle.dumps(epoch)) == epoch
 
 
 def test_utcnow():
@@ -40,10 +43,16 @@ def test_time_series():
     )
     print(time_series)
 
+    assert pickle.loads(pickle.dumps(time_series)) == time_series
+
     for num, epoch in enumerate(time_series):
         print(f"#{num}:\t{epoch}")
 
     assert num == 10
+    # Once consummed, the iterator in the time series will be different,
+    # so the pickling will return something different
+    assert pickle.loads(pickle.dumps(time_series)) != time_series
+
 
 def test_duration_eq():
     """
@@ -55,3 +64,6 @@ def test_duration_eq():
     assert Unit.Second * 1.0 > Duration("0 ns")
     assert Duration("0 ns") <= Unit.Second * 1.0
     assert Duration("0 ns") < Unit.Second * 1.0
+
+    dur = Duration("37 min 26 s")
+    assert pickle.loads(pickle.dumps(dur)) == dur
