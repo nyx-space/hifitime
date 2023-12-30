@@ -62,6 +62,7 @@ pub const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_
 #[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Duration {
     pub(crate) centuries: i16,
@@ -695,13 +696,18 @@ impl Duration {
     }
 
     #[cfg(feature = "python")]
+    fn __getnewargs__(&self) -> Result<(String,), PyErr> {
+        Ok((format!("{self}")))
+    }
+
+    #[cfg(feature = "python")]
     fn __str__(&self) -> String {
         format!("{self}")
     }
 
     #[cfg(feature = "python")]
     fn __repr__(&self) -> String {
-        format!("{self}")
+        format!("{self} @ {self:p}")
     }
 
     #[cfg(feature = "python")]

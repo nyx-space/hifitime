@@ -222,6 +222,10 @@ impl TimeSeries {
         }
     }
 
+    fn __getnewargs__(&self) -> Result<(Epoch, Epoch, Duration, bool), PyErr> {
+        Ok((self.start, self.start + self.duration, self.step, self.incl))
+    }
+
     fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
         slf
     }
@@ -235,7 +239,7 @@ impl TimeSeries {
     }
 
     fn __repr__(&self) -> String {
-        format!("{self}")
+        format!("{self:?} @ {self:p}")
     }
 }
 

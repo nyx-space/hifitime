@@ -1,6 +1,6 @@
 [package]
 name = "hifitime"
-version = "3.8.6"
+version = "3.8.7"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
 description = "Ultra-precise date and time handling in Rust for scientific applications with leap second support"
 homepage = "https://nyxspace.com/"
@@ -34,19 +34,31 @@ tabled = { version = "0.15.0", optional = true }
 openssl = { version = "0.10", features = ["vendored"], optional = true }
 
 [target.wasm32-unknown-unknown.dependencies]
-js-sys = { version = "0.3"}
-wasm-bindgen_rs = { package = "wasm-bindgen", version = "0.2"}
-web-sys = { version = "0.3", features = ['Window', 'Performance', 'PerformanceTiming'] }
+js-sys = { version = "0.3" }
+wasm-bindgen_rs = { package = "wasm-bindgen", version = "0.2" }
+web-sys = { version = "0.3", features = [
+    'Window',
+    'Performance',
+    'PerformanceTiming',
+] }
 
 [target.wasm32-unknown-emscripten.dependencies]
-js-sys = { version = "0.3"}
-wasm-bindgen_rs = { package = "wasm-bindgen", version = "0.2"}
-web-sys = { version = "0.3", features = ['Window', 'Performance', 'PerformanceTiming'] }
+js-sys = { version = "0.3" }
+wasm-bindgen_rs = { package = "wasm-bindgen", version = "0.2" }
+web-sys = { version = "0.3", features = [
+    'Window',
+    'Performance',
+    'PerformanceTiming',
+] }
 
 [target.asmjs-unknown-emscripten.dependencies]
-js-sys = { version = "0.3"}
-wasm-bindgen_rs = { package = "wasm-bindgen", version = "0.2"}
-web-sys = { version = "0.3", features = ['Window', 'Performance', 'PerformanceTiming'] }
+js-sys = { version = "0.3" }
+wasm-bindgen_rs = { package = "wasm-bindgen", version = "0.2" }
+web-sys = { version = "0.3", features = [
+    'Window',
+    'Performance',
+    'PerformanceTiming',
+] }
 
 [dev-dependencies]
 serde_json = "1.0.91"
