@@ -13,9 +13,9 @@ use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
 use crate::parser::Token;
 use crate::{
     Errors, MonthName, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S, GPST_REF_EPOCH,
-    GST_REF_EPOCH, J1900_OFFSET, J1900_REF_EPOCH, J2000_TO_J1900_DURATION, MJD_OFFSET,
-    NANOSECONDS_PER_DAY, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
-    NANOSECONDS_PER_SECOND_U32, UNIX_REF_EPOCH,
+    GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_DAY,
+    NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32,
+    UNIX_REF_EPOCH,
 };
 
 use crate::efmt::format::Format;
@@ -2504,19 +2504,7 @@ impl Epoch {
     #[must_use]
     /// Returns the number of Gregorian years of this epoch in the current time scale.
     pub fn year(&self) -> i32 {
-        let mut year = Self::compute_gregorian(self.to_duration()).0;
-        if self.time_scale.ref_epoch() != J1900_REF_EPOCH {
-            // We need to correct for the year epoch error
-            let ref_offset_days = (self
-                .time_scale
-                .ref_epoch()
-                .round(DAYS_PER_YEAR_NLD * Unit::Day)
-                - J1900_REF_EPOCH)
-                .to_unit(Unit::Day);
-            let ref_year_offset = ref_offset_days / DAYS_PER_YEAR_NLD;
-            year += ref_year_offset.floor() as i32;
-        }
-        year
+        Self::compute_gregorian(self.duration_since_j1900_tai).0
     }
 
     #[must_use]

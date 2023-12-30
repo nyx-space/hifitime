@@ -1883,19 +1883,24 @@ fn regression_test_gh_272() {
     assert_eq!(years, 2021);
 
     // Check that even in GPST, we start counting the days at one.
-    let epoch2 = Epoch::from_str("2021-12-31T00:00:00 GPST").unwrap();
-    let (years, day_of_year) = epoch2.year_days_of_year();
+    let epoch = Epoch::from_str("2021-12-31T00:00:00 GPST").unwrap();
+    let (years, day_of_year) = epoch.year_days_of_year();
     assert_eq!(years, 2021);
     assert_eq!(day_of_year, 365.0);
 
-    let epoch2 = Epoch::from_str("2020-12-31T00:00:00 GPST").unwrap();
-    let (years, day_of_year) = epoch2.year_days_of_year();
+    let epoch = Epoch::from_str("2020-12-31T00:00:00 GPST").unwrap();
+    let (years, day_of_year) = epoch.year_days_of_year();
     assert_eq!(years, 2020);
     // 366 days in 2020, leap year.
     assert_eq!(day_of_year, 366.0);
 
-    let epoch2 = Epoch::from_str("2021-01-01T00:00:00 UTC").unwrap();
-    let (years, day_of_year) = epoch2.year_days_of_year();
+    let epoch = Epoch::from_str("2021-01-01T00:00:00 UTC").unwrap();
+    let (years, day_of_year) = epoch.year_days_of_year();
+    assert_eq!(years, 2021);
+    assert_eq!(day_of_year, 1.0);
+
+    let epoch = Epoch::from_str("2021-01-01T00:00:00 GPST").unwrap();
+    let (years, day_of_year) = epoch.year_days_of_year();
     assert_eq!(years, 2021);
     assert_eq!(day_of_year, 1.0);
 }

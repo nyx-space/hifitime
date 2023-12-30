@@ -1027,7 +1027,7 @@ impl Add for Duration {
             }
         }
 
-        if me.centuries == Self::MIN.centuries && self.nanoseconds < Self::MIN.nanoseconds {
+        if me.centuries == Self::MIN.centuries {
             // Then we do the operation backward
             match me
                 .nanoseconds
