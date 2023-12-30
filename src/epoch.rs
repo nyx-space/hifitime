@@ -2691,7 +2691,7 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     fn __getnewargs__(&self) -> Result<(String,), PyErr> {
-        Ok((format!("{self:?}")))
+        Ok((format!("{self:?}"),))
     }
 
     #[cfg(feature = "python")]
