@@ -26,6 +26,7 @@ NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/iter
 /// An iterator of a sequence of evenly spaced Epochs.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
 pub struct TimeSeries {
     start: Epoch,
     duration: Duration,
