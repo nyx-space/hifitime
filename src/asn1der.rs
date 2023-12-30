@@ -21,7 +21,7 @@ impl Encode for Duration {
         centuries.encoded_len()? + nanoseconds.encoded_len()?
     }
 
-    fn encode(&self, encoder: &mut dyn Writer) -> der::Result<()> {
+    fn encode(&self, encoder: &mut impl Writer) -> der::Result<()> {
         let (centuries, nanoseconds) = self.to_parts();
         centuries.encode(encoder)?;
         nanoseconds.encode(encoder)
@@ -43,7 +43,7 @@ impl Encode for Epoch {
         ts.encoded_len()? + self.to_duration().encoded_len()?
     }
 
-    fn encode(&self, encoder: &mut dyn Writer) -> der::Result<()> {
+    fn encode(&self, encoder: &mut impl Writer) -> der::Result<()> {
         let ts: u8 = self.time_scale.into();
 
         ts.encode(encoder)?;
@@ -76,7 +76,7 @@ impl Encode for Unit {
         converted.encoded_len()
     }
 
-    fn encode(&self, encoder: &mut dyn Writer) -> der::Result<()> {
+    fn encode(&self, encoder: &mut impl Writer) -> der::Result<()> {
         let converted: u8 = self.into();
         converted.encode(encoder)
     }

@@ -17,6 +17,13 @@ use num_traits::Float;
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
+
+#[cfg(feature = "python")]
+use pyo3::pyclass::CompareOp;
+
+#[cfg(feature = "python")]
+use pyo3::exceptions::PyTypeError;
+
 /*
 
 NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/itertools_num/linspace.rs.html#78-93 .
@@ -26,6 +33,7 @@ NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/iter
 /// An iterator of a sequence of evenly spaced Epochs.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
 pub struct TimeSeries {
     start: Epoch,
     duration: Duration,
@@ -222,6 +230,10 @@ impl TimeSeries {
         }
     }
 
+    fn __getnewargs__(&self) -> Result<(Epoch, Epoch, Duration, bool), PyErr> {
+        Ok((self.start, self.start + self.duration, self.step, self.incl))
+    }
+
     fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
         slf
     }
@@ -235,7 +247,12 @@ impl TimeSeries {
     }
 
     fn __repr__(&self) -> String {
-        format!("{self}")
+        format!("{self:?} @ {self:p}")
+    }
+
+    #[cfg(feature = "python")]
+    fn __eq__(&self, other: Self) -> bool {
+        *self == other
     }
 }
 

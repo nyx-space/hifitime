@@ -309,6 +309,10 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 
 # Changelog
 
+## 3.8.7
+
+Update to der version 0.7.x.
+
 ## 3.8.5
 
 Changes from 3.8.2 are only dependency upgrades until this release.

@@ -124,6 +124,7 @@ const CUMULATIVE_DAYS_FOR_MONTH: [u16; 12] = {
 #[derive(Copy, Clone, Eq, Default)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Epoch {
     /// An Epoch is always stored as the duration of since J1900 in the TAI time scale.
@@ -1687,19 +1688,34 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     #[classmethod]
-    /// Equivalent to `datetime.strptime, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
+    /// Equivalent to `datetime.strptime`, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
     fn strptime(_cls: &PyType, epoch_str: String, format_str: String) -> PyResult<Self> {
         Self::from_format_str(&epoch_str, &format_str).map_err(|e| PyErr::from(e))
     }
 
     #[cfg(feature = "python")]
-    /// Equivalent to `datetime.strftime, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
+    /// Equivalent to `datetime.strftime`, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
     fn strftime(&self, format_str: String) -> PyResult<String> {
         use crate::efmt::Formatter;
         let fmt = Format::from_str(&format_str)
             .map_err(Errors::ParseError)
             .map_err(|e| PyErr::from(e))?;
         Ok(format!("{}", Formatter::new(*self, fmt)))
+    }
+
+    #[cfg(feature = "python")]
+    /// Equivalent to `datetime.isoformat`, and truncated to 23 chars, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
+    fn isoformat(&self) -> PyResult<String> {
+        Ok(self.to_isoformat())
+    }
+
+    #[cfg(feature = "std")]
+    #[must_use]
+    /// The standard ISO format of this epoch (six digits of subseconds), refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
+    pub fn to_isoformat(&self) -> String {
+        use crate::efmt::consts::ISO8601_STD;
+        use crate::efmt::Formatter;
+        format!("{}", Formatter::new(*self, ISO8601_STD))[..26].to_string()
     }
 
     /// Returns this epoch with respect to the time scale this epoch was created in.
@@ -2674,6 +2690,11 @@ impl Epoch {
     }
 
     #[cfg(feature = "python")]
+    fn __getnewargs__(&self) -> Result<(String,), PyErr> {
+        Ok((format!("{self:?}"),))
+    }
+
+    #[cfg(feature = "python")]
     #[classmethod]
     fn system_now(_cls: &PyType) -> Result<Self, Errors> {
         Self::now()
@@ -2686,7 +2707,7 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     fn __repr__(&self) -> String {
-        format!("{self:?}")
+        format!("{self:?} @ {self:p}")
     }
 
     #[cfg(feature = "python")]
