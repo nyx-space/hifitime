@@ -43,11 +43,15 @@ def test_time_series():
     )
     print(time_series)
 
+    assert pickle.loads(pickle.dumps(time_series)) == time_series
+
     for num, epoch in enumerate(time_series):
         print(f"#{num}:\t{epoch}")
 
     assert num == 10
-    assert pickle.loads(pickle.dumps(time_series)) == time_series
+    # Once consummed, the iterator in the time series will be different,
+    # so the pickling will return something different
+    assert pickle.loads(pickle.dumps(time_series)) != time_series
 
 def test_duration_eq():
     """
