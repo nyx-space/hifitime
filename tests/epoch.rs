@@ -3,17 +3,14 @@ extern crate core;
 
 use hifitime::{
     is_gregorian_valid, Duration, Epoch, Errors, ParsingErrors, TimeScale, TimeUnits, Unit,
-    Weekday, BDT_REF_EPOCH, DAYS_GPS_TAI_OFFSET, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET,
-    J1900_REF_EPOCH, J2000_OFFSET, MJD_OFFSET, SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET,
-    SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
+    Weekday, BDT_REF_EPOCH, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR, GPST_REF_EPOCH, GST_REF_EPOCH,
+    J1900_OFFSET, J1900_REF_EPOCH, J2000_OFFSET, MJD_OFFSET, SECONDS_BDT_TAI_OFFSET,
+    SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
 use hifitime::efmt::{Format, Formatter};
 
-#[cfg(feature = "std")]
 use core::f64::EPSILON;
-#[cfg(not(feature = "std"))]
-use std::f64::EPSILON;
 
 #[test]
 fn test_const_ops() {
@@ -1854,7 +1851,6 @@ fn test_leap_seconds_file() {
 #[test]
 fn regression_test_gh_204() {
     use core::str::FromStr;
-    use hifitime::Epoch;
 
     let e1700 = Epoch::from_str("1700-01-01T00:00:00 TAI").unwrap();
     assert_eq!(format!("{e1700:x}"), "1700-01-01T00:00:00 TAI");
@@ -1870,4 +1866,17 @@ fn regression_test_gh_204() {
 
     let e1900_m1 = Epoch::from_str("1899-12-31T23:59:59 TAI").unwrap();
     assert_eq!(format!("{e1900_m1:x}"), "1899-12-31T23:59:59 TAI");
+}
+
+#[test]
+fn regression_test_gh_272() {
+    use core::str::FromStr;
+
+    let epoch = Epoch::from_str("2021-12-21T00:00:00 GPST").unwrap();
+
+    let (years, day_of_year) = epoch.year_days_of_year();
+
+    assert!(day_of_year < DAYS_PER_YEAR);
+
+    assert_eq!(years, 2012);
 }
