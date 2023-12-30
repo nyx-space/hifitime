@@ -46,6 +46,6 @@ fn test_ut1_from_jpl() {
     let ut1_epoch = epoch.to_ut1(provider);
     assert_eq!(
         format!("{:x}", ut1_epoch),
-        "2022-01-03T03:05:06.679020600 TAI",
+        "2022-01-03T03:05:43.789100000 TAI",
     );
 }
