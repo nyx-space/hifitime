@@ -546,6 +546,7 @@ fn epoch_format_from_str() {
     assert_eq!(fmt, crate::efmt::consts::RFC2822);
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn gh_248_regression() {
     /*
