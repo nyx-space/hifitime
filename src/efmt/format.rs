@@ -90,7 +90,7 @@ const MAX_TOKENS: usize = 16;
 /// assert_eq!(fmt, consts::ISO8601_ORDINAL);
 ///
 /// let fmt_iso_ord = Formatter::new(bday, consts::ISO8601_ORDINAL);
-/// assert_eq!(format!("{fmt_iso_ord}"), "2000-059");
+/// assert_eq!(format!("{fmt_iso_ord}"), "2000-060");
 ///
 /// let fmt = Format::from_str("%A, %d %B %Y %H:%M:%S").unwrap();
 /// assert_eq!(fmt, consts::RFC2822_LONG);
@@ -546,10 +546,18 @@ fn epoch_format_from_str() {
     assert_eq!(fmt, crate::efmt::consts::RFC2822);
 }
 
-#[cfg(feature = "std")]
 #[test]
 fn gh_248_regression() {
+    /*
+    Update on 2023-12-30 to match the Python behavior:
+
+    >>> from datetime import datetime
+    >>> dt, fmt = "2023-117T12:55:26", "%Y-%jT%H:%M:%S"
+    >>> datetime.strptime(dt, fmt)
+    datetime.datetime(2023, 4, 27, 12, 55, 26)
+     */
+
     let e = Epoch::from_format_str("2023-117T12:55:26", "%Y-%jT%H:%M:%S").unwrap();
 
-    assert_eq!(format!("{e}"), "2023-04-28T12:55:26 UTC");
+    assert_eq!(format!("{e}"), "2023-04-27T12:55:26 UTC");
 }

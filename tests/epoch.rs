@@ -1040,7 +1040,7 @@ fn test_leap_seconds_iers() {
     let epoch_from_utc_greg = Epoch::from_gregorian_tai_hms(1971, 12, 31, 23, 59, 59);
     // Just after it.
     let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 0);
-    assert_eq!(epoch_from_utc_greg1.day_of_year(), 0.0);
+    assert_eq!(epoch_from_utc_greg1.day_of_year(), 1.0);
     assert_eq!(epoch_from_utc_greg.leap_seconds_iers(), 0);
     // The first leap second is special; it adds 10 seconds.
     assert_eq!(epoch_from_utc_greg1.leap_seconds_iers(), 10);
@@ -1774,10 +1774,10 @@ fn test_epoch_formatter() {
     let bday = Epoch::from_gregorian_utc(2000, 2, 29, 14, 57, 29, 37);
 
     let fmt_iso_ord = Formatter::new(bday, ISO8601_ORDINAL);
-    assert_eq!(format!("{fmt_iso_ord}"), "2000-059");
+    assert_eq!(format!("{fmt_iso_ord}"), "2000-060");
 
     let fmt_iso_ord = Formatter::new(bday, Format::from_str("%j").unwrap());
-    assert_eq!(format!("{fmt_iso_ord}"), "059");
+    assert_eq!(format!("{fmt_iso_ord}"), "060");
 
     let fmt_iso = Formatter::new(bday, ISO8601);
     assert_eq!(format!("{fmt_iso}"), format!("{bday}"));
@@ -1876,7 +1876,26 @@ fn regression_test_gh_272() {
 
     let (years, day_of_year) = epoch.year_days_of_year();
 
-    assert!(day_of_year < DAYS_PER_YEAR);
+    assert!(dbg!(day_of_year) < DAYS_PER_YEAR);
+    assert!(day_of_year > 0.0);
+    assert_eq!(day_of_year, 355.0);
 
-    assert_eq!(years, 2012);
+    assert_eq!(years, 2021);
+
+    // Check that even in GPST, we start counting the days at one.
+    let epoch2 = Epoch::from_str("2021-12-31T00:00:00 GPST").unwrap();
+    let (years, day_of_year) = epoch2.year_days_of_year();
+    assert_eq!(years, 2021);
+    assert_eq!(day_of_year, 365.0);
+
+    let epoch2 = Epoch::from_str("2020-12-31T00:00:00 GPST").unwrap();
+    let (years, day_of_year) = epoch2.year_days_of_year();
+    assert_eq!(years, 2020);
+    // 366 days in 2020, leap year.
+    assert_eq!(day_of_year, 366.0);
+
+    let epoch2 = Epoch::from_str("2021-01-01T00:00:00 UTC").unwrap();
+    let (years, day_of_year) = epoch2.year_days_of_year();
+    assert_eq!(years, 2021);
+    assert_eq!(day_of_year, 1.0);
 }

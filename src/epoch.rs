@@ -13,9 +13,9 @@ use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
 use crate::parser::Token;
 use crate::{
     Errors, MonthName, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S, GPST_REF_EPOCH,
-    GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_DAY,
-    NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32,
-    UNIX_REF_EPOCH,
+    GST_REF_EPOCH, J1900_OFFSET, J1900_REF_EPOCH, J2000_TO_J1900_DURATION, MJD_OFFSET,
+    NANOSECONDS_PER_DAY, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
+    NANOSECONDS_PER_SECOND_U32, UNIX_REF_EPOCH,
 };
 
 use crate::efmt::format::Format;
@@ -1232,9 +1232,14 @@ impl Epoch {
     /// # Limitations
     /// In the TDB or ET time scales, there may be an error of up to 750 nanoseconds when initializing an Epoch this way.
     /// This is because we first initialize the epoch in Gregorian scale and then apply the TDB/ET offset, but that offset actually depends on the precise time.
+    ///
+    /// # Day couting behavior
+    ///
+    /// The day counter starts at 01, in other words, 01 January is day 1 of the counter, as per the GPS specificiations.
+    ///
     pub fn from_day_of_year(year: i32, days: f64, time_scale: TimeScale) -> Self {
         let start_of_year = Self::from_gregorian(year, 1, 1, 0, 0, 0, 0, time_scale);
-        start_of_year + days * Unit::Day
+        start_of_year + (days - 1.0) * Unit::Day
     }
 }
 
@@ -2486,24 +2491,38 @@ impl Epoch {
     #[must_use]
     /// Returns the duration since the start of the year
     pub fn duration_in_year(&self) -> Duration {
-        let year = Self::compute_gregorian(self.to_duration()).0;
-        let start_of_year = Self::from_gregorian(year, 1, 1, 0, 0, 0, 0, self.time_scale);
+        let start_of_year = Self::from_gregorian(self.year(), 1, 1, 0, 0, 0, 0, self.time_scale);
         self.to_duration() - start_of_year.to_duration()
     }
 
     #[must_use]
     /// Returns the number of days since the start of the year.
     pub fn day_of_year(&self) -> f64 {
-        self.duration_in_year().to_unit(Unit::Day)
+        self.duration_in_year().to_unit(Unit::Day) + 1.0
+    }
+
+    #[must_use]
+    /// Returns the number of Gregorian years of this epoch in the current time scale.
+    pub fn year(&self) -> i32 {
+        let mut year = Self::compute_gregorian(self.to_duration()).0;
+        if self.time_scale.ref_epoch() != J1900_REF_EPOCH {
+            // We need to correct for the year epoch error
+            let ref_offset_days = (self
+                .time_scale
+                .ref_epoch()
+                .round(DAYS_PER_YEAR_NLD * Unit::Day)
+                - J1900_REF_EPOCH)
+                .to_unit(Unit::Day);
+            let ref_year_offset = ref_offset_days / DAYS_PER_YEAR_NLD;
+            year += ref_year_offset.floor() as i32;
+        }
+        year
     }
 
     #[must_use]
     /// Returns the year and the days in the year so far (days of year).
     pub fn year_days_of_year(&self) -> (i32, f64) {
-        (
-            Self::compute_gregorian(self.to_duration()).0,
-            self.day_of_year(),
-        )
+        (self.year(), self.day_of_year())
     }
 
     /// Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in.
