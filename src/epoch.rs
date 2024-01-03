@@ -1232,9 +1232,14 @@ impl Epoch {
     /// # Limitations
     /// In the TDB or ET time scales, there may be an error of up to 750 nanoseconds when initializing an Epoch this way.
     /// This is because we first initialize the epoch in Gregorian scale and then apply the TDB/ET offset, but that offset actually depends on the precise time.
+    ///
+    /// # Day couting behavior
+    ///
+    /// The day counter starts at 01, in other words, 01 January is day 1 of the counter, as per the GPS specificiations.
+    ///
     pub fn from_day_of_year(year: i32, days: f64, time_scale: TimeScale) -> Self {
         let start_of_year = Self::from_gregorian(year, 1, 1, 0, 0, 0, 0, time_scale);
-        start_of_year + days * Unit::Day
+        start_of_year + (days - 1.0) * Unit::Day
     }
 }
 
@@ -2486,24 +2491,26 @@ impl Epoch {
     #[must_use]
     /// Returns the duration since the start of the year
     pub fn duration_in_year(&self) -> Duration {
-        let year = Self::compute_gregorian(self.to_duration()).0;
-        let start_of_year = Self::from_gregorian(year, 1, 1, 0, 0, 0, 0, self.time_scale);
+        let start_of_year = Self::from_gregorian(self.year(), 1, 1, 0, 0, 0, 0, self.time_scale);
         self.to_duration() - start_of_year.to_duration()
     }
 
     #[must_use]
     /// Returns the number of days since the start of the year.
     pub fn day_of_year(&self) -> f64 {
-        self.duration_in_year().to_unit(Unit::Day)
+        self.duration_in_year().to_unit(Unit::Day) + 1.0
+    }
+
+    #[must_use]
+    /// Returns the number of Gregorian years of this epoch in the current time scale.
+    pub fn year(&self) -> i32 {
+        Self::compute_gregorian(self.duration_since_j1900_tai).0
     }
 
     #[must_use]
     /// Returns the year and the days in the year so far (days of year).
     pub fn year_days_of_year(&self) -> (i32, f64) {
-        (
-            Self::compute_gregorian(self.to_duration()).0,
-            self.day_of_year(),
-        )
+        (self.year(), self.day_of_year())
     }
 
     /// Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in.

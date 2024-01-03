@@ -3,17 +3,14 @@ extern crate core;
 
 use hifitime::{
     is_gregorian_valid, Duration, Epoch, Errors, ParsingErrors, TimeScale, TimeUnits, Unit,
-    Weekday, BDT_REF_EPOCH, DAYS_GPS_TAI_OFFSET, GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET,
-    J1900_REF_EPOCH, J2000_OFFSET, MJD_OFFSET, SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET,
-    SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
+    Weekday, BDT_REF_EPOCH, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR, GPST_REF_EPOCH, GST_REF_EPOCH,
+    J1900_OFFSET, J1900_REF_EPOCH, J2000_OFFSET, MJD_OFFSET, SECONDS_BDT_TAI_OFFSET,
+    SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
 use hifitime::efmt::{Format, Formatter};
 
-#[cfg(feature = "std")]
 use core::f64::EPSILON;
-#[cfg(not(feature = "std"))]
-use std::f64::EPSILON;
 
 #[test]
 fn test_const_ops() {
@@ -1043,7 +1040,7 @@ fn test_leap_seconds_iers() {
     let epoch_from_utc_greg = Epoch::from_gregorian_tai_hms(1971, 12, 31, 23, 59, 59);
     // Just after it.
     let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 0);
-    assert_eq!(epoch_from_utc_greg1.day_of_year(), 0.0);
+    assert_eq!(epoch_from_utc_greg1.day_of_year(), 1.0);
     assert_eq!(epoch_from_utc_greg.leap_seconds_iers(), 0);
     // The first leap second is special; it adds 10 seconds.
     assert_eq!(epoch_from_utc_greg1.leap_seconds_iers(), 10);
@@ -1777,10 +1774,10 @@ fn test_epoch_formatter() {
     let bday = Epoch::from_gregorian_utc(2000, 2, 29, 14, 57, 29, 37);
 
     let fmt_iso_ord = Formatter::new(bday, ISO8601_ORDINAL);
-    assert_eq!(format!("{fmt_iso_ord}"), "2000-059");
+    assert_eq!(format!("{fmt_iso_ord}"), "2000-060");
 
     let fmt_iso_ord = Formatter::new(bday, Format::from_str("%j").unwrap());
-    assert_eq!(format!("{fmt_iso_ord}"), "059");
+    assert_eq!(format!("{fmt_iso_ord}"), "060");
 
     let fmt_iso = Formatter::new(bday, ISO8601);
     assert_eq!(format!("{fmt_iso}"), format!("{bday}"));
@@ -1854,7 +1851,6 @@ fn test_leap_seconds_file() {
 #[test]
 fn regression_test_gh_204() {
     use core::str::FromStr;
-    use hifitime::Epoch;
 
     let e1700 = Epoch::from_str("1700-01-01T00:00:00 TAI").unwrap();
     assert_eq!(format!("{e1700:x}"), "1700-01-01T00:00:00 TAI");
@@ -1870,4 +1866,44 @@ fn regression_test_gh_204() {
 
     let e1900_m1 = Epoch::from_str("1899-12-31T23:59:59 TAI").unwrap();
     assert_eq!(format!("{e1900_m1:x}"), "1899-12-31T23:59:59 TAI");
+}
+
+#[test]
+fn regression_test_gh_272() {
+    use core::str::FromStr;
+
+    let epoch = Epoch::from_str("2021-12-21T00:00:00 GPST").unwrap();
+
+    let (years, day_of_year) = epoch.year_days_of_year();
+
+    assert!(dbg!(day_of_year) < DAYS_PER_YEAR);
+    assert!(day_of_year > 0.0);
+    assert_eq!(day_of_year, 355.0);
+
+    assert_eq!(years, 2021);
+
+    // Check that even in GPST, we start counting the days at one, in all timescales.
+    for ts in [
+        TimeScale::TAI,
+        TimeScale::GPST,
+        TimeScale::UTC,
+        TimeScale::GST,
+        TimeScale::BDT,
+    ] {
+        let epoch = Epoch::from_gregorian_at_midnight(2021, 12, 31, ts);
+        let (years, day_of_year) = epoch.year_days_of_year();
+        assert_eq!(years, 2021);
+        assert_eq!(day_of_year, 365.0);
+
+        let epoch = Epoch::from_gregorian_at_midnight(2020, 12, 31, ts);
+        let (years, day_of_year) = epoch.year_days_of_year();
+        assert_eq!(years, 2020);
+        // 366 days in 2020, leap year.
+        assert_eq!(day_of_year, 366.0);
+
+        let epoch = Epoch::from_gregorian_at_midnight(2021, 1, 1, ts);
+        let (years, day_of_year) = epoch.year_days_of_year();
+        assert_eq!(years, 2021);
+        assert_eq!(day_of_year, 1.0);
+    }
 }

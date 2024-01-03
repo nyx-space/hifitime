@@ -1008,6 +1008,7 @@ impl Add for Duration {
     /// ## Examples
     /// + `Duration { centuries: 0, nanoseconds: 1 }` is a positive duration of zero centuries and one nanosecond.
     /// + `Duration { centuries: -1, nanoseconds: 1 }` is a negative duration representing "one century before zero minus one nanosecond"
+    #[allow(clippy::absurd_extreme_comparisons)]
     fn add(self, rhs: Self) -> Duration {
         // Check that the addition fits in an i16
         let mut me = self;
