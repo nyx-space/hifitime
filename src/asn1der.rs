@@ -63,6 +63,7 @@ impl<'a> Decode<'a> for Epoch {
             TimeScale::TDB => Self::from_tdb_duration(duration),
             TimeScale::UTC => Self::from_utc_duration(duration),
             TimeScale::GPST => Self::from_gpst_duration(duration),
+            TimeScale::QZSST => Self::from_qzsst_duration(duration),
             TimeScale::GST => Self::from_gst_duration(duration),
             TimeScale::BDT => Self::from_bdt_duration(duration),
         })
@@ -92,7 +93,7 @@ impl<'a> Decode<'a> for Unit {
 // Testing the encoding and decoding of an Epoch inherently also tests the encoding and decoding of a Duration
 #[test]
 fn test_encdec() {
-    for ts_u8 in 0..=7 {
+    for ts_u8 in 0..=8 {
         let ts: TimeScale = ts_u8.into();
 
         let epoch = if ts == TimeScale::UTC {
@@ -110,6 +111,7 @@ fn test_encdec() {
             TimeScale::GPST => epoch.to_gpst_duration(),
             TimeScale::GST => epoch.to_gst_duration(),
             TimeScale::BDT => epoch.to_bdt_duration(),
+            TimeScale::QZSST => epoch.to_qzsst_duration(),
         };
 
         let e_dur = epoch.to_duration();
@@ -130,7 +132,7 @@ fn test_encdec() {
         // Check that the time scale used is preserved
         assert_eq!(
             encdec_epoch.time_scale, ts,
-            "Decoded time system incorrect {ts:?}"
+            "Decoded time system incorrect {ts:?}",
         );
     }
 
