@@ -526,7 +526,7 @@ fn unix() {
     // Continuous check that the system time as reported by this machine is within millisecond accuracy of what we compute
     #[cfg(feature = "std")]
     {
-        use std::time::SystemTime;
+        use web_time::SystemTime;
 
         let std_unix_time_s = SystemTime::now()
             .duration_since(SystemTime::UNIX_EPOCH)
