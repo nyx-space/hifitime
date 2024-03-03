@@ -48,7 +48,7 @@ pub const QZSST_REF_EPOCH: Epoch = GPST_REF_EPOCH;
 /// |UTC - TAI| = XX Leap Seconds on that day.
 pub const GST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
-    nanoseconds: 3_144_268_800_000_000_000,
+    nanoseconds: 3_144_268_819_000_000_000, // 3_144_268_800_000_000_000,
 });
 pub const SECONDS_GST_TAI_OFFSET: f64 = 3_144_268_819.0;
 pub const SECONDS_GST_TAI_OFFSET_I64: i64 = 3_144_268_819;
@@ -58,7 +58,7 @@ pub const SECONDS_GST_TAI_OFFSET_I64: i64 = 3_144_268_819;
 /// |UTC - TAI| = XX Leap Seconds on that day.
 pub const BDT_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 1,
-    nanoseconds: 189_302_400_000_000_000,
+    nanoseconds: 189_302_433_000_000_000, //189_302_400_000_000_000,
 });
 pub const SECONDS_BDT_TAI_OFFSET: f64 = 3_345_062_433.0;
 pub const SECONDS_BDT_TAI_OFFSET_I64: i64 = 3_345_062_433;
