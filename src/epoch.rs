@@ -732,8 +732,8 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let years_since_1900 = year - 1900;
-        let mut duration_wrt_1900 = Unit::Day * i64::from(365 * years_since_1900);
+        let years_since_1900 = year.saturating_sub(1900);
+        let mut duration_wrt_1900 = Unit::Day * i64::from(years_since_1900.saturating_mul(365));
 
         // count leap years
         if years_since_1900 > 0 {
