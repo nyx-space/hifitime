@@ -1050,6 +1050,10 @@ impl Epoch {
                     idx + 1
                 };
 
+                if prev_idx > end_idx {
+                    return Err(Errors::ParseError(ParsingErrors::ISO8601));
+                }
+
                 match lexical_core::parse(s[prev_idx..end_idx].as_bytes()) {
                     Ok(val) => {
                         // Check that this valid is OK for the token we're reading it as.
