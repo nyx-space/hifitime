@@ -76,10 +76,7 @@ impl fmt::Display for Errors {
             Self::ConversionOverlapError(hi, lo) => {
                 write!(f, "hi and lo values overlap: {}, {}", hi, lo)
             }
-            Self::Overflow => write!(
-                f,
-                "overflow occurred when trying to convert Duration information"
-            ),
+            Self::Overflow => write!(f, "prevented overflow/underflow"),
             Self::SystemTimeError => write!(f, "std::time::SystemTime returned an error"),
         }
     }
