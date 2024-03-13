@@ -737,7 +737,7 @@ impl Epoch {
             Some(years_since_1900) => match years_since_1900.checked_mul(365) {
                 None => return Err(Errors::Overflow),
                 Some(days) => (years_since_1900, Unit::Day * i64::from(days)),
-            }
+            },
         };
 
         // count leap years
