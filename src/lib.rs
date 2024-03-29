@@ -56,10 +56,10 @@ pub const SECONDS_PER_TROPICAL_YEAR: f64 = 31_556_925.974_7;
 /// `SECONDS_PER_SIDEREAL_YEAR` corresponds to the number of seconds per sidereal year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
 pub const SECONDS_PER_SIDEREAL_YEAR: f64 = 31_558_150.0;
 
-/// The duration between J2000 and J1900: one century **minus** twelve hours. J1900 starts at _noon_ but J2000 is at midnight.
+/// The duration between J2000 and J1900 is exactly one century, both references start at noon.
 pub const J2000_TO_J1900_DURATION: Duration = Duration {
-    centuries: 0,
-    nanoseconds: 3_155_716_800_000_000_000,
+    centuries: 1,
+    nanoseconds: 0,
 };
 
 /// The Ephemeris Time reference epoch J2000.

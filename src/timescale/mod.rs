@@ -20,7 +20,7 @@ mod kani;
 mod fmt;
 
 use crate::{
-    Duration, Epoch, Unit, J2000_REF_EPOCH_ET, J2000_REF_EPOCH_TDB, J2000_TO_J1900_DURATION,
+    Duration, Epoch, J2000_REF_EPOCH_ET, J2000_REF_EPOCH_TDB, J2000_TO_J1900_DURATION,
     SECONDS_PER_DAY,
 };
 

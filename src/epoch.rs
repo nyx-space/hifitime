@@ -363,7 +363,7 @@ impl Epoch {
                     );
 
                     // Match SPICE by changing the UTC definition.
-                    (self.duration.to_seconds() - delta_et_tai).seconds() + J2000_TO_J1900_DURATION
+                    self.duration - delta_et_tai.seconds() + J2000_TO_J1900_DURATION
                 }
                 TimeScale::TDB => {
                     let gamma = Self::inner_g(self.duration.to_seconds());
@@ -3266,12 +3266,21 @@ fn div_rem_f64_test() {
 }
 
 #[test]
-fn test_days_tdb_j2000() {
+fn test_days_et_j2000() {
+    /*
+    Verification via SPICE: load naif0012.txt (contains leap seconds until 2017-JAN-1)
+    >>> cspice.str2et("2022-11-30") # Returns ET seconds
+    723038469.1830491
+    >>> Unit.Second*723038469.1830491).to_unit(Unit.Day)
+    8368.500800729735
+    >>> (Unit.Second*723038469.1830491).to_unit(Unit.Century)
+    0.22911706504393525
+     */
     let e = Epoch::from_tai_duration(Duration::from_parts(1, 723038437000000000));
-    let days_d = e.to_tdb_days_since_j2000();
-    let centuries_t = e.to_tdb_centuries_since_j2000();
-    assert!((days_d - 8369.000800729798).abs() < f64::EPSILON);
-    assert!((centuries_t - 0.22913075429787266).abs() < f64::EPSILON);
+    let days_d = e.to_et_days_since_j2000();
+    let centuries_t = e.to_et_centuries_since_j2000();
+    assert!(dbg!(days_d - 8368.500800729735).abs() < f64::EPSILON);
+    assert!(dbg!(centuries_t - 0.22911706504393525).abs() < f64::EPSILON);
 }
 
 #[test]
