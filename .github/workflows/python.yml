@@ -29,6 +29,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: 3.11
+      - name: Remove bad python
+        run: ls -l `which python`; ls -l /usr/bin/python*
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
