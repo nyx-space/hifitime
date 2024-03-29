@@ -200,7 +200,7 @@ impl Duration {
     }
 
     fn __repr__(&self) -> String {
-        format!("{self}")
+        format!("{self} @ {self:p}")
     }
 
     fn __add__(&self, other: Self) -> Duration {
@@ -232,6 +232,10 @@ impl Duration {
             CompareOp::Gt => *self > other,
             CompareOp::Ge => *self >= other,
         }
+    }
+
+    fn __getnewargs__(&self) -> Result<(String,), PyErr> {
+        Ok((format!("{self}"),))
     }
 
     // Python constructors
