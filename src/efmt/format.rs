@@ -35,6 +35,7 @@ const MAX_TOKENS: usize = 16;
 /// | Token | Explanation | Example | Notes
 /// | :-- | :-- | :-- | :-- |
 /// | `%Y` | Proleptic Gregorian year, zero-padded to 4 digits | `2022` | (1) |
+/// | `%y` | Proleptic Gregorian year after 2000, on two digits | `23` | N/A |
 /// | `%m` | Month number, zero-padded to 2 digits | `03` for March | N/A |
 /// | `%b` | Month name in short form | `Mar` for March | N/A |
 /// | `%B` | Month name in long form | `March` | N/A |
@@ -89,7 +90,7 @@ const MAX_TOKENS: usize = 16;
 /// assert_eq!(fmt, consts::ISO8601_ORDINAL);
 ///
 /// let fmt_iso_ord = Formatter::new(bday, consts::ISO8601_ORDINAL);
-/// assert_eq!(format!("{fmt_iso_ord}"), "2000-059");
+/// assert_eq!(format!("{fmt_iso_ord}"), "2000-060");
 ///
 /// let fmt = Format::from_str("%A, %d %B %Y %H:%M:%S").unwrap();
 /// assert_eq!(fmt, consts::RFC2822_LONG);
@@ -117,6 +118,7 @@ impl Format {
         for item in self.items.iter().take(self.num_items) {
             match item.as_ref().unwrap().token {
                 Token::Year
+                | Token::YearShort
                 | Token::Month
                 | Token::MonthName
                 | Token::MonthNameShort
@@ -228,6 +230,12 @@ impl Format {
                 let sub_str = &s[prev_idx..end_idx];
 
                 match prev_token {
+                    Token::YearShort => {
+                        decomposed[0] = sub_str
+                            .parse::<i32>()
+                            .map_err(|_| Errors::ParseError(ParsingErrors::ValueError))?
+                            + 2000;
+                    }
                     Token::DayOfYear => {
                         // We must parse this as a floating point value.
                         match lexical_core::parse(sub_str.as_bytes()) {
@@ -309,7 +317,14 @@ impl Format {
         };
 
         let epoch = match day_of_year {
-            Some(days) => Epoch::from_day_of_year(decomposed[0], days, ts),
+            Some(days) => {
+                // Parse the elapsed time in the given day
+                let elapsed = (decomposed[3] as i64) * Unit::Hour
+                    + (decomposed[4] as i64) * Unit::Minute
+                    + (decomposed[5] as i64) * Unit::Second
+                    + (decomposed[6] as i64) * Unit::Nanosecond;
+                Epoch::from_day_of_year(decomposed[0], days, ts) + elapsed
+            }
             None => Epoch::maybe_from_gregorian(
                 decomposed[0],
                 decomposed[1].try_into().unwrap(),
@@ -367,6 +382,14 @@ impl FromStr for Format {
                     'Y' => {
                         me.items[me.num_items] = Some(Item::new(
                             Token::Year,
+                            token.chars().nth(1),
+                            token.chars().nth(2),
+                        ));
+                        me.num_items += 1;
+                    }
+                    'y' => {
+                        me.items[me.num_items] = Some(Item::new(
+                            Token::YearShort,
                             token.chars().nth(1),
                             token.chars().nth(2),
                         ));
@@ -521,4 +544,21 @@ fn epoch_format_from_str() {
 
     let fmt = Format::from_str("%a, %d %b %Y %H:%M:%S").unwrap();
     assert_eq!(fmt, crate::efmt::consts::RFC2822);
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn gh_248_regression() {
+    /*
+    Update on 2023-12-30 to match the Python behavior:
+
+    >>> from datetime import datetime
+    >>> dt, fmt = "2023-117T12:55:26", "%Y-%jT%H:%M:%S"
+    >>> datetime.strptime(dt, fmt)
+    datetime.datetime(2023, 4, 27, 12, 55, 26)
+     */
+
+    let e = Epoch::from_format_str("2023-117T12:55:26", "%Y-%jT%H:%M:%S").unwrap();
+
+    assert_eq!(format!("{e}"), "2023-04-27T12:55:26 UTC");
 }

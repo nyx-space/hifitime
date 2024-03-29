@@ -453,3 +453,61 @@ pub const RFC2822_LONG: Format = Format {
     ],
     num_items: 7,
 };
+
+/// The ISO8601 format without the time scale
+pub const ISO8601_STD: Format = Format {
+    items: [
+        Some(Item {
+            token: Token::Year,
+            sep_char: Some('-'),
+            second_sep_char: None,
+            optional: false,
+        }),
+        Some(Item {
+            token: Token::Month,
+            sep_char: Some('-'),
+            second_sep_char: None,
+            optional: false,
+        }),
+        Some(Item {
+            token: Token::Day,
+            sep_char: Some('T'),
+            second_sep_char: None,
+            optional: false,
+        }),
+        Some(Item {
+            token: Token::Hour,
+            sep_char: Some(':'),
+            second_sep_char: None,
+            optional: false,
+        }),
+        Some(Item {
+            token: Token::Minute,
+            sep_char: Some(':'),
+            second_sep_char: None,
+            optional: false,
+        }),
+        Some(Item {
+            token: Token::Second,
+            sep_char: Some('.'),
+            second_sep_char: None,
+            optional: false,
+        }),
+        Some(Item {
+            token: Token::Subsecond,
+            sep_char: Some(' '),
+            optional: false,
+            second_sep_char: None,
+        }),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    ],
+    num_items: 7,
+};

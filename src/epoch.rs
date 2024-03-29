@@ -44,8 +44,6 @@ use crate::leap_seconds_file::LeapSecondsFile;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use core::str::FromStr;
-#[cfg(feature = "std")]
-use std::time::SystemTime;
 
 #[cfg(not(feature = "std"))]
 use num_traits::{Euclid, Float};
@@ -126,6 +124,7 @@ const CUMULATIVE_DAYS_FOR_MONTH: [u16; 12] = {
 #[derive(Copy, Clone, Default, Eq)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
 pub struct Epoch {
     /// An Epoch is always stored as the duration since the beginning of its time scale
     pub duration: Duration,
@@ -786,7 +785,19 @@ impl Epoch {
     /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use BDT as a time source.
     pub fn from_bdt_nanoseconds(nanoseconds: u64) -> Self {
-        Self::from_duration(nanoseconds as f64 * Unit::Nanosecond, TimeScale::BDT)
+        Self::from_duration(
+            Duration {
+                centuries: 0,
+                nanoseconds,
+            },
+            TimeScale::BDT,
+        )
+    }
+
+    #[must_use]
+    /// Initialize an Epoch from the provided duration since UTC midnight 1970 January 01.
+    pub fn from_unix_duration(duration: Duration) -> Self {
+        Self::from_utc_duration(UNIX_REF_EPOCH.to_utc_duration() + duration)
     }
 
     #[must_use]
@@ -1373,9 +1384,14 @@ impl Epoch {
     /// # Limitations
     /// In the TDB or ET time scales, there may be an error of up to 750 nanoseconds when initializing an Epoch this way.
     /// This is because we first initialize the epoch in Gregorian scale and then apply the TDB/ET offset, but that offset actually depends on the precise time.
+    ///
+    /// # Day couting behavior
+    ///
+    /// The day counter starts at 01, in other words, 01 January is day 1 of the counter, as per the GPS specificiations.
+    ///
     pub fn from_day_of_year(year: i32, days: f64, time_scale: TimeScale) -> Self {
         let start_of_year = Self::from_gregorian(year, 1, 1, 0, 0, 0, 0, time_scale);
-        start_of_year + days * Unit::Day
+        start_of_year + (days - 1.0) * Unit::Day
     }
 }
 
@@ -1854,19 +1870,34 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     #[classmethod]
-    /// Equivalent to `datetime.strptime, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
+    /// Equivalent to `datetime.strptime`, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
     fn strptime(_cls: &PyType, epoch_str: String, format_str: String) -> PyResult<Self> {
         Self::from_format_str(&epoch_str, &format_str).map_err(|e| PyErr::from(e))
     }
 
     #[cfg(feature = "python")]
-    /// Equivalent to `datetime.strftime, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
+    /// Equivalent to `datetime.strftime`, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
     fn strftime(&self, format_str: String) -> PyResult<String> {
         use crate::efmt::Formatter;
         let fmt = Format::from_str(&format_str)
             .map_err(Errors::ParseError)
             .map_err(|e| PyErr::from(e))?;
         Ok(format!("{}", Formatter::new(*self, fmt)))
+    }
+
+    #[cfg(feature = "python")]
+    /// Equivalent to `datetime.isoformat`, and truncated to 23 chars, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
+    fn isoformat(&self) -> PyResult<String> {
+        Ok(self.to_isoformat())
+    }
+
+    #[cfg(feature = "std")]
+    #[must_use]
+    /// The standard ISO format of this epoch (six digits of subseconds), refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
+    pub fn to_isoformat(&self) -> String {
+        use crate::efmt::consts::ISO8601_STD;
+        use crate::efmt::Formatter;
+        format!("{}", Formatter::new(*self, ISO8601_STD))[..26].to_string()
     }
 
     /// Returns this epoch with respect to the time scale this epoch was created in.
@@ -2594,24 +2625,26 @@ impl Epoch {
     #[must_use]
     /// Returns the duration since the start of the year
     pub fn duration_in_year(&self) -> Duration {
-        let year = Self::compute_gregorian(self.duration, self.time_scale).0;
-        let start_of_year = Self::from_gregorian(year, 1, 1, 0, 0, 0, 0, self.time_scale);
+        let start_of_year = Self::from_gregorian(self.year(), 1, 1, 0, 0, 0, 0, self.time_scale);
         self.duration - start_of_year.duration
     }
 
     #[must_use]
     /// Returns the number of days since the start of the year.
     pub fn day_of_year(&self) -> f64 {
-        self.duration_in_year().to_unit(Unit::Day)
+        self.duration_in_year().to_unit(Unit::Day) + 1.0
+    }
+
+    #[must_use]
+    /// Returns the number of Gregorian years of this epoch in the current time scale.
+    pub fn year(&self) -> i32 {
+        Self::compute_gregorian(self.duration, self.time_scale).0
     }
 
     #[must_use]
     /// Returns the year and the days in the year so far (days of year).
     pub fn year_days_of_year(&self) -> (i32, f64) {
-        (
-            Self::compute_gregorian(self.duration, self.time_scale).0,
-            self.day_of_year(),
-        )
+        (self.year(), self.day_of_year())
     }
 
     /// Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in.
@@ -2798,6 +2831,11 @@ impl Epoch {
     }
 
     #[cfg(feature = "python")]
+    fn __getnewargs__(&self) -> Result<(String,), PyErr> {
+        Ok((format!("{self:?}"),))
+    }
+
+    #[cfg(feature = "python")]
     #[classmethod]
     fn system_now(_cls: &PyType) -> Result<Self, Errors> {
         Self::now()
@@ -2810,7 +2848,7 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     fn __repr__(&self) -> String {
-        format!("{self:?}")
+        format!("{self:?} @ {self:p}")
     }
 
     #[cfg(feature = "python")]
@@ -2949,12 +2987,11 @@ impl Epoch {
 impl Epoch {
     /// Initializes a new Epoch from `now`.
     /// WARNING: This assumes that the system time returns the time in UTC (which is the case on Linux)
-    /// Uses [`std::time::SystemTime::now`](https://doc.rust-lang.org/std/time/struct.SystemTime.html#method.now) under the hood
+    /// Uses [`std::time::SystemTime::now`](https://doc.rust-lang.org/std/time/struct.SystemTime.html#method.now)
+    /// or javascript interop under the hood
     pub fn now() -> Result<Self, Errors> {
-        match SystemTime::now().duration_since(SystemTime::UNIX_EPOCH) {
-            Ok(std_duration) => Ok(Self::from_unix_seconds(std_duration.as_secs_f64())),
-            Err(_) => Err(Errors::SystemTimeError),
-        }
+        let duration = crate::system_time::duration_since_unix_epoch()?;
+        Ok(Self::from_unix_duration(duration))
     }
 }
 

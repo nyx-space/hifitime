@@ -13,6 +13,7 @@ use crate::{Errors, ParsingErrors};
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum Token {
     Year,
+    YearShort,
     Month,
     Day,
     Hour,
@@ -41,7 +42,8 @@ impl Token {
     // Check that the _integer_ value is valid at first sight.
     pub fn value_ok(&self, val: i32) -> Result<(), Errors> {
         match &self {
-            Self::Year => Ok(()), // No validation
+            Self::Year => Ok(()),      // No validation
+            Self::YearShort => Ok(()), // No validation
             Self::Month => {
                 if !(0..=13).contains(&val) {
                     Err(Errors::ParseError(ParsingErrors::ValueError))
@@ -109,7 +111,7 @@ impl Token {
     /// Returns the position in the array for a Gregorian date for this token
     pub(crate) fn gregorian_position(&self) -> Option<usize> {
         match &self {
-            Token::Year => Some(0),
+            Token::Year | Token::YearShort => Some(0),
             Token::Month => Some(1),
             Token::Day => Some(2),
             Token::Hour => Some(3),
@@ -126,7 +128,7 @@ impl Token {
     /// and returns the position in the array where the parsed integer should live
     pub fn advance_with(&mut self, ending_char: char) -> Result<(), Errors> {
         match &self {
-            Token::Year => {
+            Token::Year | Token::YearShort => {
                 if ending_char == '-' {
                     *self = Token::Month;
                     Ok(())

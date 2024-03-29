@@ -1,5 +1,6 @@
-from hifitime import Epoch, TimeSeries, Unit
+from hifitime import Epoch, TimeSeries, Unit, Duration
 from datetime import datetime
+import pickle
 
 
 def test_strtime():
@@ -16,13 +17,15 @@ def test_strtime():
 
     assert Epoch.strptime(dt_fmt, "%A, %d %B %Y %H:%M:%S") == epoch
 
+    assert pickle.loads(pickle.dumps(epoch)) == epoch
+
 
 def test_utcnow():
     epoch = Epoch.system_now()
     dt = datetime.utcnow()
 
     # Hifitime uses a different clock to Python and print down to the nanosecond
-    assert dt.isoformat()[:21] == f"{epoch}"[:21]
+    assert dt.isoformat()[:20] == f"{epoch}"[:20]
 
 
 def test_time_series():
@@ -40,7 +43,27 @@ def test_time_series():
     )
     print(time_series)
 
+    assert pickle.loads(pickle.dumps(time_series)) == time_series
+
     for num, epoch in enumerate(time_series):
         print(f"#{num}:\t{epoch}")
 
     assert num == 10
+    # Once consummed, the iterator in the time series will be different,
+    # so the pickling will return something different
+    assert pickle.loads(pickle.dumps(time_series)) != time_series
+
+
+def test_duration_eq():
+    """
+    Checks that Duration comparisons work
+    """
+
+    assert Unit.Second * 0.0 == Duration("0 ns")
+    assert Unit.Second * 1.0 >= Duration("0 ns")
+    assert Unit.Second * 1.0 > Duration("0 ns")
+    assert Duration("0 ns") <= Unit.Second * 1.0
+    assert Duration("0 ns") < Unit.Second * 1.0
+
+    dur = Duration("37 min 26 s")
+    assert pickle.loads(pickle.dumps(dur)) == dur

@@ -214,7 +214,7 @@ In Python:
 
 [![hifitime on crates.io][cratesio-image]][cratesio]
 [![hifitime on docs.rs][docsrs-image]][docsrs]
-[![minimum rustc: 1.64](https://img.shields.io/badge/minimum%20rustc-1.64-yellowgreen?logo=rust)](https://www.whatrustisit.com)
+[![minimum rustc: 1.70](https://img.shields.io/badge/minimum%20rustc-1.70-yellowgreen?logo=rust)](https://www.whatrustisit.com)
 [![Build Status](https://github.com/nyx-space/hifitime/actions/workflows/tests.yml/badge.svg?branch=master)](https://github.com/nyx-space/hifitime/actions)
 [![Build Status](https://github.com/nyx-space/hifitime/actions/workflows/formal_verification.yml/badge.svg?branch=master)](https://github.com/nyx-space/hifitime/actions)
 [![codecov](https://codecov.io/gh/nyx-space/hifitime/branch/master/graph/badge.svg?token=l7zU57rUGs)](https://codecov.io/gh/nyx-space/hifitime)
@@ -309,6 +309,18 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 
 # Changelog
 
+## 3.9.0 (WIP)
+
++ Update to der version 0.7.x.
++ Introduce %y formatter by @gwbres in https://github.com/nyx-space/hifitime/pull/268
++ **Possible breaking change**: Fix day of year computation by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/273
+
+## 3.8.5
+
+Changes from 3.8.2 are only dependency upgrades until this release.
+
+Minimum Supported Rust version bumped from 1.64 to **1.70**.
+
 ## 3.8.2
 + Clarify README and add a section comparing Hifitime to `time` and `chrono`, cf. [#221](https://github.com/nyx-space/hifitime/issues/221)
 + Fix incorrect printing of Gregorian dates prior to to 1900, cf. [#204](https://github.com/nyx-space/hifitime/issues/204)
@@ -394,3 +406,7 @@ Huge thanks to [@gwbres](https://github.com/gwbres) who put in all of the work f
 ## 3.0.0
 + Backend rewritten from TwoFloat to a struct of the centuries in `i16` and nanoseconds in `u64`. Thanks to [@pwnorbitals](https://github.com/pwnorbitals) for proposing the idea in #[107](https://github.com/nyx-space/hifitime/issues/107) and writing the proof of concept. This leads to at least a 2x speed up in most calculations, cf. [this comment](https://github.com/nyx-space/hifitime/pull/107#issuecomment-1040702004).
 + Fix GPS epoch, and addition of a helper functions in `Epoch` by [@cjordan](https://github.com/cjordan)
+
+# Important Update on Versioning Strategy
+
+We want to inform our users of an important change in Hifitime's versioning approach. Starting with version 3.9.0, minor version updates may include changes that could potentially break backward compatibility. While we strive to maintain stability and minimize disruptions, this change allows us to incorporate significant improvements and adapt more swiftly to evolving user needs. We recommend users to carefully review the release notes for each update, even minor ones, to understand any potential impacts on their existing implementations. Our commitment to providing a robust and dynamic time management library remains steadfast, and we believe this change in versioning will better serve the evolving demands of our community.

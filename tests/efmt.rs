@@ -15,6 +15,19 @@ fn epoch_parse_with_format() {
     assert_eq!(ISO8601_FLEX.parse("2015-02-07T11:22:33.0 UTC").unwrap(), e);
     assert_eq!(ISO8601_FLEX.parse("2015-02-07T11:22:33").unwrap(), e);
 
+    assert_eq!(ISO8601_STD.parse("2015-02-07T11:22:33.0").unwrap(), e);
+
+    #[cfg(feature = "std")]
+    {
+        // Test an epoch that's much more precise than usual time keepers
+        let e_prec = Epoch::from_gregorian_utc(2015, 2, 7, 11, 22, 33, 123456789);
+        assert_eq!(e_prec.to_isoformat(), "2015-02-07T11:22:33.123456");
+        assert_ne!(
+            e_prec.to_isoformat(),
+            Formatter::new(e_prec, ISO8601).to_string()
+        );
+    }
+
     assert_eq!(RFC3339.parse("2015-02-07T11:22:33.0 UTC").unwrap(), e);
 
     assert!(RFC3339.parse("2018-02-13T23:08:32Z").is_ok());
@@ -98,6 +111,11 @@ fn epoch_format_rfc2822() {
 
     assert_eq!(
         Epoch::from_str_with_format("Sat, 07 Feb 2015 11:22:33", RFC2822).unwrap(),
+        epoch
+    );
+
+    assert_eq!(
+        Epoch::from_format_str("Sat, 07 Feb 15 11:22:33", "%a, %d %b %y %H:%M:%S").unwrap(),
         epoch
     );
 }

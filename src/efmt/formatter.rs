@@ -144,6 +144,10 @@ impl fmt::Display for Formatter {
                         write_sep(f, i, &self.format)?;
                         write!(f, "{y:04}")?
                     }
+                    Token::YearShort => {
+                        write_sep(f, i, &self.format)?;
+                        write!(f, "{y:02}")?
+                    }
                     Token::Month => {
                         write_sep(f, i, &self.format)?;
                         write!(f, "{mm:02}")?
