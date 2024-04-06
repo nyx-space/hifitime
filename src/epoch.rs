@@ -851,8 +851,13 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let years_since_ref = year - time_scale.ref_year();
-        let mut duration_wrt_ref = Unit::Day * i64::from(365 * years_since_ref);
+        let mut duration_wrt_ref = match year.checked_sub(time_scale.ref_year()) {
+            None => return Err(Errors::Overflow),
+            Some(years_since_ref) => match years_since_ref.checked_mul(365) {
+                None => return Err(Errors::Overflow),
+                Some(days) => Unit::Day * i64::from(days),
+            },
+        };
 
         // Now add the leap days for all the years prior to the current year
         if year >= time_scale.ref_year() {
@@ -1144,6 +1149,10 @@ impl Epoch {
                 } else {
                     idx + 1
                 };
+
+                if prev_idx > end_idx {
+                    return Err(Errors::ParseError(ParsingErrors::ISO8601));
+                }
 
                 match lexical_core::parse(s[prev_idx..end_idx].as_bytes()) {
                     Ok(val) => {
