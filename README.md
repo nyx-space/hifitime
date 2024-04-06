@@ -309,7 +309,11 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 
 # Changelog
 
-## 3.9.0 (WIP)
+## 4.0.0 (WIP)
+
++ Minimum Support Rust Version bumped to 1.74.0
+
+## 3.9.0
 
 + Update to der version 0.7.x.
 + Introduce %y formatter by @gwbres in https://github.com/nyx-space/hifitime/pull/268
