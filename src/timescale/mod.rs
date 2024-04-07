@@ -19,10 +19,7 @@ mod kani;
 
 mod fmt;
 
-use crate::{
-    Duration, Epoch, J2000_REF_EPOCH_ET, J2000_REF_EPOCH_TDB, J2000_TO_J1900_DURATION,
-    SECONDS_PER_DAY,
-};
+use crate::{Duration, Epoch, J2000_TO_J1900_DURATION, SECONDS_PER_DAY};
 
 /// The J1900 reference epoch (1900-01-01 at noon) TAI.
 pub const J1900_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration::ZERO);
@@ -117,23 +114,21 @@ impl TimeScale {
         matches!(self, Self::GPST | Self::GST | Self::BDT | Self::QZSST)
     }
 
-    /// Returns Self's Reference Epoch: Time Scale initialization date,
+    /// Returns this time scale's reference epoch: Time Scale initialization date,
     /// expressed as an Epoch in TAI
-    pub const fn tai_reference_epoch(&self) -> Epoch {
+    pub const fn reference_epoch(&self) -> Epoch {
         match self {
             Self::GPST => GPST_REF_EPOCH,
             Self::GST => GST_REF_EPOCH,
             Self::BDT => BDT_REF_EPOCH,
-            Self::ET => J2000_REF_EPOCH_ET,
-            Self::TDB => J2000_REF_EPOCH_TDB,
+            Self::ET | Self::TDB => Epoch {
+                duration: Duration::ZERO,
+                time_scale: *self,
+            },
             Self::QZSST => QZSST_REF_EPOCH,
             // Explicit on purpose in case more time scales end up being supported.
             Self::TT | Self::TAI | Self::UTC => J1900_REF_EPOCH,
         }
-    }
-
-    pub(crate) fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
-        self.tai_reference_epoch().duration.decompose()
     }
 
     pub(crate) const fn ref_year(&self) -> i32 {
@@ -146,10 +141,24 @@ impl TimeScale {
         }
     }
 
-    pub(crate) const fn ref_hour(&self) -> i64 {
+    pub(crate) const fn ref_hour(&self) -> u64 {
         match self {
-            TimeScale::ET | TimeScale::TDB => 0,
-            _ => 12,
+            TimeScale::ET | TimeScale::TDB => 12,
+            _ => 0,
+        }
+    }
+
+    /// Returns the duration between this time scale's reference epoch and the hifitime "prime epoch" of 1900-01-01 00:00:00 (same as NTP).
+    pub(crate) const fn prime_epoch_offset(&self) -> Duration {
+        match self {
+            TimeScale::ET | TimeScale::TDB => {
+                // Both ET and TDB are defined at J2000, which is 2000-01-01 12:00:00
+                Duration {
+                    centuries: 1,
+                    nanoseconds: 43_200_000_000_000,
+                }
+            }
+            _ => Duration::ZERO,
         }
     }
 }
@@ -224,5 +233,13 @@ mod unit_test_timescale {
                 assert_eq!(ts, TimeScale::TAI);
             }
         }
+    }
+
+    #[test]
+    fn test_ref_epoch() {
+        assert_eq!(
+            format!("{:?}", TimeScale::ET.reference_epoch()),
+            "2000-01-01T12:00:00 ET"
+        );
     }
 }

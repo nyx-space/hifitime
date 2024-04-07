@@ -655,7 +655,7 @@ fn naif_spice_et_tdb_verification() {
             0.0
         };
         assert!(
-            (epoch.to_et_seconds() - et_s + extra_seconds).abs() < EPSILON,
+            dbg!(epoch.to_et_seconds() - et_s + extra_seconds).abs() < EPSILON,
             "{} failed ET test",
             epoch
         );
@@ -1091,9 +1091,9 @@ fn ops() {
     // Test adding a second
     let sp_ex: Epoch = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33) + Unit::Second * 1.0;
     let expected_et_s = 381_885_819.184_935_87;
-    assert!(dbg!(sp_ex.to_tdb_seconds() - expected_et_s - 1.0).abs() < 2.6e-6);
+    assert!(dbg!(sp_ex.to_et_seconds() - expected_et_s - 1.0).abs() < 2.6e-6);
     let sp_ex: Epoch = sp_ex - Unit::Second * 1.0;
-    assert!((sp_ex.to_tdb_seconds() - expected_et_s).abs() < 2.6e-6);
+    assert!((sp_ex.to_et_seconds() - expected_et_s).abs() < 2.6e-6);
 }
 
 #[test]
@@ -1635,8 +1635,7 @@ fn test_time_of_week() {
     let epoch_qzsst = epoch.to_time_scale(TimeScale::QZSST);
     assert_eq!(epoch.to_gregorian_utc(), epoch_qzsst.to_gregorian_utc());
 
-    let gps_qzss_offset =
-        TimeScale::GPST.tai_reference_epoch() - TimeScale::QZSST.tai_reference_epoch();
+    let gps_qzss_offset = TimeScale::GPST.reference_epoch() - TimeScale::QZSST.reference_epoch();
     assert_eq!(gps_qzss_offset.total_nanoseconds(), 0); // no offset
 
     // 06/01/1980 01:00:00 = 1H into GPST <=> (0, 3_618_000_000_000)
@@ -1710,7 +1709,7 @@ fn test_time_of_week() {
 
     // 1H into Galileo timescale
     let epoch = Epoch::from_time_of_week(0, 3_600_000_000_000, TimeScale::GST);
-    let expected_tai = TimeScale::GST.tai_reference_epoch() + Duration::from_hours(1.0);
+    let expected_tai = TimeScale::GST.reference_epoch() + Duration::from_hours(1.0);
     assert_eq!(epoch.to_gregorian_utc(), expected_tai.to_gregorian_utc());
     assert_eq!(epoch.to_time_of_week(), (0, 3_600_000_000_000));
 
@@ -1724,9 +1723,8 @@ fn test_time_of_week() {
 
     // 1W + 128H into Galileo timescale
     let epoch = Epoch::from_time_of_week(1, 128 * 3600 * 1_000_000_000, TimeScale::GST);
-    let expected_tai = TimeScale::GST.tai_reference_epoch()
-        + Duration::from_days(7.0)
-        + Duration::from_hours(128.0);
+    let expected_tai =
+        TimeScale::GST.reference_epoch() + Duration::from_days(7.0) + Duration::from_hours(128.0);
     assert_eq!(epoch.to_gregorian_utc(), expected_tai.to_gregorian_utc());
     assert_eq!(epoch.to_time_of_week(), (1, 128 * 3600 * 1_000_000_000));
 
@@ -1744,7 +1742,7 @@ fn test_time_of_week() {
         13 * 3600 * 1_000_000_000 + 1800 * 1_000_000_000,
         TimeScale::BDT,
     );
-    let expected_tai = TimeScale::BDT.tai_reference_epoch() + Duration::from_hours(13.5);
+    let expected_tai = TimeScale::BDT.reference_epoch() + Duration::from_hours(13.5);
     assert_eq!(epoch.to_gregorian_utc(), expected_tai.to_gregorian_utc());
     assert_eq!(
         epoch.to_time_of_week(),
@@ -1765,9 +1763,8 @@ fn test_time_of_week() {
         36 * 3600 * 1_000_000_000 + 900 * 1_000_000_000,
         TimeScale::BDT,
     );
-    let expected_tai = TimeScale::BDT.tai_reference_epoch()
-        + Duration::from_days(70.0)
-        + Duration::from_hours(36.25);
+    let expected_tai =
+        TimeScale::BDT.reference_epoch() + Duration::from_days(70.0) + Duration::from_hours(36.25);
     assert_eq!(epoch.to_gregorian_utc(), expected_tai.to_gregorian_utc());
     assert_eq!(
         epoch.to_time_of_week(),
