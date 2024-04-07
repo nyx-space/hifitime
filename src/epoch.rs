@@ -391,8 +391,7 @@ impl Epoch {
                 TimeScale::ET => {
                     // Run a Newton Raphston to convert find the correct value of the ... ?!
 
-                    let mut seconds =
-                        (j1900_tai_offset - TimeScale::ET.prime_epoch_offset()).to_seconds();
+                    let mut seconds = (j1900_tai_offset - ts.prime_epoch_offset()).to_seconds();
                     for _ in 0..5 {
                         seconds -= -NAIF_K
                             * (NAIF_M0
@@ -408,11 +407,11 @@ impl Epoch {
                     );
 
                     // Match SPICE by changing the UTC definition.
-                    j1900_tai_offset + delta_et_tai.seconds() - TimeScale::ET.prime_epoch_offset()
+                    j1900_tai_offset + delta_et_tai.seconds() - ts.prime_epoch_offset()
                 }
                 TimeScale::TDB => {
                     // Iterate to convert find the correct value of the
-                    let mut seconds = (j1900_tai_offset - J2000_TO_J1900_DURATION).to_seconds();
+                    let mut seconds = (j1900_tai_offset - ts.prime_epoch_offset()).to_seconds();
                     let mut delta = 1e8; // Arbitrary large number, greater than first step of Newton Raphson.
                     for _ in 0..5 {
                         let next = seconds - Self::inner_g(seconds);
@@ -430,7 +429,7 @@ impl Epoch {
                         Self::inner_g(seconds + (TT_OFFSET_MS * Unit::Millisecond).to_seconds());
                     let delta_tdb_tai = gamma.seconds() + TT_OFFSET_MS.milliseconds();
 
-                    j1900_tai_offset + delta_tdb_tai - J2000_TO_J1900_DURATION
+                    j1900_tai_offset + delta_tdb_tai - ts.prime_epoch_offset()
                 }
                 TimeScale::UTC => {
                     // Assume it's TAI

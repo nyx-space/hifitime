@@ -148,14 +148,15 @@ impl TimeScale {
         }
     }
 
-    /// Returns the duration between this time scale's reference epoch and the hifitime "prime epoch" of 1900-01-01 00:00:00 (same as NTP).
+    /// Returns the duration between this time scale's reference epoch and the hifitime "prime epoch" of 1900-01-01 00:00:00 (the NTP prime epoch).
     pub(crate) const fn prime_epoch_offset(&self) -> Duration {
         match self {
             TimeScale::ET | TimeScale::TDB => {
-                // Both ET and TDB are defined at J2000, which is 2000-01-01 12:00:00
+                // Both ET and TDB are defined at J2000, which is 2000-01-01 12:00:00 and there were only 36524 days in the 20th century.
+                // Hence, this math is the output of (Unit.Century*1 + Unit.Hour*12 - Unit.Day*1).to_parts() via Hifitime in Python.
                 Duration {
-                    centuries: 1,
-                    nanoseconds: 43_200_000_000_000,
+                    centuries: 0,
+                    nanoseconds: 3155716800000000000,
                 }
             }
             _ => Duration::ZERO,
@@ -210,6 +211,7 @@ impl From<u8> for TimeScale {
 #[cfg(test)]
 mod unit_test_timescale {
     use super::TimeScale;
+    use crate::{Duration, Epoch, Unit};
 
     #[test]
     #[cfg(feature = "serde")]
@@ -237,6 +239,15 @@ mod unit_test_timescale {
 
     #[test]
     fn test_ref_epoch() {
+        let prime_e = Epoch::from_duration(Duration::ZERO, TimeScale::TAI);
+        assert_eq!(prime_e.duration, Duration::ZERO);
+        assert_eq!(format!("{prime_e:?}"), "1900-01-01T00:00:00 TAI");
+        // NOTE: There are only 36524 days in the 20th century, but one century is 36425, so we "overflow" the next century by one day!
+        assert_eq!(
+            format!("{:?}", prime_e + Unit::Century * 1),
+            "2000-01-02T00:00:00 TAI"
+        );
+
         assert_eq!(
             format!("{:?}", TimeScale::ET.reference_epoch()),
             "2000-01-01T12:00:00 ET"

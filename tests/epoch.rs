@@ -655,7 +655,7 @@ fn naif_spice_et_tdb_verification() {
             0.0
         };
         assert!(
-            dbg!(epoch.to_et_seconds() - et_s + extra_seconds).abs() < EPSILON,
+            (epoch.to_et_seconds() - et_s + extra_seconds).abs() < EPSILON,
             "{} failed ET test",
             epoch
         );
