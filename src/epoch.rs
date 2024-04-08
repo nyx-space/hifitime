@@ -362,7 +362,7 @@ impl Epoch {
                     );
 
                     // Match SPICE by changing the UTC definition.
-                    self.duration - delta_et_tai.seconds() + TimeScale::ET.prime_epoch_offset()
+                    self.duration - delta_et_tai.seconds() + self.time_scale.prime_epoch_offset()
                 }
                 TimeScale::TDB => {
                     let gamma = Self::inner_g(self.duration.to_seconds());
@@ -370,7 +370,7 @@ impl Epoch {
                     let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
 
                     // Offset back to J1900.
-                    self.duration - delta_tdb_tai + J2000_TO_J1900_DURATION
+                    self.duration - delta_tdb_tai + self.time_scale.prime_epoch_offset()
                 }
                 TimeScale::UTC => {
                     // Assume this is TAI
@@ -3334,8 +3334,8 @@ fn test_days_et_j2000() {
     let days_d = e.to_et_days_since_j2000();
     let centuries_t = e.to_et_centuries_since_j2000();
     // TODO(4.0.0): Fix/check this test
-    // assert!(dbg!(days_d - 8368.500800729735).abs() < f64::EPSILON);
-    // assert!(dbg!(centuries_t - 0.22911706504393525).abs() < f64::EPSILON);
+    // assert!(dbg!(days_d - 8369.000800729798).abs() < f64::EPSILON);
+    // assert!(dbg!(centuries_t - 0.22913075429787266).abs() < f64::EPSILON);
 }
 
 #[test]
