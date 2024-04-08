@@ -1309,7 +1309,7 @@ impl Epoch {
         }
 
         hours += ts.ref_hour();
-        if hours > 24 {
+        if hours >= 24 {
             hours -= 24;
             day += 1.0;
         }
@@ -2350,7 +2350,9 @@ impl Epoch {
 
     #[must_use]
     pub fn to_jde_et_duration(&self) -> Duration {
-        self.to_et_duration() + Unit::Day * (J1900_OFFSET + MJD_OFFSET) + J2000_TO_J1900_DURATION
+        self.to_et_duration()
+            + Unit::Day * (J1900_OFFSET + MJD_OFFSET)
+            + TimeScale::ET.prime_epoch_offset()
     }
 
     #[must_use]
@@ -2360,7 +2362,9 @@ impl Epoch {
 
     #[must_use]
     pub fn to_jde_tdb_duration(&self) -> Duration {
-        self.to_tdb_duration() + Unit::Day * (J1900_OFFSET + MJD_OFFSET) + J2000_TO_J1900_DURATION
+        self.to_tdb_duration()
+            + Unit::Day * (J1900_OFFSET + MJD_OFFSET)
+            + TimeScale::TDB.prime_epoch_offset()
     }
 
     #[must_use]
@@ -3184,8 +3188,10 @@ impl fmt::LowerExp for Epoch {
     /// Prints the Epoch in TDB
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::TDB;
-        let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(
+            self.to_duration_in_time_scale(ts) - Unit::Hour * (ts.ref_hour() as i64),
+            ts,
+        );
         if nanos == 0 {
             write!(
                 f,
@@ -3206,8 +3212,10 @@ impl fmt::UpperExp for Epoch {
     /// Prints the Epoch in ET
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::ET;
-        let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
+        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(
+            self.to_duration_in_time_scale(ts) - Unit::Hour * (ts.ref_hour() as i64),
+            ts,
+        );
         if nanos == 0 {
             write!(
                 f,
