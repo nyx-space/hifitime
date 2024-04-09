@@ -156,7 +156,7 @@ impl Format {
         // Previous index of interest in the string
         let mut prev_idx = 0;
         let mut cur_item_idx = 0;
-        let mut cur_item =  match self.items[cur_item_idx] {
+        let mut cur_item = match self.items[cur_item_idx] {
             Some(item) => item,
             None => return Err(Errors::ParseError(ParsingErrors::UnknownFormat)),
         };
