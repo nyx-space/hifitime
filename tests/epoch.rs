@@ -923,14 +923,13 @@ fn test_timescale_leapsec() {
         //(TimeScale::TT, 0),
     ] {
         assert!(!ts.uses_leap_seconds());
-        //let duration: Duration = kani::any();
         let duration = Duration::from_seconds(12349.433_f64);
         let epoch = Epoch::from_duration(duration, ts);
         let utc_epoch = epoch.to_time_scale(TimeScale::UTC);
         assert_eq!(
             (epoch - utc_epoch).abs().to_seconds(),
             leap_t0 as f64,
-            "|{} - {}| should be {} secs",
+            "|{} - {}| should be {} secs for {ts}",
             epoch,
             utc_epoch,
             leap_t0
