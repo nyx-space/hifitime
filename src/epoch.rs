@@ -862,11 +862,14 @@ impl Epoch {
 
         // Now add the leap days for all the years prior to the current year
         if year >= time_scale.ref_year() {
+            // Add days
             for year in time_scale.ref_year()..year {
                 if is_leap_year(year) {
                     duration_wrt_ref += Unit::Day;
                 }
             }
+            // Remove ref hours from duration to correct for the time scale not starting at midnight
+            duration_wrt_ref -= Unit::Hour * time_scale.ref_hour() as i64;
         } else {
             // Remove days
             for year in year..time_scale.ref_year() {
@@ -874,6 +877,8 @@ impl Epoch {
                     duration_wrt_ref -= Unit::Day;
                 }
             }
+            // Add ref hours
+            duration_wrt_ref += Unit::Hour * time_scale.ref_hour() as i64;
         }
 
         // Add the seconds for the months prior to the current month
@@ -889,6 +894,7 @@ impl Epoch {
             + Unit::Minute * i64::from(minute)
             + Unit::Second * i64::from(second)
             + Unit::Nanosecond * i64::from(nanos);
+
         if second == 60 {
             // Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
             // same number of second after J1900.0.
@@ -1200,9 +1206,9 @@ impl Epoch {
             decomposed[5].try_into().unwrap(),
             decomposed[6].try_into().unwrap(),
             ts,
-        );
+        )?;
 
-        Ok(epoch? + tz)
+        Ok(epoch + tz)
     }
 
     /// Initializes an Epoch from the provided Format.
@@ -1264,7 +1270,7 @@ impl Epoch {
         };
 
         let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
-        year += ts.ref_year(); // NB: this assumes all known time scales started after J1900
+        year += ts.ref_year();
 
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
         // between 1900 and `year`
@@ -3188,10 +3194,8 @@ impl fmt::LowerExp for Epoch {
     /// Prints the Epoch in TDB
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::TDB;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(
-            self.to_duration_in_time_scale(ts) - Unit::Hour * (ts.ref_hour() as i64),
-            ts,
-        );
+        let (y, mm, dd, hh, min, s, nanos) =
+            Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
             write!(
                 f,
@@ -3212,10 +3216,8 @@ impl fmt::UpperExp for Epoch {
     /// Prints the Epoch in ET
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::ET;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(
-            self.to_duration_in_time_scale(ts) - Unit::Hour * (ts.ref_hour() as i64),
-            ts,
-        );
+        let (y, mm, dd, hh, min, s, nanos) =
+            Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
             write!(
                 f,

@@ -978,7 +978,7 @@ fn test_format() {
     let epoch = Epoch::from_gregorian_utc_hms(2022, 9, 6, 23, 24, 29);
 
     // Check the ET computation once more
-    assert!(dbg!(epoch.to_et_seconds() - 715778738.1825389).abs() < EPSILON);
+    assert!((epoch.to_et_seconds() - 715778738.1825389).abs() < EPSILON);
 
     // This was initialized as UTC, so the debug print is UTC.
     assert_eq!(format!("{epoch:?}"), "2022-09-06T23:24:29 UTC");
