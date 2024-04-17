@@ -1317,7 +1317,11 @@ impl Epoch {
         hours += ts.ref_hour();
         if hours >= 24 {
             hours -= 24;
-            day += 1.0;
+            if year >= ts.ref_year() {
+                day += 1.0;
+            } else {
+                day -= 1.0;
+            }
         }
 
         if day <= 0.0 || days_in_year < 0.0 {
