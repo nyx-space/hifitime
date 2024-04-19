@@ -66,6 +66,9 @@ pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     nanoseconds: 2_208_988_800_000_000_000,
 });
 
+/// Reference year of the Hifitime prime epoch.
+pub(crate) const HIFITIME_REF_YEAR: i32 = 1900;
+
 /// Enum of the different time systems available
 #[non_exhaustive]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -131,24 +134,8 @@ impl TimeScale {
         }
     }
 
-    pub(crate) const fn ref_year(&self) -> i32 {
-        match self {
-            TimeScale::ET | TimeScale::TDB => 2000,
-            TimeScale::TT | TimeScale::UTC | TimeScale::TAI => 1900,
-            TimeScale::GPST | TimeScale::QZSST => 1980,
-            TimeScale::BDT => 2006,
-            TimeScale::GST => 1997,
-        }
-    }
-
-    pub(crate) const fn ref_hour(&self) -> u64 {
-        match self {
-            TimeScale::ET | TimeScale::TDB => 12,
-            _ => 0,
-        }
-    }
-
     /// Returns the duration between this time scale's reference epoch and the hifitime "prime epoch" of 1900-01-01 00:00:00 (the NTP prime epoch).
+    /// This is used to compute the Gregorian date representations in any time scale.
     pub(crate) const fn prime_epoch_offset(&self) -> Duration {
         match self {
             TimeScale::ET | TimeScale::TDB => {
@@ -159,6 +146,18 @@ impl TimeScale {
                     nanoseconds: 3155716800000000000,
                 }
             }
+            TimeScale::GPST => Duration {
+                centuries: 0,
+                nanoseconds: 2_524_953_619_000_000_000,
+            },
+            TimeScale::GST => Duration {
+                centuries: 0,
+                nanoseconds: 3_144_268_819_000_000_000,
+            },
+            TimeScale::BDT => Duration {
+                centuries: 0,
+                nanoseconds: 3_345_062_433_000_000_000,
+            },
             _ => Duration::ZERO,
         }
     }

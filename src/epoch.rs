@@ -13,8 +13,8 @@ use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
 use crate::parser::Token;
 use crate::{
     Errors, MonthName, TimeScale, TimeUnits, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S,
-    GPST_REF_EPOCH, GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET,
-    NANOSECONDS_PER_DAY, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
+    GPST_REF_EPOCH, GST_REF_EPOCH, HIFITIME_REF_YEAR, J1900_OFFSET, J2000_TO_J1900_DURATION,
+    MJD_OFFSET, NANOSECONDS_PER_DAY, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
     NANOSECONDS_PER_SECOND_U32, QZSST_REF_EPOCH, UNIX_REF_EPOCH,
 };
 
@@ -852,33 +852,33 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let mut duration_wrt_ref = match year.checked_sub(time_scale.ref_year()) {
+        let mut duration_wrt_ref = match year.checked_sub(HIFITIME_REF_YEAR) {
             None => return Err(Errors::Overflow),
             Some(years_since_ref) => match years_since_ref.checked_mul(365) {
                 None => return Err(Errors::Overflow),
                 Some(days) => Unit::Day * i64::from(days),
             },
-        };
+        } - time_scale.prime_epoch_offset();
 
         // Now add the leap days for all the years prior to the current year
-        if year >= time_scale.ref_year() {
+        if year >= HIFITIME_REF_YEAR {
             // Add days
-            for year in time_scale.ref_year()..year {
+            for year in HIFITIME_REF_YEAR..year {
                 if is_leap_year(year) {
                     duration_wrt_ref += Unit::Day;
                 }
             }
             // Remove ref hours from duration to correct for the time scale not starting at midnight
-            duration_wrt_ref -= Unit::Hour * time_scale.ref_hour() as i64;
+            // duration_wrt_ref -= Unit::Hour * time_scale.ref_hour() as i64;
         } else {
             // Remove days
-            for year in year..time_scale.ref_year() {
+            for year in year..HIFITIME_REF_YEAR {
                 if is_leap_year(year) {
                     duration_wrt_ref -= Unit::Day;
                 }
             }
             // Add ref hours
-            duration_wrt_ref += Unit::Hour * time_scale.ref_hour() as i64;
+            // duration_wrt_ref += Unit::Hour * time_scale.ref_hour() as i64;
         }
 
         // Add the seconds for the months prior to the current month
@@ -1261,7 +1261,7 @@ impl Epoch {
         ts: TimeScale,
     ) -> (i32, u8, u8, u8, u8, u8, u32) {
         let (sign, days, mut hours, minutes, seconds, milliseconds, microseconds, nanos) =
-            duration.decompose();
+            (duration + ts.prime_epoch_offset()).decompose();
 
         let days_f64 = if sign < 0 {
             -(days as f64)
@@ -1270,18 +1270,18 @@ impl Epoch {
         };
 
         let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
-        year += ts.ref_year();
+        year += HIFITIME_REF_YEAR;
 
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
         // between 1900 and `year`
-        if year >= ts.ref_year() {
-            for year in ts.ref_year()..year {
+        if year >= HIFITIME_REF_YEAR {
+            for year in HIFITIME_REF_YEAR..year {
                 if is_leap_year(year) {
                     days_in_year -= 1.0;
                 }
             }
         } else {
-            for year in year..ts.ref_year() {
+            for year in year..HIFITIME_REF_YEAR {
                 if is_leap_year(year) {
                     days_in_year += 1.0;
                 }
@@ -1314,10 +1314,9 @@ impl Epoch {
             month += 1;
         }
 
-        hours += ts.ref_hour();
         if hours >= 24 {
             hours -= 24;
-            if year >= ts.ref_year() {
+            if year >= HIFITIME_REF_YEAR {
                 day += 1.0;
             } else {
                 day -= 1.0;
