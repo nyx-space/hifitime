@@ -1925,17 +1925,6 @@ impl Epoch {
         format!("{}", Formatter::new(*self, ISO8601_STD))[..26].to_string()
     }
 
-    /// Returns this epoch with respect to the time scale this epoch was created in.
-    /// This is needed to correctly perform duration conversions in dynamical time scales (e.g. TDB).
-    ///
-    /// # Examples
-    /// 1. If an epoch was initialized as Epoch::from_..._utc(...) then the duration will be the UTC duration from J1900.
-    /// 2. If an epoch was initialized as Epoch::from_..._tdb(...) then the duration will be the UTC duration from J2000 because the TDB reference epoch is J2000.
-    #[deprecated(note = "Use the `duration` field directly", since = "3.10")]
-    pub fn to_duration(&self) -> Duration {
-        self.duration
-    }
-
     #[must_use]
     /// Returns this epoch with respect to the provided time scale.
     /// This is needed to correctly perform duration conversions in dynamical time scales (e.g. TDB).

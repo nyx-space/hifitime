@@ -155,8 +155,8 @@ impl TimeScale {
                 nanoseconds: 3_144_268_819_000_000_000,
             },
             TimeScale::BDT => Duration {
-                centuries: 0,
-                nanoseconds: 3_345_062_433_000_000_000,
+                centuries: 1,
+                nanoseconds: 189_302_433_000_000_000,
             },
             _ => Duration::ZERO,
         }

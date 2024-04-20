@@ -133,13 +133,16 @@ impl Add for Duration {
     /// + `Duration { centuries: 0, nanoseconds: 1 }` is a positive duration of zero centuries and one nanosecond.
     /// + `Duration { centuries: -1, nanoseconds: 1 }` is a negative duration representing "one century before zero minus one nanosecond"
     #[allow(clippy::absurd_extreme_comparisons)]
-    fn add(self, rhs: Self) -> Duration {
+    fn add(mut self, mut rhs: Self) -> Duration {
+        // Ensure that the durations are normalized to avoid extra logic to handle under/overflows
+        self.normalize();
+        rhs.normalize();
+
         // Check that the addition fits in an i16
-        let mut me = self;
-        match me.centuries.checked_add(rhs.centuries) {
+        match self.centuries.checked_add(rhs.centuries) {
             None => {
                 // Overflowed, so we've hit the bound.
-                if me.centuries < 0 {
+                if self.centuries < 0 {
                     // We've hit the negative bound, so return MIN.
                     return Self::MIN;
                 } else {
@@ -148,42 +151,42 @@ impl Add for Duration {
                 }
             }
             Some(centuries) => {
-                me.centuries = centuries;
+                self.centuries = centuries;
             }
         }
 
-        if me.centuries == Self::MIN.centuries && self.nanoseconds < Self::MIN.nanoseconds {
+        if self.centuries == Self::MIN.centuries && self.nanoseconds < Self::MIN.nanoseconds {
             // Then we do the operation backward
-            match me
+            match self
                 .nanoseconds
                 .checked_sub(NANOSECONDS_PER_CENTURY - rhs.nanoseconds)
             {
-                Some(nanos) => me.nanoseconds = nanos,
+                Some(nanos) => self.nanoseconds = nanos,
                 None => {
-                    me.centuries += 1; // Safe because we're at the MIN
-                    me.nanoseconds = rhs.nanoseconds
+                    self.centuries += 1; // Safe because we're at the MIN
+                    self.nanoseconds = rhs.nanoseconds
                 }
             }
         } else {
-            match me.nanoseconds.checked_add(rhs.nanoseconds) {
-                Some(nanoseconds) => me.nanoseconds = nanoseconds,
+            match self.nanoseconds.checked_add(rhs.nanoseconds) {
+                Some(nanoseconds) => self.nanoseconds = nanoseconds,
                 None => {
                     // Rare case where somehow the input data was not normalized. So let's normalize it and call add again.
                     let mut rhs = rhs;
                     rhs.normalize();
 
-                    match me.centuries.checked_add(rhs.centuries) {
+                    match self.centuries.checked_add(rhs.centuries) {
                         None => return Self::MAX,
-                        Some(centuries) => me.centuries = centuries,
+                        Some(centuries) => self.centuries = centuries,
                     };
                     // Now it will fit!
-                    me.nanoseconds += rhs.nanoseconds;
+                    self.nanoseconds += rhs.nanoseconds;
                 }
             }
         }
 
-        me.normalize();
-        me
+        self.normalize();
+        self
     }
 }
 
@@ -274,38 +277,39 @@ impl Sub for Duration {
     /// let one_ns = Duration::from_parts(0, 1);
     /// assert_eq!(Duration::MIN - one_ns, Duration::MIN);
     /// ```
-    fn sub(self, rhs: Self) -> Self {
-        let mut me = self;
-        match me.centuries.checked_sub(rhs.centuries) {
+    fn sub(mut self, mut rhs: Self) -> Self {
+        // Ensure that the durations are normalized to avoid extra logic to handle under/overflows
+        self.normalize();
+        rhs.normalize();
+        match self.centuries.checked_sub(rhs.centuries) {
             None => {
                 // Underflowed, so we've hit the min
                 return Self::MIN;
             }
             Some(centuries) => {
-                me.centuries = centuries;
+                self.centuries = centuries;
             }
         }
 
-        match me.nanoseconds.checked_sub(rhs.nanoseconds) {
+        match self.nanoseconds.checked_sub(rhs.nanoseconds) {
             None => {
                 // Decrease the number of centuries, and realign
-                match me.centuries.checked_sub(1) {
+                match self.centuries.checked_sub(1) {
                     Some(centuries) => {
-                        me.centuries = centuries;
-                        me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
+                        self.centuries = centuries;
+                        self.nanoseconds += NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
                     }
                     None => {
                         // We're at the min number of centuries already, and we have extra nanos, so we're saturated the duration limit
                         return Self::MIN;
                     }
                 };
-                // me.nanoseconds = me.nanoseconds + NANOSECONDS_PER_CENTURY - rhs.nanoseconds;
             }
-            Some(nanos) => me.nanoseconds = nanos,
+            Some(nanos) => self.nanoseconds = nanos,
         };
 
-        me.normalize();
-        me
+        self.normalize();
+        self
     }
 }
 
