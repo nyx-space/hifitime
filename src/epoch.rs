@@ -3325,19 +3325,23 @@ fn test_days_et_j2000() {
     /*
     WARNING: THIS ASSUMES THE UTC EPOCH in SPICE!
     Verification via SPICE: load naif0012.txt (contains leap seconds until 2017-JAN-1)
-    >>> cspice.str2et("2022-11-30") # Returns ET seconds
-    723038469.1830491
-    >>> Unit.Second*723038469.1830491).to_unit(Unit.Day)
-    8368.500800729735
-    >>> (Unit.Second*723038469.1830491).to_unit(Unit.Century)
-    0.22911706504393525
+    In [6]: sp.str2et("2022-11-30 12:00:00")
+    Out[6]: 723081669.183061
+    In [7]: from hifitime import *
+    In [8]: Unit.Second*723081669.183061
+    Out[8]: 8369 days 1 min 9 s 183 ms 60 μs 992 ns @ 0x7fcd1559ef80
+    In [9]: (Unit.Second*723081669.183061).to_unit(Unit.Day)
+    Out[9]: 8369.000800729873
+    In [10]: (Unit.Second*723081669.183061).to_unit(Unit.Century)
+    Out[10]: 0.2291307542978747
+
      */
     let e = Epoch::from_tai_duration(Duration::from_parts(1, 723038437000000000));
     let days_d = e.to_et_days_since_j2000();
     let centuries_t = e.to_et_centuries_since_j2000();
     // TODO(4.0.0): Fix/check this test
-    // assert!(dbg!(days_d - 8369.000800729798).abs() < f64::EPSILON);
-    // assert!(dbg!(centuries_t - 0.22913075429787266).abs() < f64::EPSILON);
+    assert!(dbg!(days_d - 8369.000800729873).abs() < f64::EPSILON);
+    assert!(dbg!(centuries_t - 0.2291307542978747).abs() < f64::EPSILON);
 }
 
 #[test]
