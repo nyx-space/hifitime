@@ -19,7 +19,7 @@ mod kani;
 
 mod fmt;
 
-use crate::{Duration, Epoch, J2000_TO_J1900_DURATION, SECONDS_PER_DAY};
+use crate::{Duration, Epoch, Unit, J2000_TO_J1900_DURATION, SECONDS_PER_DAY};
 
 /// The J1900 reference epoch (1900-01-01 at noon) TAI.
 pub const J1900_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration::ZERO);
@@ -28,8 +28,6 @@ pub const J1900_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration::ZERO);
 /// |UTC - TAI| = XX Leap Seconds on that day.
 pub const J2000_REF_EPOCH: Epoch = Epoch::from_tai_duration(J2000_TO_J1900_DURATION);
 
-/// GPS reference epoch is UTC midnight between 05 January and 06 January 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>.
-/// |UTC - TAI| = 19 Leap Seconds on that day.
 pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
     nanoseconds: 2_524_953_619_000_000_000, // XXX
@@ -85,7 +83,7 @@ pub enum TimeScale {
     TDB,
     /// Universal Coordinated Time
     UTC,
-    /// GPS Time scale
+    /// GPS Time scale whose reference epoch is UTC midnight between 05 January and 06 January 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>. |UTC - TAI| = 19 Leap Seconds on that day.
     GPST,
     /// Galileo Time scale
     GST,
@@ -119,24 +117,16 @@ impl TimeScale {
 
     /// Returns this time scale's reference epoch: Time Scale initialization date,
     /// expressed as an Epoch in TAI
-    pub const fn reference_epoch(&self) -> Epoch {
-        match self {
-            Self::GPST => GPST_REF_EPOCH,
-            Self::GST => GST_REF_EPOCH,
-            Self::BDT => BDT_REF_EPOCH,
-            Self::ET | Self::TDB => Epoch {
-                duration: Duration::ZERO,
-                time_scale: *self,
-            },
-            Self::QZSST => QZSST_REF_EPOCH,
-            // Explicit on purpose in case more time scales end up being supported.
-            Self::TT | Self::TAI | Self::UTC => J1900_REF_EPOCH,
+    pub const fn reference_epoch(self) -> Epoch {
+        Epoch {
+            duration: Duration::ZERO,
+            time_scale: self,
         }
     }
 
-    /// Returns the duration between this time scale's reference epoch and the hifitime "prime epoch" of 1900-01-01 00:00:00 (the NTP prime epoch).
+    /// Returns the duration between this time scale's reference epoch and the hifitime "prime epoch" of 1900-01-01 00:00:00 TAI (the NTP prime epoch).
     /// This is used to compute the Gregorian date representations in any time scale.
-    pub(crate) const fn prime_epoch_offset(&self) -> Duration {
+    pub(crate) const fn prime_epoch_offset(self) -> Duration {
         match self {
             TimeScale::ET | TimeScale::TDB => {
                 // Both ET and TDB are defined at J2000, which is 2000-01-01 12:00:00 and there were only 36524 days in the 20th century.
@@ -146,7 +136,7 @@ impl TimeScale {
                     nanoseconds: 3155716800000000000,
                 }
             }
-            TimeScale::GPST => Duration {
+            TimeScale::GPST | TimeScale::QZSST => Duration {
                 centuries: 0,
                 nanoseconds: 2_524_953_619_000_000_000,
             },
@@ -160,6 +150,12 @@ impl TimeScale {
             },
             _ => Duration::ZERO,
         }
+    }
+
+    pub(crate) fn gregorian_epoch_offset(self) -> Duration {
+        let prime_offset = self.prime_epoch_offset();
+
+        prime_offset - prime_offset.subdivision(Unit::Second).unwrap()
     }
 }
 

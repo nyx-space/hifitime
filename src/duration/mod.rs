@@ -459,6 +459,34 @@ impl Duration {
         )
     }
 
+    /// Returns the subdivision of duration in this unit.
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Duration, TimeUnits, Unit};
+    ///
+    /// let two_hours_three_min = 2.hours() + 3.minutes();
+    /// assert_eq!(two_hours_three_min.subdivision(Unit::Hour), 2.hours());
+    /// assert_eq!(two_hours_three_min.subdivision(Unit::Minute), 3.minutes());
+    /// assert_eq!(two_hours_three_min.subdivision(Unit::Second), Duration::ZERO);
+    /// ```
+    #[must_use]
+    pub fn subdivision(&self, unit: Unit) -> Option<Duration> {
+        let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
+            self.decompose();
+
+        match unit {
+            Unit::Nanosecond => Some((nanoseconds as i64) * unit),
+            Unit::Microsecond => Some((microseconds as i64) * unit),
+            Unit::Millisecond => Some((milliseconds as i64) * unit),
+            Unit::Second => Some((seconds as i64) * unit),
+            Unit::Minute => Some((minutes as i64) * unit),
+            Unit::Hour => Some((hours as i64) * unit),
+            Unit::Day => Some((days as i64) * unit),
+            Unit::Week | Unit::Century => None,
+        }
+    }
+
     /// Floors this duration to the closest duration from the bottom
     ///
     /// # Example

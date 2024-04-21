@@ -858,7 +858,7 @@ impl Epoch {
                 None => return Err(Errors::Overflow),
                 Some(days) => Unit::Day * i64::from(days),
             },
-        } - time_scale.prime_epoch_offset();
+        } - time_scale.gregorian_epoch_offset();
 
         // Now add the leap days for all the years prior to the current year
         if year >= HIFITIME_REF_YEAR {
@@ -1261,7 +1261,7 @@ impl Epoch {
         ts: TimeScale,
     ) -> (i32, u8, u8, u8, u8, u8, u32) {
         let (sign, days, mut hours, minutes, seconds, milliseconds, microseconds, nanos) =
-            (duration + ts.prime_epoch_offset()).decompose();
+            (duration + ts.gregorian_epoch_offset()).decompose();
 
         let days_f64 = if sign < 0 {
             -(days as f64)

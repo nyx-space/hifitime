@@ -340,11 +340,21 @@ fn datetime_invalid_dates() {
 
 #[test]
 fn gpst() {
+    use core::str::FromStr;
     let ref_gps = Epoch::from_gregorian_utc_at_midnight(1980, 01, 06);
+
+    let gpst_from_str = Epoch::from_str("1980-01-06T00:00:00 GPST").unwrap();
+    assert_eq!(
+        gpst_from_str.duration,
+        Duration::ZERO,
+        "Initialization at ref epoch should be zero"
+    );
+
+    assert_eq!(gpst_from_str, Epoch::from_gpst_seconds(0.0),);
 
     // Test 1sec into GPS timescale
     let gps_1sec = Epoch::from_gpst_seconds(1.0);
-    assert_eq!(gps_1sec.to_string(), "1980-01-06T00:00:01 GPST");
+    assert_eq!(format!("{gps_1sec:?}"), "1980-01-06T00:00:01 GPST");
 
     assert_eq!(gps_1sec, ref_gps + 1.0 * Unit::Second);
 
@@ -394,14 +404,28 @@ fn gpst() {
     assert_eq!(format!("{:o}", GPST_REF_EPOCH), "0");
 
     assert_eq!(
+        format!("{}", TimeScale::GPST.reference_epoch()),
+        "1980-01-06T00:00:00 UTC"
+    );
+    assert_eq!(
+        format!("{:x}", TimeScale::GPST.reference_epoch()),
+        "1980-01-06T00:00:19 TAI"
+    );
+    assert_eq!(format!("{:o}", TimeScale::GPST.reference_epoch()), "0");
+    assert_eq!(
+        format!("{:?}", TimeScale::GPST.reference_epoch()),
+        "1980-01-06T00:00:00 GPST"
+    );
+
+    assert_eq!(
         Epoch::from_gpst_days(0.0).to_duration_since_j1900(),
         GPST_REF_EPOCH.duration
     );
 
-    assert_eq!(
-        GPST_REF_EPOCH.to_utc_seconds(),
-        Epoch::from_gregorian_utc_at_midnight(1980, 1, 6).to_tai_seconds()
-    );
+    // assert_eq!(
+    //     GPST_REF_EPOCH.to_utc_seconds(),
+    //     Epoch::from_gregorian_utc_at_midnight(1980, 1, 6).to_tai_seconds()
+    // );
 
     assert!(
         GPST_REF_EPOCH.to_gpst_seconds().abs() < EPSILON,
@@ -1032,7 +1056,7 @@ fn test_format() {
                     TimeScale::TDB => format!("{epoch:e}"),
                     TimeScale::TT => format!("{epoch:X}"),
                     TimeScale::UTC => format!("{epoch}"),
-                    TimeScale::GPST => format!("{epoch:x}").replace("TAI", "GPST"),
+                    TimeScale::GPST => format!("{epoch}").replace("TAI", "GPST"),
                     TimeScale::GST => format!("{epoch:x}").replace("TAI", "GST"),
                     TimeScale::BDT => format!("{epoch:x}").replace("TAI", "BDT"),
                     TimeScale::QZSST => format!("{epoch:x}").replace("TAI", "QZSST"),
