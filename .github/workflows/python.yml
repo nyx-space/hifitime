@@ -79,7 +79,7 @@ jobs:
           run: |
             set -e
             ls dist
-            pip3 install hifitime --find-links dist --force-reinstall
+            pip3 install hifitime --find-links dist --force-reinstall --no-index -vv
             pytest
 
   windows:
