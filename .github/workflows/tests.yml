@@ -91,7 +91,7 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.64 # Run lints using the MSRV not latest
+          toolchain: 1.74 # Run lints using the MSRV not latest
           components: rustfmt, clippy
 
       - name: Run cargo fmt

@@ -31,8 +31,6 @@ jobs:
           python-version: '3.11'
           check-latest: false
           allow-prereleases: false
-      - name: Remove bad python
-        run: ls -l `which python`; ls -l /usr/bin/python*
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -63,6 +61,7 @@ jobs:
         shell: bash
         run: |
           set -e
+          ls dist
           pip install hifitime --find-links dist --force-reinstall
           pip install pytest
           pytest
@@ -79,6 +78,7 @@ jobs:
             pip3 install -U pip pytest
           run: |
             set -e
+            ls dist
             pip3 install hifitime --find-links dist --force-reinstall
             pytest
 

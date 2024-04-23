@@ -139,6 +139,7 @@ impl Hash for Epoch {
     }
 }
 
+#[cfg(feature = "serde")]
 impl Serialize for Epoch {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -149,6 +150,7 @@ impl Serialize for Epoch {
     }
 }
 
+#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Epoch {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -2477,11 +2479,7 @@ impl Epoch {
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in UT1
     pub fn to_ut1(&self, provider: Ut1Provider) -> Self {
-        let mut me = *self;
-        // TAI = UT1 + offset <=> UTC = TAI - offset
-        me.duration -= self.ut1_offset(provider).unwrap_or(Duration::ZERO);
-        me.time_scale = TimeScale::TAI;
-        me
+        Self::from_tai_duration(self.to_ut1_duration(provider))
     }
 
     #[must_use]
