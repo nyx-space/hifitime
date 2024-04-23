@@ -99,7 +99,6 @@ mod leap_seconds_file;
 #[cfg(feature = "ut1")]
 pub mod ut1;
 
-#[allow(deprecated)]
 pub mod prelude {
     pub use crate::efmt::{Format, Formatter};
     pub use crate::{

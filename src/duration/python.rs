@@ -238,44 +238,44 @@ impl Duration {
 
     #[classmethod]
     #[pyo3(name = "ZERO")]
-    fn zero(_cls: &PyType) -> Duration {
+    fn zero(_cls: &Bound<'_, PyType>) -> Duration {
         Duration::ZERO
     }
 
     #[classmethod]
     #[pyo3(name = "EPSILON")]
-    fn epsilon(_cls: &PyType) -> Duration {
+    fn epsilon(_cls: &Bound<'_, PyType>) -> Duration {
         Duration::EPSILON
     }
 
     #[classmethod]
     #[pyo3(name = "MAX")]
-    fn py_from_max(_cls: &PyType) -> Duration {
+    fn py_from_max(_cls: &Bound<'_, PyType>) -> Duration {
         Duration::MAX
     }
 
     #[classmethod]
     #[pyo3(name = "MIN")]
-    fn py_from_min(_cls: &PyType) -> Duration {
+    fn py_from_min(_cls: &Bound<'_, PyType>) -> Duration {
         Duration::MIN
     }
 
     #[classmethod]
     #[pyo3(name = "MIN_POSITIVE")]
-    fn min_positive(_cls: &PyType) -> Duration {
+    fn min_positive(_cls: &Bound<'_, PyType>) -> Duration {
         Duration::MIN_POSITIVE
     }
 
     #[classmethod]
     #[pyo3(name = "MIN_NEGATIVE")]
-    fn min_negative(_cls: &PyType) -> Duration {
+    fn min_negative(_cls: &Bound<'_, PyType>) -> Duration {
         Duration::MIN_NEGATIVE
     }
 
     #[classmethod]
     #[pyo3(name = "from_parts")]
     /// Create a normalized duration from its parts
-    fn py_from_parts(_cls: &PyType, centuries: i16, nanoseconds: u64) -> Self {
+    fn py_from_parts(_cls: &Bound<'_, PyType>, centuries: i16, nanoseconds: u64) -> Self {
         Self::from_parts(centuries, nanoseconds)
     }
 
@@ -284,7 +284,7 @@ impl Duration {
     #[classmethod]
     #[pyo3(name = "from_all_parts")]
     fn py_from_all_parts(
-        _cls: &PyType,
+        _cls: &Bound<'_, PyType>,
         sign: i8,
         days: u64,
         hours: u64,
@@ -308,7 +308,7 @@ impl Duration {
 
     #[classmethod]
     #[pyo3(name = "from_total_nanoseconds")]
-    fn py_from_total_nanoseconds(_cls: &PyType, nanos: i128) -> Self {
+    fn py_from_total_nanoseconds(_cls: &Bound<'_, PyType>, nanos: i128) -> Self {
         Self::from_total_nanoseconds(nanos)
     }
 }
