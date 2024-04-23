@@ -9,7 +9,6 @@
  *
  * Documentation: https://nyxspace.com/
  */
-#![deny(warnings)]
 
 pub const J1900_NAIF: f64 = 2_415_020.0;
 pub const J2000_NAIF: f64 = 2_451_545.0;

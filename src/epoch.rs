@@ -9,8 +9,9 @@
  */
 
 use crate::duration::{Duration, Unit};
+use crate::efmt::format::Format;
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
-use crate::parser::Token;
+use crate::Weekday;
 use crate::{
     Errors, MonthName, TimeScale, TimeUnits, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S,
     GPST_REF_EPOCH, GST_REF_EPOCH, HIFITIME_REF_YEAR, J1900_OFFSET, J2000_TO_J1900_DURATION,
@@ -18,15 +19,15 @@ use crate::{
     NANOSECONDS_PER_SECOND_U32, QZSST_REF_EPOCH, UNIX_REF_EPOCH,
 };
 
-use crate::efmt::format::Format;
+#[cfg(not(kani))]
+use crate::parser::Token;
+#[cfg(not(kani))]
+use crate::ParsingErrors;
 
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
-
-use crate::ParsingErrors;
-use crate::Weekday;
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
@@ -40,6 +41,7 @@ use pyo3::types::PyType;
 #[cfg(feature = "python")]
 use crate::leap_seconds_file::LeapSecondsFile;
 
+#[cfg(not(kani))]
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -136,6 +138,7 @@ impl Hash for Epoch {
     }
 }
 
+#[cfg(not(kani))]
 #[cfg(feature = "serde")]
 impl Serialize for Epoch {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -147,6 +150,7 @@ impl Serialize for Epoch {
     }
 }
 
+#[cfg(not(kani))]
 #[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Epoch {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -3390,12 +3394,12 @@ fn formal_epoch_reciprocity_tai() {
     // Check that no error occurs on initialization
     let seconds: f64 = kani::any();
     if seconds.is_finite() {
-        Epoch::from_tai_seconds(seconds);
+        let _ = Epoch::from_tai_seconds(seconds);
     }
 
     let days: f64 = kani::any();
     if days.is_finite() {
-        Epoch::from_tai_days(days);
+        let _ = Epoch::from_tai_days(days);
     }
 }
 
@@ -3416,7 +3420,7 @@ fn formal_epoch_reciprocity_tt() {
     // Check that no error occurs on initialization
     let seconds: f64 = kani::any();
     if seconds.is_finite() {
-        Epoch::from_tt_seconds(seconds);
+        let _ = Epoch::from_tt_seconds(seconds);
     }
     // No TT Days initializer
 }
@@ -3459,7 +3463,7 @@ fn formal_epoch_reciprocity_gpst() {
 
     // GPST
     let time_scale: TimeScale = TimeScale::GPST;
-    let ts_offset = TimeScale::GPST.ref_epoch() - TimeScale::TAI.ref_epoch();
+    let ts_offset = TimeScale::GPST.reference_epoch() - TimeScale::TAI.reference_epoch();
     if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
@@ -3468,10 +3472,10 @@ fn formal_epoch_reciprocity_gpst() {
     // Check that no error occurs on initialization
     let seconds: f64 = kani::any();
     if seconds.is_finite() {
-        Epoch::from_gpst_seconds(seconds);
+        let _ = Epoch::from_gpst_seconds(seconds);
     }
 
-    Epoch::from_gpst_nanoseconds(kani::any());
+    let _ = Epoch::from_gpst_nanoseconds(kani::any());
 }
 
 #[cfg(kani)]
@@ -3481,7 +3485,7 @@ fn formal_epoch_reciprocity_gst() {
 
     // GST
     let time_scale: TimeScale = TimeScale::GST;
-    let ts_offset = TimeScale::GST.ref_epoch() - TimeScale::TAI.ref_epoch();
+    let ts_offset = TimeScale::GST.reference_epoch() - TimeScale::TAI.reference_epoch();
     if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
@@ -3490,15 +3494,15 @@ fn formal_epoch_reciprocity_gst() {
     // Check that no error occurs on initialization
     let seconds: f64 = kani::any();
     if seconds.is_finite() {
-        Epoch::from_gst_seconds(seconds);
+        let _ = Epoch::from_gst_seconds(seconds);
     }
 
     let days: f64 = kani::any();
     if days.is_finite() {
-        Epoch::from_gst_days(days);
+        let _ = Epoch::from_gst_days(days);
     }
 
-    Epoch::from_gst_nanoseconds(kani::any());
+    let _ = Epoch::from_gst_nanoseconds(kani::any());
 }
 
 #[cfg(kani)]
@@ -3508,7 +3512,7 @@ fn formal_epoch_reciprocity_bdt() {
 
     // BDT
     let time_scale: TimeScale = TimeScale::BDT;
-    let ts_offset = TimeScale::BDT.ref_epoch() - TimeScale::TAI.ref_epoch();
+    let ts_offset = TimeScale::BDT.reference_epoch() - TimeScale::TAI.reference_epoch();
     if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
@@ -3517,15 +3521,15 @@ fn formal_epoch_reciprocity_bdt() {
     // Check that no error occurs on initialization
     let seconds: f64 = kani::any();
     if seconds.is_finite() {
-        Epoch::from_bdt_seconds(seconds);
+        let _ = Epoch::from_bdt_seconds(seconds);
     }
 
     let days: f64 = kani::any();
     if days.is_finite() {
-        Epoch::from_bdt_days(days);
+        let _ = Epoch::from_bdt_days(days);
     }
 
-    Epoch::from_bdt_nanoseconds(kani::any());
+    let _ = Epoch::from_bdt_nanoseconds(kani::any());
 }
 
 #[cfg(kani)]
@@ -3535,15 +3539,15 @@ fn formal_epoch_julian() {
 
     if days.is_finite() {
         // The initializers will fail on subnormal days.
-        Epoch::from_mjd_bdt(days);
-        Epoch::from_mjd_gpst(days);
-        Epoch::from_mjd_gst(days);
-        Epoch::from_mjd_tai(days);
-        Epoch::from_jde_bdt(days);
-        Epoch::from_jde_gpst(days);
-        Epoch::from_jde_gst(days);
-        Epoch::from_jde_tai(days);
-        Epoch::from_jde_et(days);
-        Epoch::from_jde_tai(days);
+        let _ = Epoch::from_mjd_bdt(days);
+        let _ = Epoch::from_mjd_gpst(days);
+        let _ = Epoch::from_mjd_gst(days);
+        let _ = Epoch::from_mjd_tai(days);
+        let _ = Epoch::from_jde_bdt(days);
+        let _ = Epoch::from_jde_gpst(days);
+        let _ = Epoch::from_jde_gst(days);
+        let _ = Epoch::from_jde_tai(days);
+        let _ = Epoch::from_jde_et(days);
+        let _ = Epoch::from_jde_tai(days);
     }
 }

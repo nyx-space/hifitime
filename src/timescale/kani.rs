@@ -8,7 +8,7 @@
  * Documentation: https://nyxspace.com/
  */
 
-use super::Timescale;
+use super::TimeScale;
 use kani::Arbitrary;
 
 impl Arbitrary for TimeScale {

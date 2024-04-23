@@ -10,7 +10,8 @@
 
 // Here lives all of the formal verification for Duration.
 
-use super::Duration;
+use super::{Duration, Errors};
+use crate::NANOSECONDS_PER_CENTURY;
 
 use kani::Arbitrary;
 
@@ -28,7 +29,7 @@ impl Arbitrary for Duration {
 fn formal_duration_normalize_any() {
     let dur: Duration = kani::any();
     // Check that decompose never fails
-    dur.decompose();
+    let _ = dur.decompose();
 }
 
 #[kani::proof]
