@@ -443,7 +443,7 @@ fn gpst() {
     assert!(
         (epoch.to_tai_seconds() - SECONDS_GPS_TAI_OFFSET - epoch.to_gpst_seconds()).abs() < EPSILON
     );
-    assert!(dbg!(epoch.to_tai_days() - DAYS_GPS_TAI_OFFSET - epoch.to_gpst_days()).abs() < 1e-11);
+    assert!((epoch.to_tai_days() - DAYS_GPS_TAI_OFFSET - epoch.to_gpst_days()).abs() < 1e-11);
 
     // 1 Jan 1980 is 5 days before the GPS epoch.
     let epoch = Epoch::from_gregorian_utc_at_midnight(1980, 1, 1);
@@ -792,16 +792,16 @@ fn spice_et_tdb() {
     let from_et_s = Epoch::from_tdb_seconds(expected_et_s);
     assert!((from_et_s.to_tdb_seconds() - expected_et_s).abs() < EPSILON);
     // Validate UTC to ET when initializing from UTC
-    assert!(dbg!(sp_ex.to_et_seconds() - expected_et_s).abs() < max_prec.to_seconds());
-    assert!(dbg!(sp_ex.to_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.to_seconds());
-    assert!(dbg!(sp_ex.to_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
-    assert!(dbg!(sp_ex.to_tai_seconds() - from_et_s.to_tai_seconds()).abs() < 3e-6);
+    assert!((sp_ex.to_et_seconds() - expected_et_s).abs() < EPSILON);
+    assert!((sp_ex.to_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.to_seconds());
+    assert!((sp_ex.to_jde_utc_days() - 2455964.9739931).abs() < 1e-7);
+    assert!((sp_ex.to_tai_seconds() - from_et_s.to_tai_seconds()).abs() < 3e-6);
 
     // Second example
     let sp_ex = Epoch::from_gregorian_utc_at_midnight(2002, 2, 7);
     let expected_et_s = 66_312_064.184_938_76;
-    assert!(dbg!(sp_ex.to_et_seconds() - expected_et_s).abs() < max_prec.to_seconds());
-    assert!(dbg!(sp_ex.to_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.to_seconds());
+    assert!((sp_ex.to_et_seconds() - expected_et_s).abs() < max_prec.to_seconds());
+    assert!((sp_ex.to_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.to_seconds());
     assert!(
         (sp_ex.to_tai_seconds() - Epoch::from_tdb_seconds(expected_et_s).to_tai_seconds()).abs()
             < 1e-5
@@ -810,11 +810,10 @@ fn spice_et_tdb() {
     // Third example
     let sp_ex = Epoch::from_gregorian_utc_hms(1996, 2, 7, 11, 22, 33);
     let expected_et_s = -123_035_784.815_060_48;
-    assert!(dbg!(sp_ex.to_et_seconds() - expected_et_s).abs() < max_prec.to_seconds());
-    assert!(dbg!(sp_ex.to_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.to_seconds());
+    assert!((sp_ex.to_et_seconds() - expected_et_s).abs() < max_prec.to_seconds());
+    assert!((sp_ex.to_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.to_seconds());
     assert!(
-        dbg!(sp_ex.to_tai_seconds() - Epoch::from_tdb_seconds(expected_et_s).to_tai_seconds())
-            .abs()
+        (sp_ex.to_tai_seconds() - Epoch::from_tdb_seconds(expected_et_s).to_tai_seconds()).abs()
             < 1e-5
     );
     // Fourth example
@@ -829,8 +828,8 @@ fn spice_et_tdb() {
     */
     let sp_ex = Epoch::from_gregorian_utc_hms(2015, 2, 7, 11, 22, 33);
     let expected_et_s = 476580220.1849411;
-    assert!(dbg!(sp_ex.to_et_seconds() - expected_et_s).abs() < max_prec.to_seconds());
-    assert!(dbg!(sp_ex.to_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.to_seconds());
+    assert!((sp_ex.to_et_seconds() - expected_et_s).abs() < max_prec.to_seconds());
+    assert!((sp_ex.to_tdb_seconds() - expected_et_s).abs() < max_tdb_et_err.to_seconds());
     assert!((sp_ex.to_jde_utc_days() - 2457060.9739931).abs() < 1e-7);
 
     // JDE TDB tests
@@ -1112,7 +1111,7 @@ fn ops() {
     // Test adding a second
     let sp_ex: Epoch = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33) + Unit::Second * 1.0;
     let expected_et_s = 381_885_819.184_935_87;
-    assert!(dbg!(sp_ex.to_et_seconds() - expected_et_s - 1.0).abs() < 2.6e-6);
+    assert!((sp_ex.to_et_seconds() - expected_et_s - 1.0).abs() < 2.6e-6);
     let sp_ex: Epoch = sp_ex - Unit::Second * 1.0;
     assert!((sp_ex.to_et_seconds() - expected_et_s).abs() < 2.6e-6);
 }
@@ -1998,7 +1997,7 @@ fn regression_test_gh_272() {
 
     let (years, day_of_year) = epoch.year_days_of_year();
 
-    assert!(dbg!(day_of_year) < DAYS_PER_YEAR);
+    assert!((day_of_year) < DAYS_PER_YEAR);
     assert!(day_of_year > 0.0);
     assert_eq!(day_of_year, 355.0);
 

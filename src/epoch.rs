@@ -45,9 +45,6 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use core::str::FromStr;
 
-#[cfg(not(feature = "std"))]
-use num_traits::{Euclid, Float};
-
 #[cfg(feature = "ut1")]
 use crate::ut1::Ut1Provider;
 
@@ -3335,9 +3332,8 @@ fn test_days_et_j2000() {
     let e = Epoch::from_tai_duration(Duration::from_parts(1, 723038437000000000));
     let days_d = e.to_et_days_since_j2000();
     let centuries_t = e.to_et_centuries_since_j2000();
-    // TODO(4.0.0): Fix/check this test
-    assert!(dbg!(days_d - 8369.000800729873).abs() < f64::EPSILON);
-    assert!(dbg!(centuries_t - 0.2291307542978747).abs() < f64::EPSILON);
+    assert!((days_d - 8369.000800729873).abs() < f64::EPSILON);
+    assert!((centuries_t - 0.2291307542978747).abs() < f64::EPSILON);
 }
 
 #[test]

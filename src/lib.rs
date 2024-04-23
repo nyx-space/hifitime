@@ -1,6 +1,5 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(not(feature = "std"), no_std)]
-
 /*
  * Hifitime, part of the Nyx Space tools
  * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
@@ -10,6 +9,7 @@
  *
  * Documentation: https://nyxspace.com/
  */
+#![deny(warnings)]
 
 pub const J1900_NAIF: f64 = 2_415_020.0;
 pub const J2000_NAIF: f64 = 2_451_545.0;

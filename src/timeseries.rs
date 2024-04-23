@@ -12,9 +12,6 @@ use super::{Duration, Epoch};
 
 use core::fmt;
 
-#[cfg(not(feature = "std"))]
-use num_traits::Float;
-
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 

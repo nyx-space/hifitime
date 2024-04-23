@@ -206,7 +206,6 @@ impl From<u8> for TimeScale {
 #[cfg(test)]
 mod unit_test_timescale {
     use super::TimeScale;
-    use crate::{Duration, Epoch, Unit};
 
     #[test]
     #[cfg(feature = "serde")]
@@ -233,7 +232,9 @@ mod unit_test_timescale {
     }
 
     #[test]
+    #[cfg(feature = "std")]
     fn test_ref_epoch() {
+        use crate::{Duration, Epoch, Unit};
         let prime_e = Epoch::from_duration(Duration::ZERO, TimeScale::TAI);
         assert_eq!(prime_e.duration, Duration::ZERO);
         assert_eq!(format!("{prime_e:?}"), "1900-01-01T00:00:00 TAI");

@@ -31,6 +31,7 @@ mod python;
 use pyo3::prelude::pyclass;
 
 #[cfg(not(feature = "std"))]
+#[allow(unused_imports)] // Import is indeed used.
 use num_traits::Float;
 
 #[cfg(kani)]
