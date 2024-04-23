@@ -219,10 +219,6 @@ impl Duration {
         *self / other
     }
 
-    fn __eq__(&self, other: Self) -> bool {
-        *self == other
-    }
-
     fn __richcmp__(&self, other: Self, op: CompareOp) -> bool {
         match op {
             CompareOp::Lt => *self < other,

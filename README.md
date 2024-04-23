@@ -312,6 +312,8 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 ## 4.0.0 (WIP)
 
 + Minimum Support Rust Version bumped to 1.74.0
++ Major refactoring of the code for ease of maintenance and removal of deprecrated functions from 3.x
++ Centralization of all time scale conversions into the `to_time_scale` function -- huge effort by [@gwbres](https://github.com/gwbres)
 
 ## 3.9.0
 
@@ -414,3 +416,21 @@ Huge thanks to [@gwbres](https://github.com/gwbres) who put in all of the work f
 # Important Update on Versioning Strategy
 
 We want to inform our users of an important change in Hifitime's versioning approach. Starting with version 3.9.0, minor version updates may include changes that could potentially break backward compatibility. While we strive to maintain stability and minimize disruptions, this change allows us to incorporate significant improvements and adapt more swiftly to evolving user needs. We recommend users to carefully review the release notes for each update, even minor ones, to understand any potential impacts on their existing implementations. Our commitment to providing a robust and dynamic time management library remains steadfast, and we believe this change in versioning will better serve the evolving demands of our community.
+
+# Development
+
+Thanks for considering to help out on Hifitime!
+
+For Rust development, `cargo` is all you need, along with build tools for the minimum supported Rust version.
+
+## Python development
+
+First, please install [maturin](https://www.maturin.rs/) and set up a Python virtual environment from which to develop. Also make sure that the package version in Cargo.toml is _greater_ than any published version. For example, if the latest version published on [PyPi](https://pypi.org/project/hifitime/) is 4.0.0-a.0 (for alpha-0), make sure that you change the Cargo.toml file such that you're at least in version `alpha-1`, or the `pip install` will download from PyPi instead of installing from the local folder. To run the Python tests, you must install `pytest` in your virtual environment.
+
+The exact steps should be:
+
+1. Jump into the virtual environment: `source .venv/bin/activate` (e.g.)
+1. Make sure pytest is installed: `pip install pytest`
+1. Build hifitime specifying the output folder of the Python egg: `maturin build -F python --out dist`
+1. Install the egg: `pip install dist/hifitime-4.0.0.dev1-cp311-cp311-linux_x86_64.whl`
+1. Run the tests using the environmental pytest: `.venv/bin/pytest`
