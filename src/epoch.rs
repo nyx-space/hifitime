@@ -50,6 +50,10 @@ use core::str::FromStr;
 #[cfg(feature = "ut1")]
 use crate::ut1::Ut1Provider;
 
+#[cfg(not(feature = "std"))]
+#[allow(unused_imports)] // Import is indeed used.
+use num_traits::Float;
+
 const TT_OFFSET_MS: i64 = 32_184;
 const ET_OFFSET_US: i64 = 32_184_935;
 

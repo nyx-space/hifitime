@@ -10,6 +10,10 @@
 
 use core::ops::{Add, Mul, Sub};
 
+#[cfg(not(feature = "std"))]
+#[allow(unused_imports)] // Import is indeed used.
+use num_traits::Float;
+
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 

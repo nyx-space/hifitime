@@ -19,6 +19,10 @@ use super::{Duration, Freq, Frequencies, TimeUnits, Unit};
 
 use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
+#[cfg(not(feature = "std"))]
+#[allow(unused_imports)] // Import is indeed used.
+use num_traits::Float;
+
 macro_rules! impl_ops_for_type {
     ($type:ident) => {
         impl Mul<Unit> for $type {
