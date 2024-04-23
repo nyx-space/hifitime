@@ -193,7 +193,7 @@ let example_now = Epoch::from_gregorian_utc_hms(2015, 8, 17, 22, 55, 01);
 
 // We'll round to the nearest fifteen days
 let this_much_ago = example_now - previous_post;
-assert_eq!(format!("{this_much_ago}"), "191 days 11 h 32 min 29 s");
+assert_eq!(format!("{this_much_ago}"), "191 days 11 h 32 min 28 s");
 let about_this_much_ago_floor = this_much_ago.floor(15.days());
 assert_eq!(format!("{about_this_much_ago_floor}"), "180 days");
 let about_this_much_ago_ceil = this_much_ago.ceil(15.days());

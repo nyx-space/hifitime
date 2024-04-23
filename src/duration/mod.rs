@@ -459,16 +459,17 @@ impl Duration {
         )
     }
 
-    /// Returns the subdivision of duration in this unit.
+    /// Returns the subdivision of duration in this unit, if such is available. Does not work with Week or Century.
     ///
     /// # Example
     /// ```
     /// use hifitime::{Duration, TimeUnits, Unit};
     ///
     /// let two_hours_three_min = 2.hours() + 3.minutes();
-    /// assert_eq!(two_hours_three_min.subdivision(Unit::Hour), 2.hours());
-    /// assert_eq!(two_hours_three_min.subdivision(Unit::Minute), 3.minutes());
-    /// assert_eq!(two_hours_three_min.subdivision(Unit::Second), Duration::ZERO);
+    /// assert_eq!(two_hours_three_min.subdivision(Unit::Hour), Some(2.hours()));
+    /// assert_eq!(two_hours_three_min.subdivision(Unit::Minute), Some(3.minutes()));
+    /// assert_eq!(two_hours_three_min.subdivision(Unit::Second), Some(Duration::ZERO));
+    /// assert_eq!(two_hours_three_min.subdivision(Unit::Week), None);
     /// ```
     #[must_use]
     pub fn subdivision(&self, unit: Unit) -> Option<Duration> {

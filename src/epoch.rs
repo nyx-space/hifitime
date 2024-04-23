@@ -2409,7 +2409,7 @@ impl Epoch {
     /// // let dt_str = "2017-01-14T00:31:55 UTC";
     /// // let dt = Epoch::from_gregorian_str(dt_str).unwrap()
     ///
-    /// let (y, m, d, h, min, s, _) = dt.as_gregorian_utc();
+    /// let (y, m, d, h, min, s, _) = dt.to_gregorian_utc();
     /// assert_eq!(y, 2017);
     /// assert_eq!(m, 1);
     /// assert_eq!(d, 14);
@@ -2417,7 +2417,7 @@ impl Epoch {
     /// assert_eq!(min, 31);
     /// assert_eq!(s, 55);
     /// #[cfg(feature = "std")]
-    /// assert_eq!("2017-01-14T00:31:55 UTC", dt.as_gregorian_utc_str().to_owned());
+    /// assert_eq!("2017-01-14T00:31:55 UTC", format!("{dt}"));
     /// ```
     pub fn to_gregorian_utc(&self) -> (i32, u8, u8, u8, u8, u8, u32) {
         let ts = TimeScale::UTC;
@@ -2724,7 +2724,7 @@ impl Epoch {
     ///
     /// let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
     /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
-    /// let other = other_utc.in_time_scale(TimeScale::TDB);
+    /// let other = other_utc.to_time_scale(TimeScale::TDB);
     ///
     /// assert_eq!(
     ///     epoch.with_hms_from(other),
@@ -2759,7 +2759,7 @@ impl Epoch {
     /// let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
     /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
     /// // If the other Epoch is in another time scale, it does not matter, it will be converted to the correct time scale.
-    /// let other = other_utc.in_time_scale(TimeScale::TDB);
+    /// let other = other_utc.to_time_scale(TimeScale::TDB);
     ///
     /// assert_eq!(
     ///     epoch.with_time_from(other),
@@ -2807,7 +2807,7 @@ impl Epoch {
     ///
     /// let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
     /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
-    /// let other = other_utc.in_time_scale(TimeScale::TDB);
+    /// let other = other_utc.to_time_scale(TimeScale::TDB);
     ///
     /// assert_eq!(
     ///     epoch.with_hms_strict_from(other),
