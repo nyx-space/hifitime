@@ -105,9 +105,6 @@ pub mod prelude {
     };
 }
 
-#[cfg(feature = "asn1der")]
-pub mod asn1der;
-
 #[cfg(feature = "python")]
 pub mod python;
 

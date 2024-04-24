@@ -50,9 +50,6 @@ jobs:
       - name: Test (default features)
         run: cargo test
 
-      - name: Test (ASN1)
-        run: cargo test --features asn1der
-      
       - name: Test (UT1)
         run: cargo test --features ut1
 
@@ -120,8 +117,8 @@ jobs:
       - name: Generate coverage report
         run: |
           cargo llvm-cov clean --workspace
-          cargo llvm-cov test --no-report --features=std,asn1der -- --test-threads=1
-          cargo llvm-cov test --no-report --tests --features=std,asn1der -- compile_fail
+          cargo llvm-cov test --no-report --features=std -- --test-threads=1
+          cargo llvm-cov test --no-report --tests --features=std -- compile_fail
           cargo llvm-cov report --lcov > lcov.txt
         env:
           RUSTFLAGS: --cfg __ui_tests
