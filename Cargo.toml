@@ -22,7 +22,7 @@ serde = { version = "1.0.155", optional = true }
 serde_derive = { version = "1.0.155", optional = true }
 pyo3 = { version = "0.21.1", features = [
     "extension-module",
-    "inventory",
+    "multiple-pymethods",
 ], optional = true }
 num-traits = { version = "0.2.15", default-features = false, features = [
     "libm",
@@ -69,7 +69,7 @@ criterion = "0.5.1"
 iai = "0.1"
 
 [features]
-default = ["std"]
+default = ["std", "ut1"]
 std = ["serde", "serde_derive", "web-time"]
 python = ["std", "pyo3", "ut1"]
 ut1 = ["std", "reqwest", "tabled", "openssl"]

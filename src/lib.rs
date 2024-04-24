@@ -95,9 +95,6 @@ pub mod leap_seconds;
 #[cfg(feature = "std")]
 mod leap_seconds_file;
 
-#[cfg(feature = "ut1")]
-pub mod ut1;
-
 pub mod prelude {
     pub use crate::efmt::{Format, Formatter};
     pub use crate::{

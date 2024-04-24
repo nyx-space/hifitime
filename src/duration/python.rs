@@ -8,7 +8,7 @@
 * Documentation: https://nyxspace.com/
 */
 
-// Here lives all of the implementations that are only built with the std flag
+// Here lives all of the implementations that are only built with the pyhon feature.
 
 use super::{Duration, Unit};
 

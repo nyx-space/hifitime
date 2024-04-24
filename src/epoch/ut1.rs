@@ -21,7 +21,48 @@ use std::{fs::File, io::Read};
 use core::fmt;
 use core::ops::Index;
 
-use crate::{Duration, Epoch, Errors, ParsingErrors, Unit};
+use crate::{Duration, Epoch, Errors, ParsingErrors, TimeScale, Unit};
+
+impl Epoch {
+    #[must_use]
+    /// Initialize an Epoch from the provided UT1 duration since 1900 January 01 at midnight
+    ///
+    /// # Warning
+    /// The time scale of this Epoch will be set to TAI! This is to ensure that no additional computations will change the duration since it's stored in TAI.
+    /// However, this also means that calling `to_duration()` on this Epoch will return the TAI duration and not the UT1 duration!
+    pub fn from_ut1_duration(duration: Duration, provider: Ut1Provider) -> Self {
+        let mut e = Self::from_tai_duration(duration);
+        // Compute the TAI to UT1 offset at this time.
+        // We have the time in TAI. But we were given UT1.
+        // The offset is provided as offset = TAI - UT1 <=> TAI = UT1 + offset
+        e.duration += e.ut1_offset(provider).unwrap_or(Duration::ZERO);
+        e.time_scale = TimeScale::TAI;
+        e
+    }
+
+    /// Get the accumulated offset between this epoch and UT1, assuming that the provider includes all data.
+    pub fn ut1_offset(&self, provider: Ut1Provider) -> Option<Duration> {
+        for delta_tai_ut1 in provider.rev() {
+            if self > &delta_tai_ut1.epoch {
+                return Some(delta_tai_ut1.delta_tai_minus_ut1);
+            }
+        }
+        None
+    }
+
+    #[must_use]
+    /// Returns this time in a Duration past J1900 counted in UT1
+    pub fn to_ut1_duration(&self, provider: Ut1Provider) -> Duration {
+        // TAI = UT1 + offset <=> UTC = TAI - offset
+        self.to_tai_duration() - self.ut1_offset(provider).unwrap_or(Duration::ZERO)
+    }
+
+    #[must_use]
+    /// Returns this time in a Duration past J1900 counted in UT1
+    pub fn to_ut1(&self, provider: Ut1Provider) -> Self {
+        Self::from_tai_duration(self.to_ut1_duration(provider))
+    }
+}
 
 #[derive(Copy, Clone, Debug, Default, Tabled)]
 pub struct DeltaTaiUt1 {
