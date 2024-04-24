@@ -20,7 +20,6 @@ name = "hifitime"
 [dependencies]
 serde = { version = "1.0.155", optional = true }
 serde_derive = { version = "1.0.155", optional = true }
-der = { version = "0.7.8", features = ["derive", "real"], optional = true }
 pyo3 = { version = "0.21.1", features = [
     "extension-module",
     "inventory",
@@ -72,8 +71,7 @@ iai = "0.1"
 [features]
 default = ["std"]
 std = ["serde", "serde_derive", "web-time"]
-asn1der = ["der"]
-python = ["std", "asn1der", "pyo3", "ut1"]
+python = ["std", "pyo3", "ut1"]
 ut1 = ["std", "reqwest", "tabled", "openssl"]
 
 [[bench]]
