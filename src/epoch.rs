@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. AUTHORS.md)
+ * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -9,24 +9,25 @@
  */
 
 use crate::duration::{Duration, Unit};
+use crate::efmt::format::Format;
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
-use crate::parser::Token;
+use crate::Weekday;
 use crate::{
-    Errors, MonthName, TimeScale, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S, GPST_REF_EPOCH,
-    GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_DAY,
-    NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32,
-    UNIX_REF_EPOCH,
+    Errors, MonthName, TimeScale, TimeUnits, BDT_REF_EPOCH, DAYS_PER_YEAR_NLD, ET_EPOCH_S,
+    GPST_REF_EPOCH, GST_REF_EPOCH, HIFITIME_REF_YEAR, J1900_OFFSET, J2000_TO_J1900_DURATION,
+    MJD_OFFSET, NANOSECONDS_PER_DAY, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
+    NANOSECONDS_PER_SECOND_U32, QZSST_REF_EPOCH, UNIX_REF_EPOCH,
 };
 
-use crate::efmt::format::Format;
+#[cfg(not(kani))]
+use crate::parser::Token;
+#[cfg(not(kani))]
+use crate::ParsingErrors;
 
 use core::cmp::{Eq, Ord, Ordering, PartialEq, PartialOrd};
 use core::fmt;
 use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
-
-use crate::ParsingErrors;
-use crate::Weekday;
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
@@ -40,16 +41,18 @@ use pyo3::types::PyType;
 #[cfg(feature = "python")]
 use crate::leap_seconds_file::LeapSecondsFile;
 
+#[cfg(not(kani))]
 #[cfg(feature = "serde")]
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use core::str::FromStr;
 
-#[cfg(not(feature = "std"))]
-use num_traits::{Euclid, Float};
-
 #[cfg(feature = "ut1")]
 use crate::ut1::Ut1Provider;
+
+#[cfg(not(feature = "std"))]
+#[allow(unused_imports)] // Import is indeed used.
+use num_traits::Float;
 
 const TT_OFFSET_MS: i64 = 32_184;
 const ET_OFFSET_US: i64 = 32_184_935;
@@ -121,23 +124,53 @@ const CUMULATIVE_DAYS_FOR_MONTH: [u16; 12] = {
 /// Defines a nanosecond-precision Epoch.
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
-#[derive(Copy, Clone, Eq, Default)]
+#[derive(Copy, Clone, Default, Eq)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Epoch {
-    /// An Epoch is always stored as the duration of since J1900 in the TAI time scale.
-    pub duration_since_j1900_tai: Duration,
+    /// An Epoch is always stored as the duration since the beginning of its time scale
+    pub duration: Duration,
     /// Time scale used during the initialization of this Epoch.
     pub time_scale: TimeScale,
+}
+
+impl Hash for Epoch {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.duration.hash(state);
+        self.time_scale.hash(state);
+    }
+}
+
+#[cfg(not(kani))]
+#[cfg(feature = "serde")]
+impl Serialize for Epoch {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = self.to_string(); // Assuming `Display` is implemented for `Epoch`
+        serializer.serialize_str(&s)
+    }
+}
+
+#[cfg(not(kani))]
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Epoch {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Epoch::from_str(&s).map_err(serde::de::Error::custom)
+    }
 }
 
 impl Sub for Epoch {
     type Output = Duration;
 
     fn sub(self, other: Self) -> Duration {
-        self.duration_since_j1900_tai - other.duration_since_j1900_tai
+        self.duration - other.to_time_scale(self.time_scale).duration
     }
 }
 
@@ -151,7 +184,10 @@ impl Sub<Duration> for Epoch {
     type Output = Self;
 
     fn sub(self, duration: Duration) -> Self {
-        self.set(self.to_duration() - duration)
+        Self {
+            duration: self.duration - duration,
+            time_scale: self.time_scale,
+        }
     }
 }
 
@@ -161,7 +197,10 @@ impl Add<f64> for Epoch {
     type Output = Self;
 
     fn add(self, seconds: f64) -> Self {
-        self.set(self.to_duration() + seconds * Unit::Second)
+        Self {
+            duration: self.duration + seconds * Unit::Second,
+            time_scale: self.time_scale,
+        }
     }
 }
 
@@ -169,7 +208,10 @@ impl Add<Duration> for Epoch {
     type Output = Self;
 
     fn add(self, duration: Duration) -> Self {
-        self.set(self.to_duration() + duration)
+        Self {
+            duration: self.duration + duration,
+            time_scale: self.time_scale,
+        }
     }
 }
 
@@ -192,7 +234,10 @@ impl Sub<Unit> for Epoch {
 
     #[allow(clippy::identity_op)]
     fn sub(self, unit: Unit) -> Self {
-        self.set(self.to_duration() - unit * 1)
+        Self {
+            duration: self.duration - unit * 1,
+            time_scale: self.time_scale,
+        }
     }
 }
 
@@ -201,7 +246,10 @@ impl Add<Unit> for Epoch {
 
     #[allow(clippy::identity_op)]
     fn add(self, unit: Unit) -> Self {
-        self.set(self.to_duration() + unit * 1)
+        Self {
+            duration: self.duration + unit * 1,
+            time_scale: self.time_scale,
+        }
     }
 }
 
@@ -214,29 +262,39 @@ impl AddAssign<Duration> for Epoch {
 /// Equality only checks the duration since J1900 match in TAI, because this is how all of the epochs are referenced.
 impl PartialEq for Epoch {
     fn eq(&self, other: &Self) -> bool {
-        self.duration_since_j1900_tai == other.duration_since_j1900_tai
-    }
-}
-
-impl Hash for Epoch {
-    fn hash<H: Hasher>(&self, hasher: &mut H) {
-        self.duration_since_j1900_tai.hash(hasher);
+        if self.time_scale == other.time_scale {
+            self.duration == other.duration
+        } else {
+            // If one of the two time scales does not include leap seconds,
+            // we always convert the time scale with leap seconds into the
+            // time scale that does NOT have leap seconds.
+            if self.time_scale.uses_leap_seconds() != other.time_scale.uses_leap_seconds() {
+                if self.time_scale.uses_leap_seconds() {
+                    self.to_time_scale(other.time_scale).duration == other.duration
+                } else {
+                    self.duration == other.to_time_scale(self.time_scale).duration
+                }
+            } else {
+                // Otherwise it does not matter
+                self.duration == other.to_time_scale(self.time_scale).duration
+            }
+        }
     }
 }
 
 impl PartialOrd for Epoch {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(
-            self.duration_since_j1900_tai
-                .cmp(&other.duration_since_j1900_tai),
+            self.duration
+                .cmp(&other.to_time_scale(self.time_scale).duration),
         )
     }
 }
 
 impl Ord for Epoch {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.duration_since_j1900_tai
-            .cmp(&other.duration_since_j1900_tai)
+        self.duration
+            .cmp(&other.to_time_scale(self.time_scale).duration)
     }
 }
 
@@ -253,7 +311,7 @@ impl Epoch {
         provider: L,
     ) -> Option<f64> {
         for leap_second in provider.rev() {
-            if self.duration_since_j1900_tai.to_seconds() >= leap_second.timestamp_tai_s
+            if self.to_tai_duration().to_seconds() >= leap_second.timestamp_tai_s
                 && (!iers_only || leap_second.announced_by_iers)
             {
                 return Some(leap_second.delta_at);
@@ -262,19 +320,143 @@ impl Epoch {
         None
     }
 
-    /// Makes a copy of self and sets the duration and time scale appropriately given the new duration
+    /// Creates an epoch from given duration expressed in given timescale, i.e. since the given time scale's reference epoch.
+    ///
+    /// For example, if the duration is 1 day and the time scale is Ephemeris Time, then this will create an epoch of 2000-01-02 at midnight ET. If the duration is 1 day and the time scale is TAI, this will create an epoch of 1900-01-02 at noon, because the TAI reference epoch in Hifitime is chosen to be the J1900 epoch.
+    /// In case of ET, TDB Timescales, a duration since J2000 is expected.
     #[must_use]
-    pub fn from_duration(new_duration: Duration, time_scale: TimeScale) -> Self {
-        match time_scale {
-            TimeScale::TAI => Self::from_tai_duration(new_duration),
-            TimeScale::TT => Self::from_tt_duration(new_duration),
-            TimeScale::ET => Self::from_et_duration(new_duration),
-            TimeScale::TDB => Self::from_tdb_duration(new_duration),
-            TimeScale::UTC => Self::from_utc_duration(new_duration),
-            TimeScale::GPST => Self::from_gpst_duration(new_duration),
-            TimeScale::QZSST => Self::from_qzsst_duration(new_duration),
-            TimeScale::GST => Self::from_gst_duration(new_duration),
-            TimeScale::BDT => Self::from_bdt_duration(new_duration),
+    pub const fn from_duration(duration: Duration, ts: TimeScale) -> Self {
+        Self {
+            duration,
+            time_scale: ts,
+        }
+    }
+
+    pub fn to_duration_since_j1900(&self) -> Duration {
+        self.to_time_scale(TimeScale::TAI).duration
+    }
+
+    #[must_use]
+    /// Converts self to another time scale
+    ///
+    /// As per the [Rust naming convention](https://rust-lang.github.io/api-guidelines/naming.html#ad-hoc-conversions-follow-as_-to_-into_-conventions-c-conv),
+    /// this borrows an Epoch and returns an owned Epoch.
+    pub fn to_time_scale(&self, ts: TimeScale) -> Self {
+        if ts == self.time_scale {
+            // Do nothing, just return a copy
+            *self
+        } else {
+            // Now we need to convert from the current time scale into the desired time scale.
+            // Let's first compute this epoch from its current time scale into TAI.
+            let prime_epoch_offset = match self.time_scale {
+                TimeScale::TAI => self.duration,
+                TimeScale::TT => self.duration - TT_OFFSET_MS.milliseconds(),
+                TimeScale::ET => {
+                    // Run a Newton Raphston to convert find the correct value of the
+                    let mut seconds_j2000 = self.duration.to_seconds();
+                    for _ in 0..5 {
+                        seconds_j2000 += -NAIF_K
+                            * (NAIF_M0
+                                + NAIF_M1 * seconds_j2000
+                                + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds_j2000).sin())
+                            .sin();
+                    }
+
+                    // At this point, we have a good estimate of the number of seconds of this epoch.
+                    // Reverse the algorithm:
+                    let delta_et_tai = Self::delta_et_tai(
+                        seconds_j2000 - (TT_OFFSET_MS * Unit::Millisecond).to_seconds(),
+                    );
+
+                    // Match SPICE by changing the UTC definition.
+                    self.duration - delta_et_tai.seconds() + self.time_scale.prime_epoch_offset()
+                }
+                TimeScale::TDB => {
+                    let gamma = Self::inner_g(self.duration.to_seconds());
+
+                    let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
+
+                    // Offset back to J1900.
+                    self.duration - delta_tdb_tai + self.time_scale.prime_epoch_offset()
+                }
+                TimeScale::UTC => {
+                    // Assume this is TAI
+                    let mut tai_assumption = *self;
+                    tai_assumption.time_scale = TimeScale::TAI;
+                    self.duration + tai_assumption.leap_seconds(true).unwrap_or(0.0).seconds()
+                }
+                TimeScale::GPST => self.duration + GPST_REF_EPOCH.to_tai_duration(),
+                TimeScale::GST => self.duration + GST_REF_EPOCH.to_tai_duration(),
+                TimeScale::BDT => self.duration + BDT_REF_EPOCH.to_tai_duration(),
+                TimeScale::QZSST => self.duration + QZSST_REF_EPOCH.to_tai_duration(),
+            };
+
+            // Convert to the desired time scale from the TAI duration
+            let ts_ref_offset = match ts {
+                TimeScale::TAI => prime_epoch_offset,
+                TimeScale::TT => prime_epoch_offset + TT_OFFSET_MS.milliseconds(),
+                TimeScale::ET => {
+                    // Run a Newton Raphston to convert find the correct value of the ... ?!
+
+                    let mut seconds = (prime_epoch_offset - ts.prime_epoch_offset()).to_seconds();
+                    for _ in 0..5 {
+                        seconds -= -NAIF_K
+                            * (NAIF_M0
+                                + NAIF_M1 * seconds
+                                + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds).sin())
+                            .sin();
+                    }
+
+                    // At this point, we have a good estimate of the number of seconds of this epoch.
+                    // Reverse the algorithm:
+                    let delta_et_tai = Self::delta_et_tai(
+                        seconds + (TT_OFFSET_MS * Unit::Millisecond).to_seconds(),
+                    );
+
+                    // Match SPICE by changing the UTC definition.
+                    prime_epoch_offset + delta_et_tai.seconds() - ts.prime_epoch_offset()
+                }
+                TimeScale::TDB => {
+                    // Iterate to convert find the correct value of the
+                    let mut seconds = (prime_epoch_offset - ts.prime_epoch_offset()).to_seconds();
+                    let mut delta = 1e8; // Arbitrary large number, greater than first step of Newton Raphson.
+                    for _ in 0..5 {
+                        let next = seconds - Self::inner_g(seconds);
+                        let new_delta = (next - seconds).abs();
+                        if (new_delta - delta).abs() < 1e-9 {
+                            break;
+                        }
+                        seconds = next; // Loop
+                        delta = new_delta;
+                    }
+
+                    // At this point, we have a good estimate of the number of seconds of this epoch.
+                    // Reverse the algorithm:
+                    let gamma =
+                        Self::inner_g(seconds + (TT_OFFSET_MS * Unit::Millisecond).to_seconds());
+                    let delta_tdb_tai = gamma.seconds() + TT_OFFSET_MS.milliseconds();
+
+                    prime_epoch_offset + delta_tdb_tai - ts.prime_epoch_offset()
+                }
+                TimeScale::UTC => {
+                    // Assume it's TAI
+                    let epoch = Self {
+                        duration: prime_epoch_offset,
+                        time_scale: TimeScale::TAI,
+                    };
+                    // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
+                    prime_epoch_offset - epoch.leap_seconds(true).unwrap_or(0.0).seconds()
+                }
+                TimeScale::GPST => prime_epoch_offset - GPST_REF_EPOCH.to_tai_duration(),
+                TimeScale::GST => prime_epoch_offset - GST_REF_EPOCH.to_tai_duration(),
+                TimeScale::BDT => prime_epoch_offset - BDT_REF_EPOCH.to_tai_duration(),
+                TimeScale::QZSST => prime_epoch_offset - QZSST_REF_EPOCH.to_tai_duration(),
+            };
+
+            Self {
+                duration: ts_ref_offset,
+                time_scale: ts,
+            }
         }
     }
 
@@ -282,7 +464,7 @@ impl Epoch {
     /// Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch.
     pub const fn from_tai_duration(duration: Duration) -> Self {
         Self {
-            duration_since_j1900_tai: duration,
+            duration,
             time_scale: TimeScale::TAI,
         }
     }
@@ -316,14 +498,7 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
     pub fn from_utc_duration(duration: Duration) -> Self {
-        let mut e = Self::from_tai_duration(duration);
-        // Compute the TAI to UTC offset at this time.
-        // We have the time in TAI. But we were given UTC.
-        // Hence, we need to _add_ the leap seconds to get the actual TAI time.
-        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        e.duration_since_j1900_tai += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
-        e.time_scale = TimeScale::UTC;
-        e
+        Self::from_duration(duration, TimeScale::UTC)
     }
 
     #[must_use]
@@ -341,34 +516,25 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the provided duration since 1980 January 6 at midnight
     pub fn from_gpst_duration(duration: Duration) -> Self {
-        let mut me = Self::from_tai_duration(GPST_REF_EPOCH.to_tai_duration() + duration);
-        me.time_scale = TimeScale::GPST;
-        me
+        Self::from_duration(duration, TimeScale::GPST)
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided duration since 1980 January 6 at midnight
     pub fn from_qzsst_duration(duration: Duration) -> Self {
-        // QZSST and GPST share the same reference epoch
-        let mut me = Self::from_tai_duration(GPST_REF_EPOCH.to_tai_duration() + duration);
-        me.time_scale = TimeScale::QZSST;
-        me
+        Self::from_duration(duration, TimeScale::QZSST)
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided duration since August 21st 1999 midnight
     pub fn from_gst_duration(duration: Duration) -> Self {
-        let mut me = Self::from_tai_duration(GST_REF_EPOCH.to_tai_duration() + duration);
-        me.time_scale = TimeScale::GST;
-        me
+        Self::from_duration(duration, TimeScale::GST)
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided duration since January 1st midnight
     pub fn from_bdt_duration(duration: Duration) -> Self {
-        let mut me = Self::from_tai_duration(BDT_REF_EPOCH.to_tai_duration() + duration);
-        me.time_scale = TimeScale::BDT;
-        me
+        Self::from_duration(duration, TimeScale::BDT)
     }
 
     #[must_use]
@@ -384,7 +550,7 @@ impl Epoch {
         // always refer to TAI/mjd
         let mut e = Self::from_mjd_tai(days);
         if time_scale.uses_leap_seconds() {
-            e.duration_since_j1900_tai += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
+            e.duration += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         }
         e.time_scale = time_scale;
         e
@@ -424,7 +590,7 @@ impl Epoch {
         // always refer to TAI/jde
         let mut e = Self::from_jde_tai(days);
         if time_scale.uses_leap_seconds() {
-            e.duration_since_j1900_tai += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
+            e.duration += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
         }
         e.time_scale = time_scale;
         e
@@ -464,10 +630,7 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
     pub fn from_tt_duration(duration: Duration) -> Self {
-        Self {
-            duration_since_j1900_tai: duration - Unit::Millisecond * TT_OFFSET_MS,
-            time_scale: TimeScale::TT,
-        }
+        Self::from_duration(duration, TimeScale::TT)
     }
 
     #[must_use]
@@ -490,28 +653,7 @@ impl Epoch {
     /// In order to match SPICE, the as_et_duration() function will manually get rid of that difference.
     #[must_use]
     pub fn from_et_duration(duration_since_j2000: Duration) -> Self {
-        // Run a Newton Raphston to convert find the correct value of the
-        let mut seconds_j2000 = duration_since_j2000.to_seconds();
-        for _ in 0..5 {
-            seconds_j2000 += -NAIF_K
-                * (NAIF_M0
-                    + NAIF_M1 * seconds_j2000
-                    + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds_j2000).sin())
-                .sin();
-        }
-
-        // At this point, we have a good estimate of the number of seconds of this epoch.
-        // Reverse the algorithm:
-        let delta_et_tai =
-            Self::delta_et_tai(seconds_j2000 - (TT_OFFSET_MS * Unit::Millisecond).to_seconds());
-
-        // Match SPICE by changing the UTC definition.
-        Self {
-            duration_since_j1900_tai: (duration_since_j2000.to_seconds() - delta_et_tai)
-                * Unit::Second
-                + J2000_TO_J1900_DURATION,
-            time_scale: TimeScale::ET,
-        }
+        Self::from_duration(duration_since_j2000, TimeScale::ET)
     }
 
     #[must_use]
@@ -529,16 +671,7 @@ impl Epoch {
     #[must_use]
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI.
     pub fn from_tdb_duration(duration_since_j2000: Duration) -> Epoch {
-        let gamma = Self::inner_g(duration_since_j2000.to_seconds());
-
-        let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
-
-        // Offset back to J1900.
-        Self {
-            duration_since_j1900_tai: duration_since_j2000 - delta_tdb_tai
-                + J2000_TO_J1900_DURATION,
-            time_scale: TimeScale::TDB,
-        }
+        Self::from_duration(duration_since_j2000, TimeScale::TDB)
     }
 
     #[must_use]
@@ -565,14 +698,14 @@ impl Epoch {
     /// Initialize an Epoch from the number of seconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn from_gpst_seconds(seconds: f64) -> Self {
-        Self::from_duration(Duration::from_f64(seconds, Unit::Second), TimeScale::GPST)
+        Self::from_duration(seconds * Unit::Second, TimeScale::GPST)
     }
 
     #[must_use]
     /// Initialize an Epoch from the number of days since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn from_gpst_days(days: f64) -> Self {
-        Self::from_duration(Duration::from_f64(days, Unit::Day), TimeScale::GPST)
+        Self::from_duration(days * Unit::Day, TimeScale::GPST)
     }
 
     #[must_use]
@@ -580,27 +713,21 @@ impl Epoch {
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use GPS as a time source.
     pub fn from_gpst_nanoseconds(nanoseconds: u64) -> Self {
-        Self::from_duration(
-            Duration {
-                centuries: 0,
-                nanoseconds,
-            },
-            TimeScale::GPST,
-        )
+        Self::from_duration(nanoseconds as f64 * Unit::Nanosecond, TimeScale::GPST)
     }
 
     #[must_use]
     /// Initialize an Epoch from the number of seconds since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn from_qzsst_seconds(seconds: f64) -> Self {
-        Self::from_duration(Duration::from_f64(seconds, Unit::Second), TimeScale::QZSST)
+        Self::from_duration(seconds * Unit::Second, TimeScale::QZSST)
     }
 
     #[must_use]
     /// Initialize an Epoch from the number of days since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn from_qzsst_days(days: f64) -> Self {
-        Self::from_duration(Duration::from_f64(days, Unit::Day), TimeScale::QZSST)
+        Self::from_duration(days * Unit::Day, TimeScale::QZSST)
     }
 
     #[must_use]
@@ -732,72 +859,58 @@ impl Epoch {
             return Err(Errors::Carry);
         }
 
-        let (years_since_1900, mut duration_wrt_1900) = match year.checked_sub(1900) {
+        let mut duration_wrt_ref = match year.checked_sub(HIFITIME_REF_YEAR) {
             None => return Err(Errors::Overflow),
-            Some(years_since_1900) => match years_since_1900.checked_mul(365) {
+            Some(years_since_ref) => match years_since_ref.checked_mul(365) {
                 None => return Err(Errors::Overflow),
-                Some(days) => (years_since_1900, Unit::Day * i64::from(days)),
+                Some(days) => Unit::Day * i64::from(days),
             },
-        };
+        } - time_scale.gregorian_epoch_offset();
 
-        // count leap years
-        if years_since_1900 > 0 {
-            // we don't count the leap year in 1904, since jan 1904 hasn't had the leap yet,
-            // so we push it back to 1905, same for all other leap years
-            let years_after_1900 = years_since_1900 - 1;
-            duration_wrt_1900 += Unit::Day * i64::from(years_after_1900 / 4);
-            duration_wrt_1900 -= Unit::Day * i64::from(years_after_1900 / 100);
-            // every 400 years we correct our correction. The first one after 1900 is 2000 (years_since_1900 = 100)
-            // so we add 300 to correct the offset
-            duration_wrt_1900 += Unit::Day * i64::from((years_after_1900 + 300) / 400);
+        // Now add the leap days for all the years prior to the current year
+        if year >= HIFITIME_REF_YEAR {
+            // Add days
+            for year in HIFITIME_REF_YEAR..year {
+                if is_leap_year(year) {
+                    duration_wrt_ref += Unit::Day;
+                }
+            }
+            // Remove ref hours from duration to correct for the time scale not starting at midnight
+            // duration_wrt_ref -= Unit::Hour * time_scale.ref_hour() as i64;
         } else {
-            // we don't need to fix the offset, since jan 1896 has had the leap, when counting back from 1900
-            duration_wrt_1900 += Unit::Day * i64::from(years_since_1900 / 4);
-            duration_wrt_1900 -= Unit::Day * i64::from(years_since_1900 / 100);
-            // every 400 years we correct our correction. The first one before 1900 is 1600 (years_since_1900 = -300)
-            // so we subtract 100 to correct the offset
-            duration_wrt_1900 += Unit::Day * i64::from((years_since_1900 - 100) / 400);
-        };
+            // Remove days
+            for year in year..HIFITIME_REF_YEAR {
+                if is_leap_year(year) {
+                    duration_wrt_ref -= Unit::Day;
+                }
+            }
+            // Add ref hours
+            // duration_wrt_ref += Unit::Hour * time_scale.ref_hour() as i64;
+        }
 
         // Add the seconds for the months prior to the current month
-        duration_wrt_1900 += Unit::Day * i64::from(CUMULATIVE_DAYS_FOR_MONTH[(month - 1) as usize]);
+        duration_wrt_ref += Unit::Day * i64::from(CUMULATIVE_DAYS_FOR_MONTH[(month - 1) as usize]);
 
         if is_leap_year(year) && month > 2 {
             // NOTE: If on 29th of February, then the day is not finished yet, and therefore
             // the extra seconds are added below as per a normal day.
-            duration_wrt_1900 += Unit::Day;
+            duration_wrt_ref += Unit::Day;
         }
-        duration_wrt_1900 += Unit::Day * i64::from(day - 1)
+        duration_wrt_ref += Unit::Day * i64::from(day - 1)
             + Unit::Hour * i64::from(hour)
             + Unit::Minute * i64::from(minute)
             + Unit::Second * i64::from(second)
             + Unit::Nanosecond * i64::from(nanos);
+
         if second == 60 {
             // Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
-            // same number of second afters J1900.0.
-            duration_wrt_1900 -= Unit::Second;
+            // same number of second after J1900.0.
+            duration_wrt_ref -= Unit::Second;
         }
 
-        // NOTE: For ET and TDB, we make sure to offset the duration back to J2000 since those functions expect a J2000 input.
-        Ok(match time_scale {
-            TimeScale::TAI => Self::from_tai_duration(duration_wrt_1900),
-            TimeScale::TT => Self::from_tt_duration(duration_wrt_1900),
-            TimeScale::ET => Self::from_et_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
-            TimeScale::TDB => Self::from_tdb_duration(duration_wrt_1900 - J2000_TO_J1900_DURATION),
-            TimeScale::UTC => Self::from_utc_duration(duration_wrt_1900),
-            TimeScale::GPST => {
-                Self::from_gpst_duration(duration_wrt_1900 - GPST_REF_EPOCH.to_tai_duration())
-            }
-            // QZSS and GPST share the same reference epoch
-            TimeScale::QZSST => {
-                Self::from_qzsst_duration(duration_wrt_1900 - GPST_REF_EPOCH.to_tai_duration())
-            }
-            TimeScale::GST => {
-                Self::from_gst_duration(duration_wrt_1900 - GST_REF_EPOCH.to_tai_duration())
-            }
-            TimeScale::BDT => {
-                Self::from_bdt_duration(duration_wrt_1900 - BDT_REF_EPOCH.to_tai_duration())
-            }
+        Ok(Self {
+            duration: duration_wrt_ref,
+            time_scale,
         })
     }
 
@@ -855,15 +968,16 @@ impl Epoch {
         second: u8,
         nanos: u32,
     ) -> Result<Self, Errors> {
-        let mut if_tai =
-            Self::maybe_from_gregorian_tai(year, month, day, hour, minute, second, nanos)?;
-        // Compute the TAI to UTC offset at this time.
-        // We have the time in TAI. But we were given UTC.
-        // Hence, we need to _add_ the leap seconds to get the actual TAI time.
-        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        if_tai.duration_since_j1900_tai += if_tai.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
-        if_tai.time_scale = TimeScale::UTC;
-        Ok(if_tai)
+        Self::maybe_from_gregorian(
+            year,
+            month,
+            day,
+            hour,
+            minute,
+            second,
+            nanos,
+            TimeScale::UTC,
+        )
     }
 
     #[must_use]
@@ -1099,9 +1213,9 @@ impl Epoch {
             decomposed[5].try_into().unwrap(),
             decomposed[6].try_into().unwrap(),
             ts,
-        );
+        )?;
 
-        Ok(epoch? + tz)
+        Ok(epoch + tz)
     }
 
     /// Initializes an Epoch from the provided Format.
@@ -1128,7 +1242,7 @@ impl Epoch {
         // Compute the TAI to UT1 offset at this time.
         // We have the time in TAI. But we were given UT1.
         // The offset is provided as offset = TAI - UT1 <=> TAI = UT1 + offset
-        e.duration_since_j1900_tai += e.ut1_offset(provider).unwrap_or(Duration::ZERO);
+        e.duration += e.ut1_offset(provider).unwrap_or(Duration::ZERO);
         e.time_scale = TimeScale::TAI;
         e
     }
@@ -1149,9 +1263,12 @@ impl Epoch {
         1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
     }
 
-    pub(crate) fn compute_gregorian(duration_j1900: Duration) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-            duration_j1900.decompose();
+    pub(crate) fn compute_gregorian(
+        duration: Duration,
+        ts: TimeScale,
+    ) -> (i32, u8, u8, u8, u8, u8, u32) {
+        let (sign, days, mut hours, minutes, seconds, milliseconds, microseconds, nanos) =
+            (duration + ts.gregorian_epoch_offset()).decompose();
 
         let days_f64 = if sign < 0 {
             -(days as f64)
@@ -1160,19 +1277,18 @@ impl Epoch {
         };
 
         let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
-        // TAI is defined at 1900, so a negative time is before 1900 and positive is after 1900.
-        year += 1900;
+        year += HIFITIME_REF_YEAR;
 
         // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
         // between 1900 and `year`
-        if year >= 1900 {
-            for year in 1900..year {
+        if year >= HIFITIME_REF_YEAR {
+            for year in HIFITIME_REF_YEAR..year {
                 if is_leap_year(year) {
                     days_in_year -= 1.0;
                 }
             }
         } else {
-            for year in year..1900 {
+            for year in year..HIFITIME_REF_YEAR {
                 if is_leap_year(year) {
                     days_in_year += 1.0;
                 }
@@ -1203,6 +1319,15 @@ impl Epoch {
             // Otherwise, count up the number of days this year so far and keep track of the month.
             days_so_far += days_next_month;
             month += 1;
+        }
+
+        if hours >= 24 {
+            hours -= 24;
+            if year >= HIFITIME_REF_YEAR {
+                day += 1.0;
+            } else {
+                day -= 1.0;
+            }
         }
 
         if day <= 0.0 || days_in_year < 0.0 {
@@ -1350,98 +1475,98 @@ impl Epoch {
     #[cfg(feature = "python")]
     #[classmethod]
     /// Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch.
-    const fn init_from_tai_duration(_cls: &PyType, duration: Duration) -> Self {
+    const fn init_from_tai_duration(_cls: &Bound<'_, PyType>, duration: Duration) -> Self {
         Self::from_tai_duration(duration)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch.
-    fn init_from_tai_parts(_cls: &PyType, centuries: i16, nanoseconds: u64) -> Self {
+    fn init_from_tai_parts(_cls: &Bound<'_, PyType>, centuries: i16, nanoseconds: u64) -> Self {
         Self::from_tai_parts(centuries, nanoseconds)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
-    fn init_from_tai_seconds(_cls: &PyType, seconds: f64) -> Self {
+    fn init_from_tai_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_tai_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight
-    fn init_from_tai_days(_cls: &PyType, days: f64) -> Self {
+    fn init_from_tai_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_tai_days(days)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
-    fn init_from_utc_seconds(_cls: &PyType, seconds: f64) -> Self {
+    fn init_from_utc_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_utc_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight
-    fn init_from_utc_days(_cls: &PyType, days: f64) -> Self {
+    fn init_from_utc_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_utc_days(days)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from given MJD in TAI time scale
-    fn init_from_mjd_tai(_cls: &PyType, days: f64) -> Self {
+    fn init_from_mjd_tai(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_mjd_tai(days)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from given MJD in UTC time scale
-    fn init_from_mjd_utc(_cls: &PyType, days: f64) -> Self {
+    fn init_from_mjd_utc(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_mjd_utc(days)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from given JDE in TAI time scale
-    fn init_from_jde_tai(_cls: &PyType, days: f64) -> Self {
+    fn init_from_jde_tai(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_jde_tai(days)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from given JDE in UTC time scale
-    fn init_from_jde_utc(_cls: &PyType, days: f64) -> Self {
+    fn init_from_jde_utc(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_jde_utc(days)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
-    fn init_from_tt_seconds(_cls: &PyType, seconds: f64) -> Self {
+    fn init_from_tt_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_tt_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
-    fn init_from_tt_duration(_cls: &PyType, duration: Duration) -> Self {
+    fn init_from_tt_duration(_cls: &Bound<'_, PyType>, duration: Duration) -> Self {
         Self::from_tt_duration(duration)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)
-    fn init_from_et_seconds(_cls: &PyType, seconds_since_j2000: f64) -> Epoch {
+    fn init_from_et_seconds(_cls: &Bound<'_, PyType>, seconds_since_j2000: f64) -> Epoch {
         Self::from_et_seconds(seconds_since_j2000)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from the Ephemeris Time duration past 2000 JAN 01 (J2000 reference)
-    fn init_from_et_duration(_cls: &PyType, duration_since_j2000: Duration) -> Self {
+    fn init_from_et_duration(_cls: &Bound<'_, PyType>, duration_since_j2000: Duration) -> Self {
         Self::from_et_duration(duration_since_j2000)
     }
 
@@ -1450,28 +1575,28 @@ impl Epoch {
     /// Initialize an Epoch from Dynamic Barycentric Time (TDB) seconds past 2000 JAN 01 midnight (difference than SPICE)
     /// NOTE: This uses the ESA algorithm, which is a notch more complicated than the SPICE algorithm, but more precise.
     /// In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ESA algorithm should be exactly correct.
-    fn init_from_tdb_seconds(_cls: &PyType, seconds_j2000: f64) -> Epoch {
+    fn init_from_tdb_seconds(_cls: &Bound<'_, PyType>, seconds_j2000: f64) -> Epoch {
         Self::from_tdb_seconds(seconds_j2000)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI.
-    fn init_from_tdb_duration(_cls: &PyType, duration_since_j2000: Duration) -> Epoch {
+    fn init_from_tdb_duration(_cls: &Bound<'_, PyType>, duration_since_j2000: Duration) -> Epoch {
         Self::from_tdb_duration(duration_since_j2000)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize from the JDE days
-    fn init_from_jde_et(_cls: &PyType, days: f64) -> Self {
+    fn init_from_jde_et(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_jde_et(days)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days
-    fn init_from_jde_tdb(_cls: &PyType, days: f64) -> Self {
+    fn init_from_jde_tdb(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_jde_tdb(days)
     }
 
@@ -1479,7 +1604,7 @@ impl Epoch {
     #[classmethod]
     /// Initialize an Epoch from the number of seconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
-    fn init_from_gpst_seconds(_cls: &PyType, seconds: f64) -> Self {
+    fn init_from_gpst_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_gpst_seconds(seconds)
     }
 
@@ -1487,7 +1612,7 @@ impl Epoch {
     #[classmethod]
     /// Initialize an Epoch from the number of days since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
-    fn init_from_gpst_days(_cls: &PyType, days: f64) -> Self {
+    fn init_from_gpst_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_gpst_days(days)
     }
 
@@ -1496,7 +1621,7 @@ impl Epoch {
     /// Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use GPS as a time source.
-    fn init_from_gpst_nanoseconds(_cls: &PyType, nanoseconds: u64) -> Self {
+    fn init_from_gpst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
         Self::from_gpst_nanoseconds(nanoseconds)
     }
 
@@ -1504,7 +1629,7 @@ impl Epoch {
     #[classmethod]
     /// Initialize an Epoch from the number of seconds since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
-    fn init_from_qzsst_seconds(_cls: &PyType, seconds: f64) -> Self {
+    fn init_from_qzsst_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_qzsst_seconds(seconds)
     }
 
@@ -1512,7 +1637,7 @@ impl Epoch {
     #[classmethod]
     /// Initialize an Epoch from the number of days since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
-    fn init_from_qzsst_days(_cls: &PyType, days: f64) -> Self {
+    fn init_from_qzsst_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_qzsst_days(days)
     }
 
@@ -1521,7 +1646,7 @@ impl Epoch {
     /// Initialize an Epoch from the number of nanoseconds since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use QZSS as a time source.
-    fn init_from_qzsst_nanoseconds(_cls: &PyType, nanoseconds: u64) -> Self {
+    fn init_from_qzsst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
         Self::from_qzsst_nanoseconds(nanoseconds)
     }
 
@@ -1530,7 +1655,7 @@ impl Epoch {
     /// Initialize an Epoch from the number of seconds since the Galileo Time Epoch,
     /// starting on August 21st 1999 Midnight UT,
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
-    fn init_from_gst_seconds(_cls: &PyType, seconds: f64) -> Self {
+    fn init_from_gst_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_gst_seconds(seconds)
     }
 
@@ -1539,7 +1664,7 @@ impl Epoch {
     /// Initialize an Epoch from the number of days since the Galileo Time Epoch,
     /// starting on August 21st 1999 Midnight UT,
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
-    fn init_from_gst_days(_cls: &PyType, days: f64) -> Self {
+    fn init_from_gst_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_gst_days(days)
     }
 
@@ -1549,7 +1674,7 @@ impl Epoch {
     /// starting on August 21st 1999 Midnight UT,
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use GST as a time source.
-    fn init_from_gst_nanoseconds(_cls: &PyType, nanoseconds: u64) -> Self {
+    fn init_from_gst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
         Self::from_gst_nanoseconds(nanoseconds)
     }
 
@@ -1557,7 +1682,7 @@ impl Epoch {
     #[classmethod]
     /// Initialize an Epoch from the number of seconds since the BeiDou Time Epoch,
     /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
-    fn init_from_bdt_seconds(_cls: &PyType, seconds: f64) -> Self {
+    fn init_from_bdt_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_bdt_seconds(seconds)
     }
 
@@ -1565,7 +1690,7 @@ impl Epoch {
     #[classmethod]
     /// Initialize an Epoch from the number of days since the BeiDou Time Epoch,
     /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
-    fn init_from_bdt_days(_cls: &PyType, days: f64) -> Self {
+    fn init_from_bdt_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_bdt_days(days)
     }
 
@@ -1574,28 +1699,28 @@ impl Epoch {
     /// Initialize an Epoch from the number of days since the BeiDou Time Epoch,
     /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use BDT as a time source.
-    fn init_from_bdt_nanoseconds(_cls: &PyType, nanoseconds: u64) -> Self {
+    fn init_from_bdt_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
         Self::from_bdt_nanoseconds(nanoseconds)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01.
-    fn init_from_unix_seconds(_cls: &PyType, seconds: f64) -> Self {
+    fn init_from_unix_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_unix_seconds(seconds)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01.
-    fn init_from_unix_milliseconds(_cls: &PyType, milliseconds: f64) -> Self {
+    fn init_from_unix_milliseconds(_cls: &Bound<'_, PyType>, milliseconds: f64) -> Self {
         Self::from_unix_milliseconds(milliseconds)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     fn init_from_gregorian(
-        _cls: &PyType,
+        _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
         day: u8,
@@ -1611,7 +1736,7 @@ impl Epoch {
     #[cfg(feature = "python")]
     #[classmethod]
     fn init_from_gregorian_at_noon(
-        _cls: &PyType,
+        _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
         day: u8,
@@ -1623,7 +1748,7 @@ impl Epoch {
     #[cfg(feature = "python")]
     #[classmethod]
     fn init_from_gregorian_at_midnight(
-        _cls: &PyType,
+        _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
         day: u8,
@@ -1636,7 +1761,7 @@ impl Epoch {
     #[classmethod]
     /// Attempts to build an Epoch from the provided Gregorian date and time in TAI.
     fn maybe_init_from_gregorian_tai(
-        _cls: &PyType,
+        _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
         day: u8,
@@ -1654,7 +1779,7 @@ impl Epoch {
     /// NOTE: If the time scale is TDB, this function assumes that the SPICE format is used
     #[allow(clippy::too_many_arguments)]
     fn maybe_init_from_gregorian(
-        _cls: &PyType,
+        _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
         day: u8,
@@ -1672,7 +1797,7 @@ impl Epoch {
     /// Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian_tai if unsure.
     fn init_from_gregorian_tai(
-        _cls: &PyType,
+        _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
         day: u8,
@@ -1687,14 +1812,24 @@ impl Epoch {
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize from the Gregorian date at midnight in TAI.
-    fn init_from_gregorian_tai_at_midnight(_cls: &PyType, year: i32, month: u8, day: u8) -> Self {
+    fn init_from_gregorian_tai_at_midnight(
+        _cls: &Bound<'_, PyType>,
+        year: i32,
+        month: u8,
+        day: u8,
+    ) -> Self {
         Self::from_gregorian_tai_at_midnight(year, month, day)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize from the Gregorian date at noon in TAI
-    fn init_from_gregorian_tai_at_noon(_cls: &PyType, year: i32, month: u8, day: u8) -> Self {
+    fn init_from_gregorian_tai_at_noon(
+        _cls: &Bound<'_, PyType>,
+        year: i32,
+        month: u8,
+        day: u8,
+    ) -> Self {
         Self::from_gregorian_tai_at_noon(year, month, day)
     }
 
@@ -1702,7 +1837,7 @@ impl Epoch {
     #[classmethod]
     /// Initialize from the Gregorian date and time (without the nanoseconds) in TAI
     fn init_from_gregorian_tai_hms(
-        _cls: &PyType,
+        _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
         day: u8,
@@ -1717,7 +1852,7 @@ impl Epoch {
     #[classmethod]
     /// Attempts to build an Epoch from the provided Gregorian date and time in UTC.
     fn maybe_init_from_gregorian_utc(
-        _cls: &PyType,
+        _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
         day: u8,
@@ -1734,7 +1869,7 @@ impl Epoch {
     /// Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian_tai if unsure.
     fn init_from_gregorian_utc(
-        _cls: &PyType,
+        _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
         day: u8,
@@ -1749,14 +1884,24 @@ impl Epoch {
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize from Gregorian date in UTC at midnight
-    fn init_from_gregorian_utc_at_midnight(_cls: &PyType, year: i32, month: u8, day: u8) -> Self {
+    fn init_from_gregorian_utc_at_midnight(
+        _cls: &Bound<'_, PyType>,
+        year: i32,
+        month: u8,
+        day: u8,
+    ) -> Self {
         Self::from_gregorian_utc_at_midnight(year, month, day)
     }
 
     #[cfg(feature = "python")]
     #[classmethod]
     /// Initialize from Gregorian date in UTC at noon
-    fn init_from_gregorian_utc_at_noon(_cls: &PyType, year: i32, month: u8, day: u8) -> Self {
+    fn init_from_gregorian_utc_at_noon(
+        _cls: &Bound<'_, PyType>,
+        year: i32,
+        month: u8,
+        day: u8,
+    ) -> Self {
         Self::from_gregorian_utc_at_noon(year, month, day)
     }
 
@@ -1764,7 +1909,7 @@ impl Epoch {
     #[classmethod]
     /// Initialize from the Gregorian date and time (without the nanoseconds) in UTC
     fn init_from_gregorian_utc_hms(
-        _cls: &PyType,
+        _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
         day: u8,
@@ -1778,7 +1923,7 @@ impl Epoch {
     #[cfg(feature = "python")]
     #[classmethod]
     /// Equivalent to `datetime.strptime`, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
-    fn strptime(_cls: &PyType, epoch_str: String, format_str: String) -> PyResult<Self> {
+    fn strptime(_cls: &Bound<'_, PyType>, epoch_str: String, format_str: String) -> PyResult<Self> {
         Self::from_format_str(&epoch_str, &format_str).map_err(|e| PyErr::from(e))
     }
 
@@ -1807,32 +1952,11 @@ impl Epoch {
         format!("{}", Formatter::new(*self, ISO8601_STD))[..26].to_string()
     }
 
-    /// Returns this epoch with respect to the time scale this epoch was created in.
-    /// This is needed to correctly perform duration conversions in dynamical time scales (e.g. TDB).
-    ///
-    /// # Examples
-    /// 1. If an epoch was initialized as Epoch::from_..._utc(...) then the duration will be the UTC duration from J1900.
-    /// 2. If an epoch was initialized as Epoch::from_..._tdb(...) then the duration will be the UTC duration from J2000 because the TDB reference epoch is J2000.
-    #[must_use]
-    pub fn to_duration(&self) -> Duration {
-        self.to_duration_in_time_scale(self.time_scale)
-    }
-
     #[must_use]
     /// Returns this epoch with respect to the provided time scale.
     /// This is needed to correctly perform duration conversions in dynamical time scales (e.g. TDB).
-    pub fn to_duration_in_time_scale(&self, time_scale: TimeScale) -> Duration {
-        match time_scale {
-            TimeScale::TAI => self.duration_since_j1900_tai,
-            TimeScale::TT => self.to_tt_duration(),
-            TimeScale::ET => self.to_et_duration(),
-            TimeScale::TDB => self.to_tdb_duration(),
-            TimeScale::UTC => self.to_utc_duration(),
-            TimeScale::BDT => self.to_bdt_duration(),
-            TimeScale::GST => self.to_gst_duration(),
-            // GPST and QZSST share the same properties
-            TimeScale::GPST | TimeScale::QZSST => self.to_gpst_duration(),
-        }
+    pub fn to_duration_in_time_scale(&self, ts: TimeScale) -> Duration {
+        self.to_time_scale(ts).duration
     }
 
     /// Attempts to return the number of nanoseconds since the reference epoch of the provided time scale.
@@ -1849,68 +1973,45 @@ impl Epoch {
         }
     }
 
-    /// Returns this epoch in duration since J1900 in the time scale this epoch was created in.
-    #[must_use]
-    pub fn to_duration_since_j1900(&self) -> Duration {
-        self.to_duration_since_j1900_in_time_scale(self.time_scale)
-    }
-
-    /// Returns this epoch in duration since J1900 with respect to the provided time scale.
-    #[must_use]
-    pub fn to_duration_since_j1900_in_time_scale(&self, time_scale: TimeScale) -> Duration {
-        match time_scale {
-            TimeScale::ET => self.to_et_duration_since_j1900(),
-            TimeScale::TAI => self.duration_since_j1900_tai,
-            TimeScale::TT => self.to_tt_duration(),
-            TimeScale::TDB => self.to_tdb_duration_since_j1900(),
-            TimeScale::UTC => self.to_utc_duration(),
-            // GPST and QZSST share the same properties
-            TimeScale::GPST | TimeScale::QZSST => {
-                self.to_gpst_duration() + GPST_REF_EPOCH.to_tai_duration()
+    /*
+        /// Makes a copy of self and sets the duration and time scale appropriately given the new duration
+        #[must_use]
+        pub fn set(&self, new_duration: Duration) -> Self {
+            match self.time_scale {
+                TimeScale::TAI => Self::from_tai_duration(new_duration),
+                TimeScale::TT => Self::from_tt_duration(new_duration),
+                TimeScale::ET => Self::from_et_duration(new_duration),
+                TimeScale::TDB => Self::from_tdb_duration(new_duration),
+                TimeScale::UTC => Self::from_utc_duration(new_duration),
+                // GPST and QZSST share the same properties
+                TimeScale::GPST | TimeScale::QZSST => Self::from_gpst_duration(new_duration),
+                TimeScale::GST => Self::from_gst_duration(new_duration),
+                TimeScale::BDT => Self::from_bdt_duration(new_duration),
             }
-            TimeScale::GST => self.to_gst_duration() + GST_REF_EPOCH.to_tai_duration(),
-            TimeScale::BDT => self.to_bdt_duration() + BDT_REF_EPOCH.to_tai_duration(),
         }
-    }
-
-    /// Makes a copy of self and sets the duration and time scale appropriately given the new duration
-    #[must_use]
-    pub fn set(&self, new_duration: Duration) -> Self {
-        match self.time_scale {
-            TimeScale::TAI => Self::from_tai_duration(new_duration),
-            TimeScale::TT => Self::from_tt_duration(new_duration),
-            TimeScale::ET => Self::from_et_duration(new_duration),
-            TimeScale::TDB => Self::from_tdb_duration(new_duration),
-            TimeScale::UTC => Self::from_utc_duration(new_duration),
-            // GPST and QZSST share the same properties
-            TimeScale::GPST | TimeScale::QZSST => Self::from_gpst_duration(new_duration),
-            TimeScale::GST => Self::from_gst_duration(new_duration),
-            TimeScale::BDT => Self::from_bdt_duration(new_duration),
-        }
-    }
-
+    */
     #[must_use]
     /// Returns the number of TAI seconds since J1900
     pub fn to_tai_seconds(&self) -> f64 {
-        self.duration_since_j1900_tai.to_seconds()
+        self.to_tai_duration().to_seconds()
     }
 
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in TAI
-    pub const fn to_tai_duration(&self) -> Duration {
-        self.duration_since_j1900_tai
+    pub fn to_tai_duration(&self) -> Duration {
+        self.to_time_scale(TimeScale::TAI).duration
     }
 
     #[must_use]
     /// Returns the epoch as a floating point value in the provided unit
     pub fn to_tai(&self, unit: Unit) -> f64 {
-        self.duration_since_j1900_tai.to_unit(unit)
+        self.to_tai_duration().to_unit(unit)
     }
 
     #[must_use]
     /// Returns the TAI parts of this duration
-    pub const fn to_tai_parts(&self) -> (i16, u64) {
-        self.duration_since_j1900_tai.to_parts()
+    pub fn to_tai_parts(&self) -> (i16, u64) {
+        self.to_tai_duration().to_parts()
     }
 
     #[must_use]
@@ -1928,8 +2029,7 @@ impl Epoch {
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in UTC
     pub fn to_utc_duration(&self) -> Duration {
-        // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-        self.duration_since_j1900_tai - self.leap_seconds(true).unwrap_or(0.0) * Unit::Second
+        self.to_time_scale(TimeScale::UTC).duration
     }
 
     #[must_use]
@@ -1960,7 +2060,7 @@ impl Epoch {
     #[must_use]
     /// Returns this epoch as a duration in the requested units in MJD TAI
     pub fn to_mjd_tai(&self, unit: Unit) -> f64 {
-        (self.duration_since_j1900_tai + Unit::Day * J1900_OFFSET).to_unit(unit)
+        (self.to_tai_duration() + Unit::Day * J1900_OFFSET).to_unit(unit)
     }
 
     #[must_use]
@@ -1998,7 +2098,7 @@ impl Epoch {
     #[must_use]
     /// Returns the Julian Days from epoch 01 Jan -4713 12:00 (noon) as a Duration
     pub fn to_jde_tai_duration(&self) -> Duration {
-        self.duration_since_j1900_tai + Unit::Day * J1900_OFFSET + Unit::Day * MJD_OFFSET
+        self.to_tai_duration() + Unit::Day * J1900_OFFSET + Unit::Day * MJD_OFFSET
     }
 
     #[must_use]
@@ -2034,7 +2134,7 @@ impl Epoch {
     #[must_use]
     /// Returns `Duration` past TAI epoch in Terrestrial Time (TT).
     pub fn to_tt_duration(&self) -> Duration {
-        self.duration_since_j1900_tai + Unit::Millisecond * TT_OFFSET_MS
+        self.to_time_scale(TimeScale::TT).duration
     }
 
     #[must_use]
@@ -2086,7 +2186,7 @@ impl Epoch {
     #[must_use]
     /// Returns `Duration` past GPS time Epoch.
     pub fn to_gpst_duration(&self) -> Duration {
-        self.duration_since_j1900_tai - GPST_REF_EPOCH.to_tai_duration()
+        self.to_time_scale(TimeScale::GPST).duration
     }
 
     /// Returns nanoseconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
@@ -2110,8 +2210,7 @@ impl Epoch {
     #[must_use]
     /// Returns `Duration` past QZSS time Epoch.
     pub fn to_qzsst_duration(&self) -> Duration {
-        // GPST and QZSST share the same reference epoch
-        self.duration_since_j1900_tai - GPST_REF_EPOCH.to_tai_duration()
+        self.to_time_scale(TimeScale::QZSST).duration
     }
 
     /// Returns nanoseconds past QZSS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
@@ -2135,7 +2234,7 @@ impl Epoch {
     #[must_use]
     /// Returns `Duration` past GST (Galileo) time Epoch.
     pub fn to_gst_duration(&self) -> Duration {
-        self.duration_since_j1900_tai - GST_REF_EPOCH.to_tai_duration()
+        self.to_time_scale(TimeScale::GST).duration
     }
 
     /// Returns nanoseconds past GST (Galileo) Time Epoch, starting on August 21st 1999 Midnight UT
@@ -2233,21 +2332,7 @@ impl Epoch {
     ///
     /// In order to match SPICE, the as_et_duration() function will manually get rid of that difference.
     pub fn to_et_duration(&self) -> Duration {
-        // Run a Newton Raphston to convert find the correct value of the
-        let mut seconds = (self.duration_since_j1900_tai - J2000_TO_J1900_DURATION).to_seconds();
-        for _ in 0..5 {
-            seconds -= -NAIF_K
-                * (NAIF_M0 + NAIF_M1 * seconds + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds).sin())
-                    .sin();
-        }
-
-        // At this point, we have a good estimate of the number of seconds of this epoch.
-        // Reverse the algorithm:
-        let delta_et_tai =
-            Self::delta_et_tai(seconds + (TT_OFFSET_MS * Unit::Millisecond).to_seconds());
-
-        // Match SPICE by changing the UTC definition.
-        self.duration_since_j1900_tai + delta_et_tai * Unit::Second - J2000_TO_J1900_DURATION
+        self.to_time_scale(TimeScale::ET).duration
     }
 
     #[must_use]
@@ -2266,25 +2351,7 @@ impl Epoch {
     /// 7. At this stage, we have a good approximation of the TDB seconds since J2000.
     /// 8. Reverse the algorithm given that approximation: compute the `g` offset, compute the difference between TDB and TAI, add the TT offset (32.184 s), and offset by the difference between J1900 and J2000.
     pub fn to_tdb_duration(&self) -> Duration {
-        // Iterate to convert find the correct value of the
-        let mut seconds = (self.duration_since_j1900_tai - J2000_TO_J1900_DURATION).to_seconds();
-        let mut delta = 1e8; // Arbitrary large number, greater than first step of Newton Raphson.
-        for _ in 0..5 {
-            let next = seconds - Self::inner_g(seconds);
-            let new_delta = (next - seconds).abs();
-            if (new_delta - delta).abs() < 1e-9 {
-                break;
-            }
-            seconds = next; // Loop
-            delta = new_delta;
-        }
-
-        // At this point, we have a good estimate of the number of seconds of this epoch.
-        // Reverse the algorithm:
-        let gamma = Self::inner_g(seconds + (TT_OFFSET_MS * Unit::Millisecond).to_seconds());
-        let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
-
-        self.duration_since_j1900_tai + delta_tdb_tai - J2000_TO_J1900_DURATION
+        self.to_time_scale(TimeScale::TDB).duration
     }
 
     #[must_use]
@@ -2308,7 +2375,9 @@ impl Epoch {
 
     #[must_use]
     pub fn to_jde_et_duration(&self) -> Duration {
-        self.to_et_duration() + Unit::Day * (J1900_OFFSET + MJD_OFFSET) + J2000_TO_J1900_DURATION
+        self.to_et_duration()
+            + Unit::Day * (J1900_OFFSET + MJD_OFFSET)
+            + TimeScale::ET.prime_epoch_offset()
     }
 
     #[must_use]
@@ -2318,7 +2387,9 @@ impl Epoch {
 
     #[must_use]
     pub fn to_jde_tdb_duration(&self) -> Duration {
-        self.to_tdb_duration() + Unit::Day * (J1900_OFFSET + MJD_OFFSET) + J2000_TO_J1900_DURATION
+        self.to_tdb_duration()
+            + Unit::Day * (J1900_OFFSET + MJD_OFFSET)
+            + TimeScale::TDB.prime_epoch_offset()
     }
 
     #[must_use]
@@ -2365,7 +2436,7 @@ impl Epoch {
     /// // let dt_str = "2017-01-14T00:31:55 UTC";
     /// // let dt = Epoch::from_gregorian_str(dt_str).unwrap()
     ///
-    /// let (y, m, d, h, min, s, _) = dt.as_gregorian_utc();
+    /// let (y, m, d, h, min, s, _) = dt.to_gregorian_utc();
     /// assert_eq!(y, 2017);
     /// assert_eq!(m, 1);
     /// assert_eq!(d, 14);
@@ -2373,10 +2444,11 @@ impl Epoch {
     /// assert_eq!(min, 31);
     /// assert_eq!(s, 55);
     /// #[cfg(feature = "std")]
-    /// assert_eq!("2017-01-14T00:31:55 UTC", dt.as_gregorian_utc_str().to_owned());
+    /// assert_eq!("2017-01-14T00:31:55 UTC", format!("{dt}"));
     /// ```
     pub fn to_gregorian_utc(&self) -> (i32, u8, u8, u8, u8, u8, u32) {
-        Self::compute_gregorian(self.to_utc_duration())
+        let ts = TimeScale::UTC;
+        Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts)
     }
 
     #[must_use]
@@ -2396,7 +2468,8 @@ impl Epoch {
     /// assert_eq!(s, 0);
     /// ```
     pub fn to_gregorian_tai(&self) -> (i32, u8, u8, u8, u8, u8, u32) {
-        Self::compute_gregorian(self.to_tai_duration())
+        let ts = TimeScale::TAI;
+        Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts)
     }
 
     #[cfg(feature = "ut1")]
@@ -2404,18 +2477,14 @@ impl Epoch {
     /// Returns this time in a Duration past J1900 counted in UT1
     pub fn to_ut1_duration(&self, provider: Ut1Provider) -> Duration {
         // TAI = UT1 + offset <=> UTC = TAI - offset
-        self.duration_since_j1900_tai - self.ut1_offset(provider).unwrap_or(Duration::ZERO)
+        self.to_tai_duration() - self.ut1_offset(provider).unwrap_or(Duration::ZERO)
     }
 
     #[cfg(feature = "ut1")]
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in UT1
     pub fn to_ut1(&self, provider: Ut1Provider) -> Self {
-        let mut me = *self;
-        // TAI = UT1 + offset <=> UTC = TAI - offset
-        me.duration_since_j1900_tai -= self.ut1_offset(provider).unwrap_or(Duration::ZERO);
-        me.time_scale = TimeScale::TAI;
-        me
+        Self::from_tai_duration(self.to_ut1_duration(provider))
     }
 
     #[must_use]
@@ -2438,7 +2507,7 @@ impl Epoch {
     /// );
     /// ```
     pub fn floor(&self, duration: Duration) -> Self {
-        Self::from_duration(self.to_duration().floor(duration), self.time_scale)
+        Self::from_duration(self.duration.floor(duration), self.time_scale)
     }
 
     #[must_use]
@@ -2462,7 +2531,7 @@ impl Epoch {
     /// );
     /// ```
     pub fn ceil(&self, duration: Duration) -> Self {
-        Self::from_duration(self.to_duration().ceil(duration), self.time_scale)
+        Self::from_duration(self.duration.ceil(duration), self.time_scale)
     }
 
     #[must_use]
@@ -2479,15 +2548,7 @@ impl Epoch {
     /// );
     /// ```
     pub fn round(&self, duration: Duration) -> Self {
-        Self::from_duration(self.to_duration().round(duration), self.time_scale)
-    }
-
-    #[must_use]
-    /// Copies this epoch and sets it to the new time scale provided.
-    pub fn in_time_scale(&self, new_time_scale: TimeScale) -> Self {
-        let mut me = *self;
-        me.time_scale = new_time_scale;
-        me
+        Self::from_duration(self.duration.round(duration), self.time_scale)
     }
 
     #[must_use]
@@ -2495,7 +2556,7 @@ impl Epoch {
     /// and the number of nanoseconds elapsed in current week (since closest Sunday midnight).
     /// This is usually how GNSS receivers describe a timestamp.
     pub fn to_time_of_week(&self) -> (u32, u64) {
-        let total_nanoseconds = self.to_duration().total_nanoseconds();
+        let total_nanoseconds = self.duration.total_nanoseconds();
         let weeks = total_nanoseconds / NANOSECONDS_PER_DAY as i128 / Weekday::DAYS_PER_WEEK_I128;
         // elapsed nanoseconds in current week:
         //   remove previously determined nb of weeks
@@ -2606,7 +2667,7 @@ impl Epoch {
     /// Returns the duration since the start of the year
     pub fn duration_in_year(&self) -> Duration {
         let start_of_year = Self::from_gregorian(self.year(), 1, 1, 0, 0, 0, 0, self.time_scale);
-        self.to_duration() - start_of_year.to_duration()
+        self.duration - start_of_year.duration
     }
 
     #[must_use]
@@ -2618,7 +2679,7 @@ impl Epoch {
     #[must_use]
     /// Returns the number of Gregorian years of this epoch in the current time scale.
     pub fn year(&self) -> i32 {
-        Self::compute_gregorian(self.duration_since_j1900_tai).0
+        Self::compute_gregorian(self.duration, self.time_scale).0
     }
 
     #[must_use]
@@ -2629,32 +2690,32 @@ impl Epoch {
 
     /// Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn hours(&self) -> u64 {
-        self.to_duration().decompose().2
+        self.duration.decompose().2
     }
 
     /// Returns the minutes of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn minutes(&self) -> u64 {
-        self.to_duration().decompose().3
+        self.duration.decompose().3
     }
 
     /// Returns the seconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn seconds(&self) -> u64 {
-        self.to_duration().decompose().4
+        self.duration.decompose().4
     }
 
     /// Returns the milliseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn milliseconds(&self) -> u64 {
-        self.to_duration().decompose().5
+        self.duration.decompose().5
     }
 
     /// Returns the microseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn microseconds(&self) -> u64 {
-        self.to_duration().decompose().6
+        self.duration.decompose().6
     }
 
     /// Returns the nanoseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn nanoseconds(&self) -> u64 {
-        self.to_duration().decompose().7
+        self.duration.decompose().7
     }
 
     /// Returns a copy of self where the time is set to the provided hours, minutes, seconds
@@ -2662,7 +2723,7 @@ impl Epoch {
     /// Warning: this does _not_ set the subdivisions of second to zero.
     pub fn with_hms(&self, hours: u64, minutes: u64, seconds: u64) -> Self {
         let (sign, days, _, _, _, milliseconds, microseconds, nanoseconds) =
-            self.to_duration().decompose();
+            self.duration.decompose();
         Self::from_duration(
             Duration::compose(
                 sign,
@@ -2686,7 +2747,7 @@ impl Epoch {
     ///
     /// let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
     /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
-    /// let other = other_utc.in_time_scale(TimeScale::TDB);
+    /// let other = other_utc.to_time_scale(TimeScale::TDB);
     ///
     /// assert_eq!(
     ///     epoch.with_hms_from(other),
@@ -2695,9 +2756,9 @@ impl Epoch {
     /// ```
     pub fn with_hms_from(&self, other: Self) -> Self {
         let (sign, days, _, _, _, milliseconds, microseconds, nanoseconds) =
-            self.to_duration().decompose();
+            self.duration.decompose();
         // Shadow other with the provided other epoch but in the correct time scale.
-        let other = other.in_time_scale(self.time_scale);
+        let other = other.to_time_scale(self.time_scale);
         Self::from_duration(
             Duration::compose(
                 sign,
@@ -2721,7 +2782,7 @@ impl Epoch {
     /// let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
     /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
     /// // If the other Epoch is in another time scale, it does not matter, it will be converted to the correct time scale.
-    /// let other = other_utc.in_time_scale(TimeScale::TDB);
+    /// let other = other_utc.to_time_scale(TimeScale::TDB);
     ///
     /// assert_eq!(
     ///     epoch.with_time_from(other),
@@ -2730,7 +2791,7 @@ impl Epoch {
     /// ```
     pub fn with_time_from(&self, other: Self) -> Self {
         // Grab days from self
-        let (sign, days, _, _, _, _, _, _) = self.to_duration().decompose();
+        let (sign, days, _, _, _, _, _, _) = self.duration.decompose();
 
         // Grab everything else from other
         let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
@@ -2755,7 +2816,7 @@ impl Epoch {
     /// Invalid number of hours, minutes, and seconds will overflow into their higher unit.
     /// Warning: this will set the subdivisions of seconds to zero.
     pub fn with_hms_strict(&self, hours: u64, minutes: u64, seconds: u64) -> Self {
-        let (sign, days, _, _, _, _, _, _) = self.to_duration().decompose();
+        let (sign, days, _, _, _, _, _, _) = self.duration.decompose();
         Self::from_duration(
             Duration::compose(sign, days, hours, minutes, seconds, 0, 0, 0),
             self.time_scale,
@@ -2769,7 +2830,7 @@ impl Epoch {
     ///
     /// let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
     /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
-    /// let other = other_utc.in_time_scale(TimeScale::TDB);
+    /// let other = other_utc.to_time_scale(TimeScale::TDB);
     ///
     /// assert_eq!(
     ///     epoch.with_hms_strict_from(other),
@@ -2777,8 +2838,8 @@ impl Epoch {
     /// );
     /// ```
     pub fn with_hms_strict_from(&self, other: Self) -> Self {
-        let (sign, days, _, _, _, _, _, _) = self.to_duration().decompose();
-        let other = other.in_time_scale(self.time_scale);
+        let (sign, days, _, _, _, _, _, _) = self.duration.decompose();
+        let other = other.to_time_scale(self.time_scale);
         Self::from_duration(
             Duration::compose(
                 sign,
@@ -2795,7 +2856,7 @@ impl Epoch {
     }
 
     pub fn month_name(&self) -> MonthName {
-        let month = Self::compute_gregorian(self.to_duration()).1;
+        let month = Self::compute_gregorian(self.duration, self.time_scale).1;
         month.into()
     }
 
@@ -2817,7 +2878,7 @@ impl Epoch {
 
     #[cfg(feature = "python")]
     #[classmethod]
-    fn system_now(_cls: &PyType) -> Result<Self, Errors> {
+    fn system_now(_cls: &Bound<'_, PyType>) -> Result<Self, Errors> {
         Self::now()
     }
 
@@ -2858,43 +2919,12 @@ impl Epoch {
         }
     }
 
-    #[deprecated(
-        since = "3.8.0",
-        note = "Prefer using `format!(\"{}\", epoch)` directly"
-    )]
-    #[cfg(feature = "std")]
-    #[must_use]
-    /// Converts the Epoch to UTC Gregorian in the ISO8601 format.
-    pub fn to_gregorian_utc_str(&self) -> String {
-        format!("{}", self)
-    }
-
-    #[deprecated(
-        since = "3.8.0",
-        note = "Prefer using `format!(\"{:x}\", epoch)` directly"
-    )]
-    #[cfg(feature = "std")]
-    #[must_use]
-    /// Converts the Epoch to TAI Gregorian in the ISO8601 format with " TAI" appended to the string
-    pub fn to_gregorian_tai_str(&self) -> String {
-        format!("{:x}", self)
-    }
-
     #[cfg(feature = "std")]
     #[must_use]
     /// Converts the Epoch to Gregorian in the provided time scale and in the ISO8601 format with the time scale appended to the string
     pub fn to_gregorian_str(&self, time_scale: TimeScale) -> String {
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(match time_scale {
-            TimeScale::TT => self.to_tt_duration(),
-            TimeScale::TAI => self.to_tai_duration(),
-            TimeScale::ET => self.to_et_duration_since_j1900(),
-            TimeScale::TDB => self.to_tdb_duration_since_j1900(),
-            TimeScale::UTC => self.to_utc_duration(),
-            // GPST and QZSST share the same properties
-            TimeScale::GPST | TimeScale::QZSST => self.to_utc_duration(),
-            TimeScale::GST => self.to_utc_duration(),
-            TimeScale::BDT => self.to_utc_duration(),
-        });
+        let (y, mm, dd, hh, min, s, nanos) =
+            Self::compute_gregorian(self.duration, self.time_scale);
 
         if nanos == 0 {
             format!(
@@ -2912,7 +2942,9 @@ impl Epoch {
     #[cfg(feature = "std")]
     /// Returns this epoch in UTC in the RFC3339 format
     pub fn to_rfc3339(&self) -> String {
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.to_utc_duration());
+        let ts = TimeScale::UTC;
+        let (y, mm, dd, hh, min, s, nanos) =
+            Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
             format!(
                 "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}+00:00",
@@ -3054,7 +3086,7 @@ impl FromStr for Epoch {
                     TimeScale::TDB => Ok(Self::from_tdb_seconds(value)),
                     TimeScale::TT => Ok(Self::from_tt_seconds(value)),
                     ts => {
-                        let secs = Duration::from_f64(value, Unit::Second);
+                        let secs = value * Unit::Second;
                         Ok(Self::from_duration(secs, ts))
                     }
                 },
@@ -3068,7 +3100,7 @@ impl fmt::Debug for Epoch {
     /// Print this epoch in Gregorian in the time scale used at initialization
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.to_duration_since_j1900());
+            Self::compute_gregorian(self.duration, self.time_scale);
         if nanos == 0 {
             write!(
                 f,
@@ -3089,7 +3121,8 @@ impl fmt::Display for Epoch {
     /// The default format of an epoch is in UTC
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::UTC;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.to_utc_duration());
+        let (y, mm, dd, hh, min, s, nanos) =
+            Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
             write!(
                 f,
@@ -3110,7 +3143,8 @@ impl fmt::LowerHex for Epoch {
     /// Prints the Epoch in TAI
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::TAI;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.to_tai_duration());
+        let (y, mm, dd, hh, min, s, nanos) =
+            Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
             write!(
                 f,
@@ -3131,7 +3165,8 @@ impl fmt::UpperHex for Epoch {
     /// Prints the Epoch in TT
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::TT;
-        let (y, mm, dd, hh, min, s, nanos) = Self::compute_gregorian(self.to_tt_duration());
+        let (y, mm, dd, hh, min, s, nanos) =
+            Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
             write!(
                 f,
@@ -3153,7 +3188,7 @@ impl fmt::LowerExp for Epoch {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::TDB;
         let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.to_tdb_duration_since_j1900());
+            Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
             write!(
                 f,
@@ -3175,7 +3210,7 @@ impl fmt::UpperExp for Epoch {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::ET;
         let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.to_et_duration_since_j1900());
+            Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
             write!(
                 f,
@@ -3287,12 +3322,26 @@ fn div_rem_f64_test() {
 }
 
 #[test]
-fn test_days_tdb_j2000() {
+fn test_days_et_j2000() {
+    /*
+    WARNING: THIS ASSUMES THE UTC EPOCH in SPICE!
+    Verification via SPICE: load naif0012.txt (contains leap seconds until 2017-JAN-1)
+    In [6]: sp.str2et("2022-11-30 12:00:00")
+    Out[6]: 723081669.183061
+    In [7]: from hifitime import *
+    In [8]: Unit.Second*723081669.183061
+    Out[8]: 8369 days 1 min 9 s 183 ms 60 μs 992 ns @ 0x7fcd1559ef80
+    In [9]: (Unit.Second*723081669.183061).to_unit(Unit.Day)
+    Out[9]: 8369.000800729873
+    In [10]: (Unit.Second*723081669.183061).to_unit(Unit.Century)
+    Out[10]: 0.2291307542978747
+
+     */
     let e = Epoch::from_tai_duration(Duration::from_parts(1, 723038437000000000));
-    let days_d = e.to_tdb_days_since_j2000();
-    let centuries_t = e.to_tdb_centuries_since_j2000();
-    assert!((days_d - 8369.000800729798).abs() < f64::EPSILON);
-    assert!((centuries_t - 0.22913075429787266).abs() < f64::EPSILON);
+    let days_d = e.to_et_days_since_j2000();
+    let centuries_t = e.to_et_centuries_since_j2000();
+    assert!((days_d - 8369.000800729873).abs() < f64::EPSILON);
+    assert!((centuries_t - 0.2291307542978747).abs() < f64::EPSILON);
 }
 
 #[test]
@@ -3330,7 +3379,7 @@ fn cumulative_days_for_month() {
 #[cfg(feature = "serde")]
 fn test_serdes() {
     let e = Epoch::from_gregorian_utc(2020, 01, 01, 0, 0, 0, 0);
-    let content = r#"{"duration_since_j1900_tai":{"centuries":1,"nanoseconds":631065637000000000},"time_scale":"UTC"}"#;
+    let content = r#""2020-01-01T00:00:00 UTC""#;
     assert_eq!(content, serde_json::to_string(&e).unwrap());
     let parsed: Epoch = serde_json::from_str(content).unwrap();
     assert_eq!(e, parsed);
@@ -3349,12 +3398,12 @@ fn formal_epoch_reciprocity_tai() {
     // Check that no error occurs on initialization
     let seconds: f64 = kani::any();
     if seconds.is_finite() {
-        Epoch::from_tai_seconds(seconds);
+        let _ = Epoch::from_tai_seconds(seconds);
     }
 
     let days: f64 = kani::any();
     if days.is_finite() {
-        Epoch::from_tai_days(days);
+        let _ = Epoch::from_tai_days(days);
     }
 }
 
@@ -3375,7 +3424,7 @@ fn formal_epoch_reciprocity_tt() {
     // Check that no error occurs on initialization
     let seconds: f64 = kani::any();
     if seconds.is_finite() {
-        Epoch::from_tt_seconds(seconds);
+        let _ = Epoch::from_tt_seconds(seconds);
     }
     // No TT Days initializer
 }
@@ -3391,7 +3440,7 @@ fn formal_epoch_reciprocity_tdb() {
     let duration = Duration::from_parts(19510, 3155759999999997938);
 
     // TDB
-    let ts_offset = TimeScale::TDB.ref_epoch() - TimeScale::TAI.ref_epoch();
+    let ts_offset = TimeScale::TDB.reference_epoch() - TimeScale::TAI.reference_epoch();
     if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
         // We guard TDB from durations that are would hit the MIN or the MAX.
         // TDB is centered on J2000 but the Epoch is on J1900. So on initialization, we offset by one century and twelve hours.
@@ -3400,13 +3449,11 @@ fn formal_epoch_reciprocity_tdb() {
         let time_scale: TimeScale = TimeScale::TDB;
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         let out_duration = epoch.to_duration_in_time_scale(time_scale);
+        assert_eq!((out_duration - duration).to_seconds(), 0.0);
         assert_eq!(out_duration.centuries, duration.centuries);
-        if out_duration.nanoseconds > duration.nanoseconds {
-            assert!(out_duration.nanoseconds - duration.nanoseconds < 500_000);
-        } else if out_duration.nanoseconds < duration.nanoseconds {
-            assert!(duration.nanoseconds - out_duration.nanoseconds < 500_000);
-        }
-        // Else: they match and we're happy.
+        assert_eq!(out_duration.nanoseconds, duration.nanoseconds);
+        let error = (out_duration.nanoseconds - duration.nanoseconds) as f64;
+        assert!(error.abs() < 500_000.0, "error: {}", error);
     }
 }
 
@@ -3414,12 +3461,13 @@ fn formal_epoch_reciprocity_tdb() {
 
 #[cfg(kani)]
 #[kani::proof]
+#[test]
 fn formal_epoch_reciprocity_gpst() {
     let duration: Duration = kani::any();
 
     // GPST
     let time_scale: TimeScale = TimeScale::GPST;
-    let ts_offset = TimeScale::GPST.ref_epoch() - TimeScale::TAI.ref_epoch();
+    let ts_offset = TimeScale::GPST.reference_epoch() - TimeScale::TAI.reference_epoch();
     if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
@@ -3428,10 +3476,10 @@ fn formal_epoch_reciprocity_gpst() {
     // Check that no error occurs on initialization
     let seconds: f64 = kani::any();
     if seconds.is_finite() {
-        Epoch::from_gpst_seconds(seconds);
+        let _ = Epoch::from_gpst_seconds(seconds);
     }
 
-    Epoch::from_gpst_nanoseconds(kani::any());
+    let _ = Epoch::from_gpst_nanoseconds(kani::any());
 }
 
 #[cfg(kani)]
@@ -3441,7 +3489,7 @@ fn formal_epoch_reciprocity_gst() {
 
     // GST
     let time_scale: TimeScale = TimeScale::GST;
-    let ts_offset = TimeScale::GST.ref_epoch() - TimeScale::TAI.ref_epoch();
+    let ts_offset = TimeScale::GST.reference_epoch() - TimeScale::TAI.reference_epoch();
     if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
@@ -3450,15 +3498,15 @@ fn formal_epoch_reciprocity_gst() {
     // Check that no error occurs on initialization
     let seconds: f64 = kani::any();
     if seconds.is_finite() {
-        Epoch::from_gst_seconds(seconds);
+        let _ = Epoch::from_gst_seconds(seconds);
     }
 
     let days: f64 = kani::any();
     if days.is_finite() {
-        Epoch::from_gst_days(days);
+        let _ = Epoch::from_gst_days(days);
     }
 
-    Epoch::from_gst_nanoseconds(kani::any());
+    let _ = Epoch::from_gst_nanoseconds(kani::any());
 }
 
 #[cfg(kani)]
@@ -3468,7 +3516,7 @@ fn formal_epoch_reciprocity_bdt() {
 
     // BDT
     let time_scale: TimeScale = TimeScale::BDT;
-    let ts_offset = TimeScale::BDT.ref_epoch() - TimeScale::TAI.ref_epoch();
+    let ts_offset = TimeScale::BDT.reference_epoch() - TimeScale::TAI.reference_epoch();
     if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
         let epoch: Epoch = Epoch::from_duration(duration, time_scale);
         assert_eq!(epoch.to_duration_in_time_scale(time_scale), duration);
@@ -3477,15 +3525,15 @@ fn formal_epoch_reciprocity_bdt() {
     // Check that no error occurs on initialization
     let seconds: f64 = kani::any();
     if seconds.is_finite() {
-        Epoch::from_bdt_seconds(seconds);
+        let _ = Epoch::from_bdt_seconds(seconds);
     }
 
     let days: f64 = kani::any();
     if days.is_finite() {
-        Epoch::from_bdt_days(days);
+        let _ = Epoch::from_bdt_days(days);
     }
 
-    Epoch::from_bdt_nanoseconds(kani::any());
+    let _ = Epoch::from_bdt_nanoseconds(kani::any());
 }
 
 #[cfg(kani)]
@@ -3495,15 +3543,15 @@ fn formal_epoch_julian() {
 
     if days.is_finite() {
         // The initializers will fail on subnormal days.
-        Epoch::from_mjd_bdt(days);
-        Epoch::from_mjd_gpst(days);
-        Epoch::from_mjd_gst(days);
-        Epoch::from_mjd_tai(days);
-        Epoch::from_jde_bdt(days);
-        Epoch::from_jde_gpst(days);
-        Epoch::from_jde_gst(days);
-        Epoch::from_jde_tai(days);
-        Epoch::from_jde_et(days);
-        Epoch::from_jde_tai(days);
+        let _ = Epoch::from_mjd_bdt(days);
+        let _ = Epoch::from_mjd_gpst(days);
+        let _ = Epoch::from_mjd_gst(days);
+        let _ = Epoch::from_mjd_tai(days);
+        let _ = Epoch::from_jde_bdt(days);
+        let _ = Epoch::from_jde_gpst(days);
+        let _ = Epoch::from_jde_gst(days);
+        let _ = Epoch::from_jde_tai(days);
+        let _ = Epoch::from_jde_et(days);
+        let _ = Epoch::from_jde_tai(days);
     }
 }

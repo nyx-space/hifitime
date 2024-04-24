@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. AUTHORS.md)
+ * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -15,6 +15,7 @@ use crate::{parser::Token, Duration, Epoch, TimeScale};
 use super::format::Format;
 
 #[cfg(not(feature = "std"))]
+#[allow(unused_imports)] // Import is indeed used.
 use num_traits::Float;
 
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
@@ -99,8 +100,8 @@ impl Formatter {
         }
     }
 
-    pub fn in_time_scale(epoch: Epoch, format: Format, time_scale: TimeScale) -> Self {
-        Self::new(epoch.in_time_scale(time_scale), format)
+    pub fn to_time_scale(epoch: Epoch, format: Format, time_scale: TimeScale) -> Self {
+        Self::new(epoch.to_time_scale(time_scale), format)
     }
 
     pub fn set_timezone(&mut self, offset: Duration) {
@@ -127,7 +128,8 @@ impl fmt::Display for Formatter {
 
         if self.format.need_gregorian() {
             // This is a specific branch so we don't recompute the gregorian information for each token.
-            let (y, mm, dd, hh, min, s, nanos) = Epoch::compute_gregorian(self.epoch.to_duration());
+            let (y, mm, dd, hh, min, s, nanos) =
+                Epoch::compute_gregorian(self.epoch.duration, self.epoch.time_scale);
             // And format.
             for (i, maybe_item) in self
                 .format

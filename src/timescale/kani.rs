@@ -8,9 +8,18 @@
  * Documentation: https://nyxspace.com/
  */
 
-pub mod consts;
-pub mod format;
-pub mod formatter;
+use super::TimeScale;
+use kani::Arbitrary;
 
-pub use format::Format;
-pub use formatter::Formatter;
+impl Arbitrary for TimeScale {
+    #[inline(always)]
+    fn any() -> Self {
+        let ts_u8: u8 = kani::any();
+        Self::from(ts_u8)
+    }
+}
+
+#[kani::proof]
+fn formal_time_scale() {
+    let _time_scale: TimeScale = kani::any();
+}

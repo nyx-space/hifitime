@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. AUTHORS.md)
+ * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -40,14 +40,14 @@ impl<'a> Decode<'a> for Duration {
 impl Encode for Epoch {
     fn encoded_len(&self) -> der::Result<der::Length> {
         let ts: u8 = self.time_scale.into();
-        ts.encoded_len()? + self.to_duration().encoded_len()?
+        ts.encoded_len()? + self.duration.encoded_len()?
     }
 
     fn encode(&self, encoder: &mut impl Writer) -> der::Result<()> {
         let ts: u8 = self.time_scale.into();
 
         ts.encode(encoder)?;
-        self.to_duration().encode(encoder)
+        self.duration.encode(encoder)
     }
 }
 
@@ -114,7 +114,7 @@ fn test_encdec() {
             TimeScale::QZSST => epoch.to_qzsst_duration(),
         };
 
-        let e_dur = epoch.to_duration();
+        let e_dur = epoch.duration;
 
         assert_eq!(e_dur, duration, "{ts:?}");
 
@@ -126,7 +126,7 @@ fn test_encdec() {
         let encdec_epoch = Epoch::from_der(&buf).unwrap();
         // Check that the duration in J1900 TAI is the same
         assert_eq!(
-            encdec_epoch.duration_since_j1900_tai, epoch.duration_since_j1900_tai,
+            encdec_epoch.duration, epoch.duration,
             "Decoded epoch incorrect ({ts:?}):\ngot: {encdec_epoch}\nexp: {epoch}",
         );
         // Check that the time scale used is preserved

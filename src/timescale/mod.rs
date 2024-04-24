@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. AUTHORS.md)
+ * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -15,23 +15,19 @@ use pyo3::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 
 #[cfg(kani)]
-use kani::Arbitrary;
+mod kani;
 
-use core::fmt;
-use core::str::FromStr;
+mod fmt;
 
-use crate::{
-    Duration, Epoch, Errors, ParsingErrors, J2000_REF_EPOCH_ET, J2000_REF_EPOCH_TDB,
-    J2000_TO_J1900_DURATION, SECONDS_PER_DAY,
-};
+use crate::{Duration, Epoch, Unit, J2000_TO_J1900_DURATION, SECONDS_PER_DAY};
 
 /// The J1900 reference epoch (1900-01-01 at noon) TAI.
 pub const J1900_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration::ZERO);
 
 /// The J2000 reference epoch (2000-01-01 at midnight) TAI.
+/// |UTC - TAI| = XX Leap Seconds on that day.
 pub const J2000_REF_EPOCH: Epoch = Epoch::from_tai_duration(J2000_TO_J1900_DURATION);
 
-/// GPS reference epoch is UTC midnight between 05 January and 06 January 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>.
 pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
     nanoseconds: 2_524_953_619_000_000_000, // XXX
@@ -40,19 +36,24 @@ pub const SECONDS_GPS_TAI_OFFSET: f64 = 2_524_953_619.0;
 pub const SECONDS_GPS_TAI_OFFSET_I64: i64 = 2_524_953_619;
 pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
 
+/// QZSS and GPS share the same reference epoch.
+pub const QZSST_REF_EPOCH: Epoch = GPST_REF_EPOCH;
+
 /// GST (Galileo) reference epoch is 13 seconds before 1999 August 21 UTC at midnight.
+/// |UTC - TAI| = XX Leap Seconds on that day.
 pub const GST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
-    nanoseconds: 3_144_268_819_000_000_000,
+    nanoseconds: 3_144_268_819_000_000_000, // 3_144_268_800_000_000_000,
 });
 pub const SECONDS_GST_TAI_OFFSET: f64 = 3_144_268_819.0;
 pub const SECONDS_GST_TAI_OFFSET_I64: i64 = 3_144_268_819;
 
 /// BDT(BeiDou): 2005 Dec 31st Midnight
 /// BDT (BeiDou) reference epoch is 2005 December 31st UTC at midnight. **This time scale is synchronized with UTC.**
+/// |UTC - TAI| = XX Leap Seconds on that day.
 pub const BDT_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 1,
-    nanoseconds: 189_302_433_000_000_000,
+    nanoseconds: 189_302_433_000_000_000, //189_302_400_000_000_000,
 });
 pub const SECONDS_BDT_TAI_OFFSET: f64 = 3_345_062_433.0;
 pub const SECONDS_BDT_TAI_OFFSET_I64: i64 = 3_345_062_433;
@@ -63,9 +64,12 @@ pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     nanoseconds: 2_208_988_800_000_000_000,
 });
 
+/// Reference year of the Hifitime prime epoch.
+pub(crate) const HIFITIME_REF_YEAR: i32 = 1900;
+
 /// Enum of the different time systems available
 #[non_exhaustive]
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum TimeScale {
@@ -79,34 +83,19 @@ pub enum TimeScale {
     TDB,
     /// Universal Coordinated Time
     UTC,
-    /// GPS Time scale
+    /// GPS Time scale whose reference epoch is UTC midnight between 05 January and 06 January 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>. |UTC - TAI| = 19 Leap Seconds on that day.
     GPST,
     /// Galileo Time scale
     GST,
     /// BeiDou Time scale
     BDT,
-    /// QZSS Time scale has the same properties as GPST,
-    /// but with dedicated clocks
+    /// QZSS Time scale has the same properties as GPST but with dedicated clocks
     QZSST,
-}
-
-#[cfg(kani)]
-impl Arbitrary for TimeScale {
-    #[inline(always)]
-    fn any() -> Self {
-        let ts_u8: u8 = kani::any();
-        Self::from(ts_u8)
-    }
 }
 
 impl Default for TimeScale {
     /// Builds default TAI time scale
     fn default() -> Self {
-        /*
-         * We use TAI as default Time scale,
-         * because `Epoch` is always defined with respect to TAI.
-         * Also, a default `Epoch` is then a null duration into TAI.
-         */
         Self::TAI
     }
 }
@@ -126,50 +115,47 @@ impl TimeScale {
         matches!(self, Self::GPST | Self::GST | Self::BDT | Self::QZSST)
     }
 
-    /// Returns Reference Epoch (t(0)) for given timescale
-    pub const fn ref_epoch(&self) -> Epoch {
-        match self {
-            Self::GPST => GPST_REF_EPOCH,
-            Self::GST => GST_REF_EPOCH,
-            Self::BDT => BDT_REF_EPOCH,
-            Self::ET => J2000_REF_EPOCH_ET,
-            Self::TDB => J2000_REF_EPOCH_TDB,
-            // Explicit on purpose in case more time scales end up being supported.
-            Self::TT | Self::TAI | Self::UTC => J1900_REF_EPOCH,
-            // QZSS time shares the same starting point as GPST
-            Self::QZSST => GPST_REF_EPOCH,
+    /// Returns this time scale's reference epoch: Time Scale initialization date,
+    /// expressed as an Epoch in TAI
+    pub const fn reference_epoch(self) -> Epoch {
+        Epoch {
+            duration: Duration::ZERO,
+            time_scale: self,
         }
     }
-}
 
-impl fmt::Display for TimeScale {
-    /// Prints given TimeScale
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    /// Returns the duration between this time scale's reference epoch and the hifitime "prime epoch" of 1900-01-01 00:00:00 TAI (the NTP prime epoch).
+    /// This is used to compute the Gregorian date representations in any time scale.
+    pub(crate) const fn prime_epoch_offset(self) -> Duration {
         match self {
-            Self::TAI => write!(f, "TAI"),
-            Self::TT => write!(f, "TT"),
-            Self::ET => write!(f, "ET"),
-            Self::TDB => write!(f, "TDB"),
-            Self::UTC => write!(f, "UTC"),
-            Self::GPST => write!(f, "GPST"),
-            Self::GST => write!(f, "GST"),
-            Self::BDT => write!(f, "BDT"),
-            Self::QZSST => write!(f, "QZSST"),
+            TimeScale::ET | TimeScale::TDB => {
+                // Both ET and TDB are defined at J2000, which is 2000-01-01 12:00:00 and there were only 36524 days in the 20th century.
+                // Hence, this math is the output of (Unit.Century*1 + Unit.Hour*12 - Unit.Day*1).to_parts() via Hifitime in Python.
+                Duration {
+                    centuries: 0,
+                    nanoseconds: 3155716800000000000,
+                }
+            }
+            TimeScale::GPST | TimeScale::QZSST => Duration {
+                centuries: 0,
+                nanoseconds: 2_524_953_619_000_000_000,
+            },
+            TimeScale::GST => Duration {
+                centuries: 0,
+                nanoseconds: 3_144_268_819_000_000_000,
+            },
+            TimeScale::BDT => Duration {
+                centuries: 1,
+                nanoseconds: 189_302_433_000_000_000,
+            },
+            _ => Duration::ZERO,
         }
     }
-}
 
-impl fmt::LowerHex for TimeScale {
-    /// Prints given TimeScale in RINEX format
-    /// ie., standard GNSS constellation name is preferred when possible
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::GPST => write!(f, "GPS"),
-            Self::GST => write!(f, "GAL"),
-            Self::BDT => write!(f, "BDS"),
-            Self::QZSST => write!(f, "QZSS"),
-            _ => write!(f, "{self}"),
-        }
+    pub(crate) fn gregorian_epoch_offset(self) -> Duration {
+        let prime_offset = self.prime_epoch_offset();
+
+        prime_offset - prime_offset.subdivision(Unit::Second).unwrap()
     }
 }
 
@@ -217,61 +203,50 @@ impl From<u8> for TimeScale {
     }
 }
 
-impl FromStr for TimeScale {
-    type Err = Errors;
+#[cfg(test)]
+mod unit_test_timescale {
+    use super::TimeScale;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let val = s.trim();
-        if val == "UTC" {
-            Ok(Self::UTC)
-        } else if val == "TT" {
-            Ok(Self::TT)
-        } else if val == "TAI" {
-            Ok(Self::TAI)
-        } else if val == "TDB" {
-            Ok(Self::TDB)
-        } else if val == "ET" {
-            Ok(Self::ET)
-        } else if val == "GPST" || val == "GPS" {
-            Ok(Self::GPST)
-        } else if val == "GST" || val == "GAL" {
-            Ok(Self::GST)
-        } else if val == "BDT" || val == "BDS" {
-            Ok(Self::BDT)
-        } else if val == "QZSST" || val == "QZSS" {
-            Ok(Self::QZSST)
-        } else {
-            Err(Errors::ParseError(ParsingErrors::TimeSystem))
+    #[test]
+    #[cfg(feature = "serde")]
+    fn test_serdes() {
+        let ts = TimeScale::UTC;
+        let content = "\"UTC\"";
+        assert_eq!(content, serde_json::to_string(&ts).unwrap());
+        let parsed: TimeScale = serde_json::from_str(content).unwrap();
+        assert_eq!(ts, parsed);
+    }
+
+    #[test]
+    fn test_ts() {
+        for ts_u8 in 0..u8::MAX {
+            let ts = TimeScale::from(ts_u8);
+            let ts_u8_back: u8 = ts.into();
+            // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
+            if ts_u8 < 9 {
+                assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
+            } else {
+                assert_eq!(ts, TimeScale::TAI);
+            }
         }
     }
-}
 
-#[test]
-#[cfg(feature = "serde")]
-fn test_serdes() {
-    let ts = TimeScale::UTC;
-    let content = "\"UTC\"";
-    assert_eq!(content, serde_json::to_string(&ts).unwrap());
-    let parsed: TimeScale = serde_json::from_str(content).unwrap();
-    assert_eq!(ts, parsed);
-}
+    #[test]
+    #[cfg(feature = "std")]
+    fn test_ref_epoch() {
+        use crate::{Duration, Epoch, Unit};
+        let prime_e = Epoch::from_duration(Duration::ZERO, TimeScale::TAI);
+        assert_eq!(prime_e.duration, Duration::ZERO);
+        assert_eq!(format!("{prime_e:?}"), "1900-01-01T00:00:00 TAI");
+        // NOTE: There are only 36524 days in the 20th century, but one century is 36425, so we "overflow" the next century by one day!
+        assert_eq!(
+            format!("{:?}", prime_e + Unit::Century * 1),
+            "2000-01-02T00:00:00 TAI"
+        );
 
-#[test]
-fn test_ts() {
-    for ts_u8 in 0..u8::MAX {
-        let ts = TimeScale::from(ts_u8);
-        let ts_u8_back: u8 = ts.into();
-        // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
-        if ts_u8 < 9 {
-            assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
-        } else {
-            assert_eq!(ts, TimeScale::TAI);
-        }
+        assert_eq!(
+            format!("{:?}", TimeScale::ET.reference_epoch()),
+            "2000-01-01T12:00:00 ET"
+        );
     }
-}
-
-#[cfg(kani)]
-#[kani::proof]
-fn formal_time_scale() {
-    let _time_scale: TimeScale = kani::any();
 }

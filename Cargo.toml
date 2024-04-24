@@ -1,6 +1,6 @@
 [package]
 name = "hifitime"
-version = "4.0.0-dev"
+version = "4.0.0-alpha"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
 description = "Ultra-precise date and time handling in Rust for scientific applications with leap second support"
 homepage = "https://nyxspace.com/"
@@ -21,7 +21,10 @@ name = "hifitime"
 serde = { version = "1.0.155", optional = true }
 serde_derive = { version = "1.0.155", optional = true }
 der = { version = "0.7.8", features = ["derive", "real"], optional = true }
-pyo3 = { version = "0.21.1", features = ["extension-module"], optional = true }
+pyo3 = { version = "0.21.1", features = [
+    "extension-module",
+    "inventory",
+], optional = true }
 num-traits = { version = "0.2.15", default-features = false, features = [
     "libm",
 ] }

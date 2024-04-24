@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. AUTHORS.md)
+ * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -11,15 +11,17 @@
 use core::ops::{Add, Mul, Sub};
 
 #[cfg(not(feature = "std"))]
+#[allow(unused_imports)] // Import is indeed used.
 use num_traits::Float;
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
 use crate::{
-    Duration, DAYS_PER_CENTURY, NANOSECONDS_PER_CENTURY, NANOSECONDS_PER_DAY, NANOSECONDS_PER_HOUR,
-    NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_MINUTE,
-    NANOSECONDS_PER_SECOND, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE,
+    Duration, DAYS_PER_CENTURY, DAYS_PER_WEEK, DAYS_PER_WEEK_I64, NANOSECONDS_PER_CENTURY,
+    NANOSECONDS_PER_DAY, NANOSECONDS_PER_HOUR, NANOSECONDS_PER_MICROSECOND,
+    NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_MINUTE, NANOSECONDS_PER_SECOND, SECONDS_PER_DAY,
+    SECONDS_PER_HOUR, SECONDS_PER_MINUTE,
 };
 
 /// An Enum to perform time unit conversions.
@@ -33,6 +35,7 @@ pub enum Unit {
     Minute,
     Hour,
     Day,
+    Week,
     /// 36525 days, is the number of days per century in the Julian calendar
     Century,
 }
@@ -66,6 +69,9 @@ pub enum Freq {
 pub trait TimeUnits: Copy + Mul<Unit, Output = Duration> {
     fn centuries(self) -> Duration {
         self * Unit::Century
+    }
+    fn weeks(self) -> Duration {
+        self * Unit::Week
     }
     fn days(self) -> Duration {
         self * Unit::Day
@@ -158,6 +164,7 @@ impl Unit {
     pub fn in_seconds(&self) -> f64 {
         match self {
             Unit::Century => DAYS_PER_CENTURY * SECONDS_PER_DAY,
+            Unit::Week => DAYS_PER_WEEK * SECONDS_PER_DAY,
             Unit::Day => SECONDS_PER_DAY,
             Unit::Hour => SECONDS_PER_HOUR,
             Unit::Minute => SECONDS_PER_MINUTE,
@@ -200,7 +207,8 @@ impl From<Unit> for u8 {
             Unit::Minute => 4,
             Unit::Hour => 5,
             Unit::Day => 6,
-            Unit::Century => 7,
+            Unit::Week => 7,
+            Unit::Century => 8,
             Unit::Second => 0,
         }
     }
@@ -222,7 +230,8 @@ impl From<u8> for Unit {
             4 => Unit::Minute,
             5 => Unit::Hour,
             6 => Unit::Day,
-            7 => Unit::Century,
+            7 => Unit::Week,
+            8 => Unit::Century,
             _ => Unit::Second,
         }
     }
@@ -236,6 +245,7 @@ impl Mul<i64> for Unit {
     fn mul(self, q: i64) -> Duration {
         let factor = match self {
             Unit::Century => NANOSECONDS_PER_CENTURY as i64,
+            Unit::Week => NANOSECONDS_PER_DAY as i64 * DAYS_PER_WEEK_I64,
             Unit::Day => NANOSECONDS_PER_DAY as i64,
             Unit::Hour => NANOSECONDS_PER_HOUR as i64,
             Unit::Minute => NANOSECONDS_PER_MINUTE as i64,
@@ -276,6 +286,7 @@ impl Mul<f64> for Unit {
     fn mul(self, q: f64) -> Duration {
         let factor = match self {
             Unit::Century => NANOSECONDS_PER_CENTURY as f64,
+            Unit::Week => NANOSECONDS_PER_DAY as f64 * DAYS_PER_WEEK,
             Unit::Day => NANOSECONDS_PER_DAY as f64,
             Unit::Hour => NANOSECONDS_PER_HOUR as f64,
             Unit::Minute => NANOSECONDS_PER_MINUTE as f64,
@@ -306,8 +317,8 @@ fn test_unit_conversion() {
     for unit_u8 in 0..u8::MAX {
         let unit = Unit::from(unit_u8);
         let unit_u8_back: u8 = unit.into();
-        // If the u8 is greater than 8, it isn't valid and necessarily encoded as Second.
-        if unit_u8 < 8 {
+        // If the u8 is greater than 9, it isn't valid and necessarily encoded as Second.
+        if unit_u8 < 9 {
             assert_eq!(unit_u8_back, unit_u8, "got {unit_u8_back} want {unit_u8}");
         } else {
             assert_eq!(unit, Unit::Second);
