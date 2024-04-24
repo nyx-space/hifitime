@@ -54,6 +54,9 @@ use crate::ut1::Ut1Provider;
 #[allow(unused_imports)] // Import is indeed used.
 use num_traits::Float;
 
+#[cfg(feature = "std")]
+mod system_time;
+
 const TT_OFFSET_MS: i64 = 32_184;
 const ET_OFFSET_US: i64 = 32_184_935;
 
@@ -2998,19 +3001,6 @@ impl Epoch {
         } else {
             other
         }
-    }
-}
-
-// This is in its separate impl far away from the Python feature because pyO3's classmethod does not work with cfg_attr
-#[cfg(feature = "std")]
-impl Epoch {
-    /// Initializes a new Epoch from `now`.
-    /// WARNING: This assumes that the system time returns the time in UTC (which is the case on Linux)
-    /// Uses [`std::time::SystemTime::now`](https://doc.rust-lang.org/std/time/struct.SystemTime.html#method.now)
-    /// or javascript interop under the hood
-    pub fn now() -> Result<Self, Errors> {
-        let duration = crate::system_time::duration_since_unix_epoch()?;
-        Ok(Self::from_unix_duration(duration))
     }
 }
 
