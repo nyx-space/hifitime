@@ -69,7 +69,7 @@ criterion = "0.5.1"
 iai = "0.1"
 
 [features]
-default = ["std", "ut1"]
+default = ["std"]
 std = ["serde", "serde_derive", "web-time"]
 python = ["std", "pyo3", "ut1"]
 ut1 = ["std", "reqwest", "tabled", "openssl"]
