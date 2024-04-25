@@ -69,7 +69,6 @@ pub mod errors;
 pub use errors::{Errors, ParsingErrors};
 
 mod epoch;
-
 pub use epoch::*;
 
 mod duration;
@@ -89,11 +88,6 @@ pub use weekday::*;
 
 mod month;
 pub use month::*;
-
-pub mod leap_seconds;
-
-#[cfg(feature = "std")]
-mod leap_seconds_file;
 
 pub mod prelude {
     pub use crate::efmt::{Format, Formatter};
