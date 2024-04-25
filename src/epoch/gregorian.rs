@@ -175,13 +175,12 @@ impl Epoch {
     /// ```
     /// use hifitime::Epoch;
     ///
-    /// let dt = Epoch::from_tai_parts(1, 537582752000000000);
+    /// let dt_tai = Epoch::from_tai_parts(1, 537582752000000000);
     ///
-    /// // With the std feature, you may use FromStr as such
-    /// // let dt_str = "2017-01-14T00:31:55 UTC";
-    /// // let dt = Epoch::from_gregorian_str(dt_str).unwrap()
+    /// let dt_str = "2017-01-14T00:31:55 UTC";
+    /// let dt = Epoch::from_gregorian_str(dt_str).unwrap();
     ///
-    /// let (y, m, d, h, min, s, _) = dt.to_gregorian_utc();
+    /// let (y, m, d, h, min, s, _) = dt_tai.to_gregorian_utc();
     /// assert_eq!(y, 2017);
     /// assert_eq!(m, 1);
     /// assert_eq!(d, 14);
@@ -189,7 +188,13 @@ impl Epoch {
     /// assert_eq!(min, 31);
     /// assert_eq!(s, 55);
     /// #[cfg(feature = "std")]
+    /// {
+    /// assert_eq!("2017-01-14T00:31:55 UTC", format!("{dt_tai:?}"));
+    /// // dt_tai is initialized from TAI, so the default print is the Gregorian in that time system
+    /// assert_eq!("2017-01-14T00:32:32 TAI", format!("{dt_tai}"));
+    /// // But dt is initialized from UTC, so the default print and the debug print are both in UTC.
     /// assert_eq!("2017-01-14T00:31:55 UTC", format!("{dt}"));
+    /// }
     /// ```
     pub fn to_gregorian_utc(&self) -> (i32, u8, u8, u8, u8, u8, u32) {
         let ts = TimeScale::UTC;

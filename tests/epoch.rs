@@ -354,7 +354,7 @@ fn gpst() {
 
     // Test 1sec into GPS timescale
     let gps_1sec = Epoch::from_gpst_seconds(1.0);
-    assert_eq!(format!("{gps_1sec:?}"), "1980-01-06T00:00:01 GPST");
+    assert_eq!(format!("{gps_1sec}"), "1980-01-06T00:00:01 GPST");
 
     assert_eq!(gps_1sec, ref_gps + 1.0 * Unit::Second);
 
@@ -399,12 +399,12 @@ fn gpst() {
         "GPS Time is not ahead of UTC"
     );
 
-    assert_eq!(format!("{}", GPST_REF_EPOCH), "1980-01-06T00:00:00 UTC");
+    assert_eq!(format!("{GPST_REF_EPOCH:?}"), "1980-01-06T00:00:00 UTC");
     assert_eq!(format!("{:x}", GPST_REF_EPOCH), "1980-01-06T00:00:19 TAI");
     assert_eq!(format!("{:o}", GPST_REF_EPOCH), "0");
 
     assert_eq!(
-        format!("{}", TimeScale::GPST.reference_epoch()),
+        format!("{:?}", TimeScale::GPST.reference_epoch()),
         "1980-01-06T00:00:00 UTC"
     );
     assert_eq!(
@@ -413,7 +413,7 @@ fn gpst() {
     );
     assert_eq!(format!("{:o}", TimeScale::GPST.reference_epoch()), "0");
     assert_eq!(
-        format!("{:?}", TimeScale::GPST.reference_epoch()),
+        format!("{}", TimeScale::GPST.reference_epoch()),
         "1980-01-06T00:00:00 GPST"
     );
 
@@ -489,14 +489,14 @@ fn galileo_time_scale() {
     );
 
     let ref_gst = Epoch::from_gst_nanoseconds(0);
-    assert_eq!(format!("{}", ref_gst), "1999-08-21T23:59:47 UTC");
+    assert_eq!(format!("{ref_gst:?}"), "1999-08-21T23:59:47 UTC");
 
     let gst_epoch = Epoch::from_tai_seconds(SECONDS_GST_TAI_OFFSET);
     assert_eq!(gst_epoch, Epoch::from_gst_days(0.0));
     assert_eq!(gst_epoch, Epoch::from_gst_seconds(0.0));
     assert_eq!(gst_epoch, Epoch::from_gst_nanoseconds(0));
     assert_eq!(gst_epoch, GST_REF_EPOCH);
-    assert_eq!(format!("{}", GST_REF_EPOCH), "1999-08-21T23:59:47 UTC");
+    assert_eq!(format!("{GST_REF_EPOCH:?}"), "1999-08-21T23:59:47 UTC");
     assert_eq!(format!("{:x}", GST_REF_EPOCH), "1999-08-22T00:00:19 TAI");
     assert_eq!(
         Epoch::from_gst_days(0.0).to_duration_since_j1900(),
@@ -540,7 +540,7 @@ fn beidou_time_scale() {
     assert_eq!(bdt_epoch, Epoch::from_bdt_nanoseconds(0));
     assert_eq!(bdt_epoch, BDT_REF_EPOCH);
 
-    assert_eq!(format!("{bdt_epoch}"), "2006-01-01T00:00:00 UTC");
+    assert_eq!(format!("{bdt_epoch:?}"), "2006-01-01T00:00:00 UTC");
     assert_eq!(format!("{bdt_epoch:x}"), "2006-01-01T00:00:33 TAI");
 
     assert_eq!(
@@ -929,38 +929,6 @@ fn test_from_str() {
     );
 }
 
-// #[test]
-// fn test_timescale_leapsec() {
-//     /*
-//      * Time difference between Time Scales that do not support leap sec.
-//      * and UTC, is always the amount of UTC leap seconds on the day
-//      * said time scale was "initiated"
-//      */
-//     for (ts, leap_t0) in vec![
-//         (TimeScale::GPST, 19),
-//         (TimeScale::QZSST, 19),
-//         (TimeScale::GST, 32),
-//         (TimeScale::BDT, 33),
-//         //(TimeScale::TDB, 0),
-//         //(TimeScale::ET, 0),
-//         //(TimeScale::TT, 0),
-//     ] {
-//         assert!(!ts.uses_leap_seconds());
-//         let duration = Duration::from_seconds(12349.433_f64);
-//         let epoch = Epoch::from_duration(duration, ts);
-//         let utc_epoch = epoch.to_time_scale(TimeScale::UTC);
-//         // let utc_epoch = Epoch::from_duration(duration, TimeScale::UTC).to_time_scale(ts);
-//         assert_eq!(
-//             (epoch - utc_epoch).abs().to_seconds(),
-//             leap_t0 as f64,
-//             "|{:?} - {:?}| should be {} secs for {ts}",
-//             epoch,
-//             utc_epoch,
-//             leap_t0
-//         );
-//     }
-// }
-
 #[test]
 fn test_rfc3339() {
     use core::str::FromStr;
@@ -1004,9 +972,9 @@ fn test_format() {
     // Check the ET computation once more
     assert!((epoch.to_et_seconds() - 715778738.1825389).abs() < EPSILON);
 
+    assert_eq!(format!("{epoch}"), "2022-09-06T23:24:29 UTC");
     // This was initialized as UTC, so the debug print is UTC.
     assert_eq!(format!("{epoch:?}"), "2022-09-06T23:24:29 UTC");
-    assert_eq!(format!("{epoch}"), "2022-09-06T23:24:29 UTC");
     assert_eq!(format!("{epoch:x}"), "2022-09-06T23:25:06 TAI");
     assert_eq!(format!("{epoch:X}"), "2022-09-06T23:25:38.184000000 TT");
     assert_eq!(format!("{epoch:E}"), "2022-09-06T23:25:38.182538909 ET");
@@ -1026,7 +994,7 @@ fn test_format() {
         // TDB building may have a 2 nanosecond error is seems
         assert!(
             ((post_ref - pre_ref) - 2 * Unit::Second).abs() < 2 * Unit::Nanosecond,
-            "delta time should be 2 s in {ts:?} but is {}",
+            "delta time should be 2 s in {ts} but is {}",
             post_ref - pre_ref
         );
 
@@ -1058,11 +1026,11 @@ fn test_format() {
             };
 
             if let Some(fmt) = with_direct_fmt {
-                assert_eq!(format!("{epoch:?}"), fmt, "issue with {ts}");
+                assert_eq!(format!("{epoch}"), fmt, "issue with {ts}");
             }
 
             // Check that we can correctly parse the date we print.
-            match Epoch::from_str(&format!("{epoch:?}")) {
+            match Epoch::from_str(&format!("{epoch}")) {
                 Ok(rebuilt) => {
                     if ts == TimeScale::ET {
                         // ET has a Newton Raphston iteration for rebuilding, so we allow for a small time error.
@@ -1086,7 +1054,7 @@ fn test_format() {
                 }
                 Err(e) => {
                     panic!(
-                        "#{i} {e:?} with {epoch:?} (duration since j1900 = {})",
+                        "#{i} {e} with {epoch} (duration since j1900 = {})",
                         epoch.duration
                     )
                 }
@@ -1096,7 +1064,7 @@ fn test_format() {
 
     // Check the leap day formatting to/from works correctly.
     let epoch = Epoch::from_gregorian_utc_hms(2020, 1, 2, 23, 24, 29);
-    assert_eq!(format!("{epoch:?}"), "2020-01-02T23:24:29 UTC");
+    assert_eq!(format!("{epoch}"), "2020-01-02T23:24:29 UTC");
 
     // Try with epochs near 1900, reference of TAI
     let epoch_post = Epoch::from_gregorian_tai_hms(1900, 1, 1, 0, 0, 1);
