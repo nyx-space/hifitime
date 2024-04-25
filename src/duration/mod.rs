@@ -35,7 +35,7 @@ use pyo3::prelude::pyclass;
 use num_traits::Float;
 
 #[cfg(kani)]
-mod kani;
+mod kani_verif;
 
 pub const DAYS_PER_CENTURY_U64: u64 = 36_525;
 pub const NANOSECONDS_PER_MICROSECOND: u64 = 1_000;
@@ -723,55 +723,60 @@ impl PartialOrd<Unit> for Duration {
     }
 }
 
-#[test]
-#[cfg(feature = "serde")]
-fn test_serdes() {
-    let dt = Duration::from_seconds(10.1);
-    let content = r#"{"centuries":0,"nanoseconds":10100000000}"#;
-    assert_eq!(content, serde_json::to_string(&dt).unwrap());
-    let parsed: Duration = serde_json::from_str(content).unwrap();
-    assert_eq!(dt, parsed);
-}
+#[cfg(test)]
+mod ut_duration {
+    use super::{Duration, TimeUnits, Unit, NANOSECONDS_PER_CENTURY};
 
-#[test]
-fn test_bounds() {
-    let min = Duration::MIN;
-    assert_eq!(min.centuries, i16::MIN);
-    assert_eq!(min.nanoseconds, 0);
+    #[test]
+    #[cfg(feature = "serde")]
+    fn test_serdes() {
+        let dt = Duration::from_seconds(10.1);
+        let content = r#"{"centuries":0,"nanoseconds":10100000000}"#;
+        assert_eq!(content, serde_json::to_string(&dt).unwrap());
+        let parsed: Duration = serde_json::from_str(content).unwrap();
+        assert_eq!(dt, parsed);
+    }
 
-    let max = Duration::MAX;
-    assert_eq!(max.centuries, i16::MAX);
-    assert_eq!(max.nanoseconds, NANOSECONDS_PER_CENTURY);
+    #[test]
+    fn test_bounds() {
+        let min = Duration::MIN;
+        assert_eq!(min.centuries, i16::MIN);
+        assert_eq!(min.nanoseconds, 0);
 
-    let min_p = Duration::MIN_POSITIVE;
-    assert_eq!(min_p.centuries, 0);
-    assert_eq!(min_p.nanoseconds, 1);
+        let max = Duration::MAX;
+        assert_eq!(max.centuries, i16::MAX);
+        assert_eq!(max.nanoseconds, NANOSECONDS_PER_CENTURY);
 
-    let min_n = Duration::MIN_NEGATIVE;
-    assert_eq!(min_n.centuries, -1);
-    assert_eq!(min_n.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
+        let min_p = Duration::MIN_POSITIVE;
+        assert_eq!(min_p.centuries, 0);
+        assert_eq!(min_p.nanoseconds, 1);
 
-    let min_n1 = Duration::MIN - 1 * Unit::Nanosecond;
-    assert_eq!(min_n1, Duration::MIN);
+        let min_n = Duration::MIN_NEGATIVE;
+        assert_eq!(min_n.centuries, -1);
+        assert_eq!(min_n.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
 
-    let max_n1 = Duration::MAX - 1 * Unit::Nanosecond;
-    assert_eq!(max_n1.centuries, i16::MAX);
-    assert_eq!(max_n1.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
-}
+        let min_n1 = Duration::MIN - 1 * Unit::Nanosecond;
+        assert_eq!(min_n1, Duration::MIN);
 
-#[test]
-fn test_decompose() {
-    let d = -73000.days();
-    let out_days = d.to_unit(Unit::Day);
-    assert_eq!(out_days, -73000.0);
-    let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
-        d.decompose();
-    assert_eq!(sign, -1);
-    assert_eq!(days, 73000);
-    assert_eq!(hours, 0);
-    assert_eq!(minutes, 0);
-    assert_eq!(seconds, 0);
-    assert_eq!(milliseconds, 0);
-    assert_eq!(microseconds, 0);
-    assert_eq!(nanoseconds, 0);
+        let max_n1 = Duration::MAX - 1 * Unit::Nanosecond;
+        assert_eq!(max_n1.centuries, i16::MAX);
+        assert_eq!(max_n1.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
+    }
+
+    #[test]
+    fn test_decompose() {
+        let d = -73000.days();
+        let out_days = d.to_unit(Unit::Day);
+        assert_eq!(out_days, -73000.0);
+        let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
+            d.decompose();
+        assert_eq!(sign, -1);
+        assert_eq!(days, 73000);
+        assert_eq!(hours, 0);
+        assert_eq!(minutes, 0);
+        assert_eq!(seconds, 0);
+        assert_eq!(milliseconds, 0);
+        assert_eq!(microseconds, 0);
+        assert_eq!(nanoseconds, 0);
+    }
 }
