@@ -14,6 +14,10 @@ use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 use crate::{Duration, Epoch, TimeScale, Unit, Weekday, NANOSECONDS_PER_DAY};
 
+#[cfg(not(feature = "std"))]
+#[allow(unused_imports)] // Import is indeed used.
+use num_traits::Float;
+
 use super::rem_euclid_f64;
 
 impl Epoch {

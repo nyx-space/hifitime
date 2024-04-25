@@ -19,14 +19,26 @@ mod kani;
 
 mod fmt;
 
-use crate::{Duration, Epoch, Unit, J2000_TO_J1900_DURATION, SECONDS_PER_DAY};
+use crate::{Duration, Epoch, Unit, SECONDS_PER_DAY};
 
 /// The J1900 reference epoch (1900-01-01 at noon) TAI.
-pub const J1900_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration::ZERO);
+pub const J1900_REF_EPOCH: Epoch = Epoch {
+    duration: Duration {
+        centuries: 0,
+        nanoseconds: 43200000000000,
+    },
+    time_scale: TimeScale::TAI,
+};
 
 /// The J2000 reference epoch (2000-01-01 at midnight) TAI.
 /// |UTC - TAI| = XX Leap Seconds on that day.
-pub const J2000_REF_EPOCH: Epoch = Epoch::from_tai_duration(J2000_TO_J1900_DURATION);
+pub const J2000_REF_EPOCH: Epoch = Epoch {
+    duration: Duration {
+        centuries: 1,
+        nanoseconds: 43200000000000,
+    },
+    time_scale: TimeScale::TAI,
+};
 
 pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
