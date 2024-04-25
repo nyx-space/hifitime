@@ -35,7 +35,7 @@ use pyo3::prelude::pyclass;
 use num_traits::Float;
 
 #[cfg(kani)]
-mod kani;
+mod kani_verif;
 
 pub const DAYS_PER_CENTURY_U64: u64 = 36_525;
 pub const NANOSECONDS_PER_MICROSECOND: u64 = 1_000;
