@@ -19,7 +19,10 @@ use core::fmt;
 use core::hash::{Hash, Hasher};
 
 #[cfg(feature = "serde")]
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+#[cfg(feature = "serde")]
+use core::str::FromStr;
 
 #[cfg(not(kani))]
 pub mod parse;
@@ -63,7 +66,6 @@ pub mod ops;
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Duration {
     pub(crate) centuries: i16,
     pub(crate) nanoseconds: u64,
@@ -100,6 +102,30 @@ impl Hash for Duration {
 impl Default for Duration {
     fn default() -> Self {
         Duration::ZERO
+    }
+}
+
+#[cfg(not(kani))]
+#[cfg(feature = "serde")]
+impl Serialize for Duration {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let s = self.to_string();
+        serializer.serialize_str(&s)
+    }
+}
+
+#[cfg(not(kani))]
+#[cfg(feature = "serde")]
+impl<'de> Deserialize<'de> for Duration {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Duration::from_str(&s).map_err(serde::de::Error::custom)
     }
 }
 
@@ -730,11 +756,18 @@ mod ut_duration {
     #[test]
     #[cfg(feature = "serde")]
     fn test_serdes() {
-        let dt = Duration::from_seconds(10.1);
-        let content = r#"{"centuries":0,"nanoseconds":10100000000}"#;
-        assert_eq!(content, serde_json::to_string(&dt).unwrap());
-        let parsed: Duration = serde_json::from_str(content).unwrap();
-        assert_eq!(dt, parsed);
+        for (dt, content) in [
+            (Duration::from_seconds(10.1), r#""10 s 100 ms""#),
+            (1.0_f64.days() + 99.nanoseconds(), r#""1 days 99 ns""#),
+            (
+                1.0_f64.centuries() + 99.seconds(),
+                r#""36525 days 1 min 39 s""#,
+            ),
+        ] {
+            assert_eq!(content, serde_json::to_string(&dt).unwrap());
+            let parsed: Duration = serde_json::from_str(content).unwrap();
+            assert_eq!(dt, parsed);
+        }
     }
 
     #[test]
