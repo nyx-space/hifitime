@@ -14,7 +14,7 @@ use crate::{prelude::Format, Duration, Epoch, Errors, TimeScale};
 
 use core::str::FromStr;
 
-use crate::leap_seconds_file::LeapSecondsFile;
+use crate::epoch::leap_seconds_file::LeapSecondsFile;
 use pyo3::prelude::*;
 use pyo3::pyclass::CompareOp;
 use pyo3::types::PyType;

@@ -12,7 +12,7 @@ use core::fmt;
 
 use crate::{Epoch, TimeScale};
 
-impl fmt::Debug for Epoch {
+impl fmt::Display for Epoch {
     /// Print this epoch in Gregorian in the time scale used at initialization
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let (y, mm, dd, hh, min, s, nanos) =
@@ -33,7 +33,7 @@ impl fmt::Debug for Epoch {
     }
 }
 
-impl fmt::Display for Epoch {
+impl fmt::Debug for Epoch {
     /// The default format of an epoch is in UTC
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let ts = TimeScale::UTC;

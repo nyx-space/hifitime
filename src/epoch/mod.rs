@@ -8,6 +8,24 @@
  * Documentation: https://nyxspace.com/
  */
 
+mod formatting;
+mod gregorian;
+mod ops;
+mod with_funcs;
+
+#[cfg(feature = "std")]
+mod leap_seconds_file;
+#[cfg(feature = "std")]
+mod system_time;
+
+#[cfg(kani)]
+mod kani_verif;
+
+#[cfg(feature = "ut1")]
+pub mod ut1;
+
+pub mod leap_seconds;
+
 use crate::duration::{Duration, Unit};
 use crate::efmt::format::Format;
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
@@ -17,11 +35,15 @@ use crate::{
     GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_DAY,
     QZSST_REF_EPOCH, UNIX_REF_EPOCH,
 };
+use core::cmp::Eq;
+use core::str::FromStr;
+pub use gregorian::is_gregorian_valid;
 
 #[cfg(not(kani))]
 use crate::ParsingErrors;
 
-use core::cmp::Eq;
+#[cfg(kani)]
+use kani::assert;
 
 #[cfg(feature = "python")]
 mod python;
@@ -33,30 +55,9 @@ use pyo3::prelude::*;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
-use core::str::FromStr;
-
-#[cfg(feature = "ut1")]
-pub mod ut1;
-
 #[cfg(not(feature = "std"))]
 #[allow(unused_imports)] // Import is indeed used.
 use num_traits::Float;
-
-#[cfg(feature = "std")]
-mod system_time;
-
-#[cfg(kani)]
-mod kani_verif;
-
-#[cfg(kani)]
-use kani::assert;
-
-mod gregorian;
-pub use gregorian::is_gregorian_valid;
-
-mod formatting;
-mod ops;
-mod with_funcs;
 
 pub(crate) const TT_OFFSET_MS: i64 = 32_184;
 pub(crate) const ET_OFFSET_US: i64 = 32_184_935;
@@ -1402,7 +1403,7 @@ mod ut_epoch {
     #[test]
     #[cfg(feature = "serde")]
     fn test_serdes() {
-        let e = Epoch::from_gregorian_utc(2020, 01, 01, 0, 0, 0, 0);
+        let e = Epoch::from_gregorian_utc_at_midnight(2020, 01, 01);
         let content = r#""2020-01-01T00:00:00 UTC""#;
         assert_eq!(content, serde_json::to_string(&e).unwrap());
         let parsed: Epoch = serde_json::from_str(content).unwrap();
