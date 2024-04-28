@@ -8,15 +8,13 @@
  * Documentation: https://nyxspace.com/
  */
 
-use core::convert;
-use core::fmt;
 use core::num::ParseIntError;
-
-#[cfg(feature = "std")]
-use std::error::Error;
+use snafu::prelude::*;
 
 #[cfg(feature = "std")]
 use std::io::ErrorKind as IOError;
+
+use lexical_core::Error as LexicalError;
 
 #[cfg(feature = "ut1")]
 use reqwest::StatusCode;
@@ -24,35 +22,55 @@ use reqwest::StatusCode;
 use crate::Weekday;
 
 /// Errors handles all oddities which may occur in this library.
-#[derive(Copy, Clone, Debug, PartialEq)]
-pub enum Errors {
+#[non_exhaustive]
+#[derive(Debug, Snafu, PartialEq)]
+#[snafu(visibility(pub(crate)))]
+pub enum EpochError {
     /// Carry is returned when a provided function does not support time carry. For example,
     /// if a call to `Datetime::new` receives 60 seconds and there are only 59 seconds in the provided
     /// date time then a Carry Error is returned as the Result.
-    Carry,
+    InvalidGregorianDate,
     /// ParseError is returned when a provided string could not be parsed and converted to the desired
     /// struct (e.g. Datetime).
-    ParseError(ParsingErrors),
-    /// Raised when trying to initialize an Epoch or Duration from its hi and lo values, but these overlap
-    ConversionOverlapError(f64, f64),
-    /// Raised if an overflow occurred
-    Overflow,
+    Parse {
+        source: ParsingErrors,
+        // TODO: Add action
+    },
     /// Raised if the initialization from system time failed
     SystemTimeError,
+    Duration {
+        source: DurationError,
+    },
 }
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+#[derive(Debug, Snafu, PartialEq)]
+pub enum DurationError {
+    Overflow,
+    Underflow,
+}
+
+#[non_exhaustive]
+#[derive(Debug, Snafu, PartialEq)]
 pub enum ParsingErrors {
-    ParseIntError,
+    ParseIntError {
+        err: ParseIntError,
+    },
+    NothingToParse,
     ValueError,
     TimeSystem,
     ISO8601,
+    Lexical {
+        err: LexicalError,
+    },
     UnknownFormat,
     UnknownOrMissingUnit,
     UnsupportedTimeSystem,
     UnknownWeekday,
     UnknownMonthName,
-    UnknownFormattingToken(char),
+    UnknownToken {
+        token: char,
+    },
     UnexpectedCharacter {
         found: char,
         option1: Option<char>,
@@ -62,44 +80,24 @@ pub enum ParsingErrors {
         found: Weekday,
         expected: Weekday,
     },
+    InvalidTimezone,
     #[cfg(feature = "std")]
-    IOError(IOError),
+    InOut {
+        err: IOError,
+    },
     #[cfg(feature = "ut1")]
     DownloadError(StatusCode),
 }
 
-impl fmt::Display for Errors {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            Self::Carry => write!(f, "a carry error (e.g. 61 seconds)"),
-            Self::ParseError(kind) => write!(f, "ParseError: {:?}", kind),
-            Self::ConversionOverlapError(hi, lo) => {
-                write!(f, "hi and lo values overlap: {}, {}", hi, lo)
-            }
-            Self::Overflow => write!(f, "prevented overflow/underflow"),
-            Self::SystemTimeError => write!(f, "std::time::SystemTime returned an error"),
-        }
-    }
-}
-
-impl convert::From<ParseIntError> for Errors {
-    fn from(_: ParseIntError) -> Self {
-        Errors::ParseError(ParsingErrors::ParseIntError)
-    }
-}
-
-#[cfg(feature = "std")]
-impl Error for Errors {}
-
 #[cfg(test)]
 mod tests {
-    use crate::{Errors, ParsingErrors, TimeScale};
+    use crate::{EpochError, ParsingErrors, TimeScale};
 
     #[test]
     fn enum_eq() {
         // Check the equality compiles (if one compiles, then all asserts will work)
-        assert!(Errors::Carry == Errors::Carry);
-        assert!(ParsingErrors::ParseIntError == ParsingErrors::ParseIntError);
+        assert!(EpochError::InvalidGregorianDate == EpochError::InvalidGregorianDate);
+        assert!(ParsingErrors::ISO8601 == ParsingErrors::ISO8601);
         assert!(TimeScale::ET == TimeScale::ET);
     }
 }

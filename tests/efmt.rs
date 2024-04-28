@@ -84,12 +84,12 @@ fn epoch_format_rfc2822() {
     // Ensure that we check the weekday is valid.
     assert_eq!(
         RFC2822.parse("Fri, 07 Feb 2015 11:22:33"),
-        Err(Errors::ParseError(
-            hifitime::ParsingErrors::WeekdayMismatch {
+        Err(EpochError::Parse {
+            source: hifitime::ParsingErrors::WeekdayMismatch {
                 found: Weekday::Friday,
                 expected: Weekday::Saturday
             }
-        ))
+        })
     );
 
     // In RFC2822, only the seconds are displayed, so adding microseconds here won't change the output

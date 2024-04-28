@@ -8,7 +8,7 @@
  * Documentation: https://nyxspace.com/
  */
 
-use crate::{Errors, ParsingErrors};
+use crate::{EpochError, ParsingErrors};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum Token {
@@ -40,48 +40,60 @@ impl Default for Token {
 
 impl Token {
     // Check that the _integer_ value is valid at first sight.
-    pub fn value_ok(&self, val: i32) -> Result<(), Errors> {
+    pub fn value_ok(&self, val: i32) -> Result<(), EpochError> {
         match &self {
             Self::Year => Ok(()),      // No validation
             Self::YearShort => Ok(()), // No validation
             Self::Month => {
                 if !(0..=13).contains(&val) {
-                    Err(Errors::ParseError(ParsingErrors::ValueError))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::ValueError,
+                    })
                 } else {
                     Ok(())
                 }
             }
             Self::Day => {
                 if !(0..=31).contains(&val) {
-                    Err(Errors::ParseError(ParsingErrors::ValueError))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::ValueError,
+                    })
                 } else {
                     Ok(())
                 }
             }
             Self::Hour | Self::OffsetHours => {
                 if !(0..=23).contains(&val) {
-                    Err(Errors::ParseError(ParsingErrors::ValueError))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::ValueError,
+                    })
                 } else {
                     Ok(())
                 }
             }
             Self::Minute | Self::OffsetMinutes => {
                 if !(0..=59).contains(&val) {
-                    Err(Errors::ParseError(ParsingErrors::ValueError))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::ValueError,
+                    })
                 } else {
                     Ok(())
                 }
             }
             Self::Second => {
                 if !(0..=60).contains(&val) {
-                    Err(Errors::ParseError(ParsingErrors::ValueError))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::ValueError,
+                    })
                 } else {
                     Ok(())
                 }
             }
             Self::Subsecond => {
                 if val < 0 {
-                    Err(Errors::ParseError(ParsingErrors::ValueError))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::ValueError,
+                    })
                 } else {
                     Ok(())
                 }
@@ -89,7 +101,9 @@ impl Token {
             Self::Timescale => Ok(()),
             Self::DayOfYearInteger => {
                 if !(0..=366).contains(&val) {
-                    Err(Errors::ParseError(ParsingErrors::ValueError))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::ValueError,
+                    })
                 } else {
                     Ok(())
                 }
@@ -103,7 +117,9 @@ impl Token {
             | Self::MonthNameShort
             | Self::DayOfYear => {
                 // These cannot be parsed as integers
-                Err(Errors::ParseError(ParsingErrors::ValueError))
+                Err(EpochError::Parse {
+                    source: ParsingErrors::ValueError,
+                })
             }
         }
     }
@@ -126,14 +142,16 @@ impl Token {
 
     /// Updates the token to what it should be seeking next given the delimiting character
     /// and returns the position in the array where the parsed integer should live
-    pub fn advance_with(&mut self, ending_char: char) -> Result<(), Errors> {
+    pub fn advance_with(&mut self, ending_char: char) -> Result<(), EpochError> {
         match &self {
             Token::Year | Token::YearShort => {
                 if ending_char == '-' {
                     *self = Token::Month;
                     Ok(())
                 } else {
-                    Err(Errors::ParseError(ParsingErrors::UnknownFormat))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::UnknownFormat,
+                    })
                 }
             }
             Token::Month => {
@@ -141,7 +159,9 @@ impl Token {
                     *self = Token::Day;
                     Ok(())
                 } else {
-                    Err(Errors::ParseError(ParsingErrors::UnknownFormat))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::UnknownFormat,
+                    })
                 }
             }
             Token::Day => {
@@ -149,7 +169,9 @@ impl Token {
                     *self = Token::Hour;
                     Ok(())
                 } else {
-                    Err(Errors::ParseError(ParsingErrors::UnknownFormat))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::UnknownFormat,
+                    })
                 }
             }
             Token::Hour => {
@@ -157,7 +179,9 @@ impl Token {
                     *self = Token::Minute;
                     Ok(())
                 } else {
-                    Err(Errors::ParseError(ParsingErrors::UnknownFormat))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::UnknownFormat,
+                    })
                 }
             }
             Token::Minute => {
@@ -165,7 +189,9 @@ impl Token {
                     *self = Token::Second;
                     Ok(())
                 } else {
-                    Err(Errors::ParseError(ParsingErrors::UnknownFormat))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::UnknownFormat,
+                    })
                 }
             }
             Token::Second => {
@@ -178,7 +204,9 @@ impl Token {
                     // There are no subseconds here, but we're seeing the start of an offset
                     *self = Token::OffsetHours;
                 } else {
-                    return Err(Errors::ParseError(ParsingErrors::UnknownFormat));
+                    return Err(EpochError::Parse {
+                        source: ParsingErrors::UnknownFormat,
+                    });
                 }
                 Ok(())
             }
@@ -190,7 +218,9 @@ impl Token {
                     // There are no subseconds here, but we're seeing the start of an offset
                     *self = Token::OffsetHours;
                 } else {
-                    return Err(Errors::ParseError(ParsingErrors::UnknownFormat));
+                    return Err(EpochError::Parse {
+                        source: ParsingErrors::UnknownFormat,
+                    });
                 }
                 Ok(())
             }
@@ -199,7 +229,9 @@ impl Token {
                     *self = Token::OffsetMinutes;
                     Ok(())
                 } else {
-                    Err(Errors::ParseError(ParsingErrors::UnknownFormat))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::UnknownFormat,
+                    })
                 }
             }
             Token::OffsetMinutes => {
@@ -208,7 +240,9 @@ impl Token {
                     *self = Token::Timescale;
                     Ok(())
                 } else {
-                    Err(Errors::ParseError(ParsingErrors::UnknownFormat))
+                    Err(EpochError::Parse {
+                        source: ParsingErrors::UnknownFormat,
+                    })
                 }
             }
             _ => Ok(()),

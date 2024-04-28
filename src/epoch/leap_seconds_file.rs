@@ -17,7 +17,7 @@ use core::ops::Index;
 
 use crate::{
     leap_seconds::{LeapSecond, LeapSecondProvider},
-    Errors, ParsingErrors,
+    EpochError, ParsingErrors,
 };
 
 #[repr(C)]
@@ -31,15 +31,21 @@ pub struct LeapSecondsFile {
 
 impl LeapSecondsFile {
     /// Builds a leap second provider from the provided Leap Seconds file in IERS format as found on <https://www.ietf.org/timezones/data/leap-seconds.list> .
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, Errors> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, EpochError> {
         let mut f = match File::open(path) {
             Ok(f) => f,
-            Err(e) => return Err(Errors::ParseError(ParsingErrors::IOError(e.kind()))),
+            Err(e) => {
+                return Err(EpochError::Parse {
+                    source: ParsingErrors::InOut { err: e.kind() },
+                })
+            }
         };
 
         let mut contents = String::new();
         if let Err(e) = f.read_to_string(&mut contents) {
-            return Err(Errors::ParseError(ParsingErrors::IOError(e.kind())));
+            return Err(EpochError::Parse {
+                source: ParsingErrors::InOut { err: e.kind() },
+            });
         }
 
         let mut me = Self::default();
@@ -52,17 +58,27 @@ impl LeapSecondsFile {
                     // We have data of interest!
                     let data: Vec<&str> = line.split_whitespace().collect();
                     if data.len() < 2 {
-                        return Err(Errors::ParseError(ParsingErrors::UnknownFormat));
+                        return Err(EpochError::Parse {
+                            source: ParsingErrors::UnknownFormat,
+                        });
                     }
 
                     let timestamp_tai_s: u64 = match lexical_core::parse(data[0].as_bytes()) {
                         Ok(val) => val,
-                        Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
+                        Err(_) => {
+                            return Err(EpochError::Parse {
+                                source: ParsingErrors::ValueError,
+                            })
+                        }
                     };
 
                     let delta_at: u8 = match lexical_core::parse(data[1].as_bytes()) {
                         Ok(val) => val,
-                        Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
+                        Err(_) => {
+                            return Err(EpochError::Parse {
+                                source: ParsingErrors::ValueError,
+                            })
+                        }
                     };
 
                     me.data.push(LeapSecond {
@@ -82,7 +98,7 @@ impl LeapSecondsFile {
 #[cfg_attr(feature = "python", pymethods)]
 impl LeapSecondsFile {
     #[new]
-    pub fn __new__(path: String) -> Result<Self, Errors> {
+    pub fn __new__(path: String) -> Result<Self, EpochError> {
         Self::from_path(&path)
     }
 

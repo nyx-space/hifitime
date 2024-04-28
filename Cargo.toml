@@ -35,6 +35,18 @@ reqwest = { version = "0.12", features = ["blocking", "json"], optional = true }
 tabled = { version = "0.15.0", optional = true }
 openssl = { version = "0.10", features = ["vendored"], optional = true }
 web-time = { version = "1.0.0", optional = true }
+snafu = { version = "0.8.2", default-features = false }
+
+[features]
+default = ["std"]
+std = ["serde", "serde_derive", "web-time", "snafu/std", "snafu/backtrace"]
+python = ["std", "pyo3", "ut1"]
+ut1 = ["std", "reqwest", "tabled", "openssl"]
+
+[dev-dependencies]
+serde_json = "1.0.91"
+criterion = "0.5.1"
+iai = "0.1"
 
 [target.wasm32-unknown-unknown.dependencies]
 js-sys = { version = "0.3" }
@@ -62,17 +74,6 @@ web-sys = { version = "0.3", features = [
     'Performance',
     'PerformanceTiming',
 ] }
-
-[dev-dependencies]
-serde_json = "1.0.91"
-criterion = "0.5.1"
-iai = "0.1"
-
-[features]
-default = ["std"]
-std = ["serde", "serde_derive", "web-time"]
-python = ["std", "pyo3", "ut1"]
-ut1 = ["std", "reqwest", "tabled", "openssl"]
 
 [[bench]]
 name = "crit_epoch"

@@ -1,6 +1,6 @@
 use hifitime::{
-    Duration, Errors, Freq, Frequencies, ParsingErrors, TimeUnits, Unit, NANOSECONDS_PER_CENTURY,
-    NANOSECONDS_PER_MINUTE,
+    Duration, EpochError, Freq, Frequencies, ParsingErrors, TimeUnits, Unit,
+    NANOSECONDS_PER_CENTURY, NANOSECONDS_PER_MINUTE,
 };
 
 #[cfg(feature = "std")]
@@ -448,13 +448,17 @@ fn duration_from_str() {
 
     assert!(
         Duration::from_str("5 days 1")
-            == Err(Errors::ParseError(ParsingErrors::UnknownOrMissingUnit)),
+            == Err(EpochError::Parse {
+                source: ParsingErrors::UnknownOrMissingUnit
+            }),
         "should return an unknown unit error"
     );
 
     assert!(
         Duration::from_str("5 days 1 ")
-            == Err(Errors::ParseError(ParsingErrors::UnknownOrMissingUnit)),
+            == Err(EpochError::Parse {
+                source: ParsingErrors::UnknownOrMissingUnit
+            }),
         "should return an unknown unit error"
     );
 
@@ -517,12 +521,16 @@ fn duration_from_str() {
 
     assert_eq!(
         Duration::from_str(""),
-        Err(Errors::ParseError(ParsingErrors::ValueError))
+        Err(EpochError::Parse {
+            source: ParsingErrors::ValueError
+        })
     );
 
     assert_eq!(
         Duration::from_str("+"),
-        Err(Errors::ParseError(ParsingErrors::ValueError))
+        Err(EpochError::Parse {
+            source: ParsingErrors::ValueError
+        })
     );
 }
 

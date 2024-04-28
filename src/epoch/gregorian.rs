@@ -8,10 +8,12 @@
  * Documentation: https://nyxspace.com/
  */
 
+use crate::errors::DurationError;
 use crate::parser::Token;
 use crate::{
-    Duration, Epoch, Errors, ParsingErrors, TimeScale, Unit, DAYS_PER_YEAR_NLD, HIFITIME_REF_YEAR,
-    NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_SECOND_U32,
+    Duration, Epoch, EpochError, ParsingErrors, TimeScale, Unit, DAYS_PER_YEAR_NLD,
+    HIFITIME_REF_YEAR, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
+    NANOSECONDS_PER_SECOND_U32,
 };
 use core::str::FromStr;
 
@@ -231,7 +233,7 @@ impl Epoch {
         minute: u8,
         second: u8,
         nanos: u32,
-    ) -> Result<Self, Errors> {
+    ) -> Result<Self, EpochError> {
         Self::maybe_from_gregorian(
             year,
             month,
@@ -256,15 +258,23 @@ impl Epoch {
         second: u8,
         nanos: u32,
         time_scale: TimeScale,
-    ) -> Result<Self, Errors> {
+    ) -> Result<Self, EpochError> {
         if !is_gregorian_valid(year, month, day, hour, minute, second, nanos) {
-            return Err(Errors::Carry);
+            return Err(EpochError::InvalidGregorianDate);
         }
 
         let mut duration_wrt_ref = match year.checked_sub(HIFITIME_REF_YEAR) {
-            None => return Err(Errors::Overflow),
+            None => {
+                return Err(EpochError::Duration {
+                    source: DurationError::Underflow,
+                })
+            }
             Some(years_since_ref) => match years_since_ref.checked_mul(365) {
-                None => return Err(Errors::Overflow),
+                None => {
+                    return Err(EpochError::Duration {
+                        source: DurationError::Overflow,
+                    })
+                }
                 Some(days) => Unit::Day * i64::from(days),
             },
         } - time_scale.gregorian_epoch_offset();
@@ -369,7 +379,7 @@ impl Epoch {
         minute: u8,
         second: u8,
         nanos: u32,
-    ) -> Result<Self, Errors> {
+    ) -> Result<Self, EpochError> {
         Self::maybe_from_gregorian(
             year,
             month,
@@ -530,7 +540,7 @@ impl Epoch {
     /// );
     /// ```
     #[cfg(not(kani))]
-    pub fn from_gregorian_str(s_in: &str) -> Result<Self, Errors> {
+    pub fn from_gregorian_str(s_in: &str) -> Result<Self, EpochError> {
         // All of the integers in a date: year, month, day, hour, minute, second, subsecond, offset hours, offset minutes
 
         let mut decomposed = [0_i32; 9];
@@ -568,7 +578,9 @@ impl Epoch {
                 };
 
                 if prev_idx > end_idx {
-                    return Err(Errors::ParseError(ParsingErrors::ISO8601));
+                    return Err(EpochError::Parse {
+                        source: ParsingErrors::ISO8601,
+                    });
                 }
 
                 match lexical_core::parse(s[prev_idx..end_idx].as_bytes()) {
@@ -587,7 +599,11 @@ impl Epoch {
                             decomposed[pos] = val
                         }
                     }
-                    Err(_) => return Err(Errors::ParseError(ParsingErrors::ISO8601)),
+                    Err(err) => {
+                        return Err(EpochError::Parse {
+                            source: ParsingErrors::Lexical { err },
+                        })
+                    }
                 }
                 prev_idx = idx + 1;
                 // If we are about to parse an hours offset, we need to set the sign now.
