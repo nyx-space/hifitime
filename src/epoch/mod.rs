@@ -42,7 +42,7 @@ pub use gregorian::is_gregorian_valid;
 use snafu::ResultExt;
 
 #[cfg(not(kani))]
-use crate::ParsingErrors;
+use crate::ParsingError;
 
 #[cfg(kani)]
 use kani::assert;
@@ -1290,7 +1290,7 @@ impl FromStr for Epoch {
         if s.len() < 7 {
             // We need at least seven characters for a valid epoch
             Err(EpochError::Parse {
-                source: ParsingErrors::UnknownFormat,
+                source: ParsingError::UnknownFormat,
                 details: "less than 7 characters",
             })
         } else {
@@ -1317,7 +1317,7 @@ impl FromStr for Epoch {
                 Ok(val) => val,
                 Err(_) => {
                     return Err(EpochError::Parse {
-                        source: ParsingErrors::ValueError,
+                        source: ParsingError::ValueError,
                         details: "parsing as JD, MJD, or SEC",
                     })
                 }
@@ -1330,7 +1330,7 @@ impl FromStr for Epoch {
                     TimeScale::TDB => Ok(Self::from_jde_tdb(value)),
                     TimeScale::UTC => Ok(Self::from_jde_utc(value)),
                     _ => Err(EpochError::Parse {
-                        source: ParsingErrors::UnsupportedTimeSystem,
+                        source: ParsingError::UnsupportedTimeSystem,
                         details: "for Julian Date",
                     }),
                 },
@@ -1340,7 +1340,7 @@ impl FromStr for Epoch {
                         Ok(Self::from_mjd_in_time_scale(value, ts))
                     }
                     _ => Err(EpochError::Parse {
-                        source: ParsingErrors::UnsupportedTimeSystem,
+                        source: ParsingError::UnsupportedTimeSystem,
                         details: "for Modified Julian Date",
                     }),
                 },
@@ -1355,7 +1355,7 @@ impl FromStr for Epoch {
                     }
                 },
                 _ => Err(EpochError::Parse {
-                    source: ParsingErrors::UnknownFormat,
+                    source: ParsingError::UnknownFormat,
                     details: "suffix not understood",
                 }),
             }

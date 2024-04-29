@@ -16,8 +16,20 @@ use crate::leap_seconds::{LatestLeapSeconds, LeapSecondsFile};
 
 use crate::ut1::Ut1Provider;
 
-impl std::convert::From<Errors> for PyErr {
-    fn from(err: Errors) -> PyErr {
+impl std::convert::From<EpochError> for PyErr {
+    fn from(err: EpochError) -> PyErr {
+        PyException::new_err(err.to_string())
+    }
+}
+
+impl std::convert::From<ParsingError> for PyErr {
+    fn from(err: ParsingError) -> PyErr {
+        PyException::new_err(err.to_string())
+    }
+}
+
+impl std::convert::From<DurationError> for PyErr {
+    fn from(err: DurationError) -> PyErr {
         PyException::new_err(err.to_string())
     }
 }

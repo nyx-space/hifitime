@@ -8,7 +8,7 @@
  * Documentation: https://nyxspace.com/
  */
 
-use crate::{Duration, ParsingErrors, Unit};
+use crate::{Duration, ParsingError, Unit};
 use core::fmt;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::str::FromStr;
@@ -90,7 +90,7 @@ impl From<Weekday> for u8 {
 }
 
 impl FromStr for Weekday {
-    type Err = ParsingErrors;
+    type Err = ParsingError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.trim() {
             "mon" | "Mon" | "MON" | "monday" | "Monday" | "MONDAY" => Ok(Self::Monday),
@@ -100,7 +100,7 @@ impl FromStr for Weekday {
             "fri" | "Fri" | "FRI" | "friday" | "Friday" | "FRIDAY" => Ok(Self::Friday),
             "sat" | "Sat" | "SAT" | "saturday" | "Saturday" | "SATURDAY" => Ok(Self::Saturday),
             "sun" | "Sun" | "SUN" | "sunday" | "Sunday" | "SUNDAY" => Ok(Self::Sunday),
-            _ => Err(ParsingErrors::UnknownWeekday),
+            _ => Err(ParsingError::UnknownWeekday),
         }
     }
 }

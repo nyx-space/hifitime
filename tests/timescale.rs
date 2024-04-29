@@ -1,5 +1,5 @@
 extern crate hifitime;
-use hifitime::{ParsingErrors, TimeScale};
+use hifitime::{ParsingError, TimeScale};
 use std::str::FromStr;
 
 #[test]
@@ -45,7 +45,7 @@ fn test_from_rinex_format() {
     assert_eq!(TimeScale::from_str("BDS"), Ok(TimeScale::BDT));
     assert_eq!(TimeScale::from_str("QZSS"), Ok(TimeScale::QZSST));
     // Check error
-    assert_eq!(TimeScale::from_str("FAK"), Err(ParsingErrors::TimeSystem));
+    assert_eq!(TimeScale::from_str("FAK"), Err(ParsingError::TimeSystem));
 }
 
 #[test]

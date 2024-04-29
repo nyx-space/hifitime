@@ -29,7 +29,7 @@ pub enum EpochError {
     InvalidGregorianDate,
     #[snafu(display("{source}, {details}"))]
     Parse {
-        source: ParsingErrors,
+        source: ParsingError,
         details: &'static str,
     },
     #[snafu(display("epoch initialization from system time failed"))]
@@ -49,7 +49,7 @@ pub enum DurationError {
 
 #[non_exhaustive]
 #[derive(Debug, Snafu, PartialEq)]
-pub enum ParsingErrors {
+pub enum ParsingError {
     ParseIntError {
         err: ParseIntError,
     },
@@ -83,18 +83,20 @@ pub enum ParsingErrors {
         err: IOError,
     },
     #[cfg(feature = "ut1")]
-    DownloadError(StatusCode),
+    DownloadError {
+        code: StatusCode,
+    },
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{EpochError, ParsingErrors, TimeScale};
+    use crate::{EpochError, ParsingError, TimeScale};
 
     #[test]
     fn enum_eq() {
         // Check the equality compiles (if one compiles, then all asserts will work)
         assert!(EpochError::InvalidGregorianDate == EpochError::InvalidGregorianDate);
-        assert!(ParsingErrors::ISO8601 == ParsingErrors::ISO8601);
+        assert!(ParsingError::ISO8601 == ParsingError::ISO8601);
         assert!(TimeScale::ET == TimeScale::ET);
     }
 }

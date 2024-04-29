@@ -17,7 +17,7 @@ use core::ops::Index;
 
 use crate::{
     leap_seconds::{LeapSecond, LeapSecondProvider},
-    EpochError, ParsingErrors,
+    EpochError, ParsingError,
 };
 
 #[repr(C)]
@@ -36,7 +36,7 @@ impl LeapSecondsFile {
             Ok(f) => f,
             Err(e) => {
                 return Err(EpochError::Parse {
-                    source: ParsingErrors::InOut { err: e.kind() },
+                    source: ParsingError::InOut { err: e.kind() },
                     details: "opening leap seconds file",
                 })
             }
@@ -45,7 +45,7 @@ impl LeapSecondsFile {
         let mut contents = String::new();
         if let Err(e) = f.read_to_string(&mut contents) {
             return Err(EpochError::Parse {
-                source: ParsingErrors::InOut { err: e.kind() },
+                source: ParsingError::InOut { err: e.kind() },
                 details: "reading leap seconds file",
             });
         }
@@ -61,7 +61,7 @@ impl LeapSecondsFile {
                     let data: Vec<&str> = line.split_whitespace().collect();
                     if data.len() < 2 {
                         return Err(EpochError::Parse {
-                            source: ParsingErrors::UnknownFormat,
+                            source: ParsingError::UnknownFormat,
                             details: "leap seconds file should have two columns exactly",
                         });
                     }
@@ -70,7 +70,7 @@ impl LeapSecondsFile {
                         Ok(val) => val,
                         Err(_) => {
                             return Err(EpochError::Parse {
-                                source: ParsingErrors::ValueError,
+                                source: ParsingError::ValueError,
                                 details: "first column value is not numeric",
                             })
                         }
@@ -80,7 +80,7 @@ impl LeapSecondsFile {
                         Ok(val) => val,
                         Err(_) => {
                             return Err(EpochError::Parse {
-                                source: ParsingErrors::ValueError,
+                                source: ParsingError::ValueError,
                                 details: "second column value is not numeric",
                             })
                         }

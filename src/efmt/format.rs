@@ -12,7 +12,7 @@ use snafu::ResultExt;
 
 use super::formatter::Item;
 use crate::errors::ParseSnafu;
-use crate::{parser::Token, ParsingErrors};
+use crate::{parser::Token, ParsingError};
 use crate::{Epoch, EpochError, MonthName, TimeScale, Unit, Weekday};
 use core::fmt;
 use core::str::FromStr;
@@ -163,7 +163,7 @@ impl Format {
             Some(item) => item,
             None => {
                 return Err(EpochError::Parse {
-                    source: ParsingErrors::NothingToParse,
+                    source: ParsingError::NothingToParse,
                     details: "format string contains no tokens",
                 })
             }
@@ -216,7 +216,7 @@ impl Format {
                             || (cur_item.second_sep_char_is_not(char)))
                     {
                         return Err(EpochError::Parse {
-                            source: ParsingErrors::UnexpectedCharacter {
+                            source: ParsingError::UnexpectedCharacter {
                                 found: char,
                                 option1: cur_item.sep_char,
                                 option2: cur_item.second_sep_char,
@@ -248,7 +248,7 @@ impl Format {
                 match prev_token {
                     Token::YearShort => {
                         decomposed[0] = sub_str.parse::<i32>().map_err(|_| EpochError::Parse {
-                            source: ParsingErrors::ValueError,
+                            source: ParsingError::ValueError,
                             details: "could not parse year as i32",
                         })? + 2000;
                     }
@@ -258,7 +258,7 @@ impl Format {
                             Ok(val) => day_of_year = Some(val),
                             Err(_) => {
                                 return Err(EpochError::Parse {
-                                    source: ParsingErrors::ValueError,
+                                    source: ParsingError::ValueError,
                                     details: "could not parse day of year as f64",
                                 })
                             }
@@ -286,7 +286,7 @@ impl Format {
                             }
                             Err(_) => {
                                 return Err(EpochError::Parse {
-                                    source: ParsingErrors::ValueError,
+                                    source: ParsingError::ValueError,
                                     details: "could not parse month name",
                                 })
                             }
@@ -324,7 +324,7 @@ impl Format {
                             }
                             Err(err) => {
                                 return Err(EpochError::Parse {
-                                    source: ParsingErrors::Lexical { err },
+                                    source: ParsingError::Lexical { err },
                                     details: "could not parse numerical",
                                 });
                             }
@@ -375,7 +375,7 @@ impl Format {
             // Check that the weekday is correct
             if weekday != epoch.weekday() {
                 return Err(EpochError::Parse {
-                    source: ParsingErrors::WeekdayMismatch {
+                    source: ParsingError::WeekdayMismatch {
                         found: weekday,
                         expected: epoch.weekday(),
                     },
@@ -410,7 +410,7 @@ impl fmt::Debug for Format {
 }
 
 impl FromStr for Format {
-    type Err = ParsingErrors;
+    type Err = ParsingError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut me = Format::default();
         for token in s.split('%') {
@@ -552,7 +552,7 @@ impl FromStr for Format {
                         ));
                         me.num_items += 1;
                     }
-                    _ => return Err(ParsingErrors::UnknownToken { token: char }),
+                    _ => return Err(ParsingError::UnknownToken { token: char }),
                 },
                 None => continue, // We're probably just at the start of the string
             }

@@ -10,7 +10,7 @@
 
 // Here lives all of the implementations that are only built with the pyhon feature.
 
-use crate::{prelude::Format, Duration, Epoch, Errors, TimeScale};
+use crate::{prelude::Format, Duration, Epoch, EpochError, TimeScale};
 
 use core::str::FromStr;
 
@@ -282,7 +282,7 @@ impl Epoch {
         minute: u8,
         second: u8,
         nanos: u32,
-    ) -> Result<Self, Errors> {
+    ) -> Result<Self, EpochError> {
         Self::maybe_from_gregorian_tai(year, month, day, hour, minute, second, nanos)
     }
 
@@ -300,7 +300,7 @@ impl Epoch {
         second: u8,
         nanos: u32,
         time_scale: TimeScale,
-    ) -> Result<Self, Errors> {
+    ) -> Result<Self, EpochError> {
         Self::maybe_from_gregorian(year, month, day, hour, minute, second, nanos, time_scale)
     }
 
@@ -367,7 +367,7 @@ impl Epoch {
         minute: u8,
         second: u8,
         nanos: u32,
-    ) -> Result<Self, Errors> {
+    ) -> Result<Self, EpochError> {
         Self::maybe_from_gregorian_utc(year, month, day, hour, minute, second, nanos)
     }
 
@@ -432,9 +432,7 @@ impl Epoch {
     /// Equivalent to `datetime.strftime`, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
     fn strftime(&self, format_str: String) -> PyResult<String> {
         use crate::efmt::Formatter;
-        let fmt = Format::from_str(&format_str)
-            .map_err(Errors::ParseError)
-            .map_err(|e| PyErr::from(e))?;
+        let fmt = Format::from_str(&format_str).map_err(|e| PyErr::from(e))?;
         Ok(format!("{}", Formatter::new(*self, fmt)))
     }
 
@@ -470,7 +468,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    fn system_now(_cls: &Bound<'_, PyType>) -> Result<Self, Errors> {
+    fn system_now(_cls: &Bound<'_, PyType>) -> Result<Self, EpochError> {
         Self::now()
     }
 

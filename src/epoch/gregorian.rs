@@ -11,7 +11,7 @@
 use crate::errors::DurationError;
 use crate::parser::Token;
 use crate::{
-    Duration, Epoch, EpochError, ParsingErrors, TimeScale, Unit, DAYS_PER_YEAR_NLD,
+    Duration, Epoch, EpochError, ParsingError, TimeScale, Unit, DAYS_PER_YEAR_NLD,
     HIFITIME_REF_YEAR, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
     NANOSECONDS_PER_SECOND_U32,
 };
@@ -585,7 +585,7 @@ impl Epoch {
 
                 if prev_idx > end_idx {
                     return Err(EpochError::Parse {
-                        source: ParsingErrors::ISO8601,
+                        source: ParsingError::ISO8601,
                         details: "parsing as Gregorian",
                     });
                 }
@@ -608,7 +608,7 @@ impl Epoch {
                     }
                     Err(err) => {
                         return Err(EpochError::Parse {
-                            source: ParsingErrors::Lexical { err },
+                            source: ParsingError::Lexical { err },
                             details: "parsing as Gregorian",
                         })
                     }
