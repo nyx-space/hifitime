@@ -88,7 +88,8 @@ fn epoch_format_rfc2822() {
             source: hifitime::ParsingErrors::WeekdayMismatch {
                 found: Weekday::Friday,
                 expected: Weekday::Saturday
-            }
+            },
+            details: "weekday and day number do not match"
         })
     );
 

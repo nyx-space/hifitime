@@ -8,7 +8,10 @@
  * Documentation: https://nyxspace.com/
  */
 
+use snafu::ResultExt;
+
 use super::formatter::Item;
+use crate::errors::ParseSnafu;
 use crate::{parser::Token, ParsingErrors};
 use crate::{Epoch, EpochError, MonthName, TimeScale, Unit, Weekday};
 use core::fmt;
@@ -160,7 +163,8 @@ impl Format {
             Some(item) => item,
             None => {
                 return Err(EpochError::Parse {
-                    source: ParsingErrors::UnknownFormat,
+                    source: ParsingErrors::NothingToParse,
+                    details: "format string contains no tokens",
                 })
             }
         };
@@ -192,7 +196,9 @@ impl Format {
                     // Then we match the timescale directly.
                     if idx != s.len() - 1 {
                         // We have some remaining characters, so let's parse those in the only formats we know.
-                        ts = TimeScale::from_str(s[idx..].trim())?;
+                        ts = TimeScale::from_str(s[idx..].trim()).with_context(|_| ParseSnafu {
+                            details: "when parsing from format string",
+                        })?;
                     }
                     break;
                 } else if char == 'Z' {
@@ -215,6 +221,7 @@ impl Format {
                                 option1: cur_item.sep_char,
                                 option2: cur_item.second_sep_char,
                             },
+                            details: "when parsing from format string",
                         });
                     }
 
@@ -242,6 +249,7 @@ impl Format {
                     Token::YearShort => {
                         decomposed[0] = sub_str.parse::<i32>().map_err(|_| EpochError::Parse {
                             source: ParsingErrors::ValueError,
+                            details: "could not parse year as i32",
                         })? + 2000;
                     }
                     Token::DayOfYear => {
@@ -251,6 +259,7 @@ impl Format {
                             Err(_) => {
                                 return Err(EpochError::Parse {
                                     source: ParsingErrors::ValueError,
+                                    details: "could not parse day of year as f64",
                                 })
                             }
                         }
@@ -259,7 +268,12 @@ impl Format {
                         // Set the weekday
                         match Weekday::from_str(sub_str) {
                             Ok(day) => weekday = Some(day),
-                            Err(source) => return Err(EpochError::Parse { source }),
+                            Err(source) => {
+                                return Err(EpochError::Parse {
+                                    source,
+                                    details: "could not parse weekday",
+                                })
+                            }
                         }
                     }
                     Token::WeekdayDecimal => {
@@ -273,6 +287,7 @@ impl Format {
                             Err(_) => {
                                 return Err(EpochError::Parse {
                                     source: ParsingErrors::ValueError,
+                                    details: "could not parse month name",
                                 })
                             }
                         }
@@ -307,9 +322,10 @@ impl Format {
                                     },
                                 }
                             }
-                            Err(_) => {
+                            Err(err) => {
                                 return Err(EpochError::Parse {
-                                    source: ParsingErrors::ValueError,
+                                    source: ParsingErrors::Lexical { err },
+                                    details: "could not parse numerical",
                                 });
                             }
                         }
@@ -363,6 +379,7 @@ impl Format {
                         found: weekday,
                         expected: epoch.weekday(),
                     },
+                    details: "weekday and day number do not match",
                 });
             }
         }

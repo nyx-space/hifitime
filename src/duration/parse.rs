@@ -55,6 +55,7 @@ impl FromStr for Duration {
         if s.is_empty() {
             return Err(EpochError::Parse {
                 source: ParsingErrors::NothingToParse,
+                details: "input string is empty",
             });
         }
 
@@ -79,6 +80,7 @@ impl FromStr for Duration {
                     // This invalid
                     return Err(EpochError::Parse {
                         source: ParsingErrors::InvalidTimezone,
+                        details: "invalid timezone format [+/-]HH:MM",
                     });
                 };
 
@@ -88,6 +90,7 @@ impl FromStr for Duration {
                     Err(err) => {
                         return Err(EpochError::Parse {
                             source: ParsingErrors::Lexical { err },
+                            details: "invalid hours",
                         })
                     }
                 };
@@ -106,13 +109,14 @@ impl FromStr for Duration {
                             Err(_) => {
                                 return Err(EpochError::Parse {
                                     source: ParsingErrors::ValueError,
+                                    details: "invalid minute",
                                 })
                             }
                         }
 
                         match s.get(indexes.2 + 2 * colon..) {
                             None => {
-                                // Do nothing, there are no seconds inthis offset
+                                // Do nothing, there are no seconds in this offset
                             }
                             Some(subs) => {
                                 if !subs.is_empty() {
@@ -122,6 +126,7 @@ impl FromStr for Duration {
                                         Err(_) => {
                                             return Err(EpochError::Parse {
                                                 source: ParsingErrors::ValueError,
+                                                details: "invalid seconds",
                                             })
                                         }
                                     }
@@ -151,6 +156,7 @@ impl FromStr for Duration {
                         // We've reached the end of the string and it didn't end with a unit
                         return Err(EpochError::Parse {
                             source: ParsingErrors::UnknownOrMissingUnit,
+                            details: "expect a unit after a numeric",
                         });
                     }
                     // We've found a new space so let's parse whatever precedes it
@@ -159,6 +165,7 @@ impl FromStr for Duration {
                         Err(_) => {
                             return Err(EpochError::Parse {
                                 source: ParsingErrors::ValueError,
+                                details: "could not parse what precedes the space",
                             })
                         }
                     }
@@ -178,6 +185,7 @@ impl FromStr for Duration {
                         _ => {
                             return Err(EpochError::Parse {
                                 source: ParsingErrors::UnknownOrMissingUnit,
+                                details: "unknown unit",
                             });
                         }
                     };

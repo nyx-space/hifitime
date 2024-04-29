@@ -26,18 +26,15 @@ use crate::Weekday;
 #[derive(Debug, Snafu, PartialEq)]
 #[snafu(visibility(pub(crate)))]
 pub enum EpochError {
-    /// Carry is returned when a provided function does not support time carry. For example,
-    /// if a call to `Datetime::new` receives 60 seconds and there are only 59 seconds in the provided
-    /// date time then a Carry Error is returned as the Result.
     InvalidGregorianDate,
-    /// ParseError is returned when a provided string could not be parsed and converted to the desired
-    /// struct (e.g. Datetime).
+    #[snafu(display("{source}, {details}"))]
     Parse {
         source: ParsingErrors,
-        // TODO: Add action
+        details: &'static str,
     },
-    /// Raised if the initialization from system time failed
+    #[snafu(display("epoch initialization from system time failed"))]
     SystemTimeError,
+    #[snafu(display("epoch computation failed because {source}"))]
     Duration {
         source: DurationError,
     },

@@ -543,6 +543,10 @@ impl Epoch {
     pub fn from_gregorian_str(s_in: &str) -> Result<Self, EpochError> {
         // All of the integers in a date: year, month, day, hour, minute, second, subsecond, offset hours, offset minutes
 
+        use snafu::ResultExt;
+
+        use crate::errors::ParseSnafu;
+
         let mut decomposed = [0_i32; 9];
         // The parsed time scale, defaults to UTC
         let mut ts = TimeScale::UTC;
@@ -561,7 +565,9 @@ impl Epoch {
                     // Then we match the timescale directly.
                     if idx != s.len() - 1 {
                         // We have some remaining characters, so let's parse those in the only formats we know.
-                        ts = TimeScale::from_str(s[idx..].trim())?;
+                        ts = TimeScale::from_str(s[idx..].trim()).with_context(|_| ParseSnafu {
+                            details: "parsing as Gregorian date with time scale",
+                        })?;
                     }
                     break;
                 }
@@ -580,6 +586,7 @@ impl Epoch {
                 if prev_idx > end_idx {
                     return Err(EpochError::Parse {
                         source: ParsingErrors::ISO8601,
+                        details: "parsing as Gregorian",
                     });
                 }
 
@@ -602,6 +609,7 @@ impl Epoch {
                     Err(err) => {
                         return Err(EpochError::Parse {
                             source: ParsingErrors::Lexical { err },
+                            details: "parsing as Gregorian",
                         })
                     }
                 }

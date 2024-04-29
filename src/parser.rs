@@ -48,6 +48,7 @@ impl Token {
                 if !(0..=13).contains(&val) {
                     Err(EpochError::Parse {
                         source: ParsingErrors::ValueError,
+                        details: "invalid month",
                     })
                 } else {
                     Ok(())
@@ -57,6 +58,7 @@ impl Token {
                 if !(0..=31).contains(&val) {
                     Err(EpochError::Parse {
                         source: ParsingErrors::ValueError,
+                        details: "invalid day",
                     })
                 } else {
                     Ok(())
@@ -66,6 +68,7 @@ impl Token {
                 if !(0..=23).contains(&val) {
                     Err(EpochError::Parse {
                         source: ParsingErrors::ValueError,
+                        details: "invalid hour",
                     })
                 } else {
                     Ok(())
@@ -75,6 +78,7 @@ impl Token {
                 if !(0..=59).contains(&val) {
                     Err(EpochError::Parse {
                         source: ParsingErrors::ValueError,
+                        details: "invalid minutes",
                     })
                 } else {
                     Ok(())
@@ -84,6 +88,7 @@ impl Token {
                 if !(0..=60).contains(&val) {
                     Err(EpochError::Parse {
                         source: ParsingErrors::ValueError,
+                        details: "invalid seconds",
                     })
                 } else {
                     Ok(())
@@ -93,6 +98,7 @@ impl Token {
                 if val < 0 {
                     Err(EpochError::Parse {
                         source: ParsingErrors::ValueError,
+                        details: "invalid subseconds",
                     })
                 } else {
                     Ok(())
@@ -103,6 +109,7 @@ impl Token {
                 if !(0..=366).contains(&val) {
                     Err(EpochError::Parse {
                         source: ParsingErrors::ValueError,
+                        details: "invalid day of year",
                     })
                 } else {
                     Ok(())
@@ -119,6 +126,7 @@ impl Token {
                 // These cannot be parsed as integers
                 Err(EpochError::Parse {
                     source: ParsingErrors::ValueError,
+                    details: "invalid name or day of year",
                 })
             }
         }
@@ -151,6 +159,7 @@ impl Token {
                 } else {
                     Err(EpochError::Parse {
                         source: ParsingErrors::UnknownFormat,
+                        details: "invalid year",
                     })
                 }
             }
@@ -161,6 +170,7 @@ impl Token {
                 } else {
                     Err(EpochError::Parse {
                         source: ParsingErrors::UnknownFormat,
+                        details: "invalid month",
                     })
                 }
             }
@@ -171,6 +181,7 @@ impl Token {
                 } else {
                     Err(EpochError::Parse {
                         source: ParsingErrors::UnknownFormat,
+                        details: "invalid day",
                     })
                 }
             }
@@ -181,6 +192,7 @@ impl Token {
                 } else {
                     Err(EpochError::Parse {
                         source: ParsingErrors::UnknownFormat,
+                        details: "invalid hour",
                     })
                 }
             }
@@ -191,6 +203,7 @@ impl Token {
                 } else {
                     Err(EpochError::Parse {
                         source: ParsingErrors::UnknownFormat,
+                        details: "invalid minutes",
                     })
                 }
             }
@@ -206,6 +219,7 @@ impl Token {
                 } else {
                     return Err(EpochError::Parse {
                         source: ParsingErrors::UnknownFormat,
+                        details: "invalid seconds",
                     });
                 }
                 Ok(())
@@ -220,6 +234,7 @@ impl Token {
                 } else {
                     return Err(EpochError::Parse {
                         source: ParsingErrors::UnknownFormat,
+                        details: "invalid subseconds",
                     });
                 }
                 Ok(())
@@ -231,6 +246,7 @@ impl Token {
                 } else {
                     Err(EpochError::Parse {
                         source: ParsingErrors::UnknownFormat,
+                        details: "invalid hours offset",
                     })
                 }
             }
@@ -242,6 +258,7 @@ impl Token {
                 } else {
                     Err(EpochError::Parse {
                         source: ParsingErrors::UnknownFormat,
+                        details: "invalid minutes offset",
                     })
                 }
             }

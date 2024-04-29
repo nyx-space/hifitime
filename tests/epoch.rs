@@ -926,7 +926,8 @@ fn test_from_str() {
     assert_eq!(
         Epoch::from_str("blah"),
         Err(EpochError::Parse {
-            source: ParsingErrors::UnknownFormat
+            source: ParsingErrors::UnknownFormat,
+            details: "less than 7 characters"
         })
     );
 }

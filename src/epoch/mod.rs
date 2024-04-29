@@ -641,7 +641,9 @@ impl Epoch {
     /// Initializes an Epoch from the Format as a string.
     pub fn from_format_str(s_in: &str, format_str: &str) -> Result<Self, EpochError> {
         Format::from_str(format_str)
-            .with_context(|_| ParseSnafu)?
+            .with_context(|_| ParseSnafu {
+                details: "when using format string",
+            })?
             .parse(s_in)
     }
 
@@ -1289,6 +1291,7 @@ impl FromStr for Epoch {
             // We need at least seven characters for a valid epoch
             Err(EpochError::Parse {
                 source: ParsingErrors::UnknownFormat,
+                details: "less than 7 characters",
             })
         } else {
             let format = if &s[..2] == "JD" {
@@ -1304,7 +1307,9 @@ impl FromStr for Epoch {
 
             // This is a valid numerical format.
             // Parse the time scale from the last three characters (TS trims white spaces).
-            let ts = TimeScale::from_str(&s[s.len() - 3..])?;
+            let ts = TimeScale::from_str(&s[s.len() - 3..]).with_context(|_| ParseSnafu {
+                details: "parsing from string",
+            })?;
             // Iterate through the string to figure out where the numeric data starts and ends.
             let start_idx = format.len();
             let num_str = s[start_idx..s.len() - ts.formatted_len()].trim();
@@ -1313,6 +1318,7 @@ impl FromStr for Epoch {
                 Err(_) => {
                     return Err(EpochError::Parse {
                         source: ParsingErrors::ValueError,
+                        details: "parsing as JD, MJD, or SEC",
                     })
                 }
             };
@@ -1325,6 +1331,7 @@ impl FromStr for Epoch {
                     TimeScale::UTC => Ok(Self::from_jde_utc(value)),
                     _ => Err(EpochError::Parse {
                         source: ParsingErrors::UnsupportedTimeSystem,
+                        details: "for Julian Date",
                     }),
                 },
                 "MJD" => match ts {
@@ -1334,6 +1341,7 @@ impl FromStr for Epoch {
                     }
                     _ => Err(EpochError::Parse {
                         source: ParsingErrors::UnsupportedTimeSystem,
+                        details: "for Modified Julian Date",
                     }),
                 },
                 "SEC" => match ts {
@@ -1348,6 +1356,7 @@ impl FromStr for Epoch {
                 },
                 _ => Err(EpochError::Parse {
                     source: ParsingErrors::UnknownFormat,
+                    details: "suffix not understood",
                 }),
             }
         }

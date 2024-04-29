@@ -37,6 +37,7 @@ impl LeapSecondsFile {
             Err(e) => {
                 return Err(EpochError::Parse {
                     source: ParsingErrors::InOut { err: e.kind() },
+                    details: "opening leap seconds file",
                 })
             }
         };
@@ -45,6 +46,7 @@ impl LeapSecondsFile {
         if let Err(e) = f.read_to_string(&mut contents) {
             return Err(EpochError::Parse {
                 source: ParsingErrors::InOut { err: e.kind() },
+                details: "reading leap seconds file",
             });
         }
 
@@ -60,6 +62,7 @@ impl LeapSecondsFile {
                     if data.len() < 2 {
                         return Err(EpochError::Parse {
                             source: ParsingErrors::UnknownFormat,
+                            details: "leap seconds file should have two columns exactly",
                         });
                     }
 
@@ -68,6 +71,7 @@ impl LeapSecondsFile {
                         Err(_) => {
                             return Err(EpochError::Parse {
                                 source: ParsingErrors::ValueError,
+                                details: "first column value is not numeric",
                             })
                         }
                     };
@@ -77,6 +81,7 @@ impl LeapSecondsFile {
                         Err(_) => {
                             return Err(EpochError::Parse {
                                 source: ParsingErrors::ValueError,
+                                details: "second column value is not numeric",
                             })
                         }
                     };
