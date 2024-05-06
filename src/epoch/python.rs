@@ -432,7 +432,7 @@ impl Epoch {
     /// Equivalent to `datetime.strftime`, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
     fn strftime(&self, format_str: String) -> PyResult<String> {
         use crate::efmt::Formatter;
-        let fmt = Format::from_str(&format_str).map_err(|e| PyErr::from(e))?;
+        let fmt = Format::from_str(&format_str)?;
         Ok(format!("{}", Formatter::new(*self, fmt)))
     }
 
