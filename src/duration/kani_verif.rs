@@ -10,7 +10,7 @@
 
 // Here lives all of the formal verification for Duration.
 
-use super::{Duration, Errors};
+use super::{Duration, DurationError};
 use crate::NANOSECONDS_PER_CENTURY;
 
 use kani::Arbitrary;
@@ -43,7 +43,7 @@ fn formal_duration_truncated_ns_reciprocity() {
         // Then it does not fit on a i64, so this function should return an error
         assert_eq!(
             dur_from_part.try_truncated_nanoseconds(),
-            Err(Errors::Overflow)
+            Err(DurationError::Overflow)
         );
     } else if centuries == -1 {
         // If we are negative by just enough that the centuries is negative, then the truncated seconds
