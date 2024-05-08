@@ -8,37 +8,11 @@
  * Documentation: https://nyxspace.com/
  */
 
-use core::fmt;
 use pyo3::{exceptions::PyException, prelude::*};
 
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondsFile};
 use crate::prelude::*;
 use crate::ut1::Ut1Provider;
-
-#[derive(Debug)]
-#[repr(C)]
-#[cfg_attr(feature = "python", pyclass)]
-pub enum Exceptions {
-    EpochError { err: String },
-    ParsingError { err: String },
-    DurationError { err: String },
-}
-
-impl fmt::Display for Exceptions {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Self::EpochError { err } => write!(f, "{err}"),
-            Self::DurationError { err } => write!(f, "{err}"),
-            Self::ParsingError { err } => write!(f, "{err}"),
-        }
-    }
-}
-
-impl From<Exceptions> for PyErr {
-    fn from(err: Exceptions) -> PyErr {
-        PyException::new_err(err.to_string())
-    }
-}
 
 impl From<EpochError> for PyErr {
     fn from(err: EpochError) -> PyErr {
@@ -58,34 +32,9 @@ impl From<DurationError> for PyErr {
     }
 }
 
-impl From<EpochError> for Exceptions {
-    fn from(err: EpochError) -> Exceptions {
-        Exceptions::EpochError {
-            err: err.to_string(),
-        }
-    }
-}
-
-impl From<ParsingError> for Exceptions {
-    fn from(err: ParsingError) -> Exceptions {
-        Exceptions::ParsingError {
-            err: err.to_string(),
-        }
-    }
-}
-
-impl From<DurationError> for Exceptions {
-    fn from(err: DurationError) -> Exceptions {
-        Exceptions::DurationError {
-            err: err.to_string(),
-        }
-    }
-}
-
 #[pymodule]
 fn hifitime(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Epoch>()?;
-    m.add_class::<Exceptions>()?;
     m.add_class::<TimeScale>()?;
     m.add_class::<TimeSeries>()?;
     m.add_class::<Duration>()?;
