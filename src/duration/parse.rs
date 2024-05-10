@@ -9,11 +9,11 @@
 */
 
 use super::{Duration, Unit};
-use crate::{Errors, ParsingErrors};
+use crate::{EpochError, ParsingError};
 use core::str::FromStr;
 
 impl FromStr for Duration {
-    type Err = Errors;
+    type Err = EpochError;
 
     /// Attempts to convert a simple string to a Duration. Does not yet support complicated durations.
     ///
@@ -53,7 +53,10 @@ impl FromStr for Duration {
         let s = s_in.trim();
 
         if s.is_empty() {
-            return Err(Errors::ParseError(ParsingErrors::ValueError));
+            return Err(EpochError::Parse {
+                source: ParsingError::NothingToParse,
+                details: "input string is empty",
+            });
         }
 
         // There is at least one character, so we can unwrap this.
@@ -75,13 +78,21 @@ impl FromStr for Duration {
                     1
                 } else {
                     // This invalid
-                    return Err(Errors::ParseError(ParsingErrors::ValueError));
+                    return Err(EpochError::Parse {
+                        source: ParsingError::InvalidTimezone,
+                        details: "invalid timezone format [+/-]HH:MM",
+                    });
                 };
 
                 // Fetch the hours
                 let hours: i64 = match lexical_core::parse(s[indexes.0..indexes.1].as_bytes()) {
                     Ok(val) => val,
-                    Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
+                    Err(err) => {
+                        return Err(EpochError::Parse {
+                            source: ParsingError::Lexical { err },
+                            details: "invalid hours",
+                        })
+                    }
                 };
 
                 let mut minutes: i64 = 0;
@@ -95,12 +106,17 @@ impl FromStr for Duration {
                         // Fetch the minutes
                         match lexical_core::parse(subs.as_bytes()) {
                             Ok(val) => minutes = val,
-                            Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
+                            Err(_) => {
+                                return Err(EpochError::Parse {
+                                    source: ParsingError::ValueError,
+                                    details: "invalid minute",
+                                })
+                            }
                         }
 
                         match s.get(indexes.2 + 2 * colon..) {
                             None => {
-                                // Do nothing, there are no seconds inthis offset
+                                // Do nothing, there are no seconds in this offset
                             }
                             Some(subs) => {
                                 if !subs.is_empty() {
@@ -108,9 +124,10 @@ impl FromStr for Duration {
                                     match lexical_core::parse(subs.as_bytes()) {
                                         Ok(val) => seconds = val,
                                         Err(_) => {
-                                            return Err(Errors::ParseError(
-                                                ParsingErrors::ValueError,
-                                            ))
+                                            return Err(EpochError::Parse {
+                                                source: ParsingError::ValueError,
+                                                details: "invalid seconds",
+                                            })
                                         }
                                     }
                                 }
@@ -137,12 +154,20 @@ impl FromStr for Duration {
                 if seeking_number {
                     if prev_idx == idx {
                         // We've reached the end of the string and it didn't end with a unit
-                        return Err(Errors::ParseError(ParsingErrors::UnknownOrMissingUnit));
+                        return Err(EpochError::Parse {
+                            source: ParsingError::UnknownOrMissingUnit,
+                            details: "expect a unit after a numeric",
+                        });
                     }
                     // We've found a new space so let's parse whatever precedes it
                     match lexical_core::parse(s[prev_idx..idx].as_bytes()) {
                         Ok(val) => latest_value = val,
-                        Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
+                        Err(_) => {
+                            return Err(EpochError::Parse {
+                                source: ParsingError::ValueError,
+                                details: "could not parse what precedes the space",
+                            })
+                        }
                     }
                     // We'll now seek a unit
                     seeking_number = false;
@@ -158,7 +183,10 @@ impl FromStr for Duration {
                         "us" | "microsecond" | "microseconds" => 5,
                         "ns" | "nanosecond" | "nanoseconds" => 6,
                         _ => {
-                            return Err(Errors::ParseError(ParsingErrors::UnknownOrMissingUnit));
+                            return Err(EpochError::Parse {
+                                source: ParsingError::UnknownOrMissingUnit,
+                                details: "unknown unit",
+                            });
                         }
                     };
                     // Store the value

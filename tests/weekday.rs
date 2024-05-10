@@ -3,7 +3,7 @@ extern crate core;
 
 use core::str::FromStr;
 
-use hifitime::{Duration, Epoch, ParsingErrors, TimeUnits, Unit, Weekday};
+use hifitime::{Duration, Epoch, ParsingError, TimeUnits, Unit, Weekday};
 
 #[test]
 fn test_basic_ops() {
@@ -288,8 +288,5 @@ fn test_formatting() {
 fn test_from_str() {
     use core::str::FromStr;
 
-    assert_eq!(
-        Weekday::from_str("fake"),
-        Err(ParsingErrors::UnknownWeekday)
-    );
+    assert_eq!(Weekday::from_str("fake"), Err(ParsingError::UnknownWeekday));
 }

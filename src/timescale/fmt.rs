@@ -11,7 +11,7 @@
 use core::fmt;
 use core::str::FromStr;
 
-use crate::{Errors, ParsingErrors};
+use crate::ParsingError;
 
 use super::TimeScale;
 
@@ -47,7 +47,7 @@ impl fmt::LowerHex for TimeScale {
 }
 
 impl FromStr for TimeScale {
-    type Err = Errors;
+    type Err = ParsingError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let val = s.trim();
@@ -70,7 +70,7 @@ impl FromStr for TimeScale {
         } else if val == "QZSST" || val == "QZSS" {
             Ok(Self::QZSST)
         } else {
-            Err(Errors::ParseError(ParsingErrors::TimeSystem))
+            Err(ParsingError::TimeSystem)
         }
     }
 }

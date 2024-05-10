@@ -2,7 +2,7 @@
 extern crate core;
 
 use hifitime::{
-    is_gregorian_valid, Duration, Epoch, Errors, ParsingErrors, TimeScale, TimeUnits, Unit,
+    is_gregorian_valid, Duration, Epoch, EpochError, ParsingError, TimeScale, TimeUnits, Unit,
     Weekday, BDT_REF_EPOCH, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR, GPST_REF_EPOCH, GST_REF_EPOCH,
     J1900_OFFSET, J1900_REF_EPOCH, J2000_OFFSET, J2000_REF_EPOCH, J2000_TO_J1900_DURATION,
     MJD_OFFSET, SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET,
@@ -925,7 +925,10 @@ fn test_from_str() {
 
     assert_eq!(
         Epoch::from_str("blah"),
-        Err(Errors::ParseError(ParsingErrors::UnknownFormat))
+        Err(EpochError::Parse {
+            source: ParsingError::UnknownFormat,
+            details: "less than 7 characters"
+        })
     );
 }
 
@@ -1904,7 +1907,7 @@ fn test_epoch_formatter() {
     // Test an invalid token
     assert_eq!(
         Format::from_str("%p"),
-        Err(hifitime::ParsingErrors::UnknownFormattingToken('p'))
+        Err(hifitime::ParsingError::UnknownToken { token: 'p' })
     );
 }
 

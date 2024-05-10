@@ -8,9 +8,12 @@
  * Documentation: https://nyxspace.com/
  */
 
+use snafu::ResultExt;
+
 use super::formatter::Item;
-use crate::{parser::Token, ParsingErrors};
-use crate::{Epoch, Errors, MonthName, TimeScale, Unit, Weekday};
+use crate::errors::ParseSnafu;
+use crate::{parser::Token, ParsingError};
+use crate::{Epoch, EpochError, MonthName, TimeScale, Unit, Weekday};
 use core::fmt;
 use core::str::FromStr;
 
@@ -143,7 +146,7 @@ impl Format {
         false
     }
 
-    pub fn parse(&self, s_in: &str) -> Result<Epoch, Errors> {
+    pub fn parse(&self, s_in: &str) -> Result<Epoch, EpochError> {
         // All of the integers in a date: year, month, day, hour, minute, second, subsecond, offset hours, offset minutes
         let mut decomposed = [0_i32; MAX_TOKENS];
         // The parsed time scale, defaults to UTC
@@ -158,7 +161,12 @@ impl Format {
         let mut cur_item_idx = 0;
         let mut cur_item = match self.items[cur_item_idx] {
             Some(item) => item,
-            None => return Err(Errors::ParseError(ParsingErrors::UnknownFormat)),
+            None => {
+                return Err(EpochError::Parse {
+                    source: ParsingError::NothingToParse,
+                    details: "format string contains no tokens",
+                })
+            }
         };
         let mut cur_token = cur_item.token;
         let mut prev_item = cur_item;
@@ -188,7 +196,9 @@ impl Format {
                     // Then we match the timescale directly.
                     if idx != s.len() - 1 {
                         // We have some remaining characters, so let's parse those in the only formats we know.
-                        ts = TimeScale::from_str(s[idx..].trim())?;
+                        ts = TimeScale::from_str(s[idx..].trim()).with_context(|_| ParseSnafu {
+                            details: "when parsing from format string",
+                        })?;
                     }
                     break;
                 } else if char == 'Z' {
@@ -205,11 +215,14 @@ impl Format {
                         && (cur_item.second_sep_char.is_none()
                             || (cur_item.second_sep_char_is_not(char)))
                     {
-                        return Err(Errors::ParseError(ParsingErrors::UnexpectedCharacter {
-                            found: char,
-                            option1: cur_item.sep_char,
-                            option2: cur_item.second_sep_char,
-                        }));
+                        return Err(EpochError::Parse {
+                            source: ParsingError::UnexpectedCharacter {
+                                found: char,
+                                option1: cur_item.sep_char,
+                                option2: cur_item.second_sep_char,
+                            },
+                            details: "when parsing from format string",
+                        });
                     }
 
                     // Advance the token, unless we're at the end of the tokens.
@@ -234,23 +247,33 @@ impl Format {
 
                 match prev_token {
                     Token::YearShort => {
-                        decomposed[0] = sub_str
-                            .parse::<i32>()
-                            .map_err(|_| Errors::ParseError(ParsingErrors::ValueError))?
-                            + 2000;
+                        decomposed[0] = sub_str.parse::<i32>().map_err(|_| EpochError::Parse {
+                            source: ParsingError::ValueError,
+                            details: "could not parse year as i32",
+                        })? + 2000;
                     }
                     Token::DayOfYear => {
                         // We must parse this as a floating point value.
                         match lexical_core::parse(sub_str.as_bytes()) {
                             Ok(val) => day_of_year = Some(val),
-                            Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
+                            Err(_) => {
+                                return Err(EpochError::Parse {
+                                    source: ParsingError::ValueError,
+                                    details: "could not parse day of year as f64",
+                                })
+                            }
                         }
                     }
                     Token::Weekday | Token::WeekdayShort => {
                         // Set the weekday
                         match Weekday::from_str(sub_str) {
                             Ok(day) => weekday = Some(day),
-                            Err(err) => return Err(Errors::ParseError(err)),
+                            Err(source) => {
+                                return Err(EpochError::Parse {
+                                    source,
+                                    details: "could not parse weekday",
+                                })
+                            }
                         }
                     }
                     Token::WeekdayDecimal => {
@@ -261,7 +284,12 @@ impl Format {
                             Ok(month) => {
                                 decomposed[1] = ((month as u8) + 1) as i32;
                             }
-                            Err(_) => return Err(Errors::ParseError(ParsingErrors::ValueError)),
+                            Err(_) => {
+                                return Err(EpochError::Parse {
+                                    source: ParsingError::ValueError,
+                                    details: "could not parse month name",
+                                })
+                            }
                         }
                     }
                     _ => {
@@ -294,8 +322,11 @@ impl Format {
                                     },
                                 }
                             }
-                            Err(_) => {
-                                return Err(Errors::ParseError(ParsingErrors::ValueError));
+                            Err(err) => {
+                                return Err(EpochError::Parse {
+                                    source: ParsingError::Lexical { err },
+                                    details: "could not parse numerical",
+                                });
                             }
                         }
                     }
@@ -343,10 +374,13 @@ impl Format {
         if let Some(weekday) = weekday {
             // Check that the weekday is correct
             if weekday != epoch.weekday() {
-                return Err(Errors::ParseError(ParsingErrors::WeekdayMismatch {
-                    found: weekday,
-                    expected: epoch.weekday(),
-                }));
+                return Err(EpochError::Parse {
+                    source: ParsingError::WeekdayMismatch {
+                        found: weekday,
+                        expected: epoch.weekday(),
+                    },
+                    details: "weekday and day number do not match",
+                });
             }
         }
 
@@ -376,7 +410,7 @@ impl fmt::Debug for Format {
 }
 
 impl FromStr for Format {
-    type Err = ParsingErrors;
+    type Err = ParsingError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut me = Format::default();
         for token in s.split('%') {
@@ -518,7 +552,7 @@ impl FromStr for Format {
                         ));
                         me.num_items += 1;
                     }
-                    _ => return Err(ParsingErrors::UnknownFormattingToken(char)),
+                    _ => return Err(ParsingError::UnknownToken { token: char }),
                 },
                 None => continue, // We're probably just at the start of the string
             }

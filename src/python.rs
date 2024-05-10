@@ -10,14 +10,24 @@
 
 use pyo3::{exceptions::PyException, prelude::*};
 
-use crate::prelude::*;
-
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondsFile};
-
+use crate::prelude::*;
 use crate::ut1::Ut1Provider;
 
-impl std::convert::From<Errors> for PyErr {
-    fn from(err: Errors) -> PyErr {
+impl From<EpochError> for PyErr {
+    fn from(err: EpochError) -> PyErr {
+        PyException::new_err(err.to_string())
+    }
+}
+
+impl From<ParsingError> for PyErr {
+    fn from(err: ParsingError) -> PyErr {
+        PyException::new_err(err.to_string())
+    }
+}
+
+impl From<DurationError> for PyErr {
+    fn from(err: DurationError) -> PyErr {
         PyException::new_err(err.to_string())
     }
 }

@@ -8,7 +8,7 @@
  * Documentation: https://nyxspace.com/
  */
 
-use crate::ParsingErrors;
+use crate::ParsingError;
 use core::fmt;
 use core::str::FromStr;
 
@@ -44,7 +44,7 @@ impl Default for MonthName {
 }
 
 impl FromStr for MonthName {
-    type Err = ParsingErrors;
+    type Err = ParsingError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.trim() {
             "jan" | "Jan" | "JAN" | "January" | "JANUARY" | "january" => Ok(Self::January),
@@ -59,7 +59,7 @@ impl FromStr for MonthName {
             "oct" | "Oct" | "OCT" | "October" | "OCTOBER" | "october" => Ok(Self::October),
             "nov" | "Nov" | "NOV" | "November" | "NOVEMBER" | "november" => Ok(Self::November),
             "dec" | "Dec" | "DEC" | "December" | "DECEMBER" | "december" => Ok(Self::December),
-            _ => Err(ParsingErrors::UnknownMonthName),
+            _ => Err(ParsingError::UnknownMonthName),
         }
     }
 }
