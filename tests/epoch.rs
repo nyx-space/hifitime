@@ -2007,12 +2007,6 @@ fn regression_test_gh_261() {
     for (mcnt, month) in [1, 3, 8, 12].iter().enumerate() {
         for day in 25..=30 {
             let epoch = Epoch::from_gregorian_utc(1607, *month, day, 0, 0, 0, 0);
-            println!("{} - {}", epoch, epoch.to_jde_utc_days());
-
-            // assert_eq!(
-            //     format!("{epoch}"),
-            //     format!("1607-{month:02}-{day:02}T00:00:00 UTC")
-            // );
 
             // The initial validation cases is 25 days away.
             let expected = validation_cases[mcnt] - 25.0 + (day as f64);
@@ -2022,6 +2016,13 @@ fn regression_test_gh_261() {
                 expected,
                 "err = {}",
                 epoch.to_jde_utc_days() - expected
+            );
+
+            println!("{} - {}", epoch, epoch.to_jde_utc_days());
+
+            assert_eq!(
+                format!("{epoch}"),
+                format!("1607-{month:02}-{day:02}T00:00:00 UTC")
             );
         }
     }
