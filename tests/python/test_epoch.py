@@ -29,7 +29,7 @@ def test_strtime():
 
 def test_utcnow():
     epoch = Epoch.system_now()
-    dt = datetime.now(datetime.UTC)
+    dt = datetime.utcnow()
 
     # Hifitime uses a different clock to Python and print down to the nanosecond
     assert dt.isoformat()[:20] == f"{epoch}"[:20]
