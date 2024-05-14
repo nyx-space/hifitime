@@ -2018,8 +2018,6 @@ fn regression_test_gh_261() {
                 epoch.to_jde_utc_days() - expected
             );
 
-            println!("{} - {}", epoch, epoch.to_jde_utc_days());
-
             assert_eq!(
                 format!("{epoch}"),
                 format!("1607-{month:02}-{day:02}T00:00:00 UTC")

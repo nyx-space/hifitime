@@ -36,8 +36,7 @@ impl Epoch {
         let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
         year += HIFITIME_REF_YEAR;
 
-        // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
-        // between 1900 and `year`
+        // Base calculation was on 365 days, so we need to remove one day per leap year
         if year >= HIFITIME_REF_YEAR {
             for year in HIFITIME_REF_YEAR..year {
                 if is_leap_year(year) {
@@ -50,33 +49,21 @@ impl Epoch {
                     days_in_year += 1.0;
                 }
             }
+            if days_in_year > DAYS_PER_YEAR_NLD {
+                // We've overflowed the number of days in a year because of the leap years
+                year += 1;
+                days_in_year -= DAYS_PER_YEAR_NLD;
+            }
         }
 
-        // Get the month from the exact number of seconds between the start of the year and now
-        let mut month = 1;
-        let mut day;
+        let month_search = CUMULATIVE_DAYS_FOR_MONTH.binary_search(&(days_in_year as u16));
+        let mut month = match month_search {
+            Ok(index) => index + 1, // Exact month found, add 1 for month number (indexing starts from 0)
+            Err(insertion_point) => insertion_point, // We're before the number of months, so use the insertion point as the month number
+        };
 
-        let mut days_so_far = 0.0;
-        loop {
-            let mut days_next_month = usual_days_per_month(month - 1) as f64;
-            if month == 2 && is_leap_year(year) {
-                days_next_month += 1.0;
-            }
-
-            if days_so_far + days_next_month > days_in_year || month == 12 {
-                // We've found the month and can calculate the days
-                day = if sign >= 0 {
-                    days_in_year - days_so_far + 1.0
-                } else {
-                    days_in_year - days_so_far
-                };
-                break;
-            }
-
-            // Otherwise, count up the number of days this year so far and keep track of the month.
-            days_so_far += days_next_month;
-            month += 1;
-        }
+        let mut day = days_in_year - CUMULATIVE_DAYS_FOR_MONTH[month - 1] as f64;
+        day += 1.0;
 
         if hours >= 24 {
             hours -= 24;
@@ -113,19 +100,19 @@ impl Epoch {
 
             // Last check on the validity of the Gregorian date
 
-            if time == Duration::ZERO || month == 12 && day == 32.0 {
-                // We've underflowed since we're before 1900.
-                year += 1;
-                month = 1;
-                day = 1.0;
-            }
+            // if time == Duration::ZERO || month == 12 && day == 32.0 {
+            //     // We've underflowed since we're before 1900.
+            //     year += 1;
+            //     month = 1;
+            //     day = 1.0;
+            // }
 
             let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanos) =
                 (24 * Unit::Hour + time).decompose();
 
             (
                 year,
-                month,
+                month as u8,
                 day as u8,
                 hours as u8,
                 minutes as u8,
@@ -137,7 +124,7 @@ impl Epoch {
         } else {
             (
                 year,
-                month,
+                month as u8,
                 day as u8,
                 hours as u8,
                 minutes as u8,
