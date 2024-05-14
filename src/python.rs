@@ -8,30 +8,17 @@
  * Documentation: https://nyxspace.com/
  */
 
-use pyo3::{exceptions::PyException, prelude::*};
+use pyo3::{
+    exceptions::{PyBaseException, PyException},
+    prelude::*,
+    types::{PyDict, PyTuple},
+};
 
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondsFile};
 use crate::prelude::*;
 use crate::ut1::Ut1Provider;
 
-impl From<EpochError> for PyErr {
-    fn from(err: EpochError) -> PyErr {
-        PyException::new_err(err.to_string())
-    }
-}
-
-impl From<ParsingError> for PyErr {
-    fn from(err: ParsingError) -> PyErr {
-        PyException::new_err(err.to_string())
-    }
-}
-
-impl From<DurationError> for PyErr {
-    fn from(err: DurationError) -> PyErr {
-        PyException::new_err(err.to_string())
-    }
-}
-
+// Keep the module at the top
 #[pymodule]
 fn hifitime(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Epoch>()?;
@@ -42,5 +29,66 @@ fn hifitime(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<LatestLeapSeconds>()?;
     m.add_class::<LeapSecondsFile>()?;
     m.add_class::<Ut1Provider>()?;
+    m.add_class::<PyEpochError>()?;
+    m.add_class::<PyDurationError>()?;
+    m.add_class::<PyParsingError>()?;
     Ok(())
+}
+
+#[pyclass]
+#[pyo3(name = "EpochError", extends = PyBaseException)]
+pub struct PyEpochError {}
+
+#[pymethods]
+impl PyEpochError {
+    #[new]
+    #[pyo3(signature = (*_args, **_kwargs))]
+    fn new(_args: Bound<'_, PyTuple>, _kwargs: Option<Bound<'_, PyDict>>) -> Self {
+        Self {}
+    }
+}
+
+#[pyclass]
+#[pyo3(name = "ParsingError", extends = PyBaseException)]
+pub struct PyParsingError {}
+
+#[pymethods]
+impl PyParsingError {
+    #[new]
+    #[pyo3(signature = (*_args, **_kwargs))]
+    fn new(_args: Bound<'_, PyTuple>, _kwargs: Option<Bound<'_, PyDict>>) -> Self {
+        Self {}
+    }
+}
+
+#[pyclass]
+#[pyo3(name = "DurationError", extends = PyBaseException)]
+pub struct PyDurationError {}
+
+#[pymethods]
+impl PyDurationError {
+    #[new]
+    #[pyo3(signature = (*_args, **_kwargs))]
+    fn new(_args: Bound<'_, PyTuple>, _kwargs: Option<Bound<'_, PyDict>>) -> Self {
+        Self {}
+    }
+}
+
+// convert you library error into a PyErr using the custom exception type
+impl From<EpochError> for PyErr {
+    fn from(err: EpochError) -> Self {
+        PyErr::new::<PyEpochError, _>(err.to_string())
+    }
+}
+
+impl From<ParsingError> for PyErr {
+    fn from(err: ParsingError) -> PyErr {
+        PyErr::new::<PyParsingError, _>(err.to_string())
+    }
+}
+
+impl From<DurationError> for PyErr {
+    fn from(err: DurationError) -> PyErr {
+        PyException::new_err(err.to_string())
+    }
 }
