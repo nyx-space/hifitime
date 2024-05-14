@@ -1,4 +1,4 @@
-from hifitime import Epoch, TimeSeries, Unit, Duration
+from hifitime import Duration, Epoch, EpochError, ParsingError, TimeSeries, Unit
 from datetime import datetime
 import pickle
 
@@ -18,6 +18,13 @@ def test_strtime():
     assert Epoch.strptime(dt_fmt, "%A, %d %B %Y %H:%M:%S") == epoch
 
     assert pickle.loads(pickle.dumps(epoch)) == epoch
+
+    try:
+        epoch.strftime("%o")
+    except ParsingError as e:
+        print(f"caught {e}")
+    else:
+        raise AssertionError("failed to catch parsing error")
 
 
 def test_utcnow():
@@ -67,3 +74,11 @@ def test_duration_eq():
 
     dur = Duration("37 min 26 s")
     assert pickle.loads(pickle.dumps(dur)) == dur
+
+def test_exceptions():
+    try:
+        Epoch("invalid")
+    except EpochError as e:
+        print(f"caught {e}")
+    else:
+        raise AssertionError("failed to catch epoch error")
