@@ -24,7 +24,7 @@ impl Epoch {
         duration: Duration,
         ts: TimeScale,
     ) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let (sign, days, mut hours, minutes, seconds, milliseconds, microseconds, nanos) =
+        let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
             (duration + ts.gregorian_epoch_offset()).decompose();
 
         let days_f64 = if sign < 0 {
@@ -56,8 +56,14 @@ impl Epoch {
             }
         }
 
+        if is_leap_year(year) && days_in_year > 59.0 {
+            // NOTE: If on 29th of February, then the day is not finished yet, and therefore
+            // the extra seconds are added below as per a normal day.
+            days_in_year -= 1.0;
+        }
+
         let month_search = CUMULATIVE_DAYS_FOR_MONTH.binary_search(&(days_in_year as u16));
-        let mut month = match month_search {
+        let month = match month_search {
             Ok(index) => index + 1, // Exact month found, add 1 for month number (indexing starts from 0)
             Err(insertion_point) => insertion_point, // We're before the number of months, so use the insertion point as the month number
         };
@@ -65,75 +71,17 @@ impl Epoch {
         let mut day = days_in_year - CUMULATIVE_DAYS_FOR_MONTH[month - 1] as f64;
         day += 1.0;
 
-        if hours >= 24 {
-            hours -= 24;
-            if year >= HIFITIME_REF_YEAR {
-                day += 1.0;
-            } else {
-                day -= 1.0;
-            }
-        }
-
-        if day <= 0.0 || days_in_year < 0.0 {
-            // We've overflowed backward
-            month = 12;
-            year -= 1;
-            // NOTE: Leap year is already accounted for in the TAI duration when counting backward.
-            day = if days_in_year < 0.0 {
-                days_in_year + usual_days_per_month(11) as f64 + 1.0
-            } else {
-                usual_days_per_month(11) as f64
-            };
-        }
-
-        if sign < 0 {
-            let time = Duration::compose(
-                sign,
-                0,
-                hours,
-                minutes,
-                seconds,
-                milliseconds,
-                microseconds,
-                nanos,
-            );
-
-            // Last check on the validity of the Gregorian date
-
-            // if time == Duration::ZERO || month == 12 && day == 32.0 {
-            //     // We've underflowed since we're before 1900.
-            //     year += 1;
-            //     month = 1;
-            //     day = 1.0;
-            // }
-
-            let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-                (24 * Unit::Hour + time).decompose();
-
-            (
-                year,
-                month as u8,
-                day as u8,
-                hours as u8,
-                minutes as u8,
-                seconds as u8,
-                (nanos
-                    + microseconds * NANOSECONDS_PER_MICROSECOND
-                    + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
-            )
-        } else {
-            (
-                year,
-                month as u8,
-                day as u8,
-                hours as u8,
-                minutes as u8,
-                seconds as u8,
-                (nanos
-                    + microseconds * NANOSECONDS_PER_MICROSECOND
-                    + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
-            )
-        }
+        (
+            year,
+            month as u8,
+            day as u8,
+            hours as u8,
+            minutes as u8,
+            seconds as u8,
+            (nanos
+                + microseconds * NANOSECONDS_PER_MICROSECOND
+                + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
+        )
     }
 
     #[cfg(feature = "std")]
