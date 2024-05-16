@@ -692,7 +692,15 @@ impl fmt::Display for Duration {
             }
 
             let values = [days, hours, minutes, seconds, milli, us, nano];
-            let units = ["days", "h", "min", "s", "ms", "μs", "ns"];
+            let units = [
+                if days > 1 { "days" } else { "day" },
+                "h",
+                "min",
+                "s",
+                "ms",
+                "μs",
+                "ns",
+            ];
 
             let mut insert_space = false;
             for (val, unit) in values.iter().zip(units.iter()) {
@@ -767,7 +775,7 @@ mod ut_duration {
     fn test_serdes() {
         for (dt, content) in [
             (Duration::from_seconds(10.1), r#""10 s 100 ms""#),
-            (1.0_f64.days() + 99.nanoseconds(), r#""1 days 99 ns""#),
+            (1.0_f64.days() + 99.nanoseconds(), r#""1 day 99 ns""#),
             (
                 1.0_f64.centuries() + 99.seconds(),
                 r#""36525 days 1 min 39 s""#,

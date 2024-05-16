@@ -61,7 +61,7 @@ impl Epoch {
             }
         }
 
-        if is_leap_year(year) && days_in_year > 59.0 {
+        if is_leap_year(year) && days_in_year > CUMULATIVE_DAYS_FOR_MONTH[2] as f64 {
             days_in_year -= 1.0;
         }
 
@@ -185,7 +185,9 @@ impl Epoch {
     }
 
     /// Attempts to build an Epoch from the provided Gregorian date and time in the provided time scale.
-    /// NOTE: If the time scale is TDB, this function assumes that the SPICE format is used
+    ///
+    /// Note:
+    /// The month is ONE indexed, i.e. January is month 1 and December is month 12.
     #[allow(clippy::too_many_arguments)]
     pub fn maybe_from_gregorian(
         year: i32,
@@ -592,7 +594,7 @@ pub const fn is_gregorian_valid(
     nanos: u32,
 ) -> bool {
     let max_seconds = if (month == 12 || month == 6)
-        && day == usual_days_per_month(month - 1)
+        && day == usual_days_per_month(month)
         && hour == 23
         && minute == 59
         && ((month == 6 && july_years(year)) || (month == 12 && january_years(year + 1)))
@@ -613,7 +615,7 @@ pub const fn is_gregorian_valid(
     {
         return false;
     }
-    if day > usual_days_per_month(month - 1) && (month != 2 || !is_leap_year(year)) {
+    if day > usual_days_per_month(month) && (month != 2 || !is_leap_year(year)) {
         // Not in February or not a leap year
         return false;
     }
@@ -651,12 +653,12 @@ const fn july_years(year: i32) -> bool {
     )
 }
 
-/// Returns the usual days in a given month (zero indexed, i.e. January is month zero and December is month 11)
+/// Returns the usual days in a given month (ONE indexed, i.e. January is month ONE and December is month 12)
 ///
 /// # Warning
 /// This will return 0 days if the month is invalid.
 const fn usual_days_per_month(month: u8) -> u8 {
-    match month + 1 {
+    match month {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
         4 | 6 | 9 | 11 => 30,
         2 => 28,
@@ -669,7 +671,7 @@ const CUMULATIVE_DAYS_FOR_MONTH: [u16; 12] = {
     let mut days = [0; 12];
     let mut month = 1;
     while month < 12 {
-        days[month] = days[month - 1] + usual_days_per_month(month as u8 - 1) as u16;
+        days[month] = days[month - 1] + usual_days_per_month(month as u8) as u16;
         month += 1;
     }
     days
