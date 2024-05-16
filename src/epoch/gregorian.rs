@@ -43,6 +43,11 @@ impl Epoch {
                     days_in_year -= 1.0;
                 }
             }
+            if days_in_year < 0.0 {
+                // We've underflowed the number of days in a year because of the leap years
+                year -= 1;
+                days_in_year += DAYS_PER_YEAR_NLD;
+            }
         } else {
             for year in year..HIFITIME_REF_YEAR {
                 if is_leap_year(year) {
@@ -57,8 +62,6 @@ impl Epoch {
         }
 
         if is_leap_year(year) && days_in_year > 59.0 {
-            // NOTE: If on 29th of February, then the day is not finished yet, and therefore
-            // the extra seconds are added below as per a normal day.
             days_in_year -= 1.0;
         }
 
@@ -68,8 +71,8 @@ impl Epoch {
             Err(insertion_point) => insertion_point, // We're before the number of months, so use the insertion point as the month number
         };
 
-        let mut day = days_in_year - CUMULATIVE_DAYS_FOR_MONTH[month - 1] as f64;
-        day += 1.0;
+        // Directly compute the day from the computed month, and ensure that day counter is one indexed.
+        let day = days_in_year - CUMULATIVE_DAYS_FOR_MONTH[month - 1] as f64 + 1.0;
 
         (
             year,
@@ -222,8 +225,6 @@ impl Epoch {
                     duration_wrt_ref += Unit::Day;
                 }
             }
-            // Remove ref hours from duration to correct for the time scale not starting at midnight
-            // duration_wrt_ref -= Unit::Hour * time_scale.ref_hour() as i64;
         } else {
             // Remove days
             for year in year..HIFITIME_REF_YEAR {
@@ -231,8 +232,6 @@ impl Epoch {
                     duration_wrt_ref -= Unit::Day;
                 }
             }
-            // Add ref hours
-            // duration_wrt_ref += Unit::Hour * time_scale.ref_hour() as i64;
         }
 
         // Add the seconds for the months prior to the current month
