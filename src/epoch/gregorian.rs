@@ -61,18 +61,20 @@ impl Epoch {
             }
         }
 
-        if is_leap_year(year) && days_in_year > CUMULATIVE_DAYS_FOR_MONTH[2] as f64 {
-            days_in_year -= 1.0;
-        }
+        let cumul_days = if is_leap_year(year) {
+            CUMULATIVE_DAYS_FOR_MONTH_LEAP_YEARS
+        } else {
+            CUMULATIVE_DAYS_FOR_MONTH
+        };
 
-        let month_search = CUMULATIVE_DAYS_FOR_MONTH.binary_search(&(days_in_year as u16));
+        let month_search = cumul_days.binary_search(&(days_in_year as u16));
         let month = match month_search {
             Ok(index) => index + 1, // Exact month found, add 1 for month number (indexing starts from 0)
             Err(insertion_point) => insertion_point, // We're before the number of months, so use the insertion point as the month number
         };
 
         // Directly compute the day from the computed month, and ensure that day counter is one indexed.
-        let day = days_in_year - CUMULATIVE_DAYS_FOR_MONTH[month - 1] as f64 + 1.0;
+        let day = days_in_year - cumul_days[month - 1] as f64 + 1.0;
 
         (
             year,
@@ -237,13 +239,15 @@ impl Epoch {
         }
 
         // Add the seconds for the months prior to the current month
-        duration_wrt_ref += Unit::Day * i64::from(CUMULATIVE_DAYS_FOR_MONTH[(month - 1) as usize]);
+        let cumul_days = if is_leap_year(year) {
+            CUMULATIVE_DAYS_FOR_MONTH_LEAP_YEARS
+        } else {
+            CUMULATIVE_DAYS_FOR_MONTH
+        };
 
-        if is_leap_year(year) && month > 2 {
-            // NOTE: If on 29th of February, then the day is not finished yet, and therefore
-            // the extra seconds are added below as per a normal day.
-            duration_wrt_ref += Unit::Day;
-        }
+        // Add the number of days based on the input month
+        duration_wrt_ref += Unit::Day * i64::from(cumul_days[(month - 1) as usize]);
+        // Add the number of days based on the input day and time.
         duration_wrt_ref += Unit::Day * i64::from(day - 1)
             + Unit::Hour * i64::from(hour)
             + Unit::Minute * i64::from(minute)
@@ -672,6 +676,20 @@ const CUMULATIVE_DAYS_FOR_MONTH: [u16; 12] = {
     let mut month = 1;
     while month < 12 {
         days[month] = days[month - 1] + usual_days_per_month(month as u8) as u16;
+        month += 1;
+    }
+    days
+};
+
+/// Calculates the prefix-sum of days counted up to the month start, for leap years only
+const CUMULATIVE_DAYS_FOR_MONTH_LEAP_YEARS: [u16; 12] = {
+    let mut days = [0; 12];
+    let mut month = 1;
+    while month < 12 {
+        days[month] = days[month - 1] + usual_days_per_month(month as u8) as u16;
+        if month == 2 {
+            days[month] += 1;
+        }
         month += 1;
     }
     days
