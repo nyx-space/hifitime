@@ -35,6 +35,11 @@ impl Epoch {
 
         let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
         year += HIFITIME_REF_YEAR;
+        if sign == -1 {
+            // We count backward, and reference time is zero days, so we remove one day in the year here.
+            // This looks hacky but it works quite well to avoid lots of edge cases.
+            days_in_year -= 1.0;
+        }
 
         // Base calculation was on 365 days, so we need to remove one day per leap year
         if year >= HIFITIME_REF_YEAR {
@@ -76,17 +81,50 @@ impl Epoch {
         // Directly compute the day from the computed month, and ensure that day counter is one indexed.
         let day = days_in_year - cumul_days[month - 1] as f64 + 1.0;
 
-        (
-            year,
-            month as u8,
-            day as u8,
-            hours as u8,
-            minutes as u8,
-            seconds as u8,
-            (nanos
-                + microseconds * NANOSECONDS_PER_MICROSECOND
-                + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
-        )
+        if sign == -1 {
+            // Our date calculation is independant from the time in that day, so we fix it here.
+
+            // Recompute the time since we count backward and not forward for negative durations.
+            let time = 24 * Unit::Hour
+                - Duration::compose(
+                    0,
+                    0,
+                    hours,
+                    minutes,
+                    seconds,
+                    milliseconds,
+                    microseconds,
+                    nanos,
+                );
+
+            // Compute the correct time.
+            let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+                time.decompose();
+
+            (
+                year,
+                month as u8,
+                day as u8,
+                hours as u8,
+                minutes as u8,
+                seconds as u8,
+                (nanos
+                    + microseconds * NANOSECONDS_PER_MICROSECOND
+                    + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
+            )
+        } else {
+            (
+                year,
+                month as u8,
+                day as u8,
+                hours as u8,
+                minutes as u8,
+                seconds as u8,
+                (nanos
+                    + microseconds * NANOSECONDS_PER_MICROSECOND
+                    + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
+            )
+        }
     }
 
     #[cfg(feature = "std")]
