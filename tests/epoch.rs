@@ -1855,14 +1855,14 @@ fn test_epoch_formatter() {
 
     let bday = Epoch::from_gregorian_utc(2000, 2, 29, 14, 57, 29, 37);
 
-    // let fmt_iso_ord = Formatter::new(bday, ISO8601_ORDINAL);
-    // assert_eq!(format!("{fmt_iso_ord}"), "2000-060");
+    let fmt_iso_ord = Formatter::new(bday, ISO8601_ORDINAL);
+    assert_eq!(format!("{fmt_iso_ord}"), "2000-060");
 
-    // let fmt_iso_ord = Formatter::new(bday, Format::from_str("%j").unwrap());
-    // assert_eq!(format!("{fmt_iso_ord}"), "060");
+    let fmt_iso_ord = Formatter::new(bday, Format::from_str("%j").unwrap());
+    assert_eq!(format!("{fmt_iso_ord}"), "060");
 
-    // let fmt_iso = Formatter::new(bday, ISO8601);
-    // assert_eq!(format!("{fmt_iso}"), format!("{bday}"));
+    let fmt_iso = Formatter::new(bday, ISO8601);
+    assert_eq!(format!("{fmt_iso}"), format!("{bday}"));
 
     let fmt = Formatter::new(bday, ISO8601_DATE);
     assert_eq!(format!("{fmt}"), format!("2000-02-29"));
