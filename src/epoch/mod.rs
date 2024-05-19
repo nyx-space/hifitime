@@ -1370,9 +1370,14 @@ fn div_rem_f64(me: f64, rhs: f64) -> (i32, f64) {
 fn div_euclid_f64(lhs: f64, rhs: f64) -> f64 {
     let q = (lhs / rhs).trunc();
     if lhs % rhs < 0.0 {
-        return if rhs > 0.0 { q - 1.0 } else { q + 1.0 };
+        if rhs > 0.0 {
+            q - 1.0
+        } else {
+            q + 1.0
+        }
+    } else {
+        q
     }
-    q
 }
 
 fn rem_euclid_f64(lhs: f64, rhs: f64) -> f64 {

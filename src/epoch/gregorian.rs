@@ -22,29 +22,29 @@ use super::div_rem_f64;
 impl Epoch {
     pub(crate) fn compute_gregorian(
         duration: Duration,
-        ts: TimeScale,
+        time_scale: TimeScale,
     ) -> (i32, u8, u8, u8, u8, u8, u32) {
+        let duration_wrt_ref = duration + time_scale.gregorian_epoch_offset();
         let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-            (duration + ts.gregorian_epoch_offset()).decompose();
+            duration_wrt_ref.decompose();
+
+        let rslt = duration_wrt_ref.to_unit(Unit::Day);
+        dbg!(rslt);
 
         let days_f64 = if sign < 0 {
-            -(days as f64)
+            // This looks hacky but it avoids lots of edge cases.
+            -((days + 1) as f64)
         } else {
             days as f64
         };
 
         let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
         year += HIFITIME_REF_YEAR;
-        if sign == -1 {
-            // We count backward, and reference time is zero days, so we remove one day in the year here.
-            // This looks hacky but it works quite well to avoid lots of edge cases.
-            days_in_year -= 1.0;
-        }
 
         // Base calculation was on 365 days, so we need to remove one day per leap year
         if year >= HIFITIME_REF_YEAR {
-            for year in HIFITIME_REF_YEAR..year {
-                if is_leap_year(year) {
+            for y in HIFITIME_REF_YEAR..year {
+                if is_leap_year(y) {
                     days_in_year -= 1.0;
                 }
             }
@@ -54,12 +54,14 @@ impl Epoch {
                 days_in_year += DAYS_PER_YEAR_NLD;
             }
         } else {
-            for year in year..HIFITIME_REF_YEAR {
-                if is_leap_year(year) {
+            for y in year..HIFITIME_REF_YEAR {
+                if is_leap_year(y) {
                     days_in_year += 1.0;
                 }
             }
-            if days_in_year > DAYS_PER_YEAR_NLD {
+            if (days_in_year > DAYS_PER_YEAR_NLD && !is_leap_year(year))
+                || (days_in_year > DAYS_PER_YEAR_NLD + 1.0 && is_leap_year(year))
+            {
                 // We've overflowed the number of days in a year because of the leap years
                 year += 1;
                 days_in_year -= DAYS_PER_YEAR_NLD;
@@ -249,7 +251,7 @@ impl Epoch {
                     source: DurationError::Underflow,
                 })
             }
-            Some(years_since_ref) => match years_since_ref.checked_mul(365) {
+            Some(years_since_ref) => match years_since_ref.checked_mul(DAYS_PER_YEAR_NLD as i32) {
                 None => {
                     return Err(EpochError::Duration {
                         source: DurationError::Overflow,
@@ -257,20 +259,20 @@ impl Epoch {
                 }
                 Some(days) => Unit::Day * i64::from(days),
             },
-        } - time_scale.gregorian_epoch_offset();
+        };
 
         // Now add the leap days for all the years prior to the current year
         if year >= HIFITIME_REF_YEAR {
             // Add days
-            for year in HIFITIME_REF_YEAR..year {
-                if is_leap_year(year) {
+            for y in HIFITIME_REF_YEAR..year {
+                if is_leap_year(y) {
                     duration_wrt_ref += Unit::Day;
                 }
             }
         } else {
             // Remove days
-            for year in year..HIFITIME_REF_YEAR {
-                if is_leap_year(year) {
+            for y in year..HIFITIME_REF_YEAR {
+                if is_leap_year(y) {
                     duration_wrt_ref -= Unit::Day;
                 }
             }
@@ -297,6 +299,9 @@ impl Epoch {
             // same number of second after J1900.0.
             duration_wrt_ref -= Unit::Second;
         }
+
+        // Account for this time scale's Gregorian offset.
+        duration_wrt_ref -= time_scale.gregorian_epoch_offset();
 
         Ok(Self {
             duration: duration_wrt_ref,

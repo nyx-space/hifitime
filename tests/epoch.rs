@@ -2004,24 +2004,30 @@ fn regression_test_gh_272() {
 fn regression_test_gh_261() {
     // Validation cases from https://aa.usno.navy.mil/calculated/juliandate?ID=AA&date=1607-01-25&era=AD&time=00%3A00%3A00.000&submit=Get+Date
     let validation_cases = &[2308028.5, 2308087.5, 2308240.5, 2308362.5];
-    for (mcnt, month) in [1, 3, 8, 12].iter().enumerate() {
-        for day in 25..=30 {
-            let epoch = Epoch::from_gregorian_utc(1607, *month, day, 0, 0, 0, 0);
+    for year in [1607, 1809, 1988, 2027, 2021] {
+        for (mcnt, month) in [1, 3, 8, 12].iter().enumerate() {
+            for day in 25..=30 {
+                let epoch = Epoch::from_gregorian_utc(year, *month, day, 0, 0, 0, 0);
 
-            // The initial validation cases is 25 days away.
-            let expected = validation_cases[mcnt] - 25.0 + (day as f64);
+                // Check the Julian date only for the validation cases we have.
+                if year == 1607 {
+                    // The initial validation cases is 25 days away.
+                    let expected = validation_cases[mcnt] - 25.0 + (day as f64);
 
-            assert_eq!(
-                epoch.to_jde_utc_days(),
-                expected,
-                "err = {}",
-                epoch.to_jde_utc_days() - expected
-            );
+                    assert_eq!(
+                        epoch.to_jde_utc_days(),
+                        expected,
+                        "err = {}",
+                        epoch.to_jde_utc_days() - expected
+                    );
+                }
 
-            assert_eq!(
-                format!("{epoch}"),
-                format!("1607-{month:02}-{day:02}T00:00:00 UTC")
-            );
+                // Always check the formatting of the date.
+                assert_eq!(
+                    format!("{epoch}"),
+                    format!("{year}-{month:02}-{day:02}T00:00:00 UTC")
+                );
+            }
         }
     }
 }
