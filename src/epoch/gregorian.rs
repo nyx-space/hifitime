@@ -264,13 +264,16 @@ impl Epoch {
                         source: DurationError::Overflow,
                     })
                 }
-                Some(days) => Unit::Day * i64::from(days),
+                Some(days) => {
+                    // Initialize the duration as the number of days since the reference year (may be negative).
+                    Unit::Day * i64::from(days)
+                }
             },
         };
 
         // Now add the leap days for all the years prior to the current year
         if year >= HIFITIME_REF_YEAR {
-            // Add days
+            // Add days until, but not including, current year.
             for y in HIFITIME_REF_YEAR..year {
                 if is_leap_year(y) {
                     duration_wrt_ref += Unit::Day;
@@ -285,7 +288,8 @@ impl Epoch {
             }
         }
 
-        // Add the seconds for the months prior to the current month
+        // Add the seconds for the months prior to the current month.
+        // Correctly accounts for the number of days based on whether this is a leap year or not.
         let cumul_days = if is_leap_year(year) {
             CUMULATIVE_DAYS_FOR_MONTH_LEAP_YEARS
         } else {
