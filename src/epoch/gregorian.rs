@@ -98,8 +98,9 @@ impl Epoch {
                     days_in_year += 1.0;
                 }
             }
-            if (days_in_year > DAYS_PER_YEAR_NLD && !is_leap_year(year))
-                || (days_in_year > DAYS_PER_YEAR_NLD + 1.0 && is_leap_year(year))
+            // Check for greater than or equal because the days are still zero indexed here.
+            if (days_in_year >= DAYS_PER_YEAR_NLD && !is_leap_year(year))
+                || (days_in_year >= DAYS_PER_YEAR_NLD + 1.0 && is_leap_year(year))
             {
                 // We've overflowed the number of days in a year because of the leap years
                 year += 1;
