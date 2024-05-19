@@ -25,20 +25,59 @@ impl Epoch {
         time_scale: TimeScale,
     ) -> (i32, u8, u8, u8, u8, u8, u32) {
         let duration_wrt_ref = duration + time_scale.gregorian_epoch_offset();
-        let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-            duration_wrt_ref.decompose();
+        let sign = duration_wrt_ref.signum();
+        let (days, hours, minutes, seconds, milliseconds, microseconds, nanos) = if sign < 0 {
+            // For negative epochs, the computation of days and time must account for the time as it'll cause the days computation to be off by one.
+            let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+                duration_wrt_ref.decompose();
 
-        let rslt = duration_wrt_ref.to_unit(Unit::Day);
-        dbg!(rslt);
+            // Recompute the time since we count backward and not forward for negative durations.
+            let time = Duration::compose(
+                0,
+                0,
+                hours,
+                minutes,
+                seconds,
+                milliseconds,
+                microseconds,
+                nanos,
+            );
 
-        let days_f64 = if sign < 0 {
-            // This looks hacky but it avoids lots of edge cases.
-            -((days + 1) as f64)
+            // Compute the correct time.
+            let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+                (24 * Unit::Hour - time).decompose();
+
+            let days_f64 = if time > Duration::ZERO {
+                -((days + 1) as f64)
+            } else {
+                -(days as f64)
+            };
+
+            (
+                days_f64,
+                hours,
+                minutes,
+                seconds,
+                milliseconds,
+                microseconds,
+                nanos,
+            )
         } else {
-            days as f64
+            // For positive epochs, the computation of days and time is trivally the decomposition of the duration.
+            let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+                duration_wrt_ref.decompose();
+            (
+                days as f64,
+                hours,
+                minutes,
+                seconds,
+                milliseconds,
+                microseconds,
+                nanos,
+            )
         };
 
-        let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
+        let (mut year, mut days_in_year) = div_rem_f64(days, DAYS_PER_YEAR_NLD);
         year += HIFITIME_REF_YEAR;
 
         // Base calculation was on 365 days, so we need to remove one day per leap year
@@ -83,50 +122,17 @@ impl Epoch {
         // Directly compute the day from the computed month, and ensure that day counter is one indexed.
         let day = days_in_year - cumul_days[month - 1] as f64 + 1.0;
 
-        if sign == -1 {
-            // Our date calculation is independant from the time in that day, so we fix it here.
-
-            // Recompute the time since we count backward and not forward for negative durations.
-            let time = 24 * Unit::Hour
-                - Duration::compose(
-                    0,
-                    0,
-                    hours,
-                    minutes,
-                    seconds,
-                    milliseconds,
-                    microseconds,
-                    nanos,
-                );
-
-            // Compute the correct time.
-            let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-                time.decompose();
-
-            (
-                year,
-                month as u8,
-                day as u8,
-                hours as u8,
-                minutes as u8,
-                seconds as u8,
-                (nanos
-                    + microseconds * NANOSECONDS_PER_MICROSECOND
-                    + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
-            )
-        } else {
-            (
-                year,
-                month as u8,
-                day as u8,
-                hours as u8,
-                minutes as u8,
-                seconds as u8,
-                (nanos
-                    + microseconds * NANOSECONDS_PER_MICROSECOND
-                    + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
-            )
-        }
+        (
+            year,
+            month as u8,
+            day as u8,
+            hours as u8,
+            minutes as u8,
+            seconds as u8,
+            (nanos
+                + microseconds * NANOSECONDS_PER_MICROSECOND
+                + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
+        )
     }
 
     #[cfg(feature = "std")]
