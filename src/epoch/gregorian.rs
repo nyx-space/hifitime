@@ -91,6 +91,10 @@ impl Epoch {
                 // We've underflowed the number of days in a year because of the leap years
                 year -= 1;
                 days_in_year += DAYS_PER_YEAR_NLD;
+                // If we had incorrectly removed one day of the year in the previous loop, fix it here.
+                if is_leap_year(year) {
+                    days_in_year += 1.0;
+                }
             }
         } else {
             for y in year..HIFITIME_REF_YEAR {
