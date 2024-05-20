@@ -22,86 +22,18 @@ use super::div_rem_f64;
 impl Epoch {
     pub(crate) fn compute_gregorian(
         duration: Duration,
-        ts: TimeScale,
+        time_scale: TimeScale,
     ) -> (i32, u8, u8, u8, u8, u8, u32) {
-        let (sign, days, mut hours, minutes, seconds, milliseconds, microseconds, nanos) =
-            (duration + ts.gregorian_epoch_offset()).decompose();
+        let duration_wrt_ref = duration + time_scale.gregorian_epoch_offset();
+        let sign = duration_wrt_ref.signum();
+        let (days, hours, minutes, seconds, milliseconds, microseconds, nanos) = if sign < 0 {
+            // For negative epochs, the computation of days and time must account for the time as it'll cause the days computation to be off by one.
+            let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+                duration_wrt_ref.decompose();
 
-        let days_f64 = if sign < 0 {
-            -(days as f64)
-        } else {
-            days as f64
-        };
-
-        let (mut year, mut days_in_year) = div_rem_f64(days_f64, DAYS_PER_YEAR_NLD);
-        year += HIFITIME_REF_YEAR;
-
-        // Base calculation was on 365 days, so we need to remove one day in seconds per leap year
-        // between 1900 and `year`
-        if year >= HIFITIME_REF_YEAR {
-            for year in HIFITIME_REF_YEAR..year {
-                if is_leap_year(year) {
-                    days_in_year -= 1.0;
-                }
-            }
-        } else {
-            for year in year..HIFITIME_REF_YEAR {
-                if is_leap_year(year) {
-                    days_in_year += 1.0;
-                }
-            }
-        }
-
-        // Get the month from the exact number of seconds between the start of the year and now
-        let mut month = 1;
-        let mut day;
-
-        let mut days_so_far = 0.0;
-        loop {
-            let mut days_next_month = usual_days_per_month(month - 1) as f64;
-            if month == 2 && is_leap_year(year) {
-                days_next_month += 1.0;
-            }
-
-            if days_so_far + days_next_month > days_in_year || month == 12 {
-                // We've found the month and can calculate the days
-                day = if sign >= 0 {
-                    days_in_year - days_so_far + 1.0
-                } else {
-                    days_in_year - days_so_far
-                };
-                break;
-            }
-
-            // Otherwise, count up the number of days this year so far and keep track of the month.
-            days_so_far += days_next_month;
-            month += 1;
-        }
-
-        if hours >= 24 {
-            hours -= 24;
-            if year >= HIFITIME_REF_YEAR {
-                day += 1.0;
-            } else {
-                day -= 1.0;
-            }
-        }
-
-        if day <= 0.0 || days_in_year < 0.0 {
-            // We've overflowed backward
-            month = 12;
-            year -= 1;
-            // NOTE: Leap year is already accounted for in the TAI duration when counting backward.
-            day = if days_in_year < 0.0 {
-                days_in_year + usual_days_per_month(11) as f64 + 1.0
-            } else {
-                usual_days_per_month(11) as f64
-            };
-        }
-
-        if sign < 0 {
+            // Recompute the time since we count backward and not forward for negative durations.
             let time = Duration::compose(
-                sign,
+                0,
                 0,
                 hours,
                 minutes,
@@ -111,42 +43,101 @@ impl Epoch {
                 nanos,
             );
 
-            // Last check on the validity of the Gregorian date
-
-            if time == Duration::ZERO || month == 12 && day == 32.0 {
-                // We've underflowed since we're before 1900.
-                year += 1;
-                month = 1;
-                day = 1.0;
-            }
-
+            // Compute the correct time.
             let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-                (24 * Unit::Hour + time).decompose();
+                (24 * Unit::Hour - time).decompose();
+
+            let days_f64 = if time > Duration::ZERO {
+                -((days + 1) as f64)
+            } else {
+                -(days as f64)
+            };
 
             (
-                year,
-                month,
-                day as u8,
-                hours as u8,
-                minutes as u8,
-                seconds as u8,
-                (nanos
-                    + microseconds * NANOSECONDS_PER_MICROSECOND
-                    + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
+                days_f64,
+                hours,
+                minutes,
+                seconds,
+                milliseconds,
+                microseconds,
+                nanos,
             )
         } else {
+            // For positive epochs, the computation of days and time is trivally the decomposition of the duration.
+            let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+                duration_wrt_ref.decompose();
             (
-                year,
-                month,
-                day as u8,
-                hours as u8,
-                minutes as u8,
-                seconds as u8,
-                (nanos
-                    + microseconds * NANOSECONDS_PER_MICROSECOND
-                    + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
+                days as f64,
+                hours,
+                minutes,
+                seconds,
+                milliseconds,
+                microseconds,
+                nanos,
             )
+        };
+
+        let (mut year, mut days_in_year) = div_rem_f64(days, DAYS_PER_YEAR_NLD);
+        year += HIFITIME_REF_YEAR;
+
+        // Base calculation was on 365 days, so we need to remove one day per leap year
+        if year >= HIFITIME_REF_YEAR {
+            for y in HIFITIME_REF_YEAR..year {
+                if is_leap_year(y) {
+                    days_in_year -= 1.0;
+                }
+            }
+            if days_in_year < 0.0 {
+                // We've underflowed the number of days in a year because of the leap years
+                year -= 1;
+                days_in_year += DAYS_PER_YEAR_NLD;
+                // If we had incorrectly removed one day of the year in the previous loop, fix it here.
+                if is_leap_year(year) {
+                    days_in_year += 1.0;
+                }
+            }
+        } else {
+            for y in year..HIFITIME_REF_YEAR {
+                if is_leap_year(y) {
+                    days_in_year += 1.0;
+                }
+            }
+            // Check for greater than or equal because the days are still zero indexed here.
+            if (days_in_year >= DAYS_PER_YEAR_NLD && !is_leap_year(year))
+                || (days_in_year >= DAYS_PER_YEAR_NLD + 1.0 && is_leap_year(year))
+            {
+                // We've overflowed the number of days in a year because of the leap years
+                year += 1;
+                days_in_year -= DAYS_PER_YEAR_NLD;
+            }
         }
+
+        let cumul_days = if is_leap_year(year) {
+            CUMULATIVE_DAYS_FOR_MONTH_LEAP_YEARS
+        } else {
+            CUMULATIVE_DAYS_FOR_MONTH
+        };
+
+        let month_search = cumul_days.binary_search(&(days_in_year as u16));
+        let month = match month_search {
+            Ok(index) => index + 1, // Exact month found, add 1 for month number (indexing starts from 0)
+            Err(insertion_point) => insertion_point, // We're before the number of months, so use the insertion point as the month number
+        };
+
+        // Directly compute the day from the computed month, and ensure that day counter is one indexed.
+        let day = days_in_year - cumul_days[month - 1] as f64 + 1.0;
+
+        (
+            year,
+            month as u8,
+            day as u8,
+            hours as u8,
+            minutes as u8,
+            seconds as u8,
+            (nanos
+                + microseconds * NANOSECONDS_PER_MICROSECOND
+                + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
+        )
     }
 
     #[cfg(feature = "std")]
@@ -247,7 +238,9 @@ impl Epoch {
     }
 
     /// Attempts to build an Epoch from the provided Gregorian date and time in the provided time scale.
-    /// NOTE: If the time scale is TDB, this function assumes that the SPICE format is used
+    ///
+    /// Note:
+    /// The month is ONE indexed, i.e. January is month 1 and December is month 12.
     #[allow(clippy::too_many_arguments)]
     pub fn maybe_from_gregorian(
         year: i32,
@@ -269,45 +262,47 @@ impl Epoch {
                     source: DurationError::Underflow,
                 })
             }
-            Some(years_since_ref) => match years_since_ref.checked_mul(365) {
+            Some(years_since_ref) => match years_since_ref.checked_mul(DAYS_PER_YEAR_NLD as i32) {
                 None => {
                     return Err(EpochError::Duration {
                         source: DurationError::Overflow,
                     })
                 }
-                Some(days) => Unit::Day * i64::from(days),
+                Some(days) => {
+                    // Initialize the duration as the number of days since the reference year (may be negative).
+                    Unit::Day * i64::from(days)
+                }
             },
-        } - time_scale.gregorian_epoch_offset();
+        };
 
         // Now add the leap days for all the years prior to the current year
         if year >= HIFITIME_REF_YEAR {
-            // Add days
-            for year in HIFITIME_REF_YEAR..year {
-                if is_leap_year(year) {
+            // Add days until, but not including, current year.
+            for y in HIFITIME_REF_YEAR..year {
+                if is_leap_year(y) {
                     duration_wrt_ref += Unit::Day;
                 }
             }
-            // Remove ref hours from duration to correct for the time scale not starting at midnight
-            // duration_wrt_ref -= Unit::Hour * time_scale.ref_hour() as i64;
         } else {
             // Remove days
-            for year in year..HIFITIME_REF_YEAR {
-                if is_leap_year(year) {
+            for y in year..HIFITIME_REF_YEAR {
+                if is_leap_year(y) {
                     duration_wrt_ref -= Unit::Day;
                 }
             }
-            // Add ref hours
-            // duration_wrt_ref += Unit::Hour * time_scale.ref_hour() as i64;
         }
 
-        // Add the seconds for the months prior to the current month
-        duration_wrt_ref += Unit::Day * i64::from(CUMULATIVE_DAYS_FOR_MONTH[(month - 1) as usize]);
+        // Add the seconds for the months prior to the current month.
+        // Correctly accounts for the number of days based on whether this is a leap year or not.
+        let cumul_days = if is_leap_year(year) {
+            CUMULATIVE_DAYS_FOR_MONTH_LEAP_YEARS
+        } else {
+            CUMULATIVE_DAYS_FOR_MONTH
+        };
 
-        if is_leap_year(year) && month > 2 {
-            // NOTE: If on 29th of February, then the day is not finished yet, and therefore
-            // the extra seconds are added below as per a normal day.
-            duration_wrt_ref += Unit::Day;
-        }
+        // Add the number of days based on the input month
+        duration_wrt_ref += Unit::Day * i64::from(cumul_days[(month - 1) as usize]);
+        // Add the number of days based on the input day and time.
         duration_wrt_ref += Unit::Day * i64::from(day - 1)
             + Unit::Hour * i64::from(hour)
             + Unit::Minute * i64::from(minute)
@@ -319,6 +314,9 @@ impl Epoch {
             // same number of second after J1900.0.
             duration_wrt_ref -= Unit::Second;
         }
+
+        // Account for this time scale's Gregorian offset.
+        duration_wrt_ref -= time_scale.gregorian_epoch_offset();
 
         Ok(Self {
             duration: duration_wrt_ref,
@@ -658,7 +656,7 @@ pub const fn is_gregorian_valid(
     nanos: u32,
 ) -> bool {
     let max_seconds = if (month == 12 || month == 6)
-        && day == usual_days_per_month(month - 1)
+        && day == usual_days_per_month(month)
         && hour == 23
         && minute == 59
         && ((month == 6 && july_years(year)) || (month == 12 && january_years(year + 1)))
@@ -679,7 +677,7 @@ pub const fn is_gregorian_valid(
     {
         return false;
     }
-    if day > usual_days_per_month(month - 1) && (month != 2 || !is_leap_year(year)) {
+    if day > usual_days_per_month(month) && (month != 2 || !is_leap_year(year)) {
         // Not in February or not a leap year
         return false;
     }
@@ -717,12 +715,12 @@ const fn july_years(year: i32) -> bool {
     )
 }
 
-/// Returns the usual days in a given month (zero indexed, i.e. January is month zero and December is month 11)
+/// Returns the usual days in a given month (ONE indexed, i.e. January is month ONE and December is month 12)
 ///
 /// # Warning
 /// This will return 0 days if the month is invalid.
 const fn usual_days_per_month(month: u8) -> u8 {
-    match month + 1 {
+    match month {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
         4 | 6 | 9 | 11 => 30,
         2 => 28,
@@ -735,7 +733,21 @@ const CUMULATIVE_DAYS_FOR_MONTH: [u16; 12] = {
     let mut days = [0; 12];
     let mut month = 1;
     while month < 12 {
-        days[month] = days[month - 1] + usual_days_per_month(month as u8 - 1) as u16;
+        days[month] = days[month - 1] + usual_days_per_month(month as u8) as u16;
+        month += 1;
+    }
+    days
+};
+
+/// Calculates the prefix-sum of days counted up to the month start, for leap years only
+const CUMULATIVE_DAYS_FOR_MONTH_LEAP_YEARS: [u16; 12] = {
+    let mut days = [0; 12];
+    let mut month = 1;
+    while month < 12 {
+        days[month] = days[month - 1] + usual_days_per_month(month as u8) as u16;
+        if month == 2 {
+            days[month] += 1;
+        }
         month += 1;
     }
     days

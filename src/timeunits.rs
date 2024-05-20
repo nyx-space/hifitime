@@ -264,10 +264,17 @@ impl Mul<i64> for Unit {
                 }
             }
             None => {
-                if q.is_negative() {
-                    Duration::MIN
-                } else {
-                    Duration::MAX
+                // Does not fit on an i64, let's do this again on an 128.
+                let q = i128::from(q);
+                match q.checked_mul(factor.into()) {
+                    Some(total_ns) => Duration::from_total_nanoseconds(total_ns),
+                    None => {
+                        if q.is_negative() {
+                            Duration::MIN
+                        } else {
+                            Duration::MAX
+                        }
+                    }
                 }
             }
         }
