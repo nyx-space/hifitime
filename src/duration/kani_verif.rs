@@ -10,7 +10,7 @@
 
 // Here lives all of the formal verification for Duration.
 
-use super::{Duration, DurationError};
+use super::{Duration, DurationError, EpochError};
 use crate::NANOSECONDS_PER_CENTURY;
 
 use kani::Arbitrary;

@@ -8,10 +8,8 @@
 * Documentation: https://nyxspace.com/
 */
 
-use crate::errors::DurationError;
-use crate::{
-    EpochError, SECONDS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE,
-};
+use crate::errors::{DurationError, EpochError};
+use crate::{SECONDS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 
 pub use crate::{Freq, Frequencies, TimeUnits, Unit};
 
