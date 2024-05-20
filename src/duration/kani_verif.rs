@@ -43,9 +43,9 @@ fn formal_duration_truncated_ns_reciprocity() {
         // Then it does not fit on a i64, so this function should return an error
         assert_eq!(
             dur_from_part.try_truncated_nanoseconds(),
-            Err(Err(EpochError::Duration {
+            Err(EpochError::Duration {
                 source: DurationError::Overflow,
-            }))
+            })
         );
     } else if centuries == -1 {
         // If we are negative by just enough that the centuries is negative, then the truncated seconds
