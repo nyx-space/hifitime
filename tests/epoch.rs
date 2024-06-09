@@ -4,9 +4,8 @@ extern crate core;
 use hifitime::{
     is_gregorian_valid, Duration, Epoch, EpochError, ParsingError, TimeScale, TimeUnits, Unit,
     Weekday, BDT_REF_EPOCH, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR, GPST_REF_EPOCH, GST_REF_EPOCH,
-    J1900_OFFSET, J1900_REF_EPOCH, J2000_OFFSET, J2000_REF_EPOCH, J2000_TO_J1900_DURATION,
-    MJD_OFFSET, SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET,
-    SECONDS_PER_DAY,
+    J1900_REF_EPOCH, J2000_REF_EPOCH, JD_J2000, MJD_J1900, MJD_J2000, MJD_OFFSET,
+    SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
 use hifitime::efmt::{Format, Formatter};
@@ -25,15 +24,15 @@ fn test_const_ops() {
     // Tests that multiplying a constant with a unit returns the correct number in that same unit
     let mjd_offset = MJD_OFFSET * Unit::Day;
     assert!((mjd_offset.to_unit(Unit::Day) - MJD_OFFSET).abs() < f64::EPSILON);
-    let j2000_offset = J2000_OFFSET * Unit::Day;
-    assert!((j2000_offset.to_unit(Unit::Day) - J2000_OFFSET).abs() < f64::EPSILON);
+    let j2000_mjd = MJD_J2000 * Unit::Day;
+    assert!((j2000_mjd.to_unit(Unit::Day) - MJD_J2000).abs() < f64::EPSILON);
 }
 
 #[allow(clippy::float_equality_without_abs)]
 #[test]
 fn utc_epochs() {
-    assert!(Epoch::from_mjd_tai(J1900_OFFSET).to_tai_seconds() < EPSILON);
-    assert!((Epoch::from_mjd_tai(J1900_OFFSET).to_mjd_tai_days() - J1900_OFFSET).abs() < EPSILON);
+    assert!(Epoch::from_mjd_tai(MJD_J1900).to_tai_seconds() < EPSILON);
+    assert!((Epoch::from_mjd_tai(MJD_J1900).to_mjd_tai_days() - MJD_J1900).abs() < EPSILON);
 
     // Tests are chronological dates.
     // All of the following examples are cross validated against NASA HEASARC,
@@ -421,11 +420,6 @@ fn gpst() {
         Epoch::from_gpst_days(0.0).to_duration_since_j1900(),
         GPST_REF_EPOCH.duration
     );
-
-    // assert_eq!(
-    //     GPST_REF_EPOCH.to_utc_seconds(),
-    //     Epoch::from_gregorian_utc_at_midnight(1980, 1, 6).to_tai_seconds()
-    // );
 
     assert!(
         GPST_REF_EPOCH.to_gpst_seconds().abs() < EPSILON,
@@ -1918,7 +1912,7 @@ fn test_to_tai_time_scale() {
     let j2000_ref = J2000_REF_EPOCH;
     assert_eq!(j2000_ref, j2000_ref.to_time_scale(TimeScale::TAI));
     let j2000_to_j1900 = j2000_ref - j1900_ref;
-    assert_eq!(j2000_to_j1900, J2000_TO_J1900_DURATION);
+    assert_eq!(j2000_to_j1900, Duration::from_parts(1, 0));
 }
 
 #[cfg(feature = "std")]
@@ -2043,4 +2037,28 @@ fn regression_test_gh_209() {
 
     let t = Epoch::from_time_of_week(1982, 604800000000000 - 19000000000, TimeScale::GPST);
     println!("{t}");
+}
+
+#[test]
+fn regression_test_gh_282() {
+    assert_eq!(
+        "1900-01-01T00:00:00 UTC",
+        format!("{}", Epoch::from_utc_duration(0_f64.nanoseconds()))
+    );
+    // NOTE: Hifitime's prime epoch is midnight on 1900-01-01, but the Julian date J1900 is at noon.
+    // This explains why the calculation returns `0.5` with a zero duration UTC epoch.
+    assert_eq!(
+        "2415020.5",
+        format!(
+            "{}",
+            Epoch::from_utc_duration(0_f64.nanoseconds()).to_jde_utc_days()
+        )
+    );
+    assert_eq!(
+        "2000-01-01T12:00:00 TAI",
+        format!(
+            "{}",
+            Epoch::from_jde_tai(JD_J2000).to_gregorian_str(hifitime::TimeScale::TAI)
+        )
+    );
 }

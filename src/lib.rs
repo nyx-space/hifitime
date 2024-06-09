@@ -10,25 +10,18 @@
  * Documentation: https://nyxspace.com/
  */
 
-pub const J1900_NAIF: f64 = 2_415_020.0;
-pub const J2000_NAIF: f64 = 2_451_545.0;
-/// `J1900_OFFSET` determines the offset in julian days between 01 Jan 1900 at midnight and the
-/// Modified Julian Day at 17 November 1858.
-/// NOTE: Julian days "start" at noon so that astronomical observations throughout the night
-/// happen at the same Julian day. Note however that the Modified Julian Date (MJD) starts at
-/// midnight, not noon, cf. <http://tycho.usno.navy.mil/mjd.html>.
-pub const J1900_OFFSET: f64 = 15_020.0;
-/// `J2000_OFFSET` determines the offset in julian days between 01 Jan 2000 at **noon** and the
-/// Modified Julian Day at 17 November 1858.
-pub const J2000_OFFSET: f64 = 51_544.5;
+/// Julian date for the J1900 epoch, as per NAIF SPICE.
+pub const JD_J1900: f64 = 2_415_020.0;
+/// Julian date for the J2000 epoch, as per NAIF SPICE.
+pub const JD_J2000: f64 = 2_451_545.0;
+/// Julian days between 01 Jan 1900 at midnight and the Modified Julian Day at 17 November 1858.
+pub const MJD_J1900: f64 = 15_020.0;
+/// Julian days between 01 Jan 2000 at **noon** and the Modified Julian Day at 17 November 1858.
+pub const MJD_J2000: f64 = 51_544.5;
 /// The Ephemeris Time epoch, in seconds
 pub const ET_EPOCH_S: i64 = 3_155_716_800;
 /// Modified Julian Date in seconds as defined [here](http://tycho.usno.navy.mil/mjd.html). MJD epoch is Modified Julian Day at 17 November 1858 at midnight.
 pub const MJD_OFFSET: f64 = 2_400_000.5;
-/// The JDE offset in days
-pub const JDE_OFFSET_DAYS: f64 = J1900_OFFSET + MJD_OFFSET;
-/// The JDE offset in seconds
-pub const JDE_OFFSET_SECONDS: f64 = JDE_OFFSET_DAYS * SECONDS_PER_DAY;
 /// `DAYS_PER_YEAR` corresponds to the number of days per year in the Julian calendar.
 pub const DAYS_PER_YEAR: f64 = 365.25;
 /// `DAYS_PER_YEAR_NLD` corresponds to the number of days per year **without leap days**.
@@ -54,12 +47,6 @@ pub const SECONDS_PER_YEAR_I64: i64 = 31_557_600;
 pub const SECONDS_PER_TROPICAL_YEAR: f64 = 31_556_925.974_7;
 /// `SECONDS_PER_SIDEREAL_YEAR` corresponds to the number of seconds per sidereal year from [NIST](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9#TIME).
 pub const SECONDS_PER_SIDEREAL_YEAR: f64 = 31_558_150.0;
-
-/// The duration between J2000 and J1900 is exactly one century, both references start at noon.
-pub const J2000_TO_J1900_DURATION: Duration = Duration {
-    centuries: 1,
-    nanoseconds: 0,
-};
 
 // Epoch formatting module is called `efmt` to avoid collision with `std::fmt` and `core::fmt`.
 pub mod efmt;
