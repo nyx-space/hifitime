@@ -2039,6 +2039,7 @@ fn regression_test_gh_209() {
     println!("{t}");
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn regression_test_gh_282() {
     assert_eq!(
