@@ -128,15 +128,14 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: x86_64
-          args: --release --out dist --find-interpreter
+          args: --release --out dist --find-interpreter -F python
           sccache: 'true'
-          working-directory: anise-py
 
       - name: Upload wheels
         uses: actions/upload-artifact@v3
         with:
-          name: wheels
-          path: anise-py/dist
+          name: wheels-macos-13
+          path: dist
       
       - name: pytest
         shell: bash
@@ -144,7 +143,7 @@ jobs:
           RUST_BACKTRACE: 1
         run: |
           set -e
-          pip install anise --find-links anise-py/dist --force-reinstall
+          pip install hifitime --find-links dist --force-reinstall --no-index
           pip install pytest
           pytest
 
@@ -163,15 +162,14 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: aarch64
-          args: --release --out dist --find-interpreter
+          args: --release --out dist --find-interpreter -F python
           sccache: 'true'
-          working-directory: anise-py
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
-          path: anise-py/dist
+          name: wheels-macos-14
+          path: dist
       
       - name: pytest
         shell: bash
@@ -179,7 +177,7 @@ jobs:
           RUST_BACKTRACE: 1
         run: |
           set -e
-          pip install anise --find-links anise-py/dist --force-reinstall
+          pip install hifitime --find-links dist --force-reinstall --no-index
           pip install pytest
           pytest
 
