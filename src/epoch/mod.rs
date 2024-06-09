@@ -33,8 +33,7 @@ use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
 use crate::Weekday;
 use crate::{
     EpochError, MonthName, TimeScale, TimeUnits, BDT_REF_EPOCH, ET_EPOCH_S, GPST_REF_EPOCH,
-    GST_REF_EPOCH, J1900_OFFSET, J2000_TO_J1900_DURATION, MJD_OFFSET, NANOSECONDS_PER_DAY,
-    QZSST_REF_EPOCH, UNIX_REF_EPOCH,
+    GST_REF_EPOCH, MJD_J1900, MJD_OFFSET, NANOSECONDS_PER_DAY, QZSST_REF_EPOCH, UNIX_REF_EPOCH,
 };
 use core::cmp::Eq;
 use core::str::FromStr;
@@ -356,7 +355,7 @@ impl Epoch {
             days.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self::from_tai_duration((days - J1900_OFFSET) * Unit::Day)
+        Self::from_tai_duration((days - MJD_J1900) * Unit::Day)
     }
 
     fn from_mjd_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
@@ -396,7 +395,7 @@ impl Epoch {
             days.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self::from_tai_duration((days - J1900_OFFSET - MJD_OFFSET) * Unit::Day)
+        Self::from_tai_duration((days - MJD_J1900 - MJD_OFFSET) * Unit::Day)
     }
 
     fn from_jde_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
@@ -820,7 +819,7 @@ impl Epoch {
     #[must_use]
     /// Returns this epoch as a duration in the requested units in MJD TAI
     pub fn to_mjd_tai(&self, unit: Unit) -> f64 {
-        (self.to_tai_duration() + Unit::Day * J1900_OFFSET).to_unit(unit)
+        (self.to_tai_duration() + Unit::Day * MJD_J1900).to_unit(unit)
     }
 
     #[must_use]
@@ -832,7 +831,7 @@ impl Epoch {
     #[must_use]
     /// Returns the Modified Julian Date in the provided unit in UTC.
     pub fn to_mjd_utc(&self, unit: Unit) -> f64 {
-        (self.to_utc_duration() + Unit::Day * J1900_OFFSET).to_unit(unit)
+        (self.to_utc_duration() + Unit::Day * MJD_J1900).to_unit(unit)
     }
 
     #[must_use]
@@ -858,7 +857,7 @@ impl Epoch {
     #[must_use]
     /// Returns the Julian Days from epoch 01 Jan -4713 12:00 (noon) as a Duration
     pub fn to_jde_tai_duration(&self) -> Duration {
-        self.to_tai_duration() + Unit::Day * J1900_OFFSET + Unit::Day * MJD_OFFSET
+        self.to_tai_duration() + Unit::Day * MJD_J1900 + Unit::Day * MJD_OFFSET
     }
 
     #[must_use]
@@ -876,7 +875,7 @@ impl Epoch {
     #[must_use]
     /// Returns the Julian days in UTC as a `Duration`
     pub fn to_jde_utc_duration(&self) -> Duration {
-        self.to_utc_duration() + Unit::Day * (J1900_OFFSET + MJD_OFFSET)
+        self.to_utc_duration() + Unit::Day * (MJD_J1900 + MJD_OFFSET)
     }
 
     #[must_use]
@@ -923,7 +922,7 @@ impl Epoch {
 
     #[must_use]
     pub fn to_jde_tt_duration(&self) -> Duration {
-        self.to_tt_duration() + Unit::Day * (J1900_OFFSET + MJD_OFFSET)
+        self.to_tt_duration() + Unit::Day * (MJD_J1900 + MJD_OFFSET)
     }
 
     #[must_use]
@@ -934,7 +933,7 @@ impl Epoch {
 
     #[must_use]
     pub fn to_mjd_tt_duration(&self) -> Duration {
-        self.to_tt_duration() + Unit::Day * J1900_OFFSET
+        self.to_tt_duration() + Unit::Day * MJD_J1900
     }
 
     #[must_use]
@@ -1076,13 +1075,6 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Returns the Ephemeris Time in duration past 1900 JAN 01 at noon.
-    /// **Only** use this if the subsequent computation expect J1900 seconds.
-    pub fn to_et_duration_since_j1900(&self) -> Duration {
-        self.to_et_duration() + J2000_TO_J1900_DURATION
-    }
-
-    #[must_use]
     /// Returns the duration between J2000 and the current epoch as per NAIF SPICE.
     ///
     /// # Warning
@@ -1121,13 +1113,6 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration with reference epoch of 1900 JAN 01 at noon.
-    /// **Only** use this if the subsequent computation expect J1900 seconds.
-    pub fn to_tdb_duration_since_j1900(&self) -> Duration {
-        self.to_tdb_duration() + J2000_TO_J1900_DURATION
-    }
-
-    #[must_use]
     /// Returns the Ephemeris Time JDE past epoch
     pub fn to_jde_et_days(&self) -> f64 {
         self.to_jde_et_duration().to_unit(Unit::Day)
@@ -1136,7 +1121,7 @@ impl Epoch {
     #[must_use]
     pub fn to_jde_et_duration(&self) -> Duration {
         self.to_et_duration()
-            + Unit::Day * (J1900_OFFSET + MJD_OFFSET)
+            + Unit::Day * (MJD_J1900 + MJD_OFFSET)
             + TimeScale::ET.prime_epoch_offset()
     }
 
@@ -1148,7 +1133,7 @@ impl Epoch {
     #[must_use]
     pub fn to_jde_tdb_duration(&self) -> Duration {
         self.to_tdb_duration()
-            + Unit::Day * (J1900_OFFSET + MJD_OFFSET)
+            + Unit::Day * (MJD_J1900 + MJD_OFFSET)
             + TimeScale::TDB.prime_epoch_offset()
     }
 
