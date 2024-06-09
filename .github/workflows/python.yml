@@ -113,31 +113,75 @@ jobs:
           pip install pytest
           pytest
 
-  macos:
-    runs-on: ${{ matrix.platform.runner }}
-    strategy:
-      matrix:
-        platform:
-          - runner: macos-latest
-            target: x86_64
-          - runner: macos-14
-            target: aarch64
+  macos-13: # last available x86_64 macos runner
+    runs-on: macos-13
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
+
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
+
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter -F python
+          target: x86_64
+          args: --release --out dist --find-interpreter
           sccache: 'true'
+          working-directory: anise-py
+
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v3
         with:
-          name: wheels-macos-${{ matrix.platform.target }}
-          path: dist
+          name: wheels
+          path: anise-py/dist
+      
+      - name: pytest
+        shell: bash
+        env:
+          RUST_BACKTRACE: 1
+        run: |
+          set -e
+          pip install anise --find-links anise-py/dist --force-reinstall
+          pip install pytest
+          pytest
+
+  macos-14: # first available aarch64 macos runner
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: aarch64
+          args: --release --out dist --find-interpreter
+          sccache: 'true'
+          working-directory: anise-py
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: anise-py/dist
+      
+      - name: pytest
+        shell: bash
+        env:
+          RUST_BACKTRACE: 1
+        run: |
+          set -e
+          pip install anise --find-links anise-py/dist --force-reinstall
+          pip install pytest
+          pytest
 
   sdist:
     runs-on: ubuntu-latest
@@ -158,7 +202,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
-    needs: [linux, windows, macos, sdist]
+    needs: [linux, windows, macos-13, macos-14, sdist]
     steps:
       - uses: actions/download-artifact@v3
         with:

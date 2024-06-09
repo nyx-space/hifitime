@@ -1,4 +1,4 @@
-from hifitime import Duration, Epoch, EpochError, ParsingError, TimeSeries, Unit
+from hifitime import Duration, Epoch, EpochError, ParsingError, TimeScale, TimeSeries, Unit
 from datetime import datetime
 import pickle
 
@@ -82,3 +82,9 @@ def test_exceptions():
         print(f"caught {e}")
     else:
         raise AssertionError("failed to catch epoch error")
+
+def test_regression_gh249():
+    e = Epoch.init_from_gregorian(year=2022, month=3, day=1, hour=1, minute=1, second=59, nanos=1, time_scale=TimeScale.GPST)
+    assert e.strftime("%Y %m %d %H %M %S %f %T") == "2022 03 01 01 01 59 000000001 GPST"
+    e = Epoch.init_from_gregorian(year=2022, month=3, day=1, hour=1, minute=1, second=59, nanos=1, time_scale=TimeScale.UTC)
+    assert e.strftime("%Y %m %d %H %M %S %f %T") == "2022 03 01 01 01 59 000000001 UTC"
