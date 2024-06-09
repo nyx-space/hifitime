@@ -2031,3 +2031,16 @@ fn regression_test_gh_261() {
         }
     }
 }
+
+#[test]
+fn regression_test_gh_209() {
+    let t = Epoch::from_time_of_week(1983, 0, TimeScale::GPST);
+
+    println!("{t}");
+    // Should print
+
+    assert_eq!(format!("{t}"), format!("2018-01-07T00:00:00 GPST"));
+
+    let t = Epoch::from_time_of_week(1982, 604800000000000 - 19000000000, TimeScale::GPST);
+    println!("{t}");
+}
