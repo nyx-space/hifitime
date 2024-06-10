@@ -145,7 +145,7 @@ impl Epoch {
     /// Converts the Epoch to Gregorian in the provided time scale and in the ISO8601 format with the time scale appended to the string
     pub fn to_gregorian_str(&self, time_scale: TimeScale) -> String {
         let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.duration, self.time_scale);
+            Self::compute_gregorian(self.to_duration_in_time_scale(time_scale), time_scale);
 
         if nanos == 0 {
             format!(

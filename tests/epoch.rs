@@ -2063,3 +2063,42 @@ fn regression_test_gh_282() {
         )
     );
 }
+
+#[cfg(feature = "std")]
+#[test]
+fn regression_test_gh_288() {
+    use core::str::FromStr;
+    let epoch = Epoch::from_str("2021-03-06 11:14:40.9960 GPST").unwrap();
+
+    assert_eq!(
+        "2021-03-06T11:14:40.996000000 GPST",
+        format!("{}", epoch.to_gregorian_str(TimeScale::GPST))
+    );
+    assert_eq!("2021-03-06T11:14:40.996000000 GPST", format!("{epoch}"));
+    assert_eq!(
+        "2021-03-06T11:14:40.996000",
+        format!("{}", epoch.to_isoformat())
+    );
+    assert_eq!(
+        "2021-03-06T11:14:22.996000000 UTC",
+        format!("{}", epoch.to_gregorian_str(TimeScale::UTC))
+    );
+    assert_eq!("2021-03-06T11:14:22.996000000 UTC", format!("{:?}", epoch));
+
+    let epoch = Epoch::from_str("2021-03-06 11:14:40.9960 UTC").unwrap();
+    assert_eq!(
+        "2021-03-06T11:14:58.996000000 GPST",
+        format!("{}", epoch.to_gregorian_str(TimeScale::GPST))
+    );
+    assert_eq!("2021-03-06T11:14:40.996000000 UTC", format!("{:?}", epoch));
+    assert_eq!(
+        "2021-03-06T11:14:40.996000000 UTC",
+        format!("{}", epoch.to_gregorian_str(TimeScale::UTC))
+    );
+    assert_eq!("2021-03-06T11:14:40.996000000 UTC", format!("{epoch}"));
+
+    assert_eq!(
+        "2021-03-06T11:14:40.996000",
+        format!("{}", epoch.to_isoformat())
+    );
+}

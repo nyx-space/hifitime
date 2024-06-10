@@ -719,7 +719,7 @@ impl Epoch {
 
     #[cfg(feature = "std")]
     #[must_use]
-    /// The standard ISO format of this epoch (six digits of subseconds), refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
+    /// The standard ISO format of this epoch (six digits of subseconds) in the _current_ time scale, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options.
     pub fn to_isoformat(&self) -> String {
         use crate::efmt::consts::ISO8601_STD;
         use crate::efmt::Formatter;
