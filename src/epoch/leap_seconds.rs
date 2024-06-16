@@ -14,9 +14,10 @@ use pyo3::prelude::*;
 #[cfg(feature = "std")]
 pub use super::leap_seconds_file::LeapSecondsFile;
 
-use core::ops::Index;
-
-pub trait LeapSecondProvider: DoubleEndedIterator<Item = LeapSecond> + Index<usize> {}
+pub trait LeapSecondProvider {
+    /// Returns a reference to an array of the leap seconds.
+    fn entries(&self) -> &[LeapSecond];
+}
 
 /// A structure representing a leap second
 #[repr(C)]
@@ -93,7 +94,6 @@ const LATEST_LEAP_SECONDS: [LeapSecond; 42] = [
 #[derive(Clone, Debug)]
 pub struct LatestLeapSeconds {
     data: [LeapSecond; 42],
-    iter_pos: usize,
 }
 
 #[cfg(feature = "python")]
@@ -113,51 +113,26 @@ impl Default for LatestLeapSeconds {
     fn default() -> Self {
         Self {
             data: LATEST_LEAP_SECONDS,
-            iter_pos: 0,
         }
     }
 }
 
-impl Iterator for LatestLeapSeconds {
-    type Item = LeapSecond;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter_pos += 1;
-        self.data.get(self.iter_pos - 1).copied()
+impl LeapSecondProvider for LatestLeapSeconds {
+    fn entries(&self) -> &[LeapSecond] {
+        &self.data
     }
 }
-
-impl DoubleEndedIterator for LatestLeapSeconds {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        if self.iter_pos == self.data.len() {
-            None
-        } else {
-            self.iter_pos += 1;
-            self.data.get(self.data.len() - self.iter_pos).copied()
-        }
-    }
-}
-
-impl Index<usize> for LatestLeapSeconds {
-    type Output = LeapSecond;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        self.data.index(index)
-    }
-}
-
-impl LeapSecondProvider for LatestLeapSeconds {}
 
 #[test]
 fn leap_second_fetch() {
     let leap_seconds = LatestLeapSeconds::default();
 
     assert_eq!(
-        leap_seconds[0],
+        leap_seconds.entries()[0],
         LeapSecond::new(1_893_369_600.0, 1.417818, false),
     );
     assert_eq!(
-        leap_seconds[41],
+        leap_seconds.entries()[41],
         LeapSecond::new(3_692_217_600.0, 37.0, true)
     );
 }

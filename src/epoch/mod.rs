@@ -253,9 +253,9 @@ impl Epoch {
     pub fn leap_seconds_with<L: LeapSecondProvider>(
         &self,
         iers_only: bool,
-        provider: L,
+        provider: &L,
     ) -> Option<f64> {
-        for leap_second in provider.rev() {
+        for leap_second in provider.entries().iter().rev() {
             if self.to_tai_duration().to_seconds() >= leap_second.timestamp_tai_s
                 && (!iers_only || leap_second.announced_by_iers)
             {
@@ -714,7 +714,7 @@ impl Epoch {
     /// # Why does this function return an `Option` when the other returns a value
     /// This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960.
     pub fn leap_seconds(&self, iers_only: bool) -> Option<f64> {
-        self.leap_seconds_with(iers_only, LatestLeapSeconds::default())
+        self.leap_seconds_with(iers_only, &LatestLeapSeconds::default())
     }
 
     #[cfg(feature = "std")]

@@ -13,8 +13,6 @@ use pyo3::prelude::*;
 
 use std::{fs::File, io::Read, path::Path};
 
-use core::ops::Index;
-
 use crate::{
     leap_seconds::{LeapSecond, LeapSecondProvider},
     EpochError, ParsingError,
@@ -112,35 +110,11 @@ impl LeapSecondsFile {
     }
 }
 
-impl Iterator for LeapSecondsFile {
-    type Item = LeapSecond;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        self.iter_pos += 1;
-        self.data.get(self.iter_pos - 1).copied()
+impl LeapSecondProvider for LeapSecondsFile {
+    fn entries(&self) -> &[LeapSecond] {
+        &self.data
     }
 }
-
-impl DoubleEndedIterator for LeapSecondsFile {
-    fn next_back(&mut self) -> Option<Self::Item> {
-        if self.iter_pos == self.data.len() {
-            None
-        } else {
-            self.iter_pos += 1;
-            self.data.get(self.data.len() - self.iter_pos).copied()
-        }
-    }
-}
-
-impl Index<usize> for LeapSecondsFile {
-    type Output = LeapSecond;
-
-    fn index(&self, index: usize) -> &Self::Output {
-        self.data.index(index)
-    }
-}
-
-impl LeapSecondProvider for LeapSecondsFile {}
 
 #[test]
 fn leap_second_fetch() {
@@ -153,7 +127,9 @@ fn leap_second_fetch() {
     let path = PathBuf::from(env::var("CARGO_MANIFEST_DIR").unwrap())
         .join("data")
         .join("leap-seconds.list");
-    let leap_seconds = LeapSecondsFile::from_path(path.to_str().unwrap()).unwrap();
+
+    let loaded_leap_seconds = LeapSecondsFile::from_path(path.to_str().unwrap()).unwrap();
+    let leap_seconds = loaded_leap_seconds.entries();
 
     assert_eq!(
         leap_seconds[0],
@@ -164,8 +140,8 @@ fn leap_second_fetch() {
         LeapSecond::new(3_692_217_600.0, 37.0, true)
     );
 
-    for (lsi, leap_second) in leap_seconds.enumerate() {
+    for (lsi, leap_second) in leap_seconds.iter().enumerate() {
         // The index offset is because the latest leap seconds include those not announced by the IERS, but the IERS file does not.
-        assert_eq!(leap_second, latest_leap_seconds[lsi + 14]);
+        assert_eq!(leap_second, &latest_leap_seconds.entries()[lsi + 14]);
     }
 }

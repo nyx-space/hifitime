@@ -1918,7 +1918,7 @@ fn test_to_tai_time_scale() {
 #[cfg(feature = "std")]
 #[test]
 fn test_leap_seconds_file() {
-    use hifitime::leap_seconds::{LatestLeapSeconds, LeapSecondsFile};
+    use hifitime::leap_seconds::{LatestLeapSeconds, LeapSecondProvider, LeapSecondsFile};
 
     let provider = LeapSecondsFile::from_path("data/leap-seconds.list").unwrap();
 
@@ -1926,9 +1926,9 @@ fn test_leap_seconds_file() {
 
     // Check that we read the data correctly knowing that the IERS data only contains the announced leap seconds.
     let mut pos = 0;
-    for expected in default {
+    for expected in default.entries().to_owned() {
         if expected.announced_by_iers {
-            assert_eq!(expected, provider[pos]);
+            assert_eq!(expected, provider.entries()[pos]);
             pos += 1;
         }
     }

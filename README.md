@@ -315,6 +315,11 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 + Major refactoring of the code for ease of maintenance and removal of deprecrated functions from 3.x
 + Centralization of all time scale conversions into the `to_time_scale` function -- huge effort by [@gwbres](https://github.com/gwbres)
 + Removed `der` encoding/decoding for Epoch and Duration.
++ Duration serde now human readable + Display of Epoch is now Gregorian in its initialization time scale
++ Significant improvement in error handling (via the `snafu` crate)
++ Support exceptions in Python
++ **Breaking change**: renamed Julian date constants and removed other Julian date constants
++ Rewrote Gregorian datetime formatter, fixing plenty of bugs
 
 ## 3.9.0
 

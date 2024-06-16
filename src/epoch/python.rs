@@ -458,7 +458,7 @@ impl Epoch {
     pub fn leap_seconds_with_file(
         &self,
         iers_only: bool,
-        provider: LeapSecondsFile,
+        provider: &LeapSecondsFile,
     ) -> Option<f64> {
         self.leap_seconds_with(iers_only, provider)
     }
