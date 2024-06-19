@@ -2102,3 +2102,103 @@ fn regression_test_gh_288() {
         format!("{}", epoch.to_isoformat())
     );
 }
+
+#[cfg(feature = "std")]
+#[test]
+fn regression_test_gh_255() {
+    use hifitime::leap_seconds::{LeapSecond, LeapSecondProvider};
+
+    #[derive(Clone)]
+    struct LeapTable {
+        table: Vec<LeapSecond>,
+    }
+
+    impl LeapSecondProvider for LeapTable {
+        fn entries(&self) -> &[LeapSecond] {
+            &self.table
+        }
+    }
+
+    let leap_insert = LeapTable {
+        table: vec![
+            LeapSecond::new(50.0, 3.0, true),
+            LeapSecond::new(100.0, 4.0, true),
+        ],
+    };
+    let leap_delete = LeapTable {
+        table: vec![
+            LeapSecond::new(50.0, 3.0, true),
+            LeapSecond::new(100.0, 2.0, true),
+        ],
+    };
+
+    println!();
+    println!("Insert leap second @ 100, from +3 to +4");
+    println!("UTC -> TAI -> UTC");
+    for i in 96..=102 {
+        let time = Epoch::from_utc_seconds(i as f64);
+        let tai = time.to_time_scale_with_leap_seconds(TimeScale::TAI, &leap_insert);
+        let tai_s = tai.duration.to_seconds().round() as i64;
+        let utc = tai.to_time_scale_with_leap_seconds(TimeScale::UTC, &leap_insert);
+        let utc_s = utc.duration.to_seconds().round() as i64;
+        println!(
+            "{:3} -> {:3} -> {:3}, delta = {}",
+            i,
+            tai_s,
+            utc_s,
+            utc_s - i
+        );
+        if i == 99 {
+            let time = Epoch::from_tai_seconds(103.0);
+            let utc = time.to_time_scale_with_leap_seconds(TimeScale::UTC, &leap_insert);
+            let utc_s = utc.duration.to_seconds().round() as i64;
+            println!("    -> {:3} -> {:3}, delta = {}", 103, utc_s, 0);
+        }
+    }
+
+    println!();
+    println!("Delete leap second @ 100, from +3 to +2");
+    println!("UTC -> TAI -> UTC");
+    for i in 96..=102 {
+        let time = Epoch::from_utc_seconds(i as f64);
+        let tai = time.to_time_scale_with_leap_seconds(TimeScale::TAI, &leap_delete);
+        let tai_s = tai.duration.to_seconds().round() as i64;
+        let utc = tai.to_time_scale_with_leap_seconds(TimeScale::UTC, &leap_delete);
+        let utc_s = utc.duration.to_seconds().round() as i64;
+        println!(
+            "{:3} -> {:3} -> {:3}, delta = {}",
+            i,
+            tai_s,
+            utc_s,
+            utc_s - i
+        );
+    }
+
+    // println!();
+    // println!("=== Proposed fix ===");
+
+    // println!();
+    // println!("Insert leap second @ 100, from +3 to +4");
+    // println!("UTC -> TAI -> UTC");
+    // for i in 96..=102 {
+    //     let time = from_utc_seconds(i as f64, leap_insert.clone());
+    //     let tai = time.to_tai_seconds().round() as i64;
+    //     let utc = fixed_to_utc(&time, leap_insert.clone()).round() as i64;
+    //     println!("{:3} -> {:3} -> {:3}, delta = {}", i, tai, utc, utc - i);
+    //     if i == 99 {
+    //         let time = Epoch::from_tai_seconds(103.0);
+    //         let utc = to_utc_seconds(&time, leap_insert.clone()).round() as i64;
+    //         println!("    -> {:3} -> {:3}, delta = {}", 103, utc, 0);
+    //     }
+    // }
+
+    // println!();
+    // println!("Delete leap second @ 100, from +3 to +2");
+    // println!("UTC -> TAI -> UTC");
+    // for i in 96..=102 {
+    //     let time = from_utc_seconds(i as f64, leap_delete.clone());
+    //     let tai = time.to_tai_seconds().round() as i64;
+    //     let utc = fixed_to_utc(&time, leap_delete.clone()).round() as i64;
+    //     println!("{:3} -> {:3} -> {:3}, delta = {}", i, tai, utc, utc - i);
+    // }
+}

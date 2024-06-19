@@ -113,11 +113,15 @@ impl<'de> Deserialize<'de> for Epoch {
 // Defines the methods that should be classmethods in Python, but must be redefined as per https://github.com/PyO3/pyo3/issues/1003#issuecomment-844433346
 impl Epoch {
     #[must_use]
-    /// Converts self to another time scale
+    /// Converts self to another time scale, using the leap second provider for any conversion involving leap seconds
     ///
     /// As per the [Rust naming convention](https://rust-lang.github.io/api-guidelines/naming.html#ad-hoc-conversions-follow-as_-to_-into_-conventions-c-conv),
     /// this borrows an Epoch and returns an owned Epoch.
-    pub fn to_time_scale(&self, ts: TimeScale) -> Self {
+    pub fn to_time_scale_with_leap_seconds<L: LeapSecondProvider>(
+        &self,
+        ts: TimeScale,
+        provider: &L,
+    ) -> Self {
         if ts == self.time_scale {
             // Do nothing, just return a copy
             *self
@@ -159,7 +163,11 @@ impl Epoch {
                     // Assume this is TAI
                     let mut tai_assumption = *self;
                     tai_assumption.time_scale = TimeScale::TAI;
-                    self.duration + tai_assumption.leap_seconds(true).unwrap_or(0.0).seconds()
+                    self.duration
+                        + tai_assumption
+                            .leap_seconds_with(true, provider)
+                            .unwrap_or(0.0)
+                            .seconds()
                 }
                 TimeScale::GPST => self.duration + GPST_REF_EPOCH.to_tai_duration(),
                 TimeScale::GST => self.duration + GST_REF_EPOCH.to_tai_duration(),
@@ -221,7 +229,11 @@ impl Epoch {
                         time_scale: TimeScale::TAI,
                     };
                     // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-                    prime_epoch_offset - epoch.leap_seconds(true).unwrap_or(0.0).seconds()
+                    prime_epoch_offset
+                        - epoch
+                            .leap_seconds_with(true, provider)
+                            .unwrap_or(0.0)
+                            .seconds()
                 }
                 TimeScale::GPST => prime_epoch_offset - GPST_REF_EPOCH.to_tai_duration(),
                 TimeScale::GST => prime_epoch_offset - GST_REF_EPOCH.to_tai_duration(),
@@ -234,6 +246,16 @@ impl Epoch {
                 time_scale: ts,
             }
         }
+    }
+
+    #[must_use]
+    /// Converts self to another time scale
+    ///
+    /// Note that this is a shortcut to to_time_scale_with_leap_seconds with the LatestLeapSeconds.
+    /// As per the [Rust naming convention](https://rust-lang.github.io/api-guidelines/naming.html#ad-hoc-conversions-follow-as_-to_-into_-conventions-c-conv),
+    /// this borrows an Epoch and returns an owned Epoch.
+    pub fn to_time_scale(&self, ts: TimeScale) -> Self {
+        self.to_time_scale_with_leap_seconds(ts, &LatestLeapSeconds::default())
     }
 
     #[must_use]
