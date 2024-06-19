@@ -223,17 +223,29 @@ impl Epoch {
                     prime_epoch_offset + delta_tdb_tai - ts.prime_epoch_offset()
                 }
                 TimeScale::UTC => {
-                    // Assume it's TAI
-                    let epoch = Self {
-                        duration: prime_epoch_offset,
-                        time_scale: TimeScale::TAI,
-                    };
-                    // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-                    prime_epoch_offset
-                        - epoch
-                            .leap_seconds_with(true, provider)
-                            .unwrap_or(0.0)
-                            .seconds()
+                    let original_offset_s = prime_epoch_offset.to_seconds();
+                    let mut corrected_offset = original_offset_s * Unit::Second;
+                    for leap_second in provider.entries().iter().rev() {
+                        let maybe_corrected_offset_s = original_offset_s - leap_second.delta_at;
+                        if original_offset_s >= leap_second.timestamp_tai_s {
+                            corrected_offset = maybe_corrected_offset_s * Unit::Second;
+                            break;
+                        }
+                    }
+
+                    corrected_offset
+
+                    // // Assume it's TAI for the sake of calculation
+                    // let epoch = Self {
+                    //     duration: prime_epoch_offset,
+                    //     time_scale: TimeScale::TAI,
+                    // };
+                    // // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
+                    // prime_epoch_offset
+                    //     - epoch
+                    //         .leap_seconds_with(true, provider)
+                    //         .unwrap_or(0.0)
+                    //         .seconds()
                 }
                 TimeScale::GPST => prime_epoch_offset - GPST_REF_EPOCH.to_tai_duration(),
                 TimeScale::GST => prime_epoch_offset - GST_REF_EPOCH.to_tai_duration(),
