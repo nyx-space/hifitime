@@ -2,7 +2,7 @@
 extern crate core;
 
 use hifitime::{
-    is_gregorian_valid, Duration, Epoch, EpochError, ParsingError, TimeScale, TimeUnits, Unit,
+    is_gregorian_valid, Duration, Epoch, HifitimeError, ParsingError, TimeScale, TimeUnits, Unit,
     Weekday, BDT_REF_EPOCH, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR, GPST_REF_EPOCH, GST_REF_EPOCH,
     J1900_REF_EPOCH, J2000_REF_EPOCH, JD_J2000, MJD_J1900, MJD_J2000, MJD_OFFSET,
     SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
@@ -919,7 +919,7 @@ fn test_from_str() {
 
     assert_eq!(
         Epoch::from_str("blah"),
-        Err(EpochError::Parse {
+        Err(HifitimeError::Parse {
             source: ParsingError::UnknownFormat,
             details: "less than 7 characters"
         })

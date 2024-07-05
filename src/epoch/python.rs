@@ -10,7 +10,7 @@
 
 // Here lives all of the implementations that are only built with the pyhon feature.
 
-use crate::{prelude::Format, Duration, Epoch, EpochError, TimeScale};
+use crate::{prelude::Format, Duration, Epoch, HifitimeError, TimeScale};
 
 use core::str::FromStr;
 
@@ -282,7 +282,7 @@ impl Epoch {
         minute: u8,
         second: u8,
         nanos: u32,
-    ) -> Result<Self, EpochError> {
+    ) -> Result<Self, HifitimeError> {
         Self::maybe_from_gregorian_tai(year, month, day, hour, minute, second, nanos)
     }
 
@@ -300,7 +300,7 @@ impl Epoch {
         second: u8,
         nanos: u32,
         time_scale: TimeScale,
-    ) -> Result<Self, EpochError> {
+    ) -> Result<Self, HifitimeError> {
         Self::maybe_from_gregorian(year, month, day, hour, minute, second, nanos, time_scale)
     }
 
@@ -367,7 +367,7 @@ impl Epoch {
         minute: u8,
         second: u8,
         nanos: u32,
-    ) -> Result<Self, EpochError> {
+    ) -> Result<Self, HifitimeError> {
         Self::maybe_from_gregorian_utc(year, month, day, hour, minute, second, nanos)
     }
 
@@ -468,7 +468,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    fn system_now(_cls: &Bound<'_, PyType>) -> Result<Self, EpochError> {
+    fn system_now(_cls: &Bound<'_, PyType>) -> Result<Self, HifitimeError> {
         Self::now()
     }
 

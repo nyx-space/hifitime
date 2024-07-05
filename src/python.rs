@@ -9,7 +9,7 @@
  */
 
 use pyo3::{
-    exceptions::{PyBaseException, PyException},
+    exceptions::PyException,
     prelude::*,
     types::{PyDict, PyTuple},
 };
@@ -29,18 +29,18 @@ fn hifitime(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<LatestLeapSeconds>()?;
     m.add_class::<LeapSecondsFile>()?;
     m.add_class::<Ut1Provider>()?;
-    m.add_class::<PyEpochError>()?;
+    m.add_class::<PyHifitimeError>()?;
     m.add_class::<PyDurationError>()?;
     m.add_class::<PyParsingError>()?;
     Ok(())
 }
 
 #[pyclass]
-#[pyo3(name = "EpochError", extends = PyBaseException)]
-pub struct PyEpochError {}
+#[pyo3(name = "HifitimeError", extends = PyException)]
+pub struct PyHifitimeError {}
 
 #[pymethods]
-impl PyEpochError {
+impl PyHifitimeError {
     #[new]
     #[pyo3(signature = (*_args, **_kwargs))]
     fn new(_args: Bound<'_, PyTuple>, _kwargs: Option<Bound<'_, PyDict>>) -> Self {
@@ -49,7 +49,7 @@ impl PyEpochError {
 }
 
 #[pyclass]
-#[pyo3(name = "ParsingError", extends = PyBaseException)]
+#[pyo3(name = "ParsingError", extends = PyException)]
 pub struct PyParsingError {}
 
 #[pymethods]
@@ -62,7 +62,7 @@ impl PyParsingError {
 }
 
 #[pyclass]
-#[pyo3(name = "DurationError", extends = PyBaseException)]
+#[pyo3(name = "DurationError", extends = PyException)]
 pub struct PyDurationError {}
 
 #[pymethods]
@@ -75,9 +75,9 @@ impl PyDurationError {
 }
 
 // convert you library error into a PyErr using the custom exception type
-impl From<EpochError> for PyErr {
-    fn from(err: EpochError) -> Self {
-        PyErr::new::<PyEpochError, _>(err.to_string())
+impl From<HifitimeError> for PyErr {
+    fn from(err: HifitimeError) -> Self {
+        PyErr::new::<PyHifitimeError, _>(err.to_string())
     }
 }
 

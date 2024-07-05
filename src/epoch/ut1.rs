@@ -21,7 +21,7 @@ use std::{fs::File, io::Read};
 use core::fmt;
 use core::ops::Index;
 
-use crate::{Duration, Epoch, EpochError, ParsingError, TimeScale, Unit};
+use crate::{Duration, Epoch, HifitimeError, ParsingError, TimeScale, Unit};
 
 impl Epoch {
     #[must_use]
@@ -81,12 +81,12 @@ pub struct Ut1Provider {
 
 impl Ut1Provider {
     /// Builds a UT1 provided by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.short> (short time scale UT1 data) and parsing it.
-    pub fn download_short_from_jpl() -> Result<Self, EpochError> {
+    pub fn download_short_from_jpl() -> Result<Self, HifitimeError> {
         Self::download_from_jpl("latest_eop2.short")
     }
 
     /// Build a UT1 provider by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.long> (long time scale UT1 data) and parsing it.
-    pub fn download_from_jpl(version: &str) -> Result<Self, EpochError> {
+    pub fn download_from_jpl(version: &str) -> Result<Self, HifitimeError> {
         match get(format!(
             "https://eop2-external.jpl.nasa.gov/eop2/{}",
             version
@@ -95,7 +95,7 @@ impl Ut1Provider {
                 let eop_data = String::from_utf8(resp.bytes().unwrap().to_vec()).unwrap();
                 Self::from_eop_data(eop_data)
             }
-            Err(e) => Err(EpochError::Parse {
+            Err(e) => Err(HifitimeError::Parse {
                 source: ParsingError::DownloadError {
                     code: e.status().unwrap_or(StatusCode::SEE_OTHER),
                 },
@@ -105,11 +105,11 @@ impl Ut1Provider {
     }
 
     /// Builds a UT1 provider from the provided path to an EOP file.
-    pub fn from_eop_file(path: &str) -> Result<Self, EpochError> {
+    pub fn from_eop_file(path: &str) -> Result<Self, HifitimeError> {
         let mut f = match File::open(path) {
             Ok(f) => f,
             Err(e) => {
-                return Err(EpochError::Parse {
+                return Err(HifitimeError::Parse {
                     source: ParsingError::InOut { err: e.kind() },
                     details: "when opening EOP file",
                 })
@@ -118,7 +118,7 @@ impl Ut1Provider {
 
         let mut contents = String::new();
         if let Err(e) = f.read_to_string(&mut contents) {
-            return Err(EpochError::Parse {
+            return Err(HifitimeError::Parse {
                 source: ParsingError::InOut { err: e.kind() },
                 details: "when reading EOP file",
             });
@@ -128,7 +128,7 @@ impl Ut1Provider {
     }
 
     /// Builds a UT1 provider from the provided EOP data
-    pub fn from_eop_data(contents: String) -> Result<Self, EpochError> {
+    pub fn from_eop_data(contents: String) -> Result<Self, HifitimeError> {
         let mut me = Self::default();
 
         let mut ignore = true;
@@ -148,7 +148,7 @@ impl Ut1Provider {
             // We have data of interest!
             let data: Vec<&str> = line.split(',').collect();
             if data.len() < 4 {
-                return Err(EpochError::Parse {
+                return Err(HifitimeError::Parse {
                     source: ParsingError::UnknownFormat,
                     details: "expected EOP line to contain 4 comma-separated columns",
                 });
@@ -157,7 +157,7 @@ impl Ut1Provider {
             let mjd_tai_days: f64 = match lexical_core::parse(data[0].trim().as_bytes()) {
                 Ok(val) => val,
                 Err(err) => {
-                    return Err(EpochError::Parse {
+                    return Err(HifitimeError::Parse {
                         source: ParsingError::Lexical { err },
                         details: "when parsing MJD TAI days (zeroth column)",
                     })
@@ -168,7 +168,7 @@ impl Ut1Provider {
             match lexical_core::parse(data[3].trim().as_bytes()) {
                 Ok(val) => delta_ut1_ms = val,
                 Err(err) => {
-                    return Err(EpochError::Parse {
+                    return Err(HifitimeError::Parse {
                         source: ParsingError::Lexical { err },
                         details: "when parsing ΔUT1 in ms (last column)",
                     })
@@ -189,7 +189,7 @@ impl Ut1Provider {
 #[cfg_attr(feature = "python", pymethods)]
 impl Ut1Provider {
     #[new]
-    pub fn __new__() -> Result<Self, EpochError> {
+    pub fn __new__() -> Result<Self, HifitimeError> {
         Self::download_short_from_jpl()
     }
 

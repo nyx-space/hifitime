@@ -9,11 +9,11 @@
 */
 
 use super::{Duration, Unit};
-use crate::{EpochError, ParsingError};
+use crate::{HifitimeError, ParsingError};
 use core::str::FromStr;
 
 impl FromStr for Duration {
-    type Err = EpochError;
+    type Err = HifitimeError;
 
     /// Attempts to convert a simple string to a Duration. Does not yet support complicated durations.
     ///
@@ -53,7 +53,7 @@ impl FromStr for Duration {
         let s = s_in.trim();
 
         if s.is_empty() {
-            return Err(EpochError::Parse {
+            return Err(HifitimeError::Parse {
                 source: ParsingError::NothingToParse,
                 details: "input string is empty",
             });
@@ -78,7 +78,7 @@ impl FromStr for Duration {
                     1
                 } else {
                     // This invalid
-                    return Err(EpochError::Parse {
+                    return Err(HifitimeError::Parse {
                         source: ParsingError::InvalidTimezone,
                         details: "invalid timezone format [+/-]HH:MM",
                     });
@@ -88,7 +88,7 @@ impl FromStr for Duration {
                 let hours: i64 = match lexical_core::parse(s[indexes.0..indexes.1].as_bytes()) {
                     Ok(val) => val,
                     Err(err) => {
-                        return Err(EpochError::Parse {
+                        return Err(HifitimeError::Parse {
                             source: ParsingError::Lexical { err },
                             details: "invalid hours",
                         })
@@ -107,7 +107,7 @@ impl FromStr for Duration {
                         match lexical_core::parse(subs.as_bytes()) {
                             Ok(val) => minutes = val,
                             Err(_) => {
-                                return Err(EpochError::Parse {
+                                return Err(HifitimeError::Parse {
                                     source: ParsingError::ValueError,
                                     details: "invalid minute",
                                 })
@@ -124,7 +124,7 @@ impl FromStr for Duration {
                                     match lexical_core::parse(subs.as_bytes()) {
                                         Ok(val) => seconds = val,
                                         Err(_) => {
-                                            return Err(EpochError::Parse {
+                                            return Err(HifitimeError::Parse {
                                                 source: ParsingError::ValueError,
                                                 details: "invalid seconds",
                                             })
@@ -154,7 +154,7 @@ impl FromStr for Duration {
                 if seeking_number {
                     if prev_idx == idx {
                         // We've reached the end of the string and it didn't end with a unit
-                        return Err(EpochError::Parse {
+                        return Err(HifitimeError::Parse {
                             source: ParsingError::UnknownOrMissingUnit,
                             details: "expect a unit after a numeric",
                         });
@@ -163,7 +163,7 @@ impl FromStr for Duration {
                     match lexical_core::parse(s[prev_idx..idx].as_bytes()) {
                         Ok(val) => latest_value = val,
                         Err(_) => {
-                            return Err(EpochError::Parse {
+                            return Err(HifitimeError::Parse {
                                 source: ParsingError::ValueError,
                                 details: "could not parse what precedes the space",
                             })
@@ -183,7 +183,7 @@ impl FromStr for Duration {
                         "us" | "microsecond" | "microseconds" => 5,
                         "ns" | "nanosecond" | "nanoseconds" => 6,
                         _ => {
-                            return Err(EpochError::Parse {
+                            return Err(HifitimeError::Parse {
                                 source: ParsingError::UnknownOrMissingUnit,
                                 details: "unknown unit",
                             });

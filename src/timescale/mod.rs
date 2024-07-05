@@ -82,7 +82,7 @@ pub(crate) const HIFITIME_REF_YEAR: i32 = 1900;
 /// Enum of the different time systems available
 #[non_exhaustive]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum TimeScale {
     /// TAI is the representation of an Epoch internally

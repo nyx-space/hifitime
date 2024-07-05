@@ -32,7 +32,7 @@ use crate::errors::{DurationError, ParseSnafu};
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
 use crate::Weekday;
 use crate::{
-    EpochError, MonthName, TimeScale, TimeUnits, BDT_REF_EPOCH, ET_EPOCH_S, GPST_REF_EPOCH,
+    HifitimeError, MonthName, TimeScale, TimeUnits, BDT_REF_EPOCH, ET_EPOCH_S, GPST_REF_EPOCH,
     GST_REF_EPOCH, MJD_J1900, MJD_OFFSET, NANOSECONDS_PER_DAY, QZSST_REF_EPOCH, UNIX_REF_EPOCH,
 };
 use core::cmp::Eq;
@@ -633,12 +633,12 @@ impl Epoch {
     }
 
     /// Initializes an Epoch from the provided Format.
-    pub fn from_str_with_format(s_in: &str, format: Format) -> Result<Self, EpochError> {
+    pub fn from_str_with_format(s_in: &str, format: Format) -> Result<Self, HifitimeError> {
         format.parse(s_in)
     }
 
     /// Initializes an Epoch from the Format as a string.
-    pub fn from_format_str(s_in: &str, format_str: &str) -> Result<Self, EpochError> {
+    pub fn from_format_str(s_in: &str, format_str: &str) -> Result<Self, HifitimeError> {
         Format::from_str(format_str)
             .with_context(|_| ParseSnafu {
                 details: "when using format string",
@@ -738,10 +738,10 @@ impl Epoch {
     /// If this is _not_ an issue, you should use `epoch.to_duration_in_time_scale().to_parts()` to retrieve both the centuries and the nanoseconds
     /// in that century.
     #[allow(clippy::wrong_self_convention)]
-    fn to_nanoseconds_in_time_scale(&self, time_scale: TimeScale) -> Result<u64, EpochError> {
+    fn to_nanoseconds_in_time_scale(&self, time_scale: TimeScale) -> Result<u64, HifitimeError> {
         let (centuries, nanoseconds) = self.to_duration_in_time_scale(time_scale).to_parts();
         if centuries != 0 {
-            Err(EpochError::Duration {
+            Err(HifitimeError::Duration {
                 source: DurationError::Overflow,
             })
         } else {
@@ -950,7 +950,7 @@ impl Epoch {
 
     /// Returns nanoseconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// NOTE: This function will return an error if the centuries past GPST time are not zero.
-    pub fn to_gpst_nanoseconds(&self) -> Result<u64, EpochError> {
+    pub fn to_gpst_nanoseconds(&self) -> Result<u64, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::GPST)
     }
 
@@ -974,7 +974,7 @@ impl Epoch {
 
     /// Returns nanoseconds past QZSS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// NOTE: This function will return an error if the centuries past QZSST time are not zero.
-    pub fn to_qzsst_nanoseconds(&self) -> Result<u64, EpochError> {
+    pub fn to_qzsst_nanoseconds(&self) -> Result<u64, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::QZSST)
     }
 
@@ -999,7 +999,7 @@ impl Epoch {
     /// Returns nanoseconds past GST (Galileo) Time Epoch, starting on August 21st 1999 Midnight UT
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// NOTE: This function will return an error if the centuries past GST time are not zero.
-    pub fn to_gst_nanoseconds(&self) -> Result<u64, EpochError> {
+    pub fn to_gst_nanoseconds(&self) -> Result<u64, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::GST)
     }
 
@@ -1033,7 +1033,7 @@ impl Epoch {
     /// Returns nanoseconds past BDT (BeiDou) Time Epoch, defined as Jan 01 2006 UTC
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// NOTE: This function will return an error if the centuries past GST time are not zero.
-    pub fn to_bdt_nanoseconds(&self) -> Result<u64, EpochError> {
+    pub fn to_bdt_nanoseconds(&self) -> Result<u64, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::BDT)
     }
 
@@ -1249,7 +1249,7 @@ impl Epoch {
 
 #[cfg(not(kani))]
 impl FromStr for Epoch {
-    type Err = EpochError;
+    type Err = HifitimeError;
 
     /// Attempts to convert a string to an Epoch.
     ///
@@ -1274,7 +1274,7 @@ impl FromStr for Epoch {
 
         if s.len() < 7 {
             // We need at least seven characters for a valid epoch
-            Err(EpochError::Parse {
+            Err(HifitimeError::Parse {
                 source: ParsingError::UnknownFormat,
                 details: "less than 7 characters",
             })
@@ -1301,7 +1301,7 @@ impl FromStr for Epoch {
             let value: f64 = match lexical_core::parse(num_str.as_bytes()) {
                 Ok(val) => val,
                 Err(_) => {
-                    return Err(EpochError::Parse {
+                    return Err(HifitimeError::Parse {
                         source: ParsingError::ValueError,
                         details: "parsing as JD, MJD, or SEC",
                     })
@@ -1314,7 +1314,7 @@ impl FromStr for Epoch {
                     TimeScale::TAI => Ok(Self::from_jde_tai(value)),
                     TimeScale::TDB => Ok(Self::from_jde_tdb(value)),
                     TimeScale::UTC => Ok(Self::from_jde_utc(value)),
-                    _ => Err(EpochError::Parse {
+                    _ => Err(HifitimeError::Parse {
                         source: ParsingError::UnsupportedTimeSystem,
                         details: "for Julian Date",
                     }),
@@ -1324,7 +1324,7 @@ impl FromStr for Epoch {
                     TimeScale::UTC | TimeScale::GPST | TimeScale::BDT | TimeScale::GST => {
                         Ok(Self::from_mjd_in_time_scale(value, ts))
                     }
-                    _ => Err(EpochError::Parse {
+                    _ => Err(HifitimeError::Parse {
                         source: ParsingError::UnsupportedTimeSystem,
                         details: "for Modified Julian Date",
                     }),
@@ -1339,7 +1339,7 @@ impl FromStr for Epoch {
                         Ok(Self::from_duration(secs, ts))
                     }
                 },
-                _ => Err(EpochError::Parse {
+                _ => Err(HifitimeError::Parse {
                     source: ParsingError::UnknownFormat,
                     details: "suffix not understood",
                 }),
