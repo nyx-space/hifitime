@@ -433,5 +433,14 @@ The exact steps should be:
 1. Jump into the virtual environment: `source .venv/bin/activate` (e.g.)
 1. Make sure pytest is installed: `pip install pytest`
 1. Build hifitime specifying the output folder of the Python egg: `maturin build -F python --out dist`
-1. Install the egg: `pip install dist/hifitime-4.0.0.dev1-cp311-cp311-linux_x86_64.whl`
+1. Install the egg: `pip install dist/hifitime-4.0.0.alpha1-cp311-cp311-linux_x86_64.whl`
 1. Run the tests using the environmental pytest: `.venv/bin/pytest`
+
+### Type hinting
+
+Hifitime uses the approach from [`dora`](https://github.com/dora-rs/dora/pull/493) to enable type hinting in IDEs.
+
+```bash
+python generate_stubs.py hifitime hifitime.pyi
+maturin develop
+```

@@ -203,18 +203,76 @@ impl Duration {
         format!("{self} @ {self:p}")
     }
 
+    /// # Addition of Durations
+    /// Durations are centered on zero duration. Of the tuple, only the centuries may be negative, the nanoseconds are always positive
+    /// and represent the nanoseconds _into_ the current centuries.
+    ///
+    /// ## Examples
+    /// + `Duration { centuries: 0, nanoseconds: 1 }` is a positive duration of zero centuries and one nanosecond.
+    /// + `Duration { centuries: -1, nanoseconds: 1 }` is a negative duration representing "one century before zero minus one nanosecond"
+    ///
+    ///
+    /// :type other: hifitime.Duration
+    /// :rtype: Duration
     fn __add__(&self, other: Self) -> Duration {
         *self + other
     }
 
+    /// # Subtraction
+    /// This operation is a notch confusing with negative durations.
+    /// As described in the `Duration` structure, a Duration of (-1, NANOSECONDS_PER_CENTURY-1) is closer to zero
+    /// than (-1, 0).
+    ///
+    /// ## Algorithm
+    ///
+    /// ### A > B, and both are positive
+    ///
+    /// If A > B, then A.centuries is subtracted by B.centuries, and A.nanoseconds is subtracted by B.nanoseconds.
+    /// If an overflow occurs, e.g. A.nanoseconds < B.nanoseconds, the number of nanoseconds is increased by the number of nanoseconds per century,
+    /// and the number of centuries is decreased by one.
+    ///
+    /// ### A < B, and both are positive
+    ///
+    /// In this case, the resulting duration will be negative. The number of centuries is a signed integer, so it is set to the difference of A.centuries - B.centuries.
+    /// The number of nanoseconds however must be wrapped by the number of nanoseconds per century.
+    /// For example:, let A = (0, 1) and B = (1, 10), then the resulting duration will be (-2, NANOSECONDS_PER_CENTURY - (10 - 1)). In this case, the centuries are set
+    /// to -2 because B is _two_ centuries into the future (the number of centuries into the future is zero-indexed).
+    ///
+    /// ### A > B, both are negative
+    ///
+    /// In this case, we try to stick to normal arithmatics: (-9 - -10) = (-9 + 10) = +1.
+    /// In this case, we can simply add the components of the duration together.
+    /// For example, let A = (-1, NANOSECONDS_PER_CENTURY - 2), and B = (-1, NANOSECONDS_PER_CENTURY - 1). Respectively, A is _two_ nanoseconds _before_ Duration::ZERO
+    /// and B is _one_ nanosecond before Duration::ZERO. Then, A-B should be one nanoseconds before zero, i.e. (-1, NANOSECONDS_PER_CENTURY - 1).
+    /// This is because we _subtract_ "negative one nanosecond" from a "negative minus two nanoseconds", which corresponds to _adding_ the opposite, and the
+    /// opposite of "negative one nanosecond" is "positive one nanosecond".
+    ///
+    /// ### A < B, both are negative
+    ///
+    /// Just like in the prior case, we try to stick to normal arithmatics: (-10 - -9) = (-10 + 9) = -1.
+    ///
+    /// ### MIN is the minimum
+    ///
+    /// One cannot subtract anything from the MIN.
+    ///
+    /// ```
+    /// from hifitime import Duration
+    ///
+    /// one_ns = Duration.from_parts(0, 1)
+    /// assert Duration.MIN() - one_ns == Duration.MIN()
+    /// ```
+    ///
+    /// :rtype: hifitime.Duration
     fn __sub__(&self, other: Self) -> Duration {
         *self - other
     }
 
+    /// :rtype: hifitime.Duration
     fn __mul__(&self, other: f64) -> Duration {
         *self * other
     }
 
+    /// :rtype: hifitime.Duration
     fn __div__(&self, other: f64) -> Duration {
         *self / other
     }
