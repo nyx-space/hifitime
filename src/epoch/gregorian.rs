@@ -11,7 +11,7 @@
 use crate::errors::DurationError;
 use crate::parser::Token;
 use crate::{
-    Duration, Epoch, EpochError, ParsingError, TimeScale, Unit, DAYS_PER_YEAR_NLD,
+    Duration, Epoch, HifitimeError, ParsingError, TimeScale, Unit, DAYS_PER_YEAR_NLD,
     HIFITIME_REF_YEAR, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
     NANOSECONDS_PER_SECOND_U32,
 };
@@ -224,7 +224,7 @@ impl Epoch {
         minute: u8,
         second: u8,
         nanos: u32,
-    ) -> Result<Self, EpochError> {
+    ) -> Result<Self, HifitimeError> {
         Self::maybe_from_gregorian(
             year,
             month,
@@ -251,20 +251,20 @@ impl Epoch {
         second: u8,
         nanos: u32,
         time_scale: TimeScale,
-    ) -> Result<Self, EpochError> {
+    ) -> Result<Self, HifitimeError> {
         if !is_gregorian_valid(year, month, day, hour, minute, second, nanos) {
-            return Err(EpochError::InvalidGregorianDate);
+            return Err(HifitimeError::InvalidGregorianDate);
         }
 
         let mut duration_wrt_ref = match year.checked_sub(HIFITIME_REF_YEAR) {
             None => {
-                return Err(EpochError::Duration {
+                return Err(HifitimeError::Duration {
                     source: DurationError::Underflow,
                 })
             }
             Some(years_since_ref) => match years_since_ref.checked_mul(DAYS_PER_YEAR_NLD as i32) {
                 None => {
-                    return Err(EpochError::Duration {
+                    return Err(HifitimeError::Duration {
                         source: DurationError::Overflow,
                     })
                 }
@@ -377,7 +377,7 @@ impl Epoch {
         minute: u8,
         second: u8,
         nanos: u32,
-    ) -> Result<Self, EpochError> {
+    ) -> Result<Self, HifitimeError> {
         Self::maybe_from_gregorian(
             year,
             month,
@@ -538,7 +538,7 @@ impl Epoch {
     /// );
     /// ```
     #[cfg(not(kani))]
-    pub fn from_gregorian_str(s_in: &str) -> Result<Self, EpochError> {
+    pub fn from_gregorian_str(s_in: &str) -> Result<Self, HifitimeError> {
         // All of the integers in a date: year, month, day, hour, minute, second, subsecond, offset hours, offset minutes
 
         use snafu::ResultExt;
@@ -582,7 +582,7 @@ impl Epoch {
                 };
 
                 if prev_idx > end_idx {
-                    return Err(EpochError::Parse {
+                    return Err(HifitimeError::Parse {
                         source: ParsingError::ISO8601,
                         details: "parsing as Gregorian",
                     });
@@ -605,7 +605,7 @@ impl Epoch {
                         }
                     }
                     Err(err) => {
-                        return Err(EpochError::Parse {
+                        return Err(HifitimeError::Parse {
                             source: ParsingError::Lexical { err },
                             details: "parsing as Gregorian",
                         })

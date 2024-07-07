@@ -10,7 +10,7 @@
 
 // Here lives all of the formal verification for Duration.
 
-use super::{Duration, DurationError, EpochError};
+use super::{Duration, DurationError, HifitimeError};
 use crate::NANOSECONDS_PER_CENTURY;
 
 use kani::Arbitrary;
@@ -43,7 +43,7 @@ fn formal_duration_truncated_ns_reciprocity() {
         // Then it does not fit on a i64, so this function should return an error
         assert_eq!(
             dur_from_part.try_truncated_nanoseconds(),
-            Err(EpochError::Duration {
+            Err(HifitimeError::Duration {
                 source: DurationError::Overflow,
             })
         );

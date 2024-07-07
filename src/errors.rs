@@ -25,7 +25,7 @@ use crate::Weekday;
 #[non_exhaustive]
 #[derive(Debug, Snafu, PartialEq)]
 #[snafu(visibility(pub(crate)))]
-pub enum EpochError {
+pub enum HifitimeError {
     InvalidGregorianDate,
     #[snafu(display("{source}, {details}"))]
     Parse {
@@ -90,12 +90,12 @@ pub enum ParsingError {
 
 #[cfg(test)]
 mod tests {
-    use crate::{EpochError, ParsingError, TimeScale};
+    use crate::{HifitimeError, ParsingError, TimeScale};
 
     #[test]
     fn enum_eq() {
         // Check the equality compiles (if one compiles, then all asserts will work)
-        assert!(EpochError::InvalidGregorianDate == EpochError::InvalidGregorianDate);
+        assert!(HifitimeError::InvalidGregorianDate == HifitimeError::InvalidGregorianDate);
         assert!(ParsingError::ISO8601 == ParsingError::ISO8601);
         assert!(TimeScale::ET == TimeScale::ET);
     }

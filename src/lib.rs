@@ -53,7 +53,7 @@ pub mod efmt;
 mod parser;
 
 pub mod errors;
-pub use errors::{DurationError, EpochError, ParsingError};
+pub use errors::{DurationError, HifitimeError, ParsingError};
 
 mod epoch;
 pub use epoch::*;
@@ -79,7 +79,7 @@ pub use month::*;
 pub mod prelude {
     pub use crate::efmt::{Format, Formatter};
     pub use crate::{
-        Duration, DurationError, Epoch, EpochError, Freq, Frequencies, ParsingError, TimeScale,
+        Duration, DurationError, Epoch, Freq, Frequencies, HifitimeError, ParsingError, TimeScale,
         TimeSeries, TimeUnits, Unit, Weekday,
     };
 }

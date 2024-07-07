@@ -8,7 +8,7 @@
 * Documentation: https://nyxspace.com/
 */
 
-use crate::errors::{DurationError, EpochError};
+use crate::errors::{DurationError, HifitimeError};
 use crate::{SECONDS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 
 pub use crate::{Freq, Frequencies, TimeUnits, Unit};
@@ -372,10 +372,10 @@ impl Duration {
     }
 
     /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.
-    pub fn try_truncated_nanoseconds(&self) -> Result<i64, EpochError> {
+    pub fn try_truncated_nanoseconds(&self) -> Result<i64, HifitimeError> {
         // If it fits, we know that the nanoseconds also fit. abs() will fail if the centuries are min'ed out.
         if self.centuries == i16::MIN || self.centuries.abs() >= 3 {
-            Err(EpochError::Duration {
+            Err(HifitimeError::Duration {
                 source: DurationError::Underflow,
             })
         } else if self.centuries == -1 {
@@ -385,12 +385,12 @@ impl Duration {
                 Some(centuries_as_ns) => {
                     match centuries_as_ns.checked_add(self.nanoseconds as i64) {
                         Some(truncated_ns) => Ok(truncated_ns),
-                        None => Err(EpochError::Duration {
+                        None => Err(HifitimeError::Duration {
                             source: DurationError::Overflow,
                         }),
                     }
                 }
-                None => Err(EpochError::Duration {
+                None => Err(HifitimeError::Duration {
                     source: DurationError::Underflow,
                 }),
             }

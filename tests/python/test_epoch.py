@@ -1,4 +1,4 @@
-from hifitime import Duration, Epoch, EpochError, ParsingError, TimeScale, TimeSeries, Unit
+from hifitime import Duration, Epoch, HifitimeError, ParsingError, TimeScale, TimeSeries, Unit
 from datetime import datetime
 import pickle
 
@@ -29,7 +29,10 @@ def test_strtime():
 
 def test_utcnow():
     epoch = Epoch.system_now()
-    dt = datetime.utcnow()
+    try:
+        dt = datetime.now(datetime.UTC)
+    except Exception:
+        dt = datetime.utcnow()
 
     # Hifitime uses a different clock to Python and print down to the nanosecond
     assert dt.isoformat()[:20] == f"{epoch}"[:20]
@@ -75,13 +78,28 @@ def test_duration_eq():
     dur = Duration("37 min 26 s")
     assert pickle.loads(pickle.dumps(dur)) == dur
 
-def test_exceptions():
+def test_epoch_exceptions():
     try:
         Epoch("invalid")
-    except EpochError as e:
+    except HifitimeError as e:
         print(f"caught {e}")
     else:
         raise AssertionError("failed to catch epoch error")
+    
+    # Check that we can catch it with the builtin exception types
+    try:
+        Epoch("invalid")
+    except Exception as e:
+        print(f"caught {e}")
+    else:
+        raise AssertionError("failed to catch as exception")
+
+    try:
+        Epoch("invalid")
+    except BaseException as e:
+        print(f"caught {e}")
+    else:
+        raise AssertionError("failed to catch as base exception")
 
 def test_regression_gh249():
     e = Epoch.init_from_gregorian(year=2022, month=3, day=1, hour=1, minute=1, second=59, nanos=1, time_scale=TimeScale.GPST)

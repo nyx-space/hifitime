@@ -26,7 +26,7 @@ use crate::{
 
 /// An Enum to perform time unit conversions.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
-#[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 pub enum Unit {
     Nanosecond,
     Microsecond,
@@ -42,7 +42,7 @@ pub enum Unit {
 
 /// An Enum to convert frequencies to their approximate duration, **rounded to the closest nanosecond**.
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
-#[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 pub enum Freq {
     GigaHertz,
     MegaHertz,
