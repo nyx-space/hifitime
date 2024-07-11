@@ -19,6 +19,7 @@ use pyo3::prelude::*;
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
 
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
@@ -201,4 +202,14 @@ fn test_iso_weekday() {
     assert_eq!(Weekday::Thursday.to_c89_weekday(), 4);
     assert_eq!(Weekday::Friday.to_c89_weekday(), 5);
     assert_eq!(Weekday::Saturday.to_c89_weekday(), 6);
+}
+
+#[cfg(kani)]
+mod kani_harnesses {
+    use super::*;
+    #[kani::proof]
+    fn kani_harness_to_c89_weekday() {
+        let callee: Weekday = kani::any();
+        callee.to_c89_weekday();
+    }
 }

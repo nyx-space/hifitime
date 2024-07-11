@@ -25,6 +25,7 @@ use crate::{
 };
 
 /// An Enum to perform time unit conversions.
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 pub enum Unit {
@@ -41,6 +42,7 @@ pub enum Unit {
 }
 
 /// An Enum to convert frequencies to their approximate duration, **rounded to the closest nanosecond**.
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 pub enum Freq {

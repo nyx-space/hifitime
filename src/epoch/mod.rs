@@ -75,6 +75,7 @@ pub const NAIF_K: f64 = 1.657e-3;
 /// Defines a nanosecond-precision Epoch.
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Default, Eq)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
@@ -1423,5 +1424,377 @@ mod ut_epoch {
         assert_eq!(content, serde_json::to_string(&e).unwrap());
         let parsed: Epoch = serde_json::from_str(content).unwrap();
         assert_eq!(e, parsed);
+    }
+}
+
+#[cfg(kani)]
+mod kani_harnesses {
+    use super::*;
+    #[kani::proof]
+    fn kani_harness_to_time_scale() {
+        let ts: TimeScale = kani::any();
+        let callee: Epoch = kani::any();
+        callee.to_time_scale(ts);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_tai_duration() {
+        let duration: Duration = kani::any();
+        Epoch::from_tai_duration(duration);
+    }
+
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_duration() {
+        let duration: Duration = kani::any();
+        let ts: TimeScale = kani::any();
+        Epoch::from_duration(duration, ts);
+    }
+
+    #[kani::proof]
+    fn kani_harness_to_duration_since_j1900() {
+        let callee: Epoch = kani::any();
+        callee.to_duration_since_j1900();
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_tai_parts() {
+        let centuries: i16 = kani::any();
+        let nanoseconds: u64 = kani::any();
+        Epoch::from_tai_parts(centuries, nanoseconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_tai_seconds() {
+        let seconds: f64 = kani::any();
+        Epoch::from_tai_seconds(seconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_tai_days() {
+        let days: f64 = kani::any();
+        Epoch::from_tai_days(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_utc_duration() {
+        let duration: Duration = kani::any();
+        Epoch::from_utc_duration(duration);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_utc_seconds() {
+        let seconds: f64 = kani::any();
+        Epoch::from_utc_seconds(seconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_utc_days() {
+        let days: f64 = kani::any();
+        Epoch::from_utc_days(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_gpst_duration() {
+        let duration: Duration = kani::any();
+        Epoch::from_gpst_duration(duration);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_qzsst_duration() {
+        let duration: Duration = kani::any();
+        Epoch::from_qzsst_duration(duration);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_gst_duration() {
+        let duration: Duration = kani::any();
+        Epoch::from_gst_duration(duration);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_bdt_duration() {
+        let duration: Duration = kani::any();
+        Epoch::from_bdt_duration(duration);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_mjd_tai() {
+        let days: f64 = kani::any();
+        Epoch::from_mjd_tai(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_mjd_in_time_scale() {
+        let days: f64 = kani::any();
+        let time_scale: TimeScale = kani::any();
+        Epoch::from_mjd_in_time_scale(days, time_scale);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_mjd_utc() {
+        let days: f64 = kani::any();
+        Epoch::from_mjd_utc(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_mjd_gpst() {
+        let days: f64 = kani::any();
+        Epoch::from_mjd_gpst(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_mjd_qzsst() {
+        let days: f64 = kani::any();
+        Epoch::from_mjd_qzsst(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_mjd_gst() {
+        let days: f64 = kani::any();
+        Epoch::from_mjd_gst(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_mjd_bdt() {
+        let days: f64 = kani::any();
+        Epoch::from_mjd_bdt(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_jde_tai() {
+        let days: f64 = kani::any();
+        Epoch::from_jde_tai(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_jde_in_time_scale() {
+        let days: f64 = kani::any();
+        let time_scale: TimeScale = kani::any();
+        Epoch::from_jde_in_time_scale(days, time_scale);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_jde_utc() {
+        let days: f64 = kani::any();
+        Epoch::from_jde_utc(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_jde_gpst() {
+        let days: f64 = kani::any();
+        Epoch::from_jde_gpst(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_jde_qzsst() {
+        let days: f64 = kani::any();
+        Epoch::from_jde_qzsst(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_jde_gst() {
+        let days: f64 = kani::any();
+        Epoch::from_jde_gst(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_jde_bdt() {
+        let days: f64 = kani::any();
+        Epoch::from_jde_bdt(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_tt_seconds() {
+        let seconds: f64 = kani::any();
+        Epoch::from_tt_seconds(seconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_tt_duration() {
+        let duration: Duration = kani::any();
+        Epoch::from_tt_duration(duration);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_et_seconds() {
+        let seconds_since_j2000: f64 = kani::any();
+        Epoch::from_et_seconds(seconds_since_j2000);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_et_duration() {
+        let duration_since_j2000: Duration = kani::any();
+        Epoch::from_et_duration(duration_since_j2000);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_tdb_seconds() {
+        let seconds_j2000: f64 = kani::any();
+        Epoch::from_tdb_seconds(seconds_j2000);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_tdb_duration() {
+        let duration_since_j2000: Duration = kani::any();
+        Epoch::from_tdb_duration(duration_since_j2000);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_jde_et() {
+        let days: f64 = kani::any();
+        Epoch::from_jde_et(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_jde_tdb() {
+        let days: f64 = kani::any();
+        Epoch::from_jde_tdb(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_gpst_seconds() {
+        let seconds: f64 = kani::any();
+        Epoch::from_gpst_seconds(seconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_gpst_days() {
+        let days: f64 = kani::any();
+        Epoch::from_gpst_days(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_gpst_nanoseconds() {
+        let nanoseconds: u64 = kani::any();
+        Epoch::from_gpst_nanoseconds(nanoseconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_qzsst_seconds() {
+        let seconds: f64 = kani::any();
+        Epoch::from_qzsst_seconds(seconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_qzsst_days() {
+        let days: f64 = kani::any();
+        Epoch::from_qzsst_days(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_qzsst_nanoseconds() {
+        let nanoseconds: u64 = kani::any();
+        Epoch::from_qzsst_nanoseconds(nanoseconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_gst_seconds() {
+        let seconds: f64 = kani::any();
+        Epoch::from_gst_seconds(seconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_gst_days() {
+        let days: f64 = kani::any();
+        Epoch::from_gst_days(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_gst_nanoseconds() {
+        let nanoseconds: u64 = kani::any();
+        Epoch::from_gst_nanoseconds(nanoseconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_bdt_seconds() {
+        let seconds: f64 = kani::any();
+        Epoch::from_bdt_seconds(seconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_bdt_days() {
+        let days: f64 = kani::any();
+        Epoch::from_bdt_days(days);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_bdt_nanoseconds() {
+        let nanoseconds: u64 = kani::any();
+        Epoch::from_bdt_nanoseconds(nanoseconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_unix_duration() {
+        let duration: Duration = kani::any();
+        Epoch::from_unix_duration(duration);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_unix_seconds() {
+        let seconds: f64 = kani::any();
+        Epoch::from_unix_seconds(seconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_unix_milliseconds() {
+        let millisecond: f64 = kani::any();
+        Epoch::from_unix_milliseconds(millisecond);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_delta_et_tai() {
+        let seconds: f64 = kani::any();
+        Epoch::delta_et_tai(seconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_inner_g() {
+        let seconds: f64 = kani::any();
+        Epoch::inner_g(seconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_time_of_week() {
+        let week: u32 = kani::any();
+        let nanoseconds: u64 = kani::any();
+        let time_scale: TimeScale = kani::any();
+        Epoch::from_time_of_week(week, nanoseconds, time_scale);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_time_of_week_utc() {
+        let week: u32 = kani::any();
+        let nanoseconds: u64 = kani::any();
+        Epoch::from_time_of_week_utc(week, nanoseconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Epoch_from_day_of_year() {
+        let year: i32 = kani::any();
+        let days: f64 = kani::any();
+        let time_scale: TimeScale = kani::any();
+        Epoch::from_day_of_year(year, days, time_scale);
+    }
+
+    #[kani::proof]
+    fn kani_harness_div_rem_f64() {
+        let me: f64 = kani::any();
+        let rhs: f64 = kani::any();
+        div_rem_f64(me, rhs);
+    }
+
+    #[kani::proof]
+    fn kani_harness_div_euclid_f64() {
+        let lhs: f64 = kani::any();
+        let rhs: f64 = kani::any();
+        div_euclid_f64(lhs, rhs);
+    }
+
+    #[kani::proof]
+    fn kani_harness_rem_euclid_f64() {
+        let lhs: f64 = kani::any();
+        let rhs: f64 = kani::any();
+        rem_euclid_f64(lhs, rhs);
     }
 }

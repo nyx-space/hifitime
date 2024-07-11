@@ -17,7 +17,7 @@ use super::format::Format;
 #[cfg(not(feature = "std"))]
 #[allow(unused_imports)] // Import is indeed used.
 use num_traits::Float;
-
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub(crate) struct Item {
     pub(crate) token: Token,
@@ -76,6 +76,7 @@ impl Item {
     }
 }
 
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Formatter {
     epoch: Epoch,
@@ -300,5 +301,75 @@ impl fmt::Display for Formatter {
             }
         }
         Ok(())
+    }
+}
+
+#[cfg(kani)]
+mod kani_harnesses {
+    use super::*;
+    #[kani::proof]
+    fn kani_harness_Item_new() {
+        let token: Token = kani::any();
+        let sep_char: Option<char> = kani::any();
+        let second_sep_char: Option<char> = kani::any();
+        Item::new(token, sep_char, second_sep_char);
+    }
+
+    #[kani::proof]
+    fn kani_harness_sep_char_is() {
+        let c_in: char = kani::any();
+        let callee: Item = kani::any();
+        callee.sep_char_is(c_in);
+    }
+
+    #[kani::proof]
+    fn kani_harness_sep_char_is_not() {
+        let c_in: char = kani::any();
+        let callee: Item = kani::any();
+        callee.sep_char_is_not(c_in);
+    }
+
+    #[kani::proof]
+    fn kani_harness_second_sep_char_is() {
+        let c_in: char = kani::any();
+        let callee: Item = kani::any();
+        callee.second_sep_char_is(c_in);
+    }
+
+    #[kani::proof]
+    fn kani_harness_second_sep_char_is_not() {
+        let c_in: char = kani::any();
+        let callee: Item = kani::any();
+        callee.second_sep_char_is_not(c_in);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Formatter_new() {
+        let epoch: Epoch = kani::any();
+        let format: Format = kani::any();
+        Formatter::new(epoch, format);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Formatter_with_timezone() {
+        let epoch: Epoch = kani::any();
+        let offset: Duration = kani::any();
+        let format: Format = kani::any();
+        Formatter::with_timezone(epoch, offset, format);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Formatter_to_time_scale() {
+        let epoch: Epoch = kani::any();
+        let format: Format = kani::any();
+        let time_scale: TimeScale = kani::any();
+        Formatter::to_time_scale(epoch, format, time_scale);
+    }
+
+    #[kani::proof]
+    fn kani_harness_set_timezone() {
+        let offset: Duration = kani::any();
+        let mut callee: Formatter = kani::any();
+        callee.set_timezone(offset);
     }
 }

@@ -14,8 +14,6 @@ use pyo3::prelude::*;
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
 
-#[cfg(kani)]
-mod kani;
 
 mod fmt;
 
@@ -79,6 +77,7 @@ pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
 /// Reference year of the Hifitime prime epoch.
 pub(crate) const HIFITIME_REF_YEAR: i32 = 1900;
 
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 /// Enum of the different time systems available
 #[non_exhaustive]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -260,5 +259,39 @@ mod unit_test_timescale {
             format!("{}", TimeScale::ET.reference_epoch()),
             "2000-01-01T12:00:00 ET"
         );
+    }
+}
+
+#[cfg(kani)]
+mod kani_harnesses {
+    use super::*;
+    #[kani::proof]
+    fn kani_harness_formatted_len() {
+        let callee: TimeScale = kani::any();
+        callee.formatted_len();
+    }
+
+    #[kani::proof]
+    fn kani_harness_is_gnss() {
+        let callee: TimeScale = kani::any();
+        callee.is_gnss();
+    }
+
+    #[kani::proof]
+    fn kani_harness_reference_epoch() {
+        let callee: TimeScale = kani::any();
+        callee.reference_epoch();
+    }
+
+    #[kani::proof]
+    fn kani_harness_prime_epoch_offset() {
+        let callee: TimeScale = kani::any();
+        callee.prime_epoch_offset();
+    }
+
+    #[kani::proof]
+    fn kani_harness_gregorian_epoch_offset() {
+        let callee: TimeScale = kani::any();
+        callee.gregorian_epoch_offset();
     }
 }

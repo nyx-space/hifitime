@@ -148,3 +148,46 @@ impl Epoch {
         )
     }
 }
+
+#[cfg(kani)]
+mod kani_harnesses {
+    use super::*;
+    #[kani::proof]
+    fn kani_harness_with_hms() {
+        let hours: u64 = kani::any();
+        let minutes: u64 = kani::any();
+        let seconds: u64 = kani::any();
+        let callee: Epoch = kani::any();
+        callee.with_hms(hours, minutes, seconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_with_hms_from() {
+        let other: Epoch = kani::any();
+        let callee: Epoch = kani::any();
+        callee.with_hms_from(other);
+    }
+
+    #[kani::proof]
+    fn kani_harness_with_time_from() {
+        let other: Epoch = kani::any();
+        let callee: Epoch = kani::any();
+        callee.with_time_from(other);
+    }
+
+    #[kani::proof]
+    fn kani_harness_with_hms_strict() {
+        let hours: u64 = kani::any();
+        let minutes: u64 = kani::any();
+        let seconds: u64 = kani::any();
+        let callee: Epoch = kani::any();
+        callee.with_hms_strict(hours, minutes, seconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_with_hms_strict_from() {
+        let other: Epoch = kani::any();
+        let callee: Epoch = kani::any();
+        callee.with_hms_strict_from(other);
+    }
+}

@@ -828,3 +828,228 @@ mod ut_duration {
         assert_eq!(nanoseconds, 0);
     }
 }
+#[cfg(kani)]
+mod kani_harnesses {
+    use super::*;
+    #[kani::proof]
+    fn kani_harness_Duration_from_parts() {
+        let centuries: i16 = kani::any();
+        let nanoseconds: u64 = kani::any();
+        Duration::from_parts(centuries, nanoseconds);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Duration_from_total_nanoseconds() {
+        let nanos: i128 = kani::any();
+        Duration::from_total_nanoseconds(nanos);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Duration_from_truncated_nanoseconds() {
+        let nanos: i64 = kani::any();
+        Duration::from_truncated_nanoseconds(nanos);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Duration_from_days() {
+        let value: f64 = kani::any();
+        Duration::from_days(value);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Duration_from_hours() {
+        let value: f64 = kani::any();
+        Duration::from_hours(value);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Duration_from_seconds() {
+        let value: f64 = kani::any();
+        Duration::from_seconds(value);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Duration_from_milliseconds() {
+        let value: f64 = kani::any();
+        Duration::from_milliseconds(value);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Duration_from_microseconds() {
+        let value: f64 = kani::any();
+        Duration::from_microseconds(value);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Duration_from_nanoseconds() {
+        let value: f64 = kani::any();
+        Duration::from_nanoseconds(value);
+    }
+
+    #[kani::proof]
+    fn kani_harness_Duration_compose() {
+        let sign: i8 = kani::any();
+        let days: u64 = kani::any();
+        let hours: u64 = kani::any();
+        let minutes: u64 = kani::any();
+        let seconds: u64 = kani::any();
+        let milliseconds: u64 = kani::any();
+        let microseconds: u64 = kani::any();
+        let nanoseconds: u64 = kani::any();
+        Duration::compose(
+            sign,
+            days,
+            hours,
+            minutes,
+            seconds,
+            milliseconds,
+            microseconds,
+            nanoseconds,
+        );
+    }
+
+    #[kani::proof]
+    fn kani_harness_Duration_compose_f64() {
+        let sign: i8 = kani::any();
+        let days: f64 = kani::any();
+        let hours: f64 = kani::any();
+        let minutes: f64 = kani::any();
+        let seconds: f64 = kani::any();
+        let milliseconds: f64 = kani::any();
+        let microseconds: f64 = kani::any();
+        let nanoseconds: f64 = kani::any();
+        Duration::compose_f64(
+            sign,
+            days,
+            hours,
+            minutes,
+            seconds,
+            milliseconds,
+            microseconds,
+            nanoseconds,
+        );
+    }
+
+    #[kani::proof]
+    fn kani_harness_Duration_from_tz_offset() {
+        let sign: i8 = kani::any();
+        let hours: i64 = kani::any();
+        let minutes: i64 = kani::any();
+        Duration::from_tz_offset(sign, hours, minutes);
+    }
+
+    #[kani::proof]
+    fn kani_harness_normalize() {
+        let mut callee: Duration = kani::any();
+        callee.normalize();
+    }
+
+    #[kani::proof]
+    fn kani_harness_to_parts() {
+        let callee: Duration = kani::any();
+        callee.to_parts();
+    }
+
+    #[kani::proof]
+    fn kani_harness_total_nanoseconds() {
+        let callee: Duration = kani::any();
+        callee.total_nanoseconds();
+    }
+
+    #[kani::proof]
+    fn kani_harness_try_truncated_nanoseconds() {
+        let callee: Duration = kani::any();
+        callee.try_truncated_nanoseconds();
+    }
+
+    #[kani::proof]
+    fn kani_harness_truncated_nanoseconds() {
+        let callee: Duration = kani::any();
+        callee.truncated_nanoseconds();
+    }
+
+    #[kani::proof]
+    fn kani_harness_to_seconds() {
+        let callee: Duration = kani::any();
+        callee.to_seconds();
+    }
+
+    #[kani::proof]
+    fn kani_harness_to_unit() {
+        let unit: Unit = kani::any();
+        let callee: Duration = kani::any();
+        callee.to_unit(unit);
+    }
+
+    #[kani::proof]
+    fn kani_harness_abs() {
+        let callee: Duration = kani::any();
+        callee.abs();
+    }
+
+    #[kani::proof]
+    fn kani_harness_signum() {
+        let callee: Duration = kani::any();
+        callee.signum();
+    }
+
+    #[kani::proof]
+    fn kani_harness_decompose() {
+        let callee: Duration = kani::any();
+        callee.decompose();
+    }
+
+    #[kani::proof]
+    fn kani_harness_subdivision() {
+        let unit: Unit = kani::any();
+        let callee: Duration = kani::any();
+        callee.subdivision(unit);
+    }
+
+    #[kani::proof]
+    fn kani_harness_floor() {
+        let duration: Duration = kani::any();
+        let callee: Duration = kani::any();
+        callee.floor(duration);
+    }
+
+    #[kani::proof]
+    fn kani_harness_ceil() {
+        let duration: Duration = kani::any();
+        let callee: Duration = kani::any();
+        callee.ceil(duration);
+    }
+
+    #[kani::proof]
+    fn kani_harness_round() {
+        let duration: Duration = kani::any();
+        let callee: Duration = kani::any();
+        callee.round(duration);
+    }
+
+    #[kani::proof]
+    fn kani_harness_approx() {
+        let callee: Duration = kani::any();
+        callee.approx();
+    }
+
+    #[kani::proof]
+    fn kani_harness_min() {
+        let other: Duration = kani::any();
+        let callee: Duration = kani::any();
+        callee.min(other);
+    }
+
+    #[kani::proof]
+    fn kani_harness_max() {
+        let other: Duration = kani::any();
+        let callee: Duration = kani::any();
+        callee.max(other);
+    }
+
+    #[kani::proof]
+    fn kani_harness_is_negative() {
+        let callee: Duration = kani::any();
+        callee.is_negative();
+    }
+}

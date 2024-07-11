@@ -64,6 +64,7 @@ impl Epoch {
     }
 }
 
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Debug, Default, Tabled)]
 pub struct DeltaTaiUt1 {
     pub epoch: Epoch,
@@ -231,5 +232,14 @@ impl Index<usize> for Ut1Provider {
 
     fn index(&self, index: usize) -> &Self::Output {
         self.data.index(index)
+    }
+}
+
+#[cfg(kani)]
+mod kani_harnesses {
+    use super::*;
+    #[kani::proof]
+    fn kani_harness_Ut1Provider_download_short_from_jpl() {
+        Ut1Provider::download_short_from_jpl();
     }
 }

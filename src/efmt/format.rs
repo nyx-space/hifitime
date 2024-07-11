@@ -110,6 +110,7 @@ const MAX_TOKENS: usize = 16;
 /// let fmt = Formatter::new(bday, consts::RFC2822);
 /// assert_eq!(format!("{fmt}"), format!("Tue, 29 Feb 2000 14:57:29"));
 /// ```
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Default, PartialEq)]
 pub struct Format {
     pub(crate) items: [Option<Item>; MAX_TOKENS],
@@ -599,4 +600,14 @@ fn gh_248_regression() {
     let e = Epoch::from_format_str("2023-117T12:55:26", "%Y-%jT%H:%M:%S").unwrap();
 
     assert_eq!(format!("{e}"), "2023-04-27T12:55:26 UTC");
+}
+
+#[cfg(kani)]
+mod kani_harnesses {
+    use super::*;
+    #[kani::proof]
+    fn kani_harness_need_gregorian() {
+        let callee: Format = kani::any();
+        callee.need_gregorian();
+    }
 }
