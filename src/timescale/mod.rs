@@ -14,7 +14,6 @@ use pyo3::prelude::*;
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
 
-
 mod fmt;
 
 use crate::{Duration, Epoch, Unit, SECONDS_PER_DAY};

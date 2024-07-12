@@ -1443,7 +1443,6 @@ mod kani_harnesses {
         Epoch::from_tai_duration(duration);
     }
 
-
     #[kani::proof]
     fn kani_harness_Epoch_from_duration() {
         let duration: Duration = kani::any();
