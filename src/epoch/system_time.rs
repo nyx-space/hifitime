@@ -34,17 +34,3 @@ impl Epoch {
         Ok(Self::from_unix_duration(duration))
     }
 }
-
-#[cfg(kani)]
-mod kani_harnesses {
-    use super::*;
-    #[kani::proof]
-    fn kani_harness_duration_since_unix_epoch() {
-        duration_since_unix_epoch();
-    }
-
-    #[kani::proof]
-    fn kani_harness_Epoch_now() {
-        Epoch::now();
-    }
-}

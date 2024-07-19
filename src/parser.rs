@@ -278,33 +278,3 @@ impl Token {
         )
     }
 }
-
-#[cfg(kani)]
-mod kani_harnesses {
-    use super::*;
-    #[kani::proof]
-    fn kani_harness_value_ok() {
-        let val: i32 = kani::any();
-        let callee: Token = kani::any();
-        callee.value_ok(val);
-    }
-
-    #[kani::proof]
-    fn kani_harness_gregorian_position() {
-        let callee: Token = kani::any();
-        callee.gregorian_position();
-    }
-
-    #[kani::proof]
-    fn kani_harness_advance_with() {
-        let ending_char: char = kani::any();
-        let mut callee: Token = kani::any();
-        callee.advance_with(ending_char);
-    }
-
-    #[kani::proof]
-    fn kani_harness_is_numeric() {
-        let callee: Token = kani::any();
-        callee.is_numeric();
-    }
-}

@@ -23,3 +23,37 @@ impl Arbitrary for TimeScale {
 fn formal_time_scale() {
     let _time_scale: TimeScale = kani::any();
 }
+
+#[cfg(kani)]
+mod kani_harnesses {
+    use super::*;
+    #[kani::proof]
+    fn kani_harness_formatted_len() {
+        let callee: TimeScale = kani::any();
+        callee.formatted_len();
+    }
+
+    #[kani::proof]
+    fn kani_harness_is_gnss() {
+        let callee: TimeScale = kani::any();
+        callee.is_gnss();
+    }
+
+    #[kani::proof]
+    fn kani_harness_reference_epoch() {
+        let callee: TimeScale = kani::any();
+        callee.reference_epoch();
+    }
+
+    #[kani::proof]
+    fn kani_harness_prime_epoch_offset() {
+        let callee: TimeScale = kani::any();
+        callee.prime_epoch_offset();
+    }
+
+    #[kani::proof]
+    fn kani_harness_gregorian_epoch_offset() {
+        let callee: TimeScale = kani::any();
+        callee.gregorian_epoch_offset();
+    }
+}

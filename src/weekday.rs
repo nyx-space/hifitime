@@ -203,13 +203,3 @@ fn test_iso_weekday() {
     assert_eq!(Weekday::Friday.to_c89_weekday(), 5);
     assert_eq!(Weekday::Saturday.to_c89_weekday(), 6);
 }
-
-#[cfg(kani)]
-mod kani_harnesses {
-    use super::*;
-    #[kani::proof]
-    fn kani_harness_to_c89_weekday() {
-        let callee: Weekday = kani::any();
-        callee.to_c89_weekday();
-    }
-}

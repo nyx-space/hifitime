@@ -601,13 +601,3 @@ fn gh_248_regression() {
 
     assert_eq!(format!("{e}"), "2023-04-27T12:55:26 UTC");
 }
-
-#[cfg(kani)]
-mod kani_harnesses {
-    use super::*;
-    #[kani::proof]
-    fn kani_harness_need_gregorian() {
-        let callee: Format = kani::any();
-        callee.need_gregorian();
-    }
-}

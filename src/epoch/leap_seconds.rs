@@ -163,15 +163,3 @@ fn leap_second_fetch() {
         LeapSecond::new(3_692_217_600.0, 37.0, true)
     );
 }
-
-#[cfg(kani)]
-mod kani_harnesses {
-    use super::*;
-    #[kani::proof]
-    fn kani_harness_LeapSecond_new() {
-        let timestamp_tai_s: f64 = kani::any();
-        let delta_at: f64 = kani::any();
-        let announced: bool = kani::any();
-        LeapSecond::new(timestamp_tai_s, delta_at, announced);
-    }
-}

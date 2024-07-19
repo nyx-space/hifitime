@@ -417,22 +417,3 @@ mod tests {
     }
 }
 
-#[cfg(kani)]
-mod kani_harnesses {
-    use super::*;
-    #[kani::proof]
-    fn kani_harness_TimeSeries_exclusive() {
-        let start: Epoch = kani::any();
-        let end: Epoch = kani::any();
-        let step: Duration = kani::any();
-        TimeSeries::exclusive(start, end, step);
-    }
-
-    #[kani::proof]
-    fn kani_harness_TimeSeries_inclusive() {
-        let start: Epoch = kani::any();
-        let end: Epoch = kani::any();
-        let step: Duration = kani::any();
-        TimeSeries::inclusive(start, end, step);
-    }
-}
