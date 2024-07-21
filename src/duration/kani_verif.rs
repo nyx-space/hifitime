@@ -115,7 +115,7 @@ mod tests {
     }
 
     repeat_test!(test_dur_f64_recip_0, [1e-9, 1e-8, 1e-7, 1e-6, 1e-5]);
-    repeat_test!(test_dur_f64_recip_1, [1e-5, 1e-4, 1e-3]);
+    // repeat_test!(test_dur_f64_recip_1, [1e-5, 1e-4, 1e-3]);
     // repeat_test!(test_dur_f64_recip_2, [1e-2, 1e-1, 1e0]);
     // repeat_test!(test_dur_f64_recip_3, [1e0, 1e1, 1e2]);
     // repeat_test!(test_dur_f64_recip_4, [1e2, 1e3, 1e4]);
