@@ -125,8 +125,8 @@ mod tests {
 
 #[cfg(kani)]
 mod kani_harnesses {
-    use crate::Unit;
     use super::*;
+    use crate::Unit;
     #[kani::proof]
     fn kani_harness_Duration_from_parts() {
         let centuries: i16 = kani::any();
