@@ -26,6 +26,7 @@ NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/iter
 */
 
 /// An iterator of a sequence of evenly spaced Epochs.
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
@@ -415,3 +416,4 @@ mod tests {
         assert_eq!(cur_epoch, start, "incorrect last item in iterator");
     }
 }
+

@@ -75,6 +75,7 @@ pub const NAIF_K: f64 = 1.657e-3;
 /// Defines a nanosecond-precision Epoch.
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Default, Eq)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
@@ -1423,5 +1424,31 @@ mod ut_epoch {
         assert_eq!(content, serde_json::to_string(&e).unwrap());
         let parsed: Epoch = serde_json::from_str(content).unwrap();
         assert_eq!(e, parsed);
+    }
+}
+
+#[cfg(kani)]
+mod kani_harnesses {
+    use super::*;
+
+    #[kani::proof]
+    fn kani_harness_div_rem_f64() {
+        let me: f64 = kani::any();
+        let rhs: f64 = kani::any();
+        div_rem_f64(me, rhs);
+    }
+
+    #[kani::proof]
+    fn kani_harness_div_euclid_f64() {
+        let lhs: f64 = kani::any();
+        let rhs: f64 = kani::any();
+        div_euclid_f64(lhs, rhs);
+    }
+
+    #[kani::proof]
+    fn kani_harness_rem_euclid_f64() {
+        let lhs: f64 = kani::any();
+        let rhs: f64 = kani::any();
+        rem_euclid_f64(lhs, rhs);
     }
 }

@@ -10,6 +10,7 @@
 
 use crate::{HifitimeError, ParsingError};
 
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum Token {
     Year,

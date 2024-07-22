@@ -19,6 +19,7 @@ use core::ops::Index;
 pub trait LeapSecondProvider: DoubleEndedIterator<Item = LeapSecond> + Index<usize> {}
 
 /// A structure representing a leap second
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -90,6 +91,7 @@ const LATEST_LEAP_SECONDS: [LeapSecond; 42] = [
 /// This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
 /// The unannoucned leap seconds come from dat.c in the SOFA library.
 #[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Clone, Debug)]
 pub struct LatestLeapSeconds {
     data: [LeapSecond; 42],

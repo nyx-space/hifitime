@@ -84,6 +84,9 @@ pub mod prelude {
     };
 }
 
+#[cfg(kani)]
+mod kani_verif;
+
 #[cfg(feature = "python")]
 pub mod python;
 

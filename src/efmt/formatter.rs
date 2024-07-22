@@ -17,7 +17,7 @@ use super::format::Format;
 #[cfg(not(feature = "std"))]
 #[allow(unused_imports)] // Import is indeed used.
 use num_traits::Float;
-
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub(crate) struct Item {
     pub(crate) token: Token,
@@ -76,6 +76,7 @@ impl Item {
     }
 }
 
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Formatter {
     epoch: Epoch,

@@ -110,6 +110,7 @@ const MAX_TOKENS: usize = 16;
 /// let fmt = Formatter::new(bday, consts::RFC2822);
 /// assert_eq!(format!("{fmt}"), format!("Tue, 29 Feb 2000 14:57:29"));
 /// ```
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Default, PartialEq)]
 pub struct Format {
     pub(crate) items: [Option<Item>; MAX_TOKENS],

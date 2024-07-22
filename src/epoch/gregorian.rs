@@ -795,3 +795,32 @@ mod ut_gregorian {
         }
     }
 }
+
+#[cfg(kani)]
+mod kani_harnesses {
+    use super::*;
+
+    #[kani::proof]
+    fn kani_harness_january_years() {
+        let year: i32 = kani::any();
+        january_years(year);
+    }
+
+    #[kani::proof]
+    fn kani_harness_july_years() {
+        let year: i32 = kani::any();
+        july_years(year);
+    }
+
+    #[kani::proof]
+    fn kani_harness_usual_days_per_month() {
+        let month: u8 = kani::any();
+        usual_days_per_month(month);
+    }
+
+    #[kani::proof]
+    fn kani_harness_is_leap_year() {
+        let year: i32 = kani::any();
+        is_leap_year(year);
+    }
+}

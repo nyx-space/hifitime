@@ -14,3 +14,6 @@ pub mod formatter;
 
 pub use format::Format;
 pub use formatter::Formatter;
+
+#[cfg(kani)]
+mod kani_verif;

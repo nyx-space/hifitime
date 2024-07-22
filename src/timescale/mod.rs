@@ -11,11 +11,11 @@
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
-#[cfg(feature = "serde")]
-use serde_derive::{Deserialize, Serialize};
-
 #[cfg(kani)]
 mod kani;
+
+#[cfg(feature = "serde")]
+use serde_derive::{Deserialize, Serialize};
 
 mod fmt;
 

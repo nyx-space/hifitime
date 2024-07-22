@@ -40,6 +40,7 @@ pub enum HifitimeError {
     },
 }
 
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[non_exhaustive]
 #[derive(Debug, Snafu, PartialEq)]
 pub enum DurationError {
