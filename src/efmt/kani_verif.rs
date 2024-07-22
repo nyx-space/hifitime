@@ -1,15 +1,15 @@
 use super::{
     format::Format,
-    formatter::{Item, Formatter},
+    formatter::{Formatter, Item},
 };
-use crate::{duration::Duration, TimeScale};
-use crate::Epoch;
 use crate::parser::Token;
+use crate::Epoch;
+use crate::{duration::Duration, TimeScale};
 
 #[cfg(kani)]
 mod kani_harnesses {
-    use crate::*;
     use super::*;
+    use crate::*;
     #[kani::proof]
     fn kani_harness_need_gregorian() {
         let callee: Format = kani::any();
