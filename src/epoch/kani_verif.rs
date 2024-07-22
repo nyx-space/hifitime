@@ -8,7 +8,7 @@
  * Documentation: https://nyxspace.com/
  */
 
-use super::{Duration, Epoch, TimeScale, Unit, TT_OFFSET_MS, Weekday};
+use super::{Duration, Epoch, TimeScale, Unit, Weekday, TT_OFFSET_MS};
 use crate::epoch::system_time::duration_since_unix_epoch;
 use crate::leap_seconds::LeapSecond;
 
@@ -179,8 +179,8 @@ fn formal_epoch_julian() {
 
 #[cfg(kani)]
 mod kani_harnesses {
-    use crate::*;
     use super::*;
+    use crate::*;
     #[kani::proof]
     fn kani_harness_Epoch_compute_gregorian() {
         let duration: Duration = kani::any();

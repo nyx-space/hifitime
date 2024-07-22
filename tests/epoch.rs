@@ -2102,3 +2102,38 @@ fn regression_test_gh_288() {
         format!("{}", epoch.to_isoformat())
     );
 }
+
+#[test]
+fn regression_test_gh_317() {
+    // This bug was due to "now-ish" GNSS times being rounded when converted to f64 upon initialization from their u64 nanoseconds.
+
+    use core::str::FromStr;
+    let epoch = Epoch::from_str("2020-11-15 12:34:56.789 GPST").unwrap();
+    let nanos = epoch.to_gpst_nanoseconds().unwrap();
+
+    // We'll use these nanoseconds to initialize any of the GNSS time scales and ensure that we can retrieve the correct nanoseconds.
+    assert_eq!(
+        Epoch::from_gpst_nanoseconds(nanos)
+            .to_gpst_nanoseconds()
+            .unwrap(),
+        nanos
+    );
+    assert_eq!(
+        Epoch::from_gst_nanoseconds(nanos)
+            .to_gst_nanoseconds()
+            .unwrap(),
+        nanos
+    );
+    assert_eq!(
+        Epoch::from_bdt_nanoseconds(nanos)
+            .to_bdt_nanoseconds()
+            .unwrap(),
+        nanos
+    );
+    assert_eq!(
+        Epoch::from_qzsst_nanoseconds(nanos)
+            .to_qzsst_nanoseconds()
+            .unwrap(),
+        nanos
+    );
+}
