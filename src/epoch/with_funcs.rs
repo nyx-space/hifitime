@@ -9,7 +9,6 @@
  */
 
 use crate::{Duration, Epoch};
-use bolero::generator::bolero_generator;
 
 impl Epoch {
     /// Returns a copy of self where the time is set to the provided hours, minutes, seconds

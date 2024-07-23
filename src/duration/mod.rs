@@ -849,7 +849,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(nanos): (i128)| Some(Duration::from_total_nanoseconds(nanos)));
+            .for_each(|nanos: i128| Some(Duration::from_total_nanoseconds(nanos)));
     }
 
     #[test]
@@ -857,7 +857,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(nanos): (i64)| Some(Duration::from_truncated_nanoseconds(nanos)));
+            .for_each(|nanos: i64| Some(Duration::from_truncated_nanoseconds(nanos)));
     }
 
     #[test]
@@ -865,7 +865,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(value): (f64)| Some(Duration::from_days(value)));
+            .for_each(|value: f64| Some(Duration::from_days(value)));
     }
 
     #[test]
@@ -873,7 +873,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(value): (f64)| Some(Duration::from_hours(value)));
+            .for_each(|value: f64| Some(Duration::from_hours(value)));
     }
 
     #[test]
@@ -881,7 +881,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(value): (f64)| Some(Duration::from_seconds(value)));
+            .for_each(|value: f64| Some(Duration::from_seconds(value)));
     }
 
     #[test]
@@ -889,7 +889,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(value): (f64)| Some(Duration::from_milliseconds(value)));
+            .for_each(|value: f64| Some(Duration::from_milliseconds(value)));
     }
 
     #[test]
@@ -897,7 +897,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(value): (f64)| Some(Duration::from_microseconds(value)));
+            .for_each(|value: f64| Some(Duration::from_microseconds(value)));
     }
 
     #[test]
@@ -905,7 +905,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(value): (f64)| Some(Duration::from_nanoseconds(value)));
+            .for_each(|value: f64| Some(Duration::from_nanoseconds(value)));
     }
 
     #[test]
@@ -996,8 +996,9 @@ mod bolero_harnesses {
             .for_each(|(callee,): (Duration,)| Some(callee.total_nanoseconds().clone()));
     }
 
+    /*
     #[test]
-    /*     fn bolero_test_try_truncated_nanoseconds() {
+    fn bolero_test_try_truncated_nanoseconds() {
         bolero::check!()
             .with_type()
             .cloned()

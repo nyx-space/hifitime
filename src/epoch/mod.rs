@@ -1443,7 +1443,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(duration): (Duration)| Some(Epoch::from_tai_duration(duration)));
+            .for_each(|duration: Duration| Some(Epoch::from_tai_duration(duration)));
     }
 
     /*     #[test]
@@ -1488,7 +1488,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(seconds): (f64)| Some(Epoch::from_tai_seconds(seconds)));
+            .for_each(|seconds: f64| Some(Epoch::from_tai_seconds(seconds)));
     }
 
     #[test]
@@ -1496,7 +1496,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_tai_days(days)));
+            .for_each(|days: f64| Some(Epoch::from_tai_days(days)));
     }
 
     #[test]
@@ -1504,7 +1504,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(duration): (Duration)| Some(Epoch::from_utc_duration(duration)));
+            .for_each(|duration: Duration| Some(Epoch::from_utc_duration(duration)));
     }
 
     #[test]
@@ -1512,7 +1512,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(seconds): (f64)| Some(Epoch::from_utc_seconds(seconds)));
+            .for_each(|seconds: f64| Some(Epoch::from_utc_seconds(seconds)));
     }
 
     #[test]
@@ -1520,7 +1520,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_utc_days(days)));
+            .for_each(|days: f64| Some(Epoch::from_utc_days(days)));
     }
 
     #[test]
@@ -1528,7 +1528,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(duration): (Duration)| Some(Epoch::from_gpst_duration(duration)));
+            .for_each(|duration: Duration| Some(Epoch::from_gpst_duration(duration)));
     }
 
     #[test]
@@ -1536,7 +1536,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(duration): (Duration)| Some(Epoch::from_qzsst_duration(duration)));
+            .for_each(|duration: Duration| Some(Epoch::from_qzsst_duration(duration)));
     }
 
     #[test]
@@ -1544,7 +1544,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(duration): (Duration)| Some(Epoch::from_gst_duration(duration)));
+            .for_each(|duration: Duration| Some(Epoch::from_gst_duration(duration)));
     }
 
     #[test]
@@ -1552,7 +1552,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(duration): (Duration)| Some(Epoch::from_bdt_duration(duration)));
+            .for_each(|duration: Duration| Some(Epoch::from_bdt_duration(duration)));
     }
 
     #[test]
@@ -1560,7 +1560,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_mjd_tai(days)));
+            .for_each(|days: f64| Some(Epoch::from_mjd_tai(days)));
     }
 
     #[test]
@@ -1578,7 +1578,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_mjd_utc(days)));
+            .for_each(|days: f64| Some(Epoch::from_mjd_utc(days)));
     }
 
     #[test]
@@ -1586,7 +1586,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_mjd_gpst(days)));
+            .for_each(|days: f64| Some(Epoch::from_mjd_gpst(days)));
     }
 
     #[test]
@@ -1594,7 +1594,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_mjd_qzsst(days)));
+            .for_each(|days: f64| Some(Epoch::from_mjd_qzsst(days)));
     }
 
     #[test]
@@ -1602,7 +1602,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_mjd_gst(days)));
+            .for_each(|days: f64| Some(Epoch::from_mjd_gst(days)));
     }
 
     #[test]
@@ -1610,7 +1610,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_mjd_bdt(days)));
+            .for_each(|days: f64| Some(Epoch::from_mjd_bdt(days)));
     }
 
     #[test]
@@ -1618,7 +1618,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_jde_tai(days)));
+            .for_each(|days: f64| Some(Epoch::from_jde_tai(days)));
     }
 
     #[test]
@@ -1636,7 +1636,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_jde_utc(days)));
+            .for_each(|days: f64| Some(Epoch::from_jde_utc(days)));
     }
 
     #[test]
@@ -1644,7 +1644,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_jde_gpst(days)));
+            .for_each(|days: f64| Some(Epoch::from_jde_gpst(days)));
     }
 
     #[test]
@@ -1652,7 +1652,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_jde_qzsst(days)));
+            .for_each(|days: f64| Some(Epoch::from_jde_qzsst(days)));
     }
 
     #[test]
@@ -1660,7 +1660,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_jde_gst(days)));
+            .for_each(|days: f64| Some(Epoch::from_jde_gst(days)));
     }
 
     #[test]
@@ -1668,7 +1668,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_jde_bdt(days)));
+            .for_each(|days: f64| Some(Epoch::from_jde_bdt(days)));
     }
 
     #[test]
@@ -1676,7 +1676,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(seconds): (f64)| Some(Epoch::from_tt_seconds(seconds)));
+            .for_each(|seconds: f64| Some(Epoch::from_tt_seconds(seconds)));
     }
 
     #[test]
@@ -1684,7 +1684,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(duration): (Duration)| Some(Epoch::from_tt_duration(duration)));
+            .for_each(|duration: Duration| Some(Epoch::from_tt_duration(duration)));
     }
 
     #[test]
@@ -1692,9 +1692,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(seconds_since_j2000): (f64)| {
-                Some(Epoch::from_et_seconds(seconds_since_j2000))
-            });
+            .for_each(|seconds_since_j2000: f64| Some(Epoch::from_et_seconds(seconds_since_j2000)));
     }
 
     #[test]
@@ -1702,7 +1700,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(duration_since_j2000): (Duration)| {
+            .for_each(|duration_since_j2000: Duration| {
                 Some(Epoch::from_et_duration(duration_since_j2000))
             });
     }
@@ -1712,7 +1710,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(seconds_j2000): (f64)| Some(Epoch::from_tdb_seconds(seconds_j2000)));
+            .for_each(|seconds_j2000: f64| Some(Epoch::from_tdb_seconds(seconds_j2000)));
     }
 
     #[test]
@@ -1720,7 +1718,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(duration_since_j2000): (Duration)| {
+            .for_each(|duration_since_j2000: Duration| {
                 Some(Epoch::from_tdb_duration(duration_since_j2000))
             });
     }
@@ -1730,7 +1728,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_jde_et(days)));
+            .for_each(|days: f64| Some(Epoch::from_jde_et(days)));
     }
 
     #[test]
@@ -1738,7 +1736,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_jde_tdb(days)));
+            .for_each(|days: f64| Some(Epoch::from_jde_tdb(days)));
     }
 
     #[test]
@@ -1746,7 +1744,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(seconds): (f64)| Some(Epoch::from_gpst_seconds(seconds)));
+            .for_each(|seconds: f64| Some(Epoch::from_gpst_seconds(seconds)));
     }
 
     #[test]
@@ -1754,7 +1752,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_gpst_days(days)));
+            .for_each(|days: f64| Some(Epoch::from_gpst_days(days)));
     }
 
     #[test]
@@ -1762,7 +1760,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(nanoseconds): (u64)| Some(Epoch::from_gpst_nanoseconds(nanoseconds)));
+            .for_each(|nanoseconds: u64| Some(Epoch::from_gpst_nanoseconds(nanoseconds)));
     }
 
     #[test]
@@ -1770,7 +1768,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(seconds): (f64)| Some(Epoch::from_qzsst_seconds(seconds)));
+            .for_each(|seconds: f64| Some(Epoch::from_qzsst_seconds(seconds)));
     }
 
     #[test]
@@ -1778,7 +1776,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_qzsst_days(days)));
+            .for_each(|days: f64| Some(Epoch::from_qzsst_days(days)));
     }
 
     #[test]
@@ -1786,7 +1784,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(nanoseconds): (u64)| Some(Epoch::from_qzsst_nanoseconds(nanoseconds)));
+            .for_each(|nanoseconds: u64| Some(Epoch::from_qzsst_nanoseconds(nanoseconds)));
     }
 
     #[test]
@@ -1794,7 +1792,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(seconds): (f64)| Some(Epoch::from_gst_seconds(seconds)));
+            .for_each(|seconds: f64| Some(Epoch::from_gst_seconds(seconds)));
     }
 
     #[test]
@@ -1802,7 +1800,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_gst_days(days)));
+            .for_each(|days: f64| Some(Epoch::from_gst_days(days)));
     }
 
     #[test]
@@ -1810,7 +1808,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(nanoseconds): (u64)| Some(Epoch::from_gst_nanoseconds(nanoseconds)));
+            .for_each(|nanoseconds: u64| Some(Epoch::from_gst_nanoseconds(nanoseconds)));
     }
 
     #[test]
@@ -1818,7 +1816,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(seconds): (f64)| Some(Epoch::from_bdt_seconds(seconds)));
+            .for_each(|seconds: f64| Some(Epoch::from_bdt_seconds(seconds)));
     }
 
     #[test]
@@ -1826,7 +1824,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(days): (f64)| Some(Epoch::from_bdt_days(days)));
+            .for_each(|days: f64| Some(Epoch::from_bdt_days(days)));
     }
 
     #[test]
@@ -1834,7 +1832,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(nanoseconds): (u64)| Some(Epoch::from_bdt_nanoseconds(nanoseconds)));
+            .for_each(|nanoseconds: u64| Some(Epoch::from_bdt_nanoseconds(nanoseconds)));
     }
 
     #[test]
@@ -1842,7 +1840,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(duration): (Duration)| Some(Epoch::from_unix_duration(duration)));
+            .for_each(|duration: Duration| Some(Epoch::from_unix_duration(duration)));
     }
 
     #[test]
@@ -1850,7 +1848,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(seconds): (f64)| Some(Epoch::from_unix_seconds(seconds)));
+            .for_each(|seconds: f64| Some(Epoch::from_unix_seconds(seconds)));
     }
 
     #[test]
@@ -1858,7 +1856,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(millisecond): (f64)| Some(Epoch::from_unix_milliseconds(millisecond)));
+            .for_each(|millisecond: f64| Some(Epoch::from_unix_milliseconds(millisecond)));
     }
 
     #[test]
@@ -1866,7 +1864,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(seconds): (f64)| Some(Epoch::delta_et_tai(seconds)));
+            .for_each(|seconds: f64| Some(Epoch::delta_et_tai(seconds)));
     }
 
     #[test]
@@ -1874,7 +1872,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(seconds): (f64)| Some(Epoch::inner_g(seconds)));
+            .for_each(|seconds: f64| Some(Epoch::inner_g(seconds)));
     }
 
     #[test]

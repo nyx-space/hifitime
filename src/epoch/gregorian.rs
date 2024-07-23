@@ -15,7 +15,6 @@ use crate::{
     HIFITIME_REF_YEAR, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
     NANOSECONDS_PER_SECOND_U32,
 };
-use bolero::generator::bolero_generator;
 use core::str::FromStr;
 
 use super::div_rem_f64;
@@ -1035,7 +1034,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(year): (i32)| Some(january_years(year)));
+            .for_each(|year: i32| Some(january_years(year)));
     }
 
     #[test]
@@ -1043,7 +1042,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(year): (i32)| Some(july_years(year)));
+            .for_each(|year: i32| Some(july_years(year)));
     }
 
     #[test]
@@ -1051,7 +1050,7 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(month): (u8)| Some(usual_days_per_month(month)));
+            .for_each(|month: u8| Some(usual_days_per_month(month)));
     }
 
     #[test]
@@ -1059,6 +1058,6 @@ mod bolero_harnesses {
         bolero::check!()
             .with_type()
             .cloned()
-            .for_each(|(year): (i32)| Some(is_leap_year(year)));
+            .for_each(|year: i32| Some(is_leap_year(year)));
     }
 }

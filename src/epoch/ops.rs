@@ -8,7 +8,6 @@
  * Documentation: https://nyxspace.com/
  */
 
-use bolero::generator::bolero_generator;
 use core::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
