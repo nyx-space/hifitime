@@ -10,6 +10,7 @@
 
 use super::{Duration, Epoch};
 
+use bolero::generator::bolero_generator;
 use core::fmt;
 
 #[cfg(not(feature = "std"))]
@@ -26,7 +27,7 @@ NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/iter
 */
 
 /// An iterator of a sequence of evenly spaced Epochs.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(bolero_generator::TypeGenerator, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
 pub struct TimeSeries {
@@ -413,5 +414,27 @@ mod tests {
 
         assert_eq!(cnt, 5); // Five because the first item is always inclusive
         assert_eq!(cur_epoch, start, "incorrect last item in iterator");
+    }
+}
+
+#[cfg(test)]
+mod bolero_harnesses {
+    use super::*;
+    #[test]
+    fn bolero_test_timeseries_exclusive() {
+        bolero::check!().with_type().cloned().for_each(
+            |(start, end, step): (Epoch, Epoch, Duration)| {
+                Some(TimeSeries::exclusive(start, end, step))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_timeseries_inclusive() {
+        bolero::check!().with_type().cloned().for_each(
+            |(start, end, step): (Epoch, Epoch, Duration)| {
+                Some(TimeSeries::inclusive(start, end, step))
+            },
+        );
     }
 }

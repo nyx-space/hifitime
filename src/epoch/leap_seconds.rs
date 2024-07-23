@@ -14,6 +14,7 @@ use pyo3::prelude::*;
 #[cfg(feature = "std")]
 pub use super::leap_seconds_file::LeapSecondsFile;
 
+use bolero::generator::bolero_generator;
 use core::ops::Index;
 
 pub trait LeapSecondProvider: DoubleEndedIterator<Item = LeapSecond> + Index<usize> {}
@@ -21,7 +22,7 @@ pub trait LeapSecondProvider: DoubleEndedIterator<Item = LeapSecond> + Index<usi
 /// A structure representing a leap second
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(bolero_generator::TypeGenerator, Copy, Clone, Debug, PartialEq)]
 pub struct LeapSecond {
     /// Timestamp in TAI seconds for this leap second, e.g. `2_272_060_800.0` for the first IERS leap second.
     pub timestamp_tai_s: f64,
@@ -160,4 +161,17 @@ fn leap_second_fetch() {
         leap_seconds[41],
         LeapSecond::new(3_692_217_600.0, 37.0, true)
     );
+}
+
+#[cfg(test)]
+mod bolero_harnesses {
+    use super::*;
+    #[test]
+    fn bolero_test_leapsecond_new() {
+        bolero::check!().with_type().cloned().for_each(
+            |(timestamp_tai_s, delta_at, announced): (f64, f64, bool)| {
+                Some(LeapSecond::new(timestamp_tai_s, delta_at, announced))
+            },
+        );
+    }
 }

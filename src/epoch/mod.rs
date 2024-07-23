@@ -35,6 +35,7 @@ use crate::{
     HifitimeError, MonthName, TimeScale, TimeUnits, BDT_REF_EPOCH, ET_EPOCH_S, GPST_REF_EPOCH,
     GST_REF_EPOCH, MJD_J1900, MJD_OFFSET, NANOSECONDS_PER_DAY, QZSST_REF_EPOCH, UNIX_REF_EPOCH,
 };
+use bolero::generator::bolero_generator;
 use core::cmp::Eq;
 use core::str::FromStr;
 pub use gregorian::is_gregorian_valid;
@@ -75,7 +76,7 @@ pub const NAIF_K: f64 = 1.657e-3;
 /// Defines a nanosecond-precision Epoch.
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
-#[derive(Copy, Clone, Default, Eq)]
+#[derive(bolero_generator::TypeGenerator, Copy, Clone, Default, Eq)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
@@ -1423,5 +1424,508 @@ mod ut_epoch {
         assert_eq!(content, serde_json::to_string(&e).unwrap());
         let parsed: Epoch = serde_json::from_str(content).unwrap();
         assert_eq!(e, parsed);
+    }
+}
+
+#[cfg(test)]
+mod bolero_harnesses {
+    use super::*;
+    #[test]
+    fn bolero_test_to_time_scale() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, ts): (Epoch, TimeScale)| Some(callee.to_time_scale(ts).clone()));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_tai_duration() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(duration): (Duration)| Some(Epoch::from_tai_duration(duration)));
+    }
+
+    /*     #[test]
+    fn bolero_test_leap_seconds_with() {
+        bolero::check!().with_type().cloned().for_each(
+            |(callee, iers_only, provider): (Epoch, bool, u16)| {
+                Some(callee.leap_seconds_with(iers_only, provider).clone())
+            },
+        );
+    } */
+
+    #[test]
+    fn bolero_test_epoch_from_duration() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(duration, ts): (Duration, TimeScale)| {
+                Some(Epoch::from_duration(duration, ts))
+            });
+    }
+
+    #[test]
+    fn bolero_test_to_duration_since_j1900() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Epoch,)| Some(callee.to_duration_since_j1900().clone()));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_tai_parts() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(centuries, nanoseconds): (i16, u64)| {
+                Some(Epoch::from_tai_parts(centuries, nanoseconds))
+            });
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_tai_seconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(seconds): (f64)| Some(Epoch::from_tai_seconds(seconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_tai_days() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_tai_days(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_utc_duration() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(duration): (Duration)| Some(Epoch::from_utc_duration(duration)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_utc_seconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(seconds): (f64)| Some(Epoch::from_utc_seconds(seconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_utc_days() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_utc_days(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gpst_duration() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(duration): (Duration)| Some(Epoch::from_gpst_duration(duration)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_qzsst_duration() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(duration): (Duration)| Some(Epoch::from_qzsst_duration(duration)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gst_duration() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(duration): (Duration)| Some(Epoch::from_gst_duration(duration)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_bdt_duration() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(duration): (Duration)| Some(Epoch::from_bdt_duration(duration)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_mjd_tai() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_mjd_tai(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_mjd_in_time_scale() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days, time_scale): (f64, TimeScale)| {
+                Some(Epoch::from_mjd_in_time_scale(days, time_scale))
+            });
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_mjd_utc() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_mjd_utc(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_mjd_gpst() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_mjd_gpst(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_mjd_qzsst() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_mjd_qzsst(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_mjd_gst() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_mjd_gst(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_mjd_bdt() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_mjd_bdt(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_jde_tai() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_jde_tai(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_jde_in_time_scale() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days, time_scale): (f64, TimeScale)| {
+                Some(Epoch::from_jde_in_time_scale(days, time_scale))
+            });
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_jde_utc() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_jde_utc(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_jde_gpst() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_jde_gpst(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_jde_qzsst() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_jde_qzsst(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_jde_gst() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_jde_gst(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_jde_bdt() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_jde_bdt(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_tt_seconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(seconds): (f64)| Some(Epoch::from_tt_seconds(seconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_tt_duration() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(duration): (Duration)| Some(Epoch::from_tt_duration(duration)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_et_seconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(seconds_since_j2000): (f64)| {
+                Some(Epoch::from_et_seconds(seconds_since_j2000))
+            });
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_et_duration() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(duration_since_j2000): (Duration)| {
+                Some(Epoch::from_et_duration(duration_since_j2000))
+            });
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_tdb_seconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(seconds_j2000): (f64)| Some(Epoch::from_tdb_seconds(seconds_j2000)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_tdb_duration() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(duration_since_j2000): (Duration)| {
+                Some(Epoch::from_tdb_duration(duration_since_j2000))
+            });
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_jde_et() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_jde_et(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_jde_tdb() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_jde_tdb(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gpst_seconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(seconds): (f64)| Some(Epoch::from_gpst_seconds(seconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gpst_days() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_gpst_days(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gpst_nanoseconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(nanoseconds): (u64)| Some(Epoch::from_gpst_nanoseconds(nanoseconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_qzsst_seconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(seconds): (f64)| Some(Epoch::from_qzsst_seconds(seconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_qzsst_days() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_qzsst_days(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_qzsst_nanoseconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(nanoseconds): (u64)| Some(Epoch::from_qzsst_nanoseconds(nanoseconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gst_seconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(seconds): (f64)| Some(Epoch::from_gst_seconds(seconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gst_days() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_gst_days(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gst_nanoseconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(nanoseconds): (u64)| Some(Epoch::from_gst_nanoseconds(nanoseconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_bdt_seconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(seconds): (f64)| Some(Epoch::from_bdt_seconds(seconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_bdt_days() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(days): (f64)| Some(Epoch::from_bdt_days(days)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_bdt_nanoseconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(nanoseconds): (u64)| Some(Epoch::from_bdt_nanoseconds(nanoseconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_unix_duration() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(duration): (Duration)| Some(Epoch::from_unix_duration(duration)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_unix_seconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(seconds): (f64)| Some(Epoch::from_unix_seconds(seconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_unix_milliseconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(millisecond): (f64)| Some(Epoch::from_unix_milliseconds(millisecond)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_delta_et_tai() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(seconds): (f64)| Some(Epoch::delta_et_tai(seconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_inner_g() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(seconds): (f64)| Some(Epoch::inner_g(seconds)));
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_time_of_week() {
+        bolero::check!().with_type().cloned().for_each(
+            |(week, nanoseconds, time_scale): (u32, u64, TimeScale)| {
+                Some(Epoch::from_time_of_week(week, nanoseconds, time_scale))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_time_of_week_utc() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(week, nanoseconds): (u32, u64)| {
+                Some(Epoch::from_time_of_week_utc(week, nanoseconds))
+            });
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_day_of_year() {
+        bolero::check!().with_type().cloned().for_each(
+            |(year, days, time_scale): (i32, f64, TimeScale)| {
+                Some(Epoch::from_day_of_year(year, days, time_scale))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_div_rem_f64() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(me, rhs): (f64, f64)| Some(div_rem_f64(me, rhs)));
+    }
+
+    #[test]
+    fn bolero_test_div_euclid_f64() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(lhs, rhs): (f64, f64)| Some(div_euclid_f64(lhs, rhs)));
+    }
+
+    #[test]
+    fn bolero_test_rem_euclid_f64() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(lhs, rhs): (f64, f64)| Some(rem_euclid_f64(lhs, rhs)));
     }
 }

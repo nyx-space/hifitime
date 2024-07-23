@@ -19,6 +19,8 @@ mod kani;
 
 mod fmt;
 
+use bolero::generator::bolero_generator;
+
 use crate::{Duration, Epoch, Unit, SECONDS_PER_DAY};
 
 /// The J1900 reference epoch (1900-01-01 at noon) TAI.
@@ -81,7 +83,9 @@ pub(crate) const HIFITIME_REF_YEAR: i32 = 1900;
 
 /// Enum of the different time systems available
 #[non_exhaustive]
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(
+    bolero_generator::TypeGenerator, Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash,
+)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum TimeScale {
@@ -260,5 +264,49 @@ mod unit_test_timescale {
             format!("{}", TimeScale::ET.reference_epoch()),
             "2000-01-01T12:00:00 ET"
         );
+    }
+}
+
+#[cfg(test)]
+mod bolero_harnesses {
+    use super::*;
+    #[test]
+    fn bolero_test_formatted_len() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (TimeScale,)| Some(callee.formatted_len().clone()));
+    }
+
+    #[test]
+    fn bolero_test_is_gnss() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (TimeScale,)| Some(callee.is_gnss().clone()));
+    }
+
+    #[test]
+    fn bolero_test_reference_epoch() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (TimeScale,)| Some(callee.reference_epoch().clone()));
+    }
+
+    #[test]
+    fn bolero_test_prime_epoch_offset() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (TimeScale,)| Some(callee.prime_epoch_offset().clone()));
+    }
+
+    #[test]
+    fn bolero_test_gregorian_epoch_offset() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (TimeScale,)| Some(callee.gregorian_epoch_offset().clone()));
     }
 }

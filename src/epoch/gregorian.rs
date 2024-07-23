@@ -15,6 +15,7 @@ use crate::{
     HIFITIME_REF_YEAR, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
     NANOSECONDS_PER_SECOND_U32,
 };
+use bolero::generator::bolero_generator;
 use core::str::FromStr;
 
 use super::div_rem_f64;
@@ -793,5 +794,271 @@ mod ut_gregorian {
         for year in leap_years.iter() {
             assert!(is_leap_year(*year));
         }
+    }
+}
+
+#[cfg(test)]
+mod bolero_harnesses {
+    use super::*;
+    #[test]
+    fn bolero_test_epoch_compute_gregorian() {
+        bolero::check!().with_type().cloned().for_each(
+            |(duration, time_scale): (Duration, TimeScale)| {
+                Some(Epoch::compute_gregorian(duration, time_scale))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_to_gregorian_str() {
+        bolero::check!().with_type().cloned().for_each(
+            |(callee, time_scale): (Epoch, TimeScale)| {
+                Some(callee.to_gregorian_str(time_scale).clone())
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_to_gregorian_utc() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Epoch,)| Some(callee.to_gregorian_utc().clone()));
+    }
+
+    #[test]
+    fn bolero_test_to_gregorian_tai() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Epoch,)| Some(callee.to_gregorian_tai().clone()));
+    }
+
+    #[test]
+    fn bolero_test_epoch_maybe_from_gregorian_tai() {
+        bolero::check!().with_type().cloned().for_each(
+            |(year, month, day, hour, minute, second, nanos): (i32, u8, u8, u8, u8, u8, u32)| {
+                Some(Epoch::maybe_from_gregorian_tai(
+                    year, month, day, hour, minute, second, nanos,
+                ))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_epoch_maybe_from_gregorian() {
+        bolero::check!().with_type().cloned().for_each(
+            |(year, month, day, hour, minute, second, nanos, time_scale): (
+                i32,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u32,
+                TimeScale,
+            )| {
+                Some(Epoch::maybe_from_gregorian(
+                    year, month, day, hour, minute, second, nanos, time_scale,
+                ))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gregorian_tai() {
+        bolero::check!().with_type().cloned().for_each(
+            |(year, month, day, hour, minute, second, nanos): (i32, u8, u8, u8, u8, u8, u32)| {
+                Some(Epoch::from_gregorian_tai(
+                    year, month, day, hour, minute, second, nanos,
+                ))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gregorian_tai_at_midnight() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(year, month, day): (i32, u8, u8)| {
+                Some(Epoch::from_gregorian_tai_at_midnight(year, month, day))
+            });
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gregorian_tai_at_noon() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(year, month, day): (i32, u8, u8)| {
+                Some(Epoch::from_gregorian_tai_at_noon(year, month, day))
+            });
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gregorian_tai_hms() {
+        bolero::check!().with_type().cloned().for_each(
+            |(year, month, day, hour, minute, second): (i32, u8, u8, u8, u8, u8)| {
+                Some(Epoch::from_gregorian_tai_hms(
+                    year, month, day, hour, minute, second,
+                ))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_epoch_maybe_from_gregorian_utc() {
+        bolero::check!().with_type().cloned().for_each(
+            |(year, month, day, hour, minute, second, nanos): (i32, u8, u8, u8, u8, u8, u32)| {
+                Some(Epoch::maybe_from_gregorian_utc(
+                    year, month, day, hour, minute, second, nanos,
+                ))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gregorian_utc() {
+        bolero::check!().with_type().cloned().for_each(
+            |(year, month, day, hour, minute, second, nanos): (i32, u8, u8, u8, u8, u8, u32)| {
+                Some(Epoch::from_gregorian_utc(
+                    year, month, day, hour, minute, second, nanos,
+                ))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gregorian_utc_at_midnight() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(year, month, day): (i32, u8, u8)| {
+                Some(Epoch::from_gregorian_utc_at_midnight(year, month, day))
+            });
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gregorian_utc_at_noon() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(year, month, day): (i32, u8, u8)| {
+                Some(Epoch::from_gregorian_utc_at_noon(year, month, day))
+            });
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gregorian_utc_hms() {
+        bolero::check!().with_type().cloned().for_each(
+            |(year, month, day, hour, minute, second): (i32, u8, u8, u8, u8, u8)| {
+                Some(Epoch::from_gregorian_utc_hms(
+                    year, month, day, hour, minute, second,
+                ))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gregorian() {
+        bolero::check!().with_type().cloned().for_each(
+            |(year, month, day, hour, minute, second, nanos, time_scale): (
+                i32,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                u32,
+                TimeScale,
+            )| {
+                Some(Epoch::from_gregorian(
+                    year, month, day, hour, minute, second, nanos, time_scale,
+                ))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gregorian_at_midnight() {
+        bolero::check!().with_type().cloned().for_each(
+            |(year, month, day, time_scale): (i32, u8, u8, TimeScale)| {
+                Some(Epoch::from_gregorian_at_midnight(
+                    year, month, day, time_scale,
+                ))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gregorian_at_noon() {
+        bolero::check!().with_type().cloned().for_each(
+            |(year, month, day, time_scale): (i32, u8, u8, TimeScale)| {
+                Some(Epoch::from_gregorian_at_noon(year, month, day, time_scale))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_epoch_from_gregorian_hms() {
+        bolero::check!().with_type().cloned().for_each(
+            |(year, month, day, hour, minute, second, time_scale): (
+                i32,
+                u8,
+                u8,
+                u8,
+                u8,
+                u8,
+                TimeScale,
+            )| {
+                Some(Epoch::from_gregorian_hms(
+                    year, month, day, hour, minute, second, time_scale,
+                ))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_is_gregorian_valid() {
+        bolero::check!().with_type().cloned().for_each(
+            |(year, month, day, hour, minute, second, nanos): (i32, u8, u8, u8, u8, u8, u32)| {
+                Some(is_gregorian_valid(
+                    year, month, day, hour, minute, second, nanos,
+                ))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_january_years() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(year): (i32)| Some(january_years(year)));
+    }
+
+    #[test]
+    fn bolero_test_july_years() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(year): (i32)| Some(july_years(year)));
+    }
+
+    #[test]
+    fn bolero_test_usual_days_per_month() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(month): (u8)| Some(usual_days_per_month(month)));
+    }
+
+    #[test]
+    fn bolero_test_is_leap_year() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(year): (i32)| Some(is_leap_year(year)));
     }
 }

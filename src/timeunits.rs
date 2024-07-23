@@ -8,6 +8,7 @@
  * Documentation: https://nyxspace.com/
  */
 
+use bolero::generator::bolero_generator;
 use core::ops::{Add, Mul, Sub};
 
 #[cfg(not(feature = "std"))]
@@ -25,7 +26,7 @@ use crate::{
 };
 
 /// An Enum to perform time unit conversions.
-#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(bolero_generator::TypeGenerator, Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 pub enum Unit {
     Nanosecond,
@@ -41,7 +42,7 @@ pub enum Unit {
 }
 
 /// An Enum to convert frequencies to their approximate duration, **rounded to the closest nanosecond**.
-#[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(bolero_generator::TypeGenerator, Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 pub enum Freq {
     GigaHertz,

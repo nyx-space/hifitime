@@ -8,6 +8,7 @@
  * Documentation: https://nyxspace.com/
  */
 
+use bolero::generator::bolero_generator;
 use core::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
@@ -376,5 +377,138 @@ impl Hash for Epoch {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.duration.hash(state);
         self.time_scale.hash(state);
+    }
+}
+
+#[cfg(test)]
+mod bolero_harnesses {
+    use super::*;
+    #[test]
+    fn bolero_test_min() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, other): (Epoch, Epoch)| Some(callee.min(other).clone()));
+    }
+
+    #[test]
+    fn bolero_test_max() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, other): (Epoch, Epoch)| Some(callee.max(other).clone()));
+    }
+
+    #[test]
+    fn bolero_test_floor() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, duration): (Epoch, Duration)| Some(callee.floor(duration).clone()));
+    }
+
+    #[test]
+    fn bolero_test_ceil() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, duration): (Epoch, Duration)| Some(callee.ceil(duration).clone()));
+    }
+
+    #[test]
+    fn bolero_test_round() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, duration): (Epoch, Duration)| Some(callee.round(duration).clone()));
+    }
+
+    #[test]
+    fn bolero_test_to_time_of_week() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Epoch,)| Some(callee.to_time_of_week().clone()));
+    }
+
+    #[test]
+    fn bolero_test_weekday_in_time_scale() {
+        bolero::check!().with_type().cloned().for_each(
+            |(callee, time_scale): (Epoch, TimeScale)| {
+                Some(callee.weekday_in_time_scale(time_scale).clone())
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_weekday() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Epoch,)| Some(callee.weekday().clone()));
+    }
+
+    #[test]
+    fn bolero_test_weekday_utc() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Epoch,)| Some(callee.weekday_utc().clone()));
+    }
+
+    #[test]
+    fn bolero_test_next() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, weekday): (Epoch, Weekday)| Some(callee.next(weekday).clone()));
+    }
+
+    #[test]
+    fn bolero_test_next_weekday_at_midnight() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, weekday): (Epoch, Weekday)| {
+                Some(callee.next_weekday_at_midnight(weekday).clone())
+            });
+    }
+
+    #[test]
+    fn bolero_test_next_weekday_at_noon() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, weekday): (Epoch, Weekday)| {
+                Some(callee.next_weekday_at_noon(weekday).clone())
+            });
+    }
+
+    #[test]
+    fn bolero_test_previous() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, weekday): (Epoch, Weekday)| Some(callee.previous(weekday).clone()));
+    }
+
+    #[test]
+    fn bolero_test_previous_weekday_at_midnight() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, weekday): (Epoch, Weekday)| {
+                Some(callee.previous_weekday_at_midnight(weekday).clone())
+            });
+    }
+
+    #[test]
+    fn bolero_test_previous_weekday_at_noon() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, weekday): (Epoch, Weekday)| {
+                Some(callee.previous_weekday_at_noon(weekday).clone())
+            });
     }
 }

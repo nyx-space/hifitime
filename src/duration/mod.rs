@@ -28,6 +28,8 @@ use core::str::FromStr;
 #[cfg(not(kani))]
 pub mod parse;
 
+use bolero::generator::bolero_generator;
+
 #[cfg(feature = "python")]
 mod python;
 
@@ -63,7 +65,7 @@ pub mod ops;
 /// That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
 /// As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
 /// 2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
-#[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
+#[derive(bolero_generator::TypeGenerator, Clone, Copy, Debug, PartialOrd, Eq, Ord)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
@@ -826,5 +828,287 @@ mod ut_duration {
         assert_eq!(milliseconds, 0);
         assert_eq!(microseconds, 0);
         assert_eq!(nanoseconds, 0);
+    }
+}
+
+#[cfg(test)]
+mod bolero_harnesses {
+    use super::*;
+    #[test]
+    fn bolero_test_duration_from_parts() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(centuries, nanoseconds): (i16, u64)| {
+                Some(Duration::from_parts(centuries, nanoseconds))
+            });
+    }
+
+    #[test]
+    fn bolero_test_duration_from_total_nanoseconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(nanos): (i128)| Some(Duration::from_total_nanoseconds(nanos)));
+    }
+
+    #[test]
+    fn bolero_test_duration_from_truncated_nanoseconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(nanos): (i64)| Some(Duration::from_truncated_nanoseconds(nanos)));
+    }
+
+    #[test]
+    fn bolero_test_duration_from_days() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(value): (f64)| Some(Duration::from_days(value)));
+    }
+
+    #[test]
+    fn bolero_test_duration_from_hours() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(value): (f64)| Some(Duration::from_hours(value)));
+    }
+
+    #[test]
+    fn bolero_test_duration_from_seconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(value): (f64)| Some(Duration::from_seconds(value)));
+    }
+
+    #[test]
+    fn bolero_test_duration_from_milliseconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(value): (f64)| Some(Duration::from_milliseconds(value)));
+    }
+
+    #[test]
+    fn bolero_test_duration_from_microseconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(value): (f64)| Some(Duration::from_microseconds(value)));
+    }
+
+    #[test]
+    fn bolero_test_duration_from_nanoseconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(value): (f64)| Some(Duration::from_nanoseconds(value)));
+    }
+
+    #[test]
+    fn bolero_test_duration_compose() {
+        bolero::check!().with_type().cloned().for_each(
+            |(sign, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds): (
+                i8,
+                u64,
+                u64,
+                u64,
+                u64,
+                u64,
+                u64,
+                u64,
+            )| {
+                Some(Duration::compose(
+                    sign,
+                    days,
+                    hours,
+                    minutes,
+                    seconds,
+                    milliseconds,
+                    microseconds,
+                    nanoseconds,
+                ))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_duration_compose_f64() {
+        bolero::check!().with_type().cloned().for_each(
+            |(sign, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds): (
+                i8,
+                f64,
+                f64,
+                f64,
+                f64,
+                f64,
+                f64,
+                f64,
+            )| {
+                Some(Duration::compose_f64(
+                    sign,
+                    days,
+                    hours,
+                    minutes,
+                    seconds,
+                    milliseconds,
+                    microseconds,
+                    nanoseconds,
+                ))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_duration_from_tz_offset() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(sign, hours, minutes): (i8, i64, i64)| {
+                Some(Duration::from_tz_offset(sign, hours, minutes))
+            });
+    }
+
+    #[test]
+    fn bolero_test_normalize() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(mut callee,): (Duration,)| Some(callee.normalize().clone()));
+    }
+
+    #[test]
+    fn bolero_test_to_parts() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Duration,)| Some(callee.to_parts().clone()));
+    }
+
+    #[test]
+    fn bolero_test_total_nanoseconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Duration,)| Some(callee.total_nanoseconds().clone()));
+    }
+
+    #[test]
+    /*     fn bolero_test_try_truncated_nanoseconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Duration,)| Some(callee.try_truncated_nanoseconds().clone()));
+    } */
+    #[test]
+    fn bolero_test_truncated_nanoseconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Duration,)| Some(callee.truncated_nanoseconds().clone()));
+    }
+
+    #[test]
+    fn bolero_test_to_seconds() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Duration,)| Some(callee.to_seconds().clone()));
+    }
+
+    #[test]
+    fn bolero_test_to_unit() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, unit): (Duration, Unit)| Some(callee.to_unit(unit).clone()));
+    }
+
+    #[test]
+    fn bolero_test_abs() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Duration,)| Some(callee.abs().clone()));
+    }
+
+    #[test]
+    fn bolero_test_signum() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Duration,)| Some(callee.signum().clone()));
+    }
+
+    #[test]
+    fn bolero_test_decompose() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Duration,)| Some(callee.decompose().clone()));
+    }
+
+    #[test]
+    fn bolero_test_subdivision() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, unit): (Duration, Unit)| Some(callee.subdivision(unit).clone()));
+    }
+
+    #[test]
+    fn bolero_test_floor() {
+        bolero::check!().with_type().cloned().for_each(
+            |(callee, duration): (Duration, Duration)| Some(callee.floor(duration).clone()),
+        );
+    }
+
+    #[test]
+    fn bolero_test_ceil() {
+        bolero::check!().with_type().cloned().for_each(
+            |(callee, duration): (Duration, Duration)| Some(callee.ceil(duration).clone()),
+        );
+    }
+
+    #[test]
+    fn bolero_test_round() {
+        bolero::check!().with_type().cloned().for_each(
+            |(callee, duration): (Duration, Duration)| Some(callee.round(duration).clone()),
+        );
+    }
+
+    #[test]
+    fn bolero_test_approx() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Duration,)| Some(callee.approx().clone()));
+    }
+
+    #[test]
+    fn bolero_test_min() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, other): (Duration, Duration)| Some(callee.min(other).clone()));
+    }
+
+    #[test]
+    fn bolero_test_max() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, other): (Duration, Duration)| Some(callee.max(other).clone()));
+    }
+
+    #[test]
+    fn bolero_test_is_negative() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Duration,)| Some(callee.is_negative().clone()));
     }
 }

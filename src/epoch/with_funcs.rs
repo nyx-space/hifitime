@@ -9,6 +9,7 @@
  */
 
 use crate::{Duration, Epoch};
+use bolero::generator::bolero_generator;
 
 impl Epoch {
     /// Returns a copy of self where the time is set to the provided hours, minutes, seconds
@@ -146,5 +147,53 @@ impl Epoch {
             ),
             self.time_scale,
         )
+    }
+}
+
+#[cfg(test)]
+mod bolero_harnesses {
+    use super::*;
+    #[test]
+    fn bolero_test_with_hms() {
+        bolero::check!().with_type().cloned().for_each(
+            |(callee, hours, minutes, seconds): (Epoch, u64, u64, u64)| {
+                Some(callee.with_hms(hours, minutes, seconds).clone())
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_with_hms_from() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, other): (Epoch, Epoch)| Some(callee.with_hms_from(other).clone()));
+    }
+
+    #[test]
+    fn bolero_test_with_time_from() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, other): (Epoch, Epoch)| Some(callee.with_time_from(other).clone()));
+    }
+
+    #[test]
+    fn bolero_test_with_hms_strict() {
+        bolero::check!().with_type().cloned().for_each(
+            |(callee, hours, minutes, seconds): (Epoch, u64, u64, u64)| {
+                Some(callee.with_hms_strict(hours, minutes, seconds).clone())
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_with_hms_strict_from() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, other): (Epoch, Epoch)| {
+                Some(callee.with_hms_strict_from(other).clone())
+            });
     }
 }

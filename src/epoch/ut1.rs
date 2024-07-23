@@ -21,6 +21,8 @@ use std::{fs::File, io::Read};
 use core::fmt;
 use core::ops::Index;
 
+use bolero::generator::bolero_generator;
+
 use crate::{Duration, Epoch, HifitimeError, ParsingError, TimeScale, Unit};
 
 impl Epoch {
@@ -64,7 +66,7 @@ impl Epoch {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, Tabled)]
+#[derive(bolero_generator::TypeGenerator, Copy, Clone, Debug, Default, Tabled)]
 pub struct DeltaTaiUt1 {
     pub epoch: Epoch,
     pub delta_tai_minus_ut1: Duration,

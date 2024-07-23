@@ -8,6 +8,7 @@
  * Documentation: https://nyxspace.com/
  */
 
+use bolero::generator::bolero_generator;
 use core::num::ParseIntError;
 use snafu::prelude::*;
 
@@ -41,7 +42,7 @@ pub enum HifitimeError {
 }
 
 #[non_exhaustive]
-#[derive(Debug, Snafu, PartialEq)]
+#[derive(bolero_generator::TypeGenerator, Debug, Snafu, PartialEq)]
 pub enum DurationError {
     Overflow,
     Underflow,

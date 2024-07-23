@@ -8,6 +8,7 @@
  * Documentation: https://nyxspace.com/
  */
 
+use bolero::generator::bolero_generator;
 use core::fmt;
 
 use crate::{parser::Token, Duration, Epoch, TimeScale};
@@ -18,7 +19,7 @@ use super::format::Format;
 #[allow(unused_imports)] // Import is indeed used.
 use num_traits::Float;
 
-#[derive(Copy, Clone, Default, Debug, PartialEq)]
+#[derive(bolero_generator::TypeGenerator, Copy, Clone, Default, Debug, PartialEq)]
 pub(crate) struct Item {
     pub(crate) token: Token,
     pub(crate) sep_char: Option<char>,
@@ -301,4 +302,58 @@ impl fmt::Display for Formatter {
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod bolero_harnesses {
+    use super::*;
+    #[test]
+    fn bolero_test_item_new() {
+        bolero::check!().with_type().cloned().for_each(
+            |(token, sep_char, second_sep_char): (Token, Option<char>, Option<char>)| {
+                Some(Item::new(token, sep_char, second_sep_char))
+            },
+        );
+    }
+
+    #[test]
+    fn bolero_test_sep_char_is() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, c_in): (Item, char)| Some(callee.sep_char_is(c_in).clone()));
+    }
+
+    #[test]
+    fn bolero_test_sep_char_is_not() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, c_in): (Item, char)| Some(callee.sep_char_is_not(c_in).clone()));
+    }
+
+    #[test]
+    fn bolero_test_second_sep_char_is() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, c_in): (Item, char)| Some(callee.second_sep_char_is(c_in).clone()));
+    }
+
+    #[test]
+    fn bolero_test_second_sep_char_is_not() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, c_in): (Item, char)| {
+                Some(callee.second_sep_char_is_not(c_in).clone())
+            });
+    }
+
+    /*     #[test]
+    fn bolero_test_set_timezone() {
+        bolero::check!().with_type().cloned().for_each(
+            |(mut callee, offset): (Formatter, Duration)| Some(callee.set_timezone(offset).clone()),
+        );
+    } */
 }

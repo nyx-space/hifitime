@@ -9,8 +9,9 @@
  */
 
 use crate::{HifitimeError, ParsingError};
+use bolero::generator::bolero_generator;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(bolero_generator::TypeGenerator, Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum Token {
     Year,
     YearShort,
@@ -275,5 +276,42 @@ impl Token {
                 | Token::MonthName
                 | Token::MonthNameShort
         )
+    }
+}
+
+#[cfg(test)]
+mod bolero_harnesses {
+    use super::*;
+    /*     #[test]
+    fn bolero_test_value_ok() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee, val): (Token, i32)| Some(callee.value_ok(val).clone()));
+    } */
+
+    #[test]
+    fn bolero_test_gregorian_position() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Token,)| Some(callee.gregorian_position().clone()));
+    }
+
+    /*     #[test]
+    fn bolero_test_advance_with() {
+        bolero::check!().with_type().cloned().for_each(
+            |(mut callee, ending_char): (Token, char)| {
+                Some(callee.advance_with(ending_char).clone())
+            },
+        );
+    } */
+
+    #[test]
+    fn bolero_test_is_numeric() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Token,)| Some(callee.is_numeric().clone()));
     }
 }

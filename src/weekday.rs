@@ -9,6 +9,7 @@
  */
 
 use crate::{Duration, ParsingError, Unit};
+use bolero::generator::bolero_generator;
 use core::fmt;
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 use core::str::FromStr;
@@ -19,7 +20,7 @@ use pyo3::prelude::*;
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(bolero_generator::TypeGenerator, Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -201,4 +202,16 @@ fn test_iso_weekday() {
     assert_eq!(Weekday::Thursday.to_c89_weekday(), 4);
     assert_eq!(Weekday::Friday.to_c89_weekday(), 5);
     assert_eq!(Weekday::Saturday.to_c89_weekday(), 6);
+}
+
+#[cfg(test)]
+mod bolero_harnesses {
+    use super::*;
+    #[test]
+    fn bolero_test_to_c89_weekday() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(callee,): (Weekday,)| Some(callee.to_c89_weekday().clone()));
+    }
 }

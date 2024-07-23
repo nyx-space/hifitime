@@ -34,3 +34,23 @@ impl Epoch {
         Ok(Self::from_unix_duration(duration))
     }
 }
+
+#[cfg(test)]
+mod bolero_harnesses {
+    use super::*;
+    #[test]
+    fn bolero_test_duration_since_unix_epoch() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(): ()| Some(duration_since_unix_epoch()));
+    }
+
+    #[test]
+    fn bolero_test_epoch_now() {
+        bolero::check!()
+            .with_type()
+            .cloned()
+            .for_each(|(): ()| Some(Epoch::now()));
+    }
+}
