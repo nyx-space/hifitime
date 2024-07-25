@@ -1,4 +1,5 @@
 #![doc = include_str!("../README.md")]
+#![cfg_attr(docrs, feature(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
 /*
  * Hifitime, part of the Nyx Space tools
