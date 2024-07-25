@@ -22,6 +22,7 @@ mod system_time;
 mod kani_verif;
 
 #[cfg(feature = "ut1")]
+#[cfg_attr(docrs, doc(cfg(feature = "ut1")))]
 pub mod ut1;
 
 pub mod leap_seconds;
