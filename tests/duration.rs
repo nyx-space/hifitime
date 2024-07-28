@@ -584,8 +584,8 @@ fn regression_test_gh_244() {
     // Test that the ceil of a zero duration is still zero.
     assert_eq!(zero.ceil(zero), zero);
     let non_zero = Duration::from_parts(1, 23456);
-    // Test that the ceil of a non-zero duration by zero is still that original duration.
-    assert_eq!(non_zero.ceil(zero), non_zero);
-    // Test that the ceil of a zero duration by a non-zero is still zero.
-    assert_eq!(zero.ceil(non_zero), zero);
+    // Test that the ceil of a non-zero duration by zero is still zero.
+    assert_eq!(non_zero.ceil(zero), zero);
+    // Test that the ceil of a zero duration by a non-zero is non-zero duration.
+    assert_eq!(zero.ceil(non_zero), non_zero);
 }
