@@ -539,7 +539,11 @@ impl Duration {
     /// ```
     pub fn floor(&self, duration: Self) -> Self {
         Self::from_total_nanoseconds(
-            self.total_nanoseconds() - self.total_nanoseconds() % duration.total_nanoseconds(),
+            if duration.total_nanoseconds() == 0 {
+                0
+            } else {
+                self.total_nanoseconds() - self.total_nanoseconds() % duration.total_nanoseconds()
+            }
         )
     }
 
