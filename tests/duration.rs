@@ -587,7 +587,6 @@ fn regression_test_gh_244() {
     let _ = Epoch::to_utc_seconds(&local0);
     let _ = Duration::decompose(&local5);
     let calculated_epoch = Epoch::ceil(&local0, local5);
-    
     let expected_epoch = Epoch::maybe_from_gregorian_utc(1900, 1, 1, 0, 0, 0, 0).unwrap();
     assert_eq!(calculated_epoch, expected_epoch);
 }
