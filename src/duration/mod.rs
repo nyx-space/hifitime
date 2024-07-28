@@ -538,9 +538,11 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.floor(1.hours() + 5.minutes()), 1.hours() + 5.minutes());
     /// ```
     pub fn floor(&self, duration: Self) -> Self {
-        Self::from_total_nanoseconds(
-            self.total_nanoseconds() - self.total_nanoseconds() % duration.total_nanoseconds(),
-        )
+        Self::from_total_nanoseconds(if duration.total_nanoseconds() == 0 {
+            0
+        } else {
+            self.total_nanoseconds() - self.total_nanoseconds() % duration.total_nanoseconds()
+        })
     }
 
     /// Ceils this duration to the closest provided duration

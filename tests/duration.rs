@@ -577,3 +577,15 @@ fn test_min_max() {
     assert_eq!(d1, d1.max(d0));
     assert_eq!(d1, d0.max(d1));
 }
+
+#[test]
+fn regression_test_gh_244() {
+    let zero = Duration::ZERO;
+    // Test that the ceil of a zero duration is still zero.
+    assert_eq!(zero.ceil(zero), zero);
+    let non_zero = Duration::from_parts(1, 23456);
+    // Test that the ceil of a non-zero duration by zero is still zero.
+    assert_eq!(non_zero.ceil(zero), zero);
+    // Test that the ceil of a zero duration by a non-zero is non-zero duration.
+    assert_eq!(zero.ceil(non_zero), non_zero);
+}
