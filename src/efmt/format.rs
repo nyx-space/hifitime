@@ -416,6 +416,9 @@ impl FromStr for Format {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut me = Format::default();
         for token in s.split('%') {
+            if me.num_items >= 16 {
+                return Err(ParsingError::UnknownFormat);
+            }
             match token.chars().next() {
                 Some(char) => match char {
                     'Y' => {
