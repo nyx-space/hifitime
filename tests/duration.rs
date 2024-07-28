@@ -582,15 +582,11 @@ fn test_min_max() {
 fn regression_test_gh_244() {
     use hifitime::Epoch;
 
-    let _local0 = if let Ok(x) = Epoch::maybe_from_gregorian_utc(1792, 1, 1, 0, 0, 0, 0) {
-        x
-    } else {
-        std::process::exit(0);
-    };
-    let _local5 = Epoch::duration_in_year(&_local0);
-    let _ = Epoch::to_utc_seconds(&_local0);
-    let _ = Duration::decompose(&_local5);
-    let calculated_epoch = Epoch::ceil(&_local0, _local5);
+    let local0 = Epoch::maybe_from_gregorian_utc(1792, 1, 1, 0, 0, 0, 0).unwrap();
+    let local5 = Epoch::duration_in_year(&local0);
+    let _ = Epoch::to_utc_seconds(&local0);
+    let _ = Duration::decompose(&local5);
+    let calculated_epoch = Epoch::ceil(&local0, local5);
     
     let expected_epoch = Epoch::maybe_from_gregorian_utc(1900, 1, 1, 0, 0, 0, 0).unwrap();
     assert_eq!(calculated_epoch, expected_epoch);
