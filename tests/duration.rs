@@ -580,13 +580,12 @@ fn test_min_max() {
 
 #[test]
 fn regression_test_gh_244() {
-    use hifitime::Epoch;
-
-    let local0 = Epoch::maybe_from_gregorian_utc(1792, 1, 1, 0, 0, 0, 0).unwrap();
-    let local5 = Epoch::duration_in_year(&local0);
-    let _ = Epoch::to_utc_seconds(&local0);
-    let _ = Duration::decompose(&local5);
-    let calculated_epoch = Epoch::ceil(&local0, local5);
-    let expected_epoch = Epoch::maybe_from_gregorian_utc(1900, 1, 1, 0, 0, 0, 0).unwrap();
-    assert_eq!(calculated_epoch, expected_epoch);
+    let zero = Duration::ZERO;
+    // Test that the ceil of a zero duration is still zero.
+    assert_eq!(zero.ceil(zero), zero);
+    let non_zero = Duration::from_parts(1, 23456);
+    // Test that the ceil of a non-zero duration by zero is still that original duration.
+    assert_eq!(non_zero.ceil(zero), non_zero);
+    // Test that the ceil of a zero duration by a non-zero is still zero.
+    assert_eq!(zero.ceil(non_zero), zero);
 }
