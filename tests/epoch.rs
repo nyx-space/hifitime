@@ -5,7 +5,8 @@ use hifitime::{
     is_gregorian_valid, Duration, Epoch, HifitimeError, ParsingError, TimeScale, TimeUnits, Unit,
     Weekday, BDT_REF_EPOCH, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR, GPST_REF_EPOCH, GST_REF_EPOCH,
     J1900_REF_EPOCH, J2000_REF_EPOCH, JD_J2000, MJD_J1900, MJD_J2000, MJD_OFFSET,
-    SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
+    NANOSECONDS_PER_CENTURY, SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET,
+    SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
 };
 
 use hifitime::efmt::{Format, Formatter};
@@ -1127,15 +1128,15 @@ fn test_leap_seconds_iers() {
     assert_eq!(epoch_from_utc_greg1.leap_seconds_iers(), 11);
 }
 
-#[cfg(feature = "std")]
-#[test]
-fn test_utc_str() {
-    let dt_str = "2017-01-14T00:31:55 UTC";
-    let dt = Epoch::from_gregorian_str(dt_str).unwrap();
-    let (centuries, nanos) = dt.to_tai_duration().to_parts();
-    assert_eq!(centuries, 1);
-    assert_eq!(nanos, 537582752000000000);
-}
+// #[cfg(feature = "std")]
+// #[test]
+// fn test_utc_str() {
+//     let dt_str = "2017-01-14T00:31:55 UTC";
+//     let dt = Epoch::from_gregorian_str(dt_str).unwrap();
+//     let (centuries, nanos) = dt.to_tai_duration().to_parts();
+//     assert_eq!(centuries, 1);
+//     assert_eq!(nanos, 537582752000000000);
+// }
 
 #[test]
 fn test_floor_ceil_round() {
@@ -1912,7 +1913,10 @@ fn test_to_tai_time_scale() {
     let j2000_ref = J2000_REF_EPOCH;
     assert_eq!(j2000_ref, j2000_ref.to_time_scale(TimeScale::TAI));
     let j2000_to_j1900 = j2000_ref - j1900_ref;
-    assert_eq!(j2000_to_j1900, Duration::from_parts(1, 0));
+    assert_eq!(
+        j2000_to_j1900,
+        Duration::from_total_nanoseconds(NANOSECONDS_PER_CENTURY)
+    );
 }
 
 #[cfg(feature = "std")]

@@ -520,7 +520,7 @@ impl Epoch {
     /// Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use GPS as a time source.
-    pub fn from_gpst_nanoseconds(nanoseconds: u64) -> Self {
+    pub fn from_gpst_nanoseconds(nanoseconds: i128) -> Self {
         Self::from_duration(
             Duration::from_total_nanoseconds(nanoseconds.into()),
             TimeScale::GPST,
@@ -545,7 +545,7 @@ impl Epoch {
     /// Initialize an Epoch from the number of nanoseconds since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use QZSS as a time source.
-    pub fn from_qzsst_nanoseconds(nanoseconds: u64) -> Self {
+    pub fn from_qzsst_nanoseconds(nanoseconds: i128) -> Self {
         Self::from_duration(
             Duration::from_total_nanoseconds(nanoseconds.into()),
             TimeScale::QZSST,
@@ -572,7 +572,7 @@ impl Epoch {
     /// Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
     /// starting August 21st 1999 midnight (UTC)
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
-    pub fn from_gst_nanoseconds(nanoseconds: u64) -> Self {
+    pub fn from_gst_nanoseconds(nanoseconds: i128) -> Self {
         Self::from_duration(
             Duration::from_total_nanoseconds(nanoseconds.into()),
             TimeScale::GST,
@@ -597,7 +597,7 @@ impl Epoch {
     /// Initialize an Epoch from the number of nanoseconds since the BDT Time Epoch,
     /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use BDT as a time source.
-    pub fn from_bdt_nanoseconds(nanoseconds: u64) -> Self {
+    pub fn from_bdt_nanoseconds(nanoseconds: i128) -> Self {
         Self::from_duration(
             Duration::from_total_nanoseconds(nanoseconds.into()),
             TimeScale::BDT,

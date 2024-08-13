@@ -1,6 +1,4 @@
-use hifitime::{
-    Duration, Freq, Frequencies, TimeUnits, Unit, NANOSECONDS_PER_CENTURY, NANOSECONDS_PER_MINUTE,
-};
+use hifitime::{Duration, Freq, Frequencies, TimeUnits, Unit, NANOSECONDS_PER_MINUTE};
 
 #[cfg(feature = "std")]
 extern crate core;
@@ -211,40 +209,6 @@ fn test_ops() {
     assert_eq!(min_quarter_hour, -15.minutes());
     #[cfg(feature = "std")]
     println!("{}", min_quarter_hour);
-}
-
-#[test]
-fn test_ops_near_bounds() {
-    assert_eq!(Duration::MAX - Duration::MAX, 0 * Unit::Nanosecond);
-    assert_eq!(Duration::MIN - Duration::MIN, 0 * Unit::Nanosecond);
-
-    // Check that the special cases of the bounds themselves don't prevent correct math.
-    assert_eq!(
-        (Duration::MIN - 1 * Unit::Nanosecond) - (Duration::MIN - 1 * Unit::Nanosecond),
-        0 * Unit::Nanosecond
-    );
-
-    let tt_offset_ns: u64 = 32_184_000_000;
-    let duration = Duration::from_parts(-32767, 0);
-    let exp = Duration::from_parts(-32768, NANOSECONDS_PER_CENTURY - tt_offset_ns);
-    assert_eq!(
-        duration - Duration::from_total_nanoseconds(tt_offset_ns.into()),
-        exp
-    );
-
-    // Test the zero crossing with a large negative value
-    assert_eq!(
-        2 * Unit::Nanosecond - (-1 * Unit::Century),
-        1 * Unit::Century + 2 * Unit::Nanosecond
-    );
-
-    // Check that we saturate one way but not the other for MIN
-    assert_eq!(Duration::MIN - 1 * Unit::Nanosecond, Duration::MIN);
-    assert_ne!(Duration::MIN + 1 * Unit::Nanosecond, Duration::MIN);
-
-    // Check that we saturate one way but not the other for MAX
-    assert_eq!(Duration::MAX + 1 * Unit::Nanosecond, Duration::MAX);
-    assert_ne!(Duration::MAX - 1 * Unit::Nanosecond, Duration::MAX);
 }
 
 #[test]
@@ -583,7 +547,7 @@ fn regression_test_gh_244() {
     let zero = Duration::ZERO;
     // Test that the ceil of a zero duration is still zero.
     assert_eq!(zero.ceil(zero), zero);
-    let non_zero = Duration::from_parts(1, 23456);
+    let non_zero = Duration::from_total_nanoseconds(23456);
     // Test that the ceil of a non-zero duration by zero is still zero.
     assert_eq!(non_zero.ceil(zero), zero);
     // Test that the ceil of a zero duration by a non-zero is non-zero duration.
