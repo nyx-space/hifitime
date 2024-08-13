@@ -229,7 +229,7 @@ impl Duration {
 
     /// Initializes a Duration from a timezone offset
     #[must_use]
-    pub fn from_tz_offset(sign: i8, hours: i64, minutes: i64) -> Self {
+    pub fn from_tz_offset(sign: i8, hours: i128, minutes: i128) -> Self {
         let dur = hours * Unit::Hour + minutes * Unit::Minute;
         if sign < 0 {
             -dur
@@ -354,13 +354,13 @@ impl Duration {
             self.decompose();
 
         match unit {
-            Unit::Nanosecond => Some((nanoseconds as i64) * unit),
-            Unit::Microsecond => Some((microseconds as i64) * unit),
-            Unit::Millisecond => Some((milliseconds as i64) * unit),
-            Unit::Second => Some((seconds as i64) * unit),
-            Unit::Minute => Some((minutes as i64) * unit),
-            Unit::Hour => Some((hours as i64) * unit),
-            Unit::Day => Some((days as i64) * unit),
+            Unit::Nanosecond => Some((nanoseconds as i128) * unit),
+            Unit::Microsecond => Some((microseconds as i128) * unit),
+            Unit::Millisecond => Some((milliseconds as i128) * unit),
+            Unit::Second => Some((seconds as i128) * unit),
+            Unit::Minute => Some((minutes as i128) * unit),
+            Unit::Hour => Some((hours as i128) * unit),
+            Unit::Day => Some((days as i128) * unit),
             Unit::Week | Unit::Century => None,
         }
     }
@@ -653,7 +653,7 @@ mod ut_duration {
     }
 
     #[test]
-    fn test_decompose() {
+    fn test_decompose_neg() {
         let d = -73000.days();
         let out_days = d.to_unit(Unit::Day);
         assert_eq!(out_days, -73000.0);
@@ -665,6 +665,21 @@ mod ut_duration {
         assert_eq!(minutes, 0);
         assert_eq!(seconds, 0);
         assert_eq!(milliseconds, 0);
+        assert_eq!(microseconds, 0);
+        assert_eq!(nanoseconds, 0);
+    }
+
+    #[test]
+    fn test_decompose_pos() {
+        let d = Duration::from_seconds(10.1);
+        let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
+            d.decompose();
+        assert_eq!(sign, 1);
+        assert_eq!(days, 0);
+        assert_eq!(hours, 0);
+        assert_eq!(minutes, 0);
+        assert_eq!(seconds, 10);
+        assert_eq!(milliseconds, 100);
         assert_eq!(microseconds, 0);
         assert_eq!(nanoseconds, 0);
     }

@@ -18,7 +18,7 @@ fn duration_from_i64_nanoseconds() {
 }
 
 fn duration_from_i64_nanoseconds_via_units() {
-    let value: i64 = 6311433599;
+    let value: i128 = 6311433599;
     black_box(value * Unit::Nanosecond);
 }
 

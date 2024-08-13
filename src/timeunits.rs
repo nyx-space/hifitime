@@ -18,7 +18,7 @@ use num_traits::Float;
 use pyo3::prelude::*;
 
 use crate::{
-    Duration, DAYS_PER_CENTURY, DAYS_PER_WEEK, DAYS_PER_WEEK_I64, NANOSECONDS_PER_CENTURY,
+    Duration, DAYS_PER_CENTURY, DAYS_PER_WEEK, DAYS_PER_WEEK_I128, NANOSECONDS_PER_CENTURY,
     NANOSECONDS_PER_DAY, NANOSECONDS_PER_HOUR, NANOSECONDS_PER_MICROSECOND,
     NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_MINUTE, NANOSECONDS_PER_SECOND, SECONDS_PER_DAY,
     SECONDS_PER_HOUR, SECONDS_PER_MINUTE,
@@ -239,44 +239,31 @@ impl From<u8> for Unit {
     }
 }
 
-impl Mul<i64> for Unit {
+impl Mul<i128> for Unit {
     type Output = Duration;
 
     /// Converts the input values to i128 and creates a duration from that
     /// This method will necessarily ignore durations below nanoseconds
-    fn mul(self, q: i64) -> Duration {
+    fn mul(self, q: i128) -> Duration {
         let factor = match self {
-            Unit::Century => NANOSECONDS_PER_CENTURY as i64,
-            Unit::Week => NANOSECONDS_PER_DAY as i64 * DAYS_PER_WEEK_I64,
-            Unit::Day => NANOSECONDS_PER_DAY as i64,
-            Unit::Hour => NANOSECONDS_PER_HOUR as i64,
-            Unit::Minute => NANOSECONDS_PER_MINUTE as i64,
-            Unit::Second => NANOSECONDS_PER_SECOND as i64,
-            Unit::Millisecond => NANOSECONDS_PER_MILLISECOND as i64,
-            Unit::Microsecond => NANOSECONDS_PER_MICROSECOND as i64,
+            Unit::Century => NANOSECONDS_PER_CENTURY,
+            Unit::Week => NANOSECONDS_PER_DAY * DAYS_PER_WEEK_I128,
+            Unit::Day => NANOSECONDS_PER_DAY,
+            Unit::Hour => NANOSECONDS_PER_HOUR,
+            Unit::Minute => NANOSECONDS_PER_MINUTE,
+            Unit::Second => NANOSECONDS_PER_SECOND,
+            Unit::Millisecond => NANOSECONDS_PER_MILLISECOND,
+            Unit::Microsecond => NANOSECONDS_PER_MICROSECOND,
             Unit::Nanosecond => 1,
         };
 
         match q.checked_mul(factor) {
-            Some(total_ns) => {
-                if total_ns.abs() < i64::MAX {
-                    Duration::from_truncated_nanoseconds(total_ns)
-                } else {
-                    Duration::from_total_nanoseconds(i128::from(total_ns))
-                }
-            }
+            Some(total_ns) => Duration::from_total_nanoseconds(total_ns),
             None => {
-                // Does not fit on an i64, let's do this again on an 128.
-                let q = i128::from(q);
-                match q.checked_mul(factor.into()) {
-                    Some(total_ns) => Duration::from_total_nanoseconds(total_ns),
-                    None => {
-                        if q.is_negative() {
-                            Duration::MIN
-                        } else {
-                            Duration::MAX
-                        }
-                    }
+                if q.is_negative() {
+                    Duration::MIN
+                } else {
+                    Duration::MAX
                 }
             }
         }

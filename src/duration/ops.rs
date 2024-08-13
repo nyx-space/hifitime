@@ -84,11 +84,11 @@ macro_rules! impl_ops_for_type {
 }
 
 impl_ops_for_type!(f64);
-impl_ops_for_type!(i64);
+impl_ops_for_type!(i128);
 
-impl Mul<i64> for Duration {
+impl Mul<i128> for Duration {
     type Output = Duration;
-    fn mul(self, q: i64) -> Self::Output {
+    fn mul(self, q: i128) -> Self::Output {
         Duration::from_total_nanoseconds(
             self.total_nanoseconds()
                 .saturating_mul((q * Unit::Nanosecond).total_nanoseconds()),

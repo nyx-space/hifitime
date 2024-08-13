@@ -34,7 +34,7 @@ pub struct TimeSeries {
     start: Epoch,
     duration: Duration,
     step: Duration,
-    cur: i64,
+    cur: i128,
     incl: bool,
 }
 

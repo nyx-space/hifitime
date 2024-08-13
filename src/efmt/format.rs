@@ -347,18 +347,18 @@ impl Format {
 
         let tz = if offset_sign > 0 {
             // We oppose the sign in the string to undo the offset
-            -(i64::from(decomposed[7]) * Unit::Hour + i64::from(decomposed[8]) * Unit::Minute)
+            -(i128::from(decomposed[7]) * Unit::Hour + i128::from(decomposed[8]) * Unit::Minute)
         } else {
-            i64::from(decomposed[7]) * Unit::Hour + i64::from(decomposed[8]) * Unit::Minute
+            i128::from(decomposed[7]) * Unit::Hour + i128::from(decomposed[8]) * Unit::Minute
         };
 
         let epoch = match day_of_year {
             Some(days) => {
                 // Parse the elapsed time in the given day
-                let elapsed = (decomposed[3] as i64) * Unit::Hour
-                    + (decomposed[4] as i64) * Unit::Minute
-                    + (decomposed[5] as i64) * Unit::Second
-                    + (decomposed[6] as i64) * Unit::Nanosecond;
+                let elapsed = (decomposed[3] as i128) * Unit::Hour
+                    + (decomposed[4] as i128) * Unit::Minute
+                    + (decomposed[5] as i128) * Unit::Second
+                    + (decomposed[6] as i128) * Unit::Nanosecond;
                 Epoch::from_day_of_year(decomposed[0], days, ts) + elapsed
             }
             None => Epoch::maybe_from_gregorian(

@@ -61,8 +61,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[allow(unused_imports)] // Import is indeed used.
 use num_traits::Float;
 
-pub(crate) const TT_OFFSET_MS: i64 = 32_184;
-pub(crate) const ET_OFFSET_US: i64 = 32_184_935;
+pub(crate) const TT_OFFSET_MS: i128 = 32_184;
+pub(crate) const ET_OFFSET_US: i128 = 32_184_935;
 
 /// NAIF leap second kernel data for M_0 used to calculate the mean anomaly of the heliocentric orbit of the Earth-Moon barycenter.
 pub const NAIF_M0: f64 = 6.239996;

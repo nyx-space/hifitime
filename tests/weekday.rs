@@ -49,7 +49,7 @@ fn test_weekday_differences() {
             assert_eq!(pos_delta + neg_delta, 7 * Unit::Day);
         }
         // Check actual value
-        assert_eq!(neg_delta, i64::from(day_num % 7) * Unit::Day);
+        assert_eq!(neg_delta, i128::from(day_num % 7) * Unit::Day);
     }
 
     // Start in the middle of the week
@@ -65,9 +65,9 @@ fn test_weekday_differences() {
         }
         // Check actual value
         if day_num % 7 <= 2 {
-            assert_eq!(pos_delta, i64::from(2 - day_num % 7) * Unit::Day);
+            assert_eq!(pos_delta, i128::from(2 - day_num % 7) * Unit::Day);
         } else {
-            assert_eq!(neg_delta, i64::from(day_num % 7 - 2) * Unit::Day);
+            assert_eq!(neg_delta, i128::from(day_num % 7 - 2) * Unit::Day);
         }
         // Test FromStr
         assert_eq!(Weekday::from_str(&format!("{day}")).unwrap(), day);

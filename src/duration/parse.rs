@@ -85,7 +85,7 @@ impl FromStr for Duration {
                 };
 
                 // Fetch the hours
-                let hours: i64 = match lexical_core::parse(s[indexes.0..indexes.1].as_bytes()) {
+                let hours: i128 = match lexical_core::parse(s[indexes.0..indexes.1].as_bytes()) {
                     Ok(val) => val,
                     Err(err) => {
                         return Err(HifitimeError::Parse {
@@ -95,8 +95,8 @@ impl FromStr for Duration {
                     }
                 };
 
-                let mut minutes: i64 = 0;
-                let mut seconds: i64 = 0;
+                let mut minutes: i128 = 0;
+                let mut seconds: i128 = 0;
 
                 match s.get(indexes.1 + colon..indexes.2 + colon) {
                     None => {

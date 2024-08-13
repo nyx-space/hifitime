@@ -122,7 +122,7 @@ impl Sub for Weekday {
         if rhs_i8 - self_i8 < 0 {
             rhs_i8 += 7;
         }
-        i64::from(rhs_i8 - self_i8) * Unit::Day
+        i128::from(rhs_i8 - self_i8) * Unit::Day
     }
 }
 
