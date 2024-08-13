@@ -9,15 +9,15 @@
 */
 
 use crate::errors::{DurationError, HifitimeError};
-use crate::{SECONDS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
+use crate::{SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_MINUTE};
 
 pub use crate::{Freq, Frequencies, TimeUnits, Unit};
 
 #[cfg(feature = "std")]
 mod std;
 use core::cmp::Ordering;
-use core::fmt;
-use core::hash::{Hash, Hasher};
+use core::hash::Hash;
+use core::{fmt, i128};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -41,15 +41,16 @@ use num_traits::Float;
 #[cfg(kani)]
 mod kani_verif;
 
-pub const DAYS_PER_CENTURY_U64: u64 = 36_525;
-pub const NANOSECONDS_PER_MICROSECOND: u64 = 1_000;
-pub const NANOSECONDS_PER_MILLISECOND: u64 = 1_000 * NANOSECONDS_PER_MICROSECOND;
-pub const NANOSECONDS_PER_SECOND: u64 = 1_000 * NANOSECONDS_PER_MILLISECOND;
+pub const DAYS_PER_CENTURY_U64: i128 = 36_525;
+pub const ZEPTOSECONDS_PER_NANOSECONDS: i128 = 1_000_000_000_000;
+pub const NANOSECONDS_PER_MICROSECOND: i128 = 1_000;
+pub const NANOSECONDS_PER_MILLISECOND: i128 = 1_000 * NANOSECONDS_PER_MICROSECOND;
+pub const NANOSECONDS_PER_SECOND: i128 = 1_000 * NANOSECONDS_PER_MILLISECOND;
 pub(crate) const NANOSECONDS_PER_SECOND_U32: u32 = 1_000_000_000;
-pub const NANOSECONDS_PER_MINUTE: u64 = 60 * NANOSECONDS_PER_SECOND;
-pub const NANOSECONDS_PER_HOUR: u64 = 60 * NANOSECONDS_PER_MINUTE;
-pub const NANOSECONDS_PER_DAY: u64 = 24 * NANOSECONDS_PER_HOUR;
-pub const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_DAY;
+pub const NANOSECONDS_PER_MINUTE: i128 = 60 * NANOSECONDS_PER_SECOND;
+pub const NANOSECONDS_PER_HOUR: i128 = 60 * NANOSECONDS_PER_MINUTE;
+pub const NANOSECONDS_PER_DAY: i128 = 24 * NANOSECONDS_PER_HOUR;
+pub const NANOSECONDS_PER_CENTURY: i128 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_DAY;
 
 pub mod ops;
 
@@ -63,41 +64,12 @@ pub mod ops;
 /// That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
 /// As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
 /// 2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
-#[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
+#[derive(Clone, Copy, Debug, Hash, PartialOrd, PartialEq, Eq, Ord)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
 pub struct Duration {
-    pub(crate) centuries: i16,
-    pub(crate) nanoseconds: u64,
-}
-
-impl PartialEq for Duration {
-    fn eq(&self, other: &Self) -> bool {
-        if self.centuries == other.centuries {
-            self.nanoseconds == other.nanoseconds
-        } else if (self.centuries.saturating_sub(other.centuries)).saturating_abs() == 1
-            && (self.centuries == 0 || other.centuries == 0)
-        {
-            // Special case where we're at the zero crossing
-            if self.centuries < 0 {
-                // Self is negative,
-                (NANOSECONDS_PER_CENTURY - self.nanoseconds) == other.nanoseconds
-            } else {
-                // Other is negative
-                (NANOSECONDS_PER_CENTURY - other.nanoseconds) == self.nanoseconds
-            }
-        } else {
-            false
-        }
-    }
-}
-
-impl Hash for Duration {
-    fn hash<H: Hasher>(&self, hasher: &mut H) {
-        self.centuries.hash(hasher);
-        self.nanoseconds.hash(hasher);
-    }
+    pub(crate) zeptoseconds: i128,
 }
 
 impl Default for Duration {
@@ -133,86 +105,38 @@ impl<'de> Deserialize<'de> for Duration {
 // Defines the methods that should be classmethods in Python, but must be redefined as per https://github.com/PyO3/pyo3/issues/1003#issuecomment-844433346
 impl Duration {
     /// A duration of exactly zero nanoseconds
-    pub const ZERO: Self = Self {
-        centuries: 0,
-        nanoseconds: 0,
-    };
+    pub const ZERO: Self = Self { zeptoseconds: 0 };
 
     /// Maximum duration that can be represented
     pub const MAX: Self = Self {
-        centuries: i16::MAX,
-        nanoseconds: NANOSECONDS_PER_CENTURY,
+        zeptoseconds: i128::MAX,
     };
 
     /// Minimum duration that can be represented
     pub const MIN: Self = Self {
-        centuries: i16::MIN,
-        nanoseconds: 0,
+        zeptoseconds: i128::MIN,
     };
 
     /// Smallest duration that can be represented
-    pub const EPSILON: Self = Self {
-        centuries: 0,
-        nanoseconds: 1,
-    };
+    pub const EPSILON: Self = Self { zeptoseconds: 1 };
 
     /// Minimum positive duration is one nanoseconds
     pub const MIN_POSITIVE: Self = Self::EPSILON;
 
     /// Minimum negative duration is minus one nanosecond
-    pub const MIN_NEGATIVE: Self = Self {
-        centuries: -1,
-        nanoseconds: NANOSECONDS_PER_CENTURY - 1,
-    };
+    pub const MIN_NEGATIVE: Self = Self { zeptoseconds: -1 };
 
     #[must_use]
-    /// Create a normalized duration from its parts
-    pub fn from_parts(centuries: i16, nanoseconds: u64) -> Self {
-        let mut me = Self {
-            centuries,
-            nanoseconds,
-        };
-        me.normalize();
-        me
-    }
-
-    #[must_use]
-    /// Converts the total nanoseconds as i128 into this Duration (saving 48 bits)
-    pub fn from_total_nanoseconds(nanos: i128) -> Self {
-        // In this function, we simply check that the input data can be casted. The `normalize` function will check whether more work needs to be done.
-        if nanos == 0 {
-            Self::ZERO
-        } else {
-            let centuries_i128 = nanos.div_euclid(NANOSECONDS_PER_CENTURY.into());
-            let remaining_nanos_i128 = nanos.rem_euclid(NANOSECONDS_PER_CENTURY.into());
-            if centuries_i128 > i16::MAX.into() {
-                Self::MAX
-            } else if centuries_i128 < i16::MIN.into() {
-                Self::MIN
-            } else {
-                // We know that the centuries fit, and we know that the nanos are less than the number
-                // of nanos per centuries, and rem_euclid guarantees that it's positive, so the
-                // casting will work fine every time.
-                Self::from_parts(centuries_i128 as i16, remaining_nanos_i128 as u64)
-            }
+    pub const fn from_total_nanoseconds(nanos: i128) -> Self {
+        Self {
+            zeptoseconds: nanos.saturating_mul(ZEPTOSECONDS_PER_NANOSECONDS),
         }
     }
 
     #[must_use]
     /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
     pub fn from_truncated_nanoseconds(nanos: i64) -> Self {
-        if nanos < 0 {
-            let ns = nanos.unsigned_abs();
-            // Note: i64::MIN corresponds to a duration just past -3 centuries, so we can't hit the Duration::MIN here.
-            let extra_centuries = ns.div_euclid(NANOSECONDS_PER_CENTURY);
-            let rem_nanos = ns.rem_euclid(NANOSECONDS_PER_CENTURY);
-            Self::from_parts(
-                -1 - (extra_centuries as i16),
-                NANOSECONDS_PER_CENTURY - rem_nanos,
-            )
-        } else {
-            Self::from_parts(0, nanos.unsigned_abs())
-        }
+        Self::from_total_nanoseconds(i128::from(nanos))
     }
 
     /// Creates a new duration from the provided number of days
@@ -316,91 +240,19 @@ impl Duration {
 }
 
 impl Duration {
-    fn normalize(&mut self) {
-        let extra_centuries = self.nanoseconds.div_euclid(NANOSECONDS_PER_CENTURY);
-        // We can skip this whole step if the div_euclid shows that we didn't overflow the number of nanoseconds per century
-        if extra_centuries > 0 {
-            let rem_nanos = self.nanoseconds.rem_euclid(NANOSECONDS_PER_CENTURY);
-
-            if self.centuries == i16::MAX {
-                if self.nanoseconds.saturating_add(rem_nanos) > Self::MAX.nanoseconds {
-                    // Saturated max
-                    *self = Self::MAX;
-                }
-                // Else, we're near the MAX but we're within the MAX in nanoseconds, so let's not do anything here.
-            } else if *self != Self::MAX && *self != Self::MIN {
-                // The bounds are valid as is, no wrapping needed when rem_nanos is not zero.
-                match self.centuries.checked_add(extra_centuries as i16) {
-                    Some(centuries) => {
-                        self.centuries = centuries;
-                        self.nanoseconds = rem_nanos;
-                    }
-                    None => {
-                        if self.centuries >= 0 {
-                            // Saturated max again
-                            *self = Self::MAX;
-                        } else {
-                            // Saturated min
-                            *self = Self::MIN;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    #[must_use]
-    /// Returns the centuries and nanoseconds of this duration
-    /// NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly.
-    pub const fn to_parts(&self) -> (i16, u64) {
-        (self.centuries, self.nanoseconds)
-    }
-
     /// Returns the total nanoseconds in a signed 128 bit integer
     #[must_use]
     pub fn total_nanoseconds(&self) -> i128 {
-        if self.centuries == -1 {
-            -i128::from(NANOSECONDS_PER_CENTURY - self.nanoseconds)
-        } else if self.centuries >= 0 {
-            i128::from(self.centuries) * i128::from(NANOSECONDS_PER_CENTURY)
-                + i128::from(self.nanoseconds)
-        } else {
-            // Centuries negative by a decent amount
-            i128::from(self.centuries) * i128::from(NANOSECONDS_PER_CENTURY)
-                - i128::from(self.nanoseconds)
-        }
+        self.zeptoseconds / ZEPTOSECONDS_PER_NANOSECONDS
     }
 
     /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.
     pub fn try_truncated_nanoseconds(&self) -> Result<i64, HifitimeError> {
-        // If it fits, we know that the nanoseconds also fit. abs() will fail if the centuries are min'ed out.
-        if self.centuries == i16::MIN || self.centuries.abs() >= 3 {
-            Err(HifitimeError::Duration {
-                source: DurationError::Underflow,
+        self.total_nanoseconds()
+            .try_into()
+            .map_err(|_| HifitimeError::Duration {
+                source: DurationError::Overflow,
             })
-        } else if self.centuries == -1 {
-            Ok(-((NANOSECONDS_PER_CENTURY - self.nanoseconds) as i64))
-        } else if self.centuries >= 0 {
-            match i64::from(self.centuries).checked_mul(NANOSECONDS_PER_CENTURY as i64) {
-                Some(centuries_as_ns) => {
-                    match centuries_as_ns.checked_add(self.nanoseconds as i64) {
-                        Some(truncated_ns) => Ok(truncated_ns),
-                        None => Err(HifitimeError::Duration {
-                            source: DurationError::Overflow,
-                        }),
-                    }
-                }
-                None => Err(HifitimeError::Duration {
-                    source: DurationError::Underflow,
-                }),
-            }
-        } else {
-            // Centuries negative by a decent amount
-            Ok(
-                i64::from(self.centuries + 1) * NANOSECONDS_PER_CENTURY as i64
-                    + self.nanoseconds as i64,
-            )
-        }
     }
 
     /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.
@@ -411,7 +263,7 @@ impl Duration {
         match self.try_truncated_nanoseconds() {
             Ok(val) => val,
             Err(_) => {
-                if self.centuries < 0 {
+                if self.zeptoseconds < 0 {
                     i64::MIN
                 } else {
                     i64::MAX
@@ -424,16 +276,7 @@ impl Duration {
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     #[must_use]
     pub fn to_seconds(&self) -> f64 {
-        // Compute the seconds and nanoseconds that we know this fits on a 64bit float
-        let seconds = self.nanoseconds.div_euclid(NANOSECONDS_PER_SECOND);
-        let subseconds = self.nanoseconds.rem_euclid(NANOSECONDS_PER_SECOND);
-        if self.centuries == 0 {
-            (seconds as f64) + (subseconds as f64) * 1e-9
-        } else {
-            f64::from(self.centuries) * SECONDS_PER_CENTURY
-                + (seconds as f64)
-                + (subseconds as f64) * 1e-9
-        }
+        (self.total_nanoseconds() / NANOSECONDS_PER_SECOND) as f64
     }
 
     #[must_use]
@@ -444,7 +287,7 @@ impl Duration {
     /// Returns the absolute value of this duration
     #[must_use]
     pub fn abs(&self) -> Self {
-        if self.centuries.is_negative() {
+        if self.zeptoseconds.is_negative() {
             -*self
         } else {
             *self
@@ -457,7 +300,7 @@ impl Duration {
     /// + -1 if the number is negative
     #[must_use]
     pub const fn signum(&self) -> i8 {
-        self.centuries.signum() as i8
+        self.zeptoseconds.signum() as i8
     }
 
     /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns
@@ -676,7 +519,7 @@ impl Duration {
 
     /// Returns whether this is a negative or positive duration.
     pub const fn is_negative(&self) -> bool {
-        self.centuries.is_negative()
+        self.zeptoseconds.is_negative()
     }
 }
 
@@ -768,7 +611,9 @@ impl PartialOrd<Unit> for Duration {
 
 #[cfg(test)]
 mod ut_duration {
-    use super::{Duration, TimeUnits, Unit, NANOSECONDS_PER_CENTURY};
+    use crate::ZEPTOSECONDS_PER_NANOSECONDS;
+
+    use super::{Duration, TimeUnits, Unit};
 
     #[test]
     #[cfg(feature = "serde")]
@@ -789,28 +634,22 @@ mod ut_duration {
 
     #[test]
     fn test_bounds() {
-        let min = Duration::MIN;
-        assert_eq!(min.centuries, i16::MIN);
-        assert_eq!(min.nanoseconds, 0);
+        assert_eq!(Duration::MIN.zeptoseconds, i128::MIN);
 
-        let max = Duration::MAX;
-        assert_eq!(max.centuries, i16::MAX);
-        assert_eq!(max.nanoseconds, NANOSECONDS_PER_CENTURY);
+        assert_eq!(Duration::MAX.zeptoseconds, i128::MAX);
 
-        let min_p = Duration::MIN_POSITIVE;
-        assert_eq!(min_p.centuries, 0);
-        assert_eq!(min_p.nanoseconds, 1);
+        assert_eq!(Duration::MIN_POSITIVE.zeptoseconds, 1);
 
-        let min_n = Duration::MIN_NEGATIVE;
-        assert_eq!(min_n.centuries, -1);
-        assert_eq!(min_n.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
+        assert_eq!(Duration::MIN_NEGATIVE.zeptoseconds, -1);
 
         let min_n1 = Duration::MIN - 1 * Unit::Nanosecond;
         assert_eq!(min_n1, Duration::MIN);
 
         let max_n1 = Duration::MAX - 1 * Unit::Nanosecond;
-        assert_eq!(max_n1.centuries, i16::MAX);
-        assert_eq!(max_n1.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
+        assert_eq!(
+            max_n1.zeptoseconds,
+            i128::MAX - ZEPTOSECONDS_PER_NANOSECONDS
+        );
     }
 
     #[test]

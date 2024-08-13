@@ -29,7 +29,7 @@ pub mod leap_seconds;
 
 use crate::duration::{Duration, Unit};
 use crate::efmt::format::Format;
-use crate::errors::{DurationError, ParseSnafu};
+use crate::errors::ParseSnafu;
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
 use crate::Weekday;
 use crate::{
@@ -284,12 +284,6 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch.
-    pub fn from_tai_parts(centuries: i16, nanoseconds: u64) -> Self {
-        Self::from_tai_duration(Duration::from_parts(centuries, nanoseconds))
-    }
-
-    #[must_use]
     /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
     pub fn from_tai_seconds(seconds: f64) -> Self {
         assert!(
@@ -527,7 +521,10 @@ impl Epoch {
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use GPS as a time source.
     pub fn from_gpst_nanoseconds(nanoseconds: u64) -> Self {
-        Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::GPST)
+        Self::from_duration(
+            Duration::from_total_nanoseconds(nanoseconds.into()),
+            TimeScale::GPST,
+        )
     }
 
     #[must_use]
@@ -549,7 +546,10 @@ impl Epoch {
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use QZSS as a time source.
     pub fn from_qzsst_nanoseconds(nanoseconds: u64) -> Self {
-        Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::QZSST)
+        Self::from_duration(
+            Duration::from_total_nanoseconds(nanoseconds.into()),
+            TimeScale::QZSST,
+        )
     }
 
     #[must_use]
@@ -573,7 +573,10 @@ impl Epoch {
     /// starting August 21st 1999 midnight (UTC)
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_gst_nanoseconds(nanoseconds: u64) -> Self {
-        Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::GST)
+        Self::from_duration(
+            Duration::from_total_nanoseconds(nanoseconds.into()),
+            TimeScale::GST,
+        )
     }
 
     #[must_use]
@@ -595,7 +598,10 @@ impl Epoch {
     /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use BDT as a time source.
     pub fn from_bdt_nanoseconds(nanoseconds: u64) -> Self {
-        Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::BDT)
+        Self::from_duration(
+            Duration::from_total_nanoseconds(nanoseconds.into()),
+            TimeScale::BDT,
+        )
     }
 
     #[must_use]
@@ -722,15 +728,11 @@ impl Epoch {
     /// If this is _not_ an issue, you should use `epoch.to_duration_in_time_scale().to_parts()` to retrieve both the centuries and the nanoseconds
     /// in that century.
     #[allow(clippy::wrong_self_convention)]
-    fn to_nanoseconds_in_time_scale(&self, time_scale: TimeScale) -> Result<u64, HifitimeError> {
-        let (centuries, nanoseconds) = self.to_duration_in_time_scale(time_scale).to_parts();
-        if centuries != 0 {
-            Err(HifitimeError::Duration {
-                source: DurationError::Overflow,
-            })
-        } else {
-            Ok(nanoseconds)
-        }
+    fn to_nanoseconds_in_time_scale(&self, time_scale: TimeScale) -> Result<i128, HifitimeError> {
+        // TODO: never fails
+        Ok(self
+            .to_duration_in_time_scale(time_scale)
+            .total_nanoseconds())
     }
 
     #[must_use]
@@ -749,12 +751,6 @@ impl Epoch {
     /// Returns the epoch as a floating point value in the provided unit
     pub fn to_tai(&self, unit: Unit) -> f64 {
         self.to_tai_duration().to_unit(unit)
-    }
-
-    #[must_use]
-    /// Returns the TAI parts of this duration
-    pub fn to_tai_parts(&self) -> (i16, u64) {
-        self.to_tai_duration().to_parts()
     }
 
     #[must_use]
@@ -934,7 +930,7 @@ impl Epoch {
 
     /// Returns nanoseconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// NOTE: This function will return an error if the centuries past GPST time are not zero.
-    pub fn to_gpst_nanoseconds(&self) -> Result<u64, HifitimeError> {
+    pub fn to_gpst_nanoseconds(&self) -> Result<i128, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::GPST)
     }
 
@@ -958,7 +954,7 @@ impl Epoch {
 
     /// Returns nanoseconds past QZSS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// NOTE: This function will return an error if the centuries past QZSST time are not zero.
-    pub fn to_qzsst_nanoseconds(&self) -> Result<u64, HifitimeError> {
+    pub fn to_qzsst_nanoseconds(&self) -> Result<i128, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::QZSST)
     }
 
@@ -983,7 +979,7 @@ impl Epoch {
     /// Returns nanoseconds past GST (Galileo) Time Epoch, starting on August 21st 1999 Midnight UT
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// NOTE: This function will return an error if the centuries past GST time are not zero.
-    pub fn to_gst_nanoseconds(&self) -> Result<u64, HifitimeError> {
+    pub fn to_gst_nanoseconds(&self) -> Result<i128, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::GST)
     }
 
@@ -1017,7 +1013,7 @@ impl Epoch {
     /// Returns nanoseconds past BDT (BeiDou) Time Epoch, defined as Jan 01 2006 UTC
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// NOTE: This function will return an error if the centuries past GST time are not zero.
-    pub fn to_bdt_nanoseconds(&self) -> Result<u64, HifitimeError> {
+    pub fn to_bdt_nanoseconds(&self) -> Result<i128, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::BDT)
     }
 
@@ -1361,7 +1357,9 @@ fn rem_euclid_f64(lhs: f64, rhs: f64) -> f64 {
 #[cfg(test)]
 mod ut_epoch {
 
-    use super::{div_rem_f64, Duration, Epoch};
+    use crate::Unit;
+
+    use super::{div_rem_f64, Epoch};
 
     #[test]
     fn div_rem_f64_test() {
@@ -1392,7 +1390,7 @@ mod ut_epoch {
         Out[10]: 0.2291307542978747
 
          */
-        let e = Epoch::from_tai_duration(Duration::from_parts(1, 723038437000000000));
+        let e = Epoch::from_tai_duration(1 * Unit::Century + 723038437000000000 * Unit::Second);
         let days_d = e.to_et_days_since_j2000();
         let centuries_t = e.to_et_centuries_since_j2000();
         assert!((days_d - 8369.000800729873).abs() < f64::EPSILON);

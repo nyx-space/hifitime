@@ -135,8 +135,8 @@ impl Epoch {
             minutes as u8,
             seconds as u8,
             (nanos
-                + microseconds * NANOSECONDS_PER_MICROSECOND
-                + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
+                + microseconds * NANOSECONDS_PER_MICROSECOND as u64
+                + milliseconds * NANOSECONDS_PER_MILLISECOND as u64) as u32,
         )
     }
 
