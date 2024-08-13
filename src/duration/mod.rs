@@ -242,7 +242,7 @@ impl Duration {
 impl Duration {
     /// Returns the total nanoseconds in a signed 128 bit integer
     #[must_use]
-    pub fn total_nanoseconds(&self) -> i128 {
+    pub const fn total_nanoseconds(&self) -> i128 {
         self.zeptoseconds / ZEPTOSECONDS_PER_NANOSECONDS
     }
 
