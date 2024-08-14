@@ -21,7 +21,8 @@ use crate::{
     Duration, DAYS_PER_CENTURY, DAYS_PER_WEEK, DAYS_PER_WEEK_I128, NANOSECONDS_PER_CENTURY,
     NANOSECONDS_PER_DAY, NANOSECONDS_PER_HOUR, NANOSECONDS_PER_MICROSECOND,
     NANOSECONDS_PER_MILLISECOND, NANOSECONDS_PER_MINUTE, NANOSECONDS_PER_SECOND, SECONDS_PER_DAY,
-    SECONDS_PER_HOUR, SECONDS_PER_MINUTE,
+    SECONDS_PER_HOUR, SECONDS_PER_MINUTE, ZEPTOSECONDS_PER_ATTOSECONDS,
+    ZEPTOSECONDS_PER_FEMPTOSECONDS, ZEPTOSECONDS_PER_NANOSECONDS, ZEPTOSECONDS_PER_PICOSECONDS,
 };
 
 /// An Enum to perform time unit conversions.
@@ -29,6 +30,10 @@ use crate::{
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 pub enum Unit {
+    Zeptosecond,
+    Attosecond,
+    Femtosecond,
+    Picosecond,
     Nanosecond,
     Microsecond,
     Millisecond,
@@ -174,6 +179,10 @@ impl Unit {
             Unit::Millisecond => 1e-3,
             Unit::Microsecond => 1e-6,
             Unit::Nanosecond => 1e-9,
+            Unit::Picosecond => 1e-12,
+            Unit::Femtosecond => 1e-15,
+            Unit::Attosecond => 1e-18,
+            Unit::Zeptosecond => 1e-21,
         }
     }
 
@@ -198,20 +207,23 @@ impl Unit {
     }
 }
 
-/// Allows conversion of a Unit into a u8 with the following mapping.
-/// 0: Second; 1: Nanosecond; 2: Microsecond; 3: Millisecond; 4: Minute; 5: Hour; 6: Day; 7: Century
+/// Allows conversion of a Unit into a u8 where 0 is a zeptosecond and 12 is a century.
 impl From<Unit> for u8 {
     fn from(unit: Unit) -> Self {
         match unit {
-            Unit::Nanosecond => 1,
-            Unit::Microsecond => 2,
-            Unit::Millisecond => 3,
-            Unit::Minute => 4,
-            Unit::Hour => 5,
-            Unit::Day => 6,
-            Unit::Week => 7,
-            Unit::Century => 8,
-            Unit::Second => 0,
+            Unit::Zeptosecond => 0,
+            Unit::Attosecond => 1,
+            Unit::Femtosecond => 2,
+            Unit::Picosecond => 3,
+            Unit::Nanosecond => 4,
+            Unit::Microsecond => 5,
+            Unit::Millisecond => 6,
+            Unit::Second => 7,
+            Unit::Minute => 8,
+            Unit::Hour => 9,
+            Unit::Day => 10,
+            Unit::Week => 11,
+            Unit::Century => 12,
         }
     }
 }
@@ -226,15 +238,19 @@ impl From<&Unit> for u8 {
 impl From<u8> for Unit {
     fn from(val: u8) -> Self {
         match val {
-            1 => Unit::Nanosecond,
-            2 => Unit::Microsecond,
-            3 => Unit::Millisecond,
-            4 => Unit::Minute,
-            5 => Unit::Hour,
-            6 => Unit::Day,
-            7 => Unit::Week,
-            8 => Unit::Century,
-            _ => Unit::Second,
+            0 => Unit::Zeptosecond,
+            1 => Unit::Attosecond,
+            2 => Unit::Femtosecond,
+            3 => Unit::Picosecond,
+            4 => Unit::Nanosecond,
+            5 => Unit::Microsecond,
+            6 => Unit::Millisecond,
+            7 => Unit::Second,
+            8 => Unit::Minute,
+            9 => Unit::Hour,
+            10 => Unit::Day,
+            11 => Unit::Week,
+            _ => Unit::Century,
         }
     }
 }
@@ -245,20 +261,24 @@ impl Mul<i128> for Unit {
     /// Converts the input values to i128 and creates a duration from that
     /// This method will necessarily ignore durations below nanoseconds
     fn mul(self, q: i128) -> Duration {
-        let factor = match self {
-            Unit::Century => NANOSECONDS_PER_CENTURY,
-            Unit::Week => NANOSECONDS_PER_DAY * DAYS_PER_WEEK_I128,
-            Unit::Day => NANOSECONDS_PER_DAY,
-            Unit::Hour => NANOSECONDS_PER_HOUR,
-            Unit::Minute => NANOSECONDS_PER_MINUTE,
-            Unit::Second => NANOSECONDS_PER_SECOND,
-            Unit::Millisecond => NANOSECONDS_PER_MILLISECOND,
-            Unit::Microsecond => NANOSECONDS_PER_MICROSECOND,
-            Unit::Nanosecond => 1,
+        let factor_zs = match self {
+            Unit::Century => NANOSECONDS_PER_CENTURY * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Week => DAYS_PER_WEEK_I128 * NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Day => NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Hour => NANOSECONDS_PER_HOUR * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Minute => NANOSECONDS_PER_MINUTE * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Second => NANOSECONDS_PER_SECOND * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Millisecond => NANOSECONDS_PER_MILLISECOND * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Microsecond => NANOSECONDS_PER_MICROSECOND * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Nanosecond => ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Picosecond => ZEPTOSECONDS_PER_PICOSECONDS,
+            Unit::Femtosecond => ZEPTOSECONDS_PER_FEMPTOSECONDS,
+            Unit::Attosecond => ZEPTOSECONDS_PER_ATTOSECONDS,
+            Self::Zeptosecond => 1,
         };
 
-        match q.checked_mul(factor) {
-            Some(total_ns) => Duration::from_total_nanoseconds(total_ns),
+        match q.checked_mul(factor_zs) {
+            Some(zeptoseconds) => Duration { zeptoseconds },
             None => {
                 if q.is_negative() {
                     Duration::MIN
@@ -280,25 +300,31 @@ impl Mul<f64> for Unit {
     /// depending on whether the value would have overflowed or underflowed (respectively).
     /// 2. Floating point operations may round differently on different processors. It's advised to use integer initialization of Durations whenever possible.
     fn mul(self, q: f64) -> Duration {
-        let factor = match self {
-            Unit::Century => NANOSECONDS_PER_CENTURY as f64,
-            Unit::Week => NANOSECONDS_PER_DAY as f64 * DAYS_PER_WEEK,
-            Unit::Day => NANOSECONDS_PER_DAY as f64,
-            Unit::Hour => NANOSECONDS_PER_HOUR as f64,
-            Unit::Minute => NANOSECONDS_PER_MINUTE as f64,
-            Unit::Second => NANOSECONDS_PER_SECOND as f64,
-            Unit::Millisecond => NANOSECONDS_PER_MILLISECOND as f64,
-            Unit::Microsecond => NANOSECONDS_PER_MICROSECOND as f64,
-            Unit::Nanosecond => 1.0,
+        let factor_zs = match self {
+            Unit::Century => NANOSECONDS_PER_CENTURY * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Week => DAYS_PER_WEEK_I128 * NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Day => NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Hour => NANOSECONDS_PER_HOUR * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Minute => NANOSECONDS_PER_MINUTE * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Second => NANOSECONDS_PER_SECOND * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Millisecond => NANOSECONDS_PER_MILLISECOND * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Microsecond => NANOSECONDS_PER_MICROSECOND * ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Nanosecond => ZEPTOSECONDS_PER_NANOSECONDS,
+            Unit::Picosecond => ZEPTOSECONDS_PER_PICOSECONDS,
+            Unit::Femtosecond => ZEPTOSECONDS_PER_FEMPTOSECONDS,
+            Unit::Attosecond => ZEPTOSECONDS_PER_ATTOSECONDS,
+            Self::Zeptosecond => 1,
         };
 
         // Bound checking to prevent overflows
-        if q >= f64::MAX / factor {
+        if q >= f64::MAX / (factor_zs as f64) {
             Duration::MAX
-        } else if q <= f64::MIN / factor {
+        } else if q <= f64::MIN / (factor_zs as f64) {
             Duration::MIN
         } else {
-            Duration::from_total_nanoseconds((q * factor) as i128)
+            Duration {
+                zeptoseconds: (q * (factor_zs as f64)) as i128,
+            }
         }
     }
 }
@@ -309,10 +335,10 @@ fn test_unit_conversion() {
         let unit = Unit::from(unit_u8);
         let unit_u8_back: u8 = unit.into();
         // If the u8 is greater than 9, it isn't valid and necessarily encoded as Second.
-        if unit_u8 < 9 {
+        if unit_u8 < 13 {
             assert_eq!(unit_u8_back, unit_u8, "got {unit_u8_back} want {unit_u8}");
         } else {
-            assert_eq!(unit, Unit::Second);
+            assert_eq!(unit, Unit::Century);
         }
     }
 }

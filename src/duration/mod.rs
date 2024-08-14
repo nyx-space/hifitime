@@ -42,6 +42,9 @@ use num_traits::Float;
 mod kani_verif;
 
 pub const DAYS_PER_CENTURY_U64: i128 = 36_525;
+pub const ZEPTOSECONDS_PER_ATTOSECONDS: i128 = 1_000;
+pub const ZEPTOSECONDS_PER_FEMPTOSECONDS: i128 = 1_000_000;
+pub const ZEPTOSECONDS_PER_PICOSECONDS: i128 = 1_000_000_000;
 pub const ZEPTOSECONDS_PER_NANOSECONDS: i128 = 1_000_000_000_000;
 pub const NANOSECONDS_PER_MICROSECOND: i128 = 1_000;
 pub const NANOSECONDS_PER_MILLISECOND: i128 = 1_000 * NANOSECONDS_PER_MICROSECOND;
@@ -69,7 +72,7 @@ pub mod ops;
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
 pub struct Duration {
-    pub(crate) zeptoseconds: i128,
+    pub zeptoseconds: i128,
 }
 
 impl Default for Duration {
@@ -362,7 +365,12 @@ impl Duration {
             Unit::Minute => Some((minutes as i128) * unit),
             Unit::Hour => Some((hours as i128) * unit),
             Unit::Day => Some((days as i128) * unit),
-            Unit::Week | Unit::Century => None,
+            Unit::Zeptosecond
+            | Unit::Attosecond
+            | Unit::Femtosecond
+            | Unit::Picosecond
+            | Unit::Week
+            | Unit::Century => None,
         }
     }
 

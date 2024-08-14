@@ -157,8 +157,14 @@ fn duration_format() {
     assert_eq!(delta * -1.0, 0.0);
     assert_eq!(format!("{}", sum), "-35 min");
 
-    assert_eq!(format!("{}", Duration::MAX), "1196851200 days");
-    assert_eq!(format!("{}", Duration::MIN), "-1196851200 days");
+    assert_eq!(
+        format!("{}", Duration::MAX),
+        "1969226660422 days 2 h 20 min 21 s 558 ms 9 μs 736 ns"
+    );
+    assert_eq!(
+        format!("{}", Duration::MIN),
+        "-1969226660422 days 2 h 20 min 21 s 558 ms 9 μs 736 ns"
+    );
     assert_eq!(format!("{}", Duration::ZERO), "0 ns");
 
     // The `e` format will print this as a floating point value.
@@ -215,9 +221,18 @@ fn test_ops() {
 fn test_neg() {
     assert_eq!(Duration::MIN_NEGATIVE, -Duration::MIN_POSITIVE);
     assert_eq!(Duration::MIN_POSITIVE, -Duration::MIN_NEGATIVE);
-    assert_eq!(2.nanoseconds(), -(2.0.nanoseconds()));
-    assert_eq!(Duration::MIN, -Duration::MAX);
-    assert_eq!(Duration::MAX, -Duration::MIN);
+    assert_eq!(
+        Duration::MIN,
+        Duration {
+            zeptoseconds: i128::MIN
+        }
+    );
+    assert_eq!(
+        Duration::MAX,
+        Duration {
+            zeptoseconds: i128::MAX
+        }
+    );
 }
 
 #[test]
@@ -502,7 +517,7 @@ fn test_decompose() {
     let pos = 5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond;
 
     let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) = pos.decompose();
-    assert_eq!(sign, 0);
+    assert_eq!(sign, 1);
     assert_eq!(days, 0);
     assert_eq!(hours, 5);
     assert_eq!(minutes, 0);
