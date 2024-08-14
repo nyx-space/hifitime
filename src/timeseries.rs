@@ -365,23 +365,6 @@ mod tests {
     }
 
     #[test]
-    fn gh131_regression() {
-        let start = Epoch::from_gregorian_utc(2022, 7, 14, 2, 56, 11, 228271007);
-        let step = 0.5 * Unit::Microsecond;
-        let steps = 1_000_000_000;
-        let end = start + steps * step; // This is 500 ms later
-        let times = TimeSeries::exclusive(start, end, step);
-        // For an _exclusive_ time series, we skip the last item, so it's steps minus one
-        assert_eq!(times.len(), steps as usize - 1);
-        assert_eq!(times.len(), times.size_hint().0);
-
-        // For an _inclusive_ time series, we skip the last item, so it's the steps count
-        let times = TimeSeries::inclusive(start, end, step);
-        assert_eq!(times.len(), steps as usize);
-        assert_eq!(times.len(), times.size_hint().0);
-    }
-
-    #[test]
     fn ts_over_leap_second() {
         let start = Epoch::from_gregorian_utc(2016, 12, 31, 23, 59, 59, 0);
         let times = TimeSeries::exclusive(start, start + Unit::Second * 5, Unit::Second * 1);

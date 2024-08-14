@@ -298,12 +298,7 @@ impl Mul<f64> for Unit {
         } else if q <= f64::MIN / factor {
             Duration::MIN
         } else {
-            let total_ns = q * factor;
-            if total_ns.abs() < (i64::MAX as f64) {
-                Duration::from_truncated_nanoseconds(total_ns as i64)
-            } else {
-                Duration::from_total_nanoseconds(total_ns as i128)
-            }
+            Duration::from_total_nanoseconds((q * factor) as i128)
         }
     }
 }

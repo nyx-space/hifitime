@@ -276,7 +276,8 @@ impl Duration {
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     #[must_use]
     pub fn to_seconds(&self) -> f64 {
-        (self.total_nanoseconds() / NANOSECONDS_PER_SECOND) as f64
+        (self.zeptoseconds as f64)
+            / ((ZEPTOSECONDS_PER_NANOSECONDS * NANOSECONDS_PER_SECOND) as f64)
     }
 
     #[must_use]
