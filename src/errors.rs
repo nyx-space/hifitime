@@ -42,6 +42,8 @@ pub enum EpochError {
 
 #[non_exhaustive]
 #[derive(Debug, Snafu, PartialEq)]
+#[cfg_attr(test, derive(Clone))]
+#[cfg_attr(test, derive(bolero::TypeGenerator))]
 pub enum DurationError {
     Overflow,
     Underflow,
