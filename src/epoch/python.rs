@@ -30,7 +30,7 @@ impl Epoch {
     #[classmethod]
     /// Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch.
     fn init_from_tai_parts(_cls: &Bound<'_, PyType>, centuries: i16, nanoseconds: u64) -> Self {
-        Self::from_tai_parts(centuries, nanoseconds)
+        Self::from_tai_parts(centuries, nanoseconds as i128 * 1_000_000_000_000)
     }
 
     #[classmethod]
@@ -150,7 +150,7 @@ impl Epoch {
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use GPS as a time source.
     fn init_from_gpst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
-        Self::from_gpst_nanoseconds(nanoseconds)
+        Self::from_gpst_nanoseconds(nanoseconds as i128 * 1_000_000_000_000)
     }
 
     #[classmethod]
@@ -172,7 +172,7 @@ impl Epoch {
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use QZSS as a time source.
     fn init_from_qzsst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
-        Self::from_qzsst_nanoseconds(nanoseconds)
+        Self::from_qzsst_nanoseconds(nanoseconds as i128 * 1_000_000_000_000)
     }
 
     #[classmethod]
@@ -197,7 +197,7 @@ impl Epoch {
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use GST as a time source.
     fn init_from_gst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
-        Self::from_gst_nanoseconds(nanoseconds)
+        Self::from_gst_nanoseconds(nanoseconds as i128 * 1_000_000_000_000)
     }
 
     #[classmethod]
@@ -219,7 +219,7 @@ impl Epoch {
     /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use BDT as a time source.
     fn init_from_bdt_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
-        Self::from_bdt_nanoseconds(nanoseconds)
+        Self::from_bdt_nanoseconds(nanoseconds as i128 * 1_000_000_000_000)
     }
 
     #[classmethod]
