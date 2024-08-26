@@ -42,11 +42,8 @@ macro_rules! impl_ops_for_type {
                     Freq::KiloHertz => NANOSECONDS_PER_MILLISECOND as f64 / (q as f64),
                     Freq::Hertz => (NANOSECONDS_PER_SECOND as f64) / (q as f64),
                 };
-                if total_ns.abs() < (i64::MAX as f64) {
-                    Duration::from_truncated_nanoseconds(total_ns as i64)
-                } else {
-                    Duration::from_total_nanoseconds(total_ns as i128)
-                }
+
+                Duration::from_total_nanoseconds(total_ns as i128)
             }
         }
 

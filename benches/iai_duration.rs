@@ -14,7 +14,7 @@ fn duration_from_f64_seconds_via_units() {
 
 fn duration_from_i64_nanoseconds() {
     let value: i64 = 6311433599;
-    black_box(Duration::from_truncated_nanoseconds(value));
+    black_box(Duration::from_total_nanoseconds(value.into()));
 }
 
 fn duration_from_i64_nanoseconds_via_units() {

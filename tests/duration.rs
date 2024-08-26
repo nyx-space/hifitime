@@ -269,13 +269,10 @@ fn test_extremes() {
     );
 
     // Add i64 tests
-    let d = Duration::from_truncated_nanoseconds(i64::MAX);
+    let d = Duration::from_total_nanoseconds(i128::MAX);
     #[cfg(feature = "std")]
     println!("{}", d);
-    assert_eq!(
-        Duration::from_truncated_nanoseconds(d.truncated_nanoseconds()),
-        d
-    );
+    assert_eq!(Duration::from_total_nanoseconds(d.total_nanoseconds()), d);
 
     let past_min = Duration::from_total_nanoseconds(i128::MIN);
     assert_eq!(past_min, Duration::MIN);

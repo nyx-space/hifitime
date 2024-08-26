@@ -60,7 +60,7 @@ impl From<Duration> for DurationParts {
         value -= microseconds.microseconds();
         let nanoseconds = value.to_unit(Unit::Nanosecond).floor();
         value -= nanoseconds.nanoseconds();
-        let picoseconds = value.to_unit(Unit::Picosecond).floor();
+        let picoseconds = dbg!(dbg!(value.to_unit(Unit::Picosecond)).floor());
         value -= picoseconds.picoseconds();
         let femtoseconds = value.to_unit(Unit::Femtosecond).floor();
         value -= femtoseconds.femtoseconds();
