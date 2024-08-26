@@ -313,31 +313,70 @@ impl Mul<f64> for Unit {
     /// depending on whether the value would have overflowed or underflowed (respectively).
     /// 2. Floating point operations may round differently on different processors. It's advised to use integer initialization of Durations whenever possible.
     fn mul(self, q: f64) -> Duration {
-        let factor_zs = match self {
-            Unit::Century => NANOSECONDS_PER_CENTURY * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Week => DAYS_PER_WEEK_I128 * NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Day => NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Hour => NANOSECONDS_PER_HOUR * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Minute => NANOSECONDS_PER_MINUTE * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Second => NANOSECONDS_PER_SECOND * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Millisecond => NANOSECONDS_PER_MILLISECOND * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Microsecond => NANOSECONDS_PER_MICROSECOND * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Nanosecond => ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Picosecond => ZEPTOSECONDS_PER_PICOSECONDS,
-            Unit::Femtosecond => ZEPTOSECONDS_PER_FEMPTOSECONDS,
-            Unit::Attosecond => ZEPTOSECONDS_PER_ATTOSECONDS,
-            Self::Zeptosecond => 1,
-        };
-
-        // Bound checking to prevent overflows
-        if q >= f64::MAX / (factor_zs as f64) {
-            Duration::MAX
-        } else if q <= f64::MIN / (factor_zs as f64) {
-            Duration::MIN
-        } else {
-            Duration {
-                zeptoseconds: (q * (factor_zs as f64)) as i128,
+        if !q.is_finite() {
+            if q.is_sign_negative() {
+                return Duration::MIN;
+            } else {
+                return Duration::MAX;
             }
+        }
+
+        if q.fract() > 0.0 {
+            // Let's find the tenth power of this number to convert it to an integer as soon as possible.
+            // This avoid (potentially) large errors due to the imprecision of floating point values.
+            // Find the max precision of this number
+            // Note: the power computations happen in i32 until the end.
+            let mut p: i32 = 0;
+            let mut new_val = q;
+            let ten: f64 = 10.0;
+            loop {
+                if (new_val.floor() - new_val).abs() < f64::EPSILON {
+                    // Yay, we've found the precision of this number
+                    break;
+                }
+                // Multiply by the precision
+                // Note: we multiply by powers of ten to avoid this kind of round error with f32s:
+                // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b760579f103b7192c20413ebbe167b90
+                p += 1;
+                new_val = q * ten.powi(p);
+                if new_val.is_infinite() {
+                    if q.is_sign_negative() {
+                        return Duration::MIN;
+                    } else {
+                        return Duration::MAX;
+                    }
+                }
+            }
+
+            // Now, compute the multiplicative factor.
+            let unit_factor_zs = match self {
+                Self::Century => NANOSECONDS_PER_CENTURY * ZEPTOSECONDS_PER_NANOSECONDS,
+                Self::Week => {
+                    DAYS_PER_WEEK_I128 * NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS
+                }
+                Self::Day => NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS,
+                Self::Hour => NANOSECONDS_PER_HOUR * ZEPTOSECONDS_PER_NANOSECONDS,
+                Self::Minute => NANOSECONDS_PER_MINUTE * ZEPTOSECONDS_PER_NANOSECONDS,
+                Self::Second => NANOSECONDS_PER_SECOND * ZEPTOSECONDS_PER_NANOSECONDS,
+                Self::Millisecond => NANOSECONDS_PER_MILLISECOND * ZEPTOSECONDS_PER_NANOSECONDS,
+                Self::Microsecond => NANOSECONDS_PER_MICROSECOND * ZEPTOSECONDS_PER_NANOSECONDS,
+                Self::Nanosecond => ZEPTOSECONDS_PER_NANOSECONDS,
+                Self::Picosecond => ZEPTOSECONDS_PER_PICOSECONDS,
+                Self::Femtosecond => ZEPTOSECONDS_PER_FEMPTOSECONDS,
+                Self::Attosecond => ZEPTOSECONDS_PER_ATTOSECONDS,
+                Self::Zeptosecond => 1,
+            };
+
+            // Divide the unit factor by powers of ten.
+            let factor_zs = unit_factor_zs / 10_i128.pow(p as u32);
+
+            Duration {
+                zeptoseconds: (new_val as i128) * factor_zs,
+            }
+        } else {
+            // This is a round number, so let's convert it directly to an integer.
+            let q_as_i128 = q as i128;
+            q_as_i128 * self
         }
     }
 }
