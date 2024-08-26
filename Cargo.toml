@@ -36,6 +36,7 @@ tabled = { version = "0.16.0", optional = true }
 openssl = { version = "0.10", features = ["vendored"], optional = true }
 web-time = { version = "1.0.0", optional = true }
 snafu = { version = "0.8.2", default-features = false }
+typed-builder = "0.20.0"
 
 [features]
 default = ["std"]

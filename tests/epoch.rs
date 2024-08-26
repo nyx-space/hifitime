@@ -1068,8 +1068,8 @@ fn test_format() {
     let epoch_post = Epoch::from_gregorian_tai_hms(1900, 1, 1, 0, 0, 1);
     let epoch_pre = Epoch::from_gregorian_tai_hms(1899, 12, 31, 23, 59, 59);
 
-    assert_eq!(epoch_post.duration.decompose().0, 0);
-    assert_eq!(epoch_pre.duration.decompose().0, -1);
+    assert_eq!(epoch_post.duration.decompose().sign, 0);
+    assert_eq!(epoch_pre.duration.decompose().sign, -1);
 }
 
 #[test]

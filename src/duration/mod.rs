@@ -19,6 +19,7 @@ use core::cmp::Ordering;
 use core::hash::Hash;
 use core::{fmt, i128};
 
+use parts::DurationParts;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -27,6 +28,8 @@ use core::str::FromStr;
 
 #[cfg(not(kani))]
 pub mod parse;
+
+pub mod parts;
 
 #[cfg(feature = "python")]
 mod python;
@@ -309,35 +312,36 @@ impl Duration {
 
     /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns
     #[must_use]
-    pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
-        let mut me = *self;
-        let sign = me.signum();
-        me = me.abs();
-        let days = me.to_unit(Unit::Day).floor();
-        me -= days.days();
-        let hours = me.to_unit(Unit::Hour).floor();
-        me -= hours.hours();
-        let minutes = me.to_unit(Unit::Minute).floor();
-        me -= minutes.minutes();
-        let seconds = me.to_unit(Unit::Second).floor();
-        me -= seconds.seconds();
-        let milliseconds = me.to_unit(Unit::Millisecond).floor();
-        me -= milliseconds.milliseconds();
-        let microseconds = me.to_unit(Unit::Microsecond).floor();
-        me -= microseconds.microseconds();
-        let nanoseconds = me.to_unit(Unit::Nanosecond).round();
+    // pub fn decompose(mut self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
+    pub fn decompose(self) -> DurationParts {
+        DurationParts::from(self)
+        // let sign = self.signum();
+        // self = self.abs();
+        // let days = self.to_unit(Unit::Day).floor();
+        // self -= days.days();
+        // let hours = self.to_unit(Unit::Hour).floor();
+        // self -= hours.hours();
+        // let minutes = self.to_unit(Unit::Minute).floor();
+        // self -= minutes.minutes();
+        // let seconds = self.to_unit(Unit::Second).floor();
+        // self -= seconds.seconds();
+        // let milliseconds = self.to_unit(Unit::Millisecond).floor();
+        // self -= milliseconds.milliseconds();
+        // let microseconds = self.to_unit(Unit::Microsecond).floor();
+        // self -= microseconds.microseconds();
+        // let nanoseconds = self.to_unit(Unit::Nanosecond).round();
 
-        // Everything should fit in the expected types now
-        (
-            sign,
-            days as u64,
-            hours as u64,
-            minutes as u64,
-            seconds as u64,
-            milliseconds as u64,
-            microseconds as u64,
-            nanoseconds as u64,
-        )
+        // // Everything should fit in the expected types now
+        // (
+        //     sign,
+        //     days as u64,
+        //     hours as u64,
+        //     minutes as u64,
+        //     seconds as u64,
+        //     milliseconds as u64,
+        //     microseconds as u64,
+        //     nanoseconds as u64,
+        // )
     }
 
     /// Returns the subdivision of duration in this unit, if such is available. Does not work with Week or Century.
@@ -354,17 +358,16 @@ impl Duration {
     /// ```
     #[must_use]
     pub fn subdivision(&self, unit: Unit) -> Option<Duration> {
-        let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
-            self.decompose();
+        let parts = self.decompose();
 
         match unit {
-            Unit::Nanosecond => Some((nanoseconds as i128) * unit),
-            Unit::Microsecond => Some((microseconds as i128) * unit),
-            Unit::Millisecond => Some((milliseconds as i128) * unit),
-            Unit::Second => Some((seconds as i128) * unit),
-            Unit::Minute => Some((minutes as i128) * unit),
-            Unit::Hour => Some((hours as i128) * unit),
-            Unit::Day => Some((days as i128) * unit),
+            Unit::Nanosecond => Some(parts.nanoseconds * unit),
+            Unit::Microsecond => Some(parts.microseconds * unit),
+            Unit::Millisecond => Some(parts.milliseconds * unit),
+            Unit::Second => Some(parts.seconds * unit),
+            Unit::Minute => Some(parts.minutes * unit),
+            Unit::Hour => Some(parts.hours * unit),
+            Unit::Day => Some(parts.days * unit),
             Unit::Zeptosecond
             | Unit::Attosecond
             | Unit::Femtosecond
@@ -467,19 +470,19 @@ impl Duration {
     /// assert_eq!((49.hours() + 3.minutes()).approx(), 2.days());
     /// ```
     pub fn approx(&self) -> Self {
-        let (_, days, hours, minutes, seconds, milli, us, _) = self.decompose();
+        let parts = self.decompose();
 
-        let round_to = if days > 0 {
+        let round_to = if parts.days > 0 {
             1 * Unit::Day
-        } else if hours > 0 {
+        } else if parts.hours > 0 {
             1 * Unit::Hour
-        } else if minutes > 0 {
+        } else if parts.minutes > 0 {
             1 * Unit::Minute
-        } else if seconds > 0 {
+        } else if parts.seconds > 0 {
             1 * Unit::Second
-        } else if milli > 0 {
+        } else if parts.milliseconds > 0 {
             1 * Unit::Millisecond
-        } else if us > 0 {
+        } else if parts.microseconds > 0 {
             1 * Unit::Microsecond
         } else {
             1 * Unit::Nanosecond
@@ -538,14 +541,22 @@ impl fmt::Display for Duration {
         if self.total_nanoseconds() == 0 {
             write!(f, "0 ns")
         } else {
-            let (sign, days, hours, minutes, seconds, milli, us, nano) = self.decompose();
-            if sign == -1 {
+            let parts = self.decompose();
+            if parts.sign == -1 {
                 write!(f, "-")?;
             }
 
-            let values = [days, hours, minutes, seconds, milli, us, nano];
+            let values = [
+                parts.days,
+                parts.hours,
+                parts.minutes,
+                parts.seconds,
+                parts.milliseconds,
+                parts.microseconds,
+                parts.nanoseconds,
+            ];
             let units = [
-                if days > 1 { "days" } else { "day" },
+                if parts.days > 1 { "days" } else { "day" },
                 "h",
                 "min",
                 "s",
@@ -666,30 +677,28 @@ mod ut_duration {
         let d = -73000.days();
         let out_days = d.to_unit(Unit::Day);
         assert_eq!(out_days, -73000.0);
-        let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
-            d.decompose();
-        assert_eq!(sign, -1);
-        assert_eq!(days, 73000);
-        assert_eq!(hours, 0);
-        assert_eq!(minutes, 0);
-        assert_eq!(seconds, 0);
-        assert_eq!(milliseconds, 0);
-        assert_eq!(microseconds, 0);
-        assert_eq!(nanoseconds, 0);
+        let parts = d.decompose();
+        assert_eq!(parts.sign, -1);
+        assert_eq!(parts.days, 73000);
+        assert_eq!(parts.hours, 0);
+        assert_eq!(parts.minutes, 0);
+        assert_eq!(parts.seconds, 0);
+        assert_eq!(parts.milliseconds, 0);
+        assert_eq!(parts.microseconds, 0);
+        assert_eq!(parts.nanoseconds, 0);
     }
 
     #[test]
     fn test_decompose_pos() {
         let d = Duration::from_seconds(10.1);
-        let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
-            d.decompose();
-        assert_eq!(sign, 1);
-        assert_eq!(days, 0);
-        assert_eq!(hours, 0);
-        assert_eq!(minutes, 0);
-        assert_eq!(seconds, 10);
-        assert_eq!(milliseconds, 100);
-        assert_eq!(microseconds, 0);
-        assert_eq!(nanoseconds, 0);
+        let parts = d.decompose();
+        assert_eq!(parts.sign, 1);
+        assert_eq!(parts.days, 0);
+        assert_eq!(parts.hours, 0);
+        assert_eq!(parts.minutes, 0);
+        assert_eq!(parts.seconds, 10);
+        assert_eq!(parts.milliseconds, 100);
+        assert_eq!(parts.microseconds, 0);
+        assert_eq!(parts.nanoseconds, 0);
     }
 }

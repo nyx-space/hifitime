@@ -178,23 +178,22 @@ impl fmt::Display for Formatter {
                     }
                     Token::OffsetHours => {
                         write_sep(f, i, &self.format)?;
-                        let (sign, days, mut hours, minutes, seconds, _, _, _) =
-                            self.offset.decompose();
+                        let mut parts = self.offset.decompose();
 
-                        if days > 0 {
-                            hours += 24 * days;
+                        if parts.days > 0 {
+                            parts.hours += 24 * parts.days;
                         }
 
                         write!(
                             f,
                             "{}{:02}:{:02}",
-                            if sign >= 0 { '+' } else { '-' },
-                            hours,
-                            minutes
+                            if parts.sign >= 0 { '+' } else { '-' },
+                            parts.hours,
+                            parts.minutes
                         )?;
 
-                        if seconds > 0 {
-                            write!(f, "{:02}", seconds)?;
+                        if parts.seconds > 0 {
+                            write!(f, "{:02}", parts.seconds)?;
                         }
                     }
                     Token::OffsetMinutes => {
@@ -249,23 +248,22 @@ impl fmt::Display for Formatter {
                 match item.token {
                     Token::OffsetHours => {
                         write_sep(f, i, &self.format)?;
-                        let (sign, days, mut hours, minutes, seconds, _, _, _) =
-                            self.offset.decompose();
+                        let mut parts = self.offset.decompose();
 
-                        if days > 0 {
-                            hours += 24 * days;
+                        if parts.days > 0 {
+                            parts.hours += 24 * parts.days;
                         }
 
                         write!(
                             f,
                             "{}{:02}:{:02}",
-                            if sign >= 0 { '+' } else { '-' },
-                            hours,
-                            minutes
+                            if parts.sign >= 0 { '+' } else { '-' },
+                            parts.hours,
+                            parts.minutes
                         )?;
 
-                        if seconds > 0 {
-                            write!(f, "{:02}", seconds)?;
+                        if parts.seconds > 0 {
+                            write!(f, "{:02}", parts.seconds)?;
                         }
                     }
                     Token::OffsetMinutes => {

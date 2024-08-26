@@ -516,15 +516,15 @@ fn std_time_duration() {
 fn test_decompose() {
     let pos = 5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond;
 
-    let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) = pos.decompose();
-    assert_eq!(sign, 1);
-    assert_eq!(days, 0);
-    assert_eq!(hours, 5);
-    assert_eq!(minutes, 0);
-    assert_eq!(seconds, 0);
-    assert_eq!(milliseconds, 256);
-    assert_eq!(microseconds, 0);
-    assert_eq!(nanos, 1);
+    let parts = pos.decompose();
+    assert_eq!(parts.sign, 1);
+    assert_eq!(parts.days, 0);
+    assert_eq!(parts.hours, 5);
+    assert_eq!(parts.minutes, 0);
+    assert_eq!(parts.seconds, 0);
+    assert_eq!(parts.milliseconds, 256);
+    assert_eq!(parts.microseconds, 0);
+    assert_eq!(parts.nanoseconds, 1);
 
     // A negative duration works in the same way, only the sign is different.
     let neg = -(5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond);
@@ -532,15 +532,15 @@ fn test_decompose() {
     assert_eq!(neg.abs(), pos);
     assert!(neg.is_negative());
 
-    let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) = neg.decompose();
-    assert_eq!(sign, -1);
-    assert_eq!(days, 0);
-    assert_eq!(hours, 5);
-    assert_eq!(minutes, 0);
-    assert_eq!(seconds, 0);
-    assert_eq!(milliseconds, 256);
-    assert_eq!(microseconds, 0);
-    assert_eq!(nanos, 1);
+    let parts = neg.decompose();
+    assert_eq!(parts.sign, -1);
+    assert_eq!(parts.days, 0);
+    assert_eq!(parts.hours, 5);
+    assert_eq!(parts.minutes, 0);
+    assert_eq!(parts.seconds, 0);
+    assert_eq!(parts.milliseconds, 256);
+    assert_eq!(parts.microseconds, 0);
+    assert_eq!(parts.nanoseconds, 1);
 }
 
 #[test]

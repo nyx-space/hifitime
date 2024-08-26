@@ -1174,32 +1174,32 @@ impl Epoch {
 
     /// Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn hours(&self) -> u64 {
-        self.duration.decompose().2
+        self.duration.decompose().hours as u64
     }
 
     /// Returns the minutes of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn minutes(&self) -> u64 {
-        self.duration.decompose().3
+        self.duration.decompose().minutes as u64
     }
 
     /// Returns the seconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn seconds(&self) -> u64 {
-        self.duration.decompose().4
+        self.duration.decompose().seconds as u64
     }
 
     /// Returns the milliseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn milliseconds(&self) -> u64 {
-        self.duration.decompose().5
+        self.duration.decompose().milliseconds as u64
     }
 
     /// Returns the microseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn microseconds(&self) -> u64 {
-        self.duration.decompose().6
+        self.duration.decompose().microseconds as u64
     }
 
     /// Returns the nanoseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     pub fn nanoseconds(&self) -> u64 {
-        self.duration.decompose().7
+        self.duration.decompose().nanoseconds as u64
     }
 
     pub fn month_name(&self) -> MonthName {
