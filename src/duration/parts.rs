@@ -32,6 +32,14 @@ pub struct DurationParts {
     pub microseconds: i128,
     #[builder(default = 0)]
     pub nanoseconds: i128,
+    #[builder(default = 0)]
+    pub picoseconds: i128,
+    #[builder(default = 0)]
+    pub femtoseconds: i128,
+    #[builder(default = 0)]
+    pub attoseconds: i128,
+    #[builder(default = 0)]
+    pub zeptoseconds: i128,
 }
 
 impl From<Duration> for DurationParts {
@@ -50,7 +58,15 @@ impl From<Duration> for DurationParts {
         value -= milliseconds.milliseconds();
         let microseconds = value.to_unit(Unit::Microsecond).floor();
         value -= microseconds.microseconds();
-        let nanoseconds = value.to_unit(Unit::Nanosecond).round();
+        let nanoseconds = value.to_unit(Unit::Nanosecond).floor();
+        value -= nanoseconds.nanoseconds();
+        let picoseconds = value.to_unit(Unit::Picosecond).floor();
+        value -= picoseconds.picoseconds();
+        let femtoseconds = value.to_unit(Unit::Femtosecond).floor();
+        value -= femtoseconds.femtoseconds();
+        let attoseconds = value.to_unit(Unit::Attosecond).floor();
+        value -= attoseconds.attoseconds();
+        let zeptoseconds = value.to_unit(Unit::Zeptosecond).round();
 
         // Everything should fit in the expected types now
         Self {
@@ -63,6 +79,10 @@ impl From<Duration> for DurationParts {
             milliseconds: milliseconds as i128,
             microseconds: microseconds as i128,
             nanoseconds: nanoseconds as i128,
+            picoseconds: picoseconds as i128,
+            femtoseconds: femtoseconds as i128,
+            attoseconds: attoseconds as i128,
+            zeptoseconds: zeptoseconds as i128,
         }
     }
 }
@@ -75,7 +95,11 @@ impl From<DurationParts> for Duration {
             + value.seconds.seconds()
             + value.milliseconds.milliseconds()
             + value.microseconds.microseconds()
-            + value.nanoseconds.nanoseconds();
+            + value.nanoseconds.nanoseconds()
+            + value.picoseconds.picoseconds()
+            + value.femtoseconds.femtoseconds()
+            + value.attoseconds.attoseconds()
+            + value.zeptoseconds.zeptoseconds();
         if value.sign < 0 {
             -me
         } else {

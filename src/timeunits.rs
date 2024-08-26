@@ -41,6 +41,7 @@ pub enum Unit {
     Minute,
     Hour,
     Day,
+    /// Week is provided as a convenience but is not parts of duration counting per se
     Week,
     /// 36525 days, is the number of days per century in the Julian calendar
     Century,
@@ -100,6 +101,18 @@ pub trait TimeUnits: Copy + Mul<Unit, Output = Duration> {
     }
     fn nanoseconds(self) -> Duration {
         self * Unit::Nanosecond
+    }
+    fn picoseconds(self) -> Duration {
+        self * Unit::Picosecond
+    }
+    fn femtoseconds(self) -> Duration {
+        self * Unit::Femtosecond
+    }
+    fn attoseconds(self) -> Duration {
+        self * Unit::Attosecond
+    }
+    fn zeptoseconds(self) -> Duration {
+        self * Unit::Zeptosecond
     }
 }
 
