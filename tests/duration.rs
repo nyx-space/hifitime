@@ -179,17 +179,17 @@ fn duration_format() {
 fn test_ops() {
     assert_eq!(
         (0.25 * Unit::Hour).total_nanoseconds(),
-        (15 * NANOSECONDS_PER_MINUTE).into()
+        (15 * NANOSECONDS_PER_MINUTE)
     );
 
     assert_eq!(
         (-0.25 * Unit::Hour).total_nanoseconds(),
-        i128::from(15 * NANOSECONDS_PER_MINUTE) * -1
+        -(15 * NANOSECONDS_PER_MINUTE)
     );
 
     assert_eq!(
         (-0.25 * Unit::Hour - 0.25 * Unit::Hour).total_nanoseconds(),
-        i128::from(30 * NANOSECONDS_PER_MINUTE) * -1
+        -(30 * NANOSECONDS_PER_MINUTE)
     );
 
     #[cfg(feature = "std")]
@@ -212,7 +212,7 @@ fn test_ops() {
     println!("{}", quarter_hour);
 
     let min_quarter_hour = -0.5 * half_hour;
-    assert_eq!(min_quarter_hour, -15.minutes());
+    assert_eq!(min_quarter_hour, -(15.minutes()));
     #[cfg(feature = "std")]
     println!("{}", min_quarter_hour);
 }
@@ -344,11 +344,11 @@ fn duration_floor_ceil_round() {
     // These are from here: https://www.geeksforgeeks.org/time-round-function-in-golang-with-examples/
     let d = 5.minutes() + 7.seconds();
     assert_eq!(d.floor(6.seconds()), 5.minutes() + 6.seconds());
-    assert_eq!(d.floor(-6.seconds()), 5.minutes() + 6.seconds());
+    assert_eq!(d.floor(-(6.seconds())), 5.minutes() + 6.seconds());
     assert_eq!(d.ceil(6.seconds()), 5.minutes() + 12.seconds());
-    println!("{}", d.ceil(-6.seconds()));
+    println!("{}", d.ceil(-(6.seconds())));
     println!("{}", 5.minutes() + 12.seconds());
-    assert_eq!(d.ceil(-6.seconds()), 5.minutes() + 12.seconds());
+    assert_eq!(d.ceil(-(6.seconds())), 5.minutes() + 12.seconds());
 
     let d = 3.minutes() + 73.671.seconds();
     assert_eq!(d, 4.minutes() + 13.seconds() + 671.milliseconds());

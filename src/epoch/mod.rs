@@ -522,7 +522,7 @@ impl Epoch {
     /// This may be useful for time keeping devices that use GPS as a time source.
     pub fn from_gpst_nanoseconds(nanoseconds: i128) -> Self {
         Self::from_duration(
-            Duration::from_total_nanoseconds(nanoseconds.into()),
+            Duration::from_total_nanoseconds(nanoseconds),
             TimeScale::GPST,
         )
     }
@@ -547,7 +547,7 @@ impl Epoch {
     /// This may be useful for time keeping devices that use QZSS as a time source.
     pub fn from_qzsst_nanoseconds(nanoseconds: i128) -> Self {
         Self::from_duration(
-            Duration::from_total_nanoseconds(nanoseconds.into()),
+            Duration::from_total_nanoseconds(nanoseconds),
             TimeScale::QZSST,
         )
     }
@@ -574,7 +574,7 @@ impl Epoch {
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_gst_nanoseconds(nanoseconds: i128) -> Self {
         Self::from_duration(
-            Duration::from_total_nanoseconds(nanoseconds.into()),
+            Duration::from_total_nanoseconds(nanoseconds),
             TimeScale::GST,
         )
     }
@@ -599,7 +599,7 @@ impl Epoch {
     /// This may be useful for time keeping devices that use BDT as a time source.
     pub fn from_bdt_nanoseconds(nanoseconds: i128) -> Self {
         Self::from_duration(
-            Duration::from_total_nanoseconds(nanoseconds.into()),
+            Duration::from_total_nanoseconds(nanoseconds),
             TimeScale::BDT,
         )
     }
@@ -659,7 +659,7 @@ impl Epoch {
     #[must_use]
     pub fn from_time_of_week(week: u32, nanoseconds: u64, time_scale: TimeScale) -> Self {
         let mut nanos = i128::from(nanoseconds);
-        nanos += i128::from(week) * Weekday::DAYS_PER_WEEK_I128 * i128::from(NANOSECONDS_PER_DAY);
+        nanos += i128::from(week) * Weekday::DAYS_PER_WEEK_I128 * NANOSECONDS_PER_DAY;
         let duration = Duration::from_total_nanoseconds(nanos);
         Self::from_duration(duration, time_scale)
     }

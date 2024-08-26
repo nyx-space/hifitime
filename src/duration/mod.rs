@@ -621,7 +621,7 @@ mod ut_duration {
 
     #[test]
     fn test_decompose_neg() {
-        let d = -73000.days();
+        let d = -(73000.days());
         let out_days = d.to_unit(Unit::Day);
         assert_eq!(out_days, -73000.0);
         let parts = d.decompose();
