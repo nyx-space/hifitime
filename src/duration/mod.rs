@@ -245,6 +245,12 @@ impl Duration {
         self.zeptoseconds / ZEPTOSECONDS_PER_NANOSECONDS
     }
 
+    /// Returns the total seconds in a signed 128 bit integer
+    #[must_use]
+    pub const fn to_integer_nanoseconds(&self) -> i128 {
+        self.zeptoseconds / (ZEPTOSECONDS_PER_NANOSECONDS * NANOSECONDS_PER_SECOND)
+    }
+
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     #[must_use]
@@ -256,6 +262,12 @@ impl Duration {
     #[must_use]
     pub fn to_unit(&self, unit: Unit) -> f64 {
         self.to_seconds() * unit.from_seconds()
+    }
+
+    /// Returns the exact number of "unit" in this duration without rounding (integer computation).
+    #[must_use]
+    pub fn to_integer_unit(&self, unit: Unit) -> i128 {
+        self.zeptoseconds / unit.factor()
     }
 
     /// Returns the absolute value of this duration

@@ -28,13 +28,13 @@ impl Epoch {
     /// ```
     /// use hifitime::prelude::*;
     ///
-    /// let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
-    /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
+    /// let epoch = Epoch::from_gregorian_utc(2022, 12, 1, 10, 11, 12, 13);
+    /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 1, 20, 21, 22, 23);
     /// let other = other_utc.to_time_scale(TimeScale::TDB);
     ///
     /// assert_eq!(
     ///     epoch.with_hms_from(other),
-    ///     Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 13)
+    ///     Epoch::from_gregorian_utc(2022, 12, 1, 20, 21, 22, 13)
     /// );
     /// ```
     pub fn with_hms_from(&self, other: Self) -> Self {
@@ -52,14 +52,14 @@ impl Epoch {
     /// ```
     /// use hifitime::prelude::*;
     ///
-    /// let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
-    /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
+    /// let epoch = Epoch::from_gregorian_utc(2022, 12, 1, 10, 11, 12, 13);
+    /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 1, 20, 21, 22, 23);
     /// // If the other Epoch is in another time scale, it does not matter, it will be converted to the correct time scale.
     /// let other = other_utc.to_time_scale(TimeScale::TDB);
     ///
     /// assert_eq!(
     ///     epoch.with_time_from(other),
-    ///     Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 23)
+    ///     Epoch::from_gregorian_utc(2022, 12, 1, 20, 21, 22, 23)
     /// );
     /// ```
     pub fn with_time_from(&self, other: Self) -> Self {
@@ -94,13 +94,13 @@ impl Epoch {
     /// ```
     /// use hifitime::prelude::*;
     ///
-    /// let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
-    /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
+    /// let epoch = Epoch::from_gregorian_utc(2022, 12, 1, 10, 11, 12, 13);
+    /// let other_utc = Epoch::from_gregorian_utc(2024, 12, 1, 20, 21, 22, 23);
     /// let other = other_utc.to_time_scale(TimeScale::TDB);
     ///
     /// assert_eq!(
     ///     epoch.with_hms_strict_from(other),
-    ///     Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 0)
+    ///     Epoch::from_gregorian_utc(2022, 12, 1, 20, 21, 22, 0)
     /// );
     /// ```
     pub fn with_hms_strict_from(&self, other: Self) -> Self {

@@ -46,43 +46,43 @@ impl From<Duration> for DurationParts {
     fn from(mut value: Duration) -> Self {
         let sign = value.signum();
         value = value.abs();
-        let days = value.to_unit(Unit::Day).floor();
+        let days = value.to_integer_unit(Unit::Day);
         value -= days.days();
-        let hours = value.to_unit(Unit::Hour).floor();
+        let hours = value.to_integer_unit(Unit::Hour);
         value -= hours.hours();
-        let minutes = value.to_unit(Unit::Minute).floor();
+        let minutes = value.to_integer_unit(Unit::Minute);
         value -= minutes.minutes();
-        let seconds = value.to_unit(Unit::Second).floor();
+        let seconds = value.to_integer_unit(Unit::Second);
         value -= seconds.seconds();
-        let milliseconds = value.to_unit(Unit::Millisecond).floor();
+        let milliseconds = value.to_integer_unit(Unit::Millisecond);
         value -= milliseconds.milliseconds();
-        let microseconds = value.to_unit(Unit::Microsecond).floor();
+        let microseconds = value.to_integer_unit(Unit::Microsecond);
         value -= microseconds.microseconds();
-        let nanoseconds = value.to_unit(Unit::Nanosecond).floor();
+        let nanoseconds = value.to_integer_unit(Unit::Nanosecond);
         value -= nanoseconds.nanoseconds();
-        let picoseconds = dbg!(dbg!(value.to_unit(Unit::Picosecond)).floor());
+        let picoseconds = value.to_integer_unit(Unit::Picosecond);
         value -= picoseconds.picoseconds();
-        let femtoseconds = value.to_unit(Unit::Femtosecond).floor();
+        let femtoseconds = value.to_integer_unit(Unit::Femtosecond);
         value -= femtoseconds.femtoseconds();
-        let attoseconds = value.to_unit(Unit::Attosecond).floor();
+        let attoseconds = value.to_integer_unit(Unit::Attosecond);
         value -= attoseconds.attoseconds();
-        let zeptoseconds = value.to_unit(Unit::Zeptosecond).round();
+        let zeptoseconds = value.to_integer_unit(Unit::Zeptosecond);
 
         // Everything should fit in the expected types now
         Self {
             sign,
             centuries: 0,
-            days: days as i128,
-            hours: hours as i128,
-            minutes: minutes as i128,
-            seconds: seconds as i128,
-            milliseconds: milliseconds as i128,
-            microseconds: microseconds as i128,
-            nanoseconds: nanoseconds as i128,
-            picoseconds: picoseconds as i128,
-            femtoseconds: femtoseconds as i128,
-            attoseconds: attoseconds as i128,
-            zeptoseconds: zeptoseconds as i128,
+            days,
+            hours,
+            minutes,
+            seconds,
+            milliseconds,
+            microseconds,
+            nanoseconds,
+            picoseconds,
+            femtoseconds,
+            attoseconds,
+            zeptoseconds,
         }
     }
 }

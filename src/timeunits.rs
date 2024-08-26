@@ -204,6 +204,32 @@ impl Unit {
         1.0 / self.in_seconds()
     }
 
+    /// Returns the multiplicative factor of this unit to a zeptosecond.
+    ///
+    /// ```
+    /// use crate::Unit;
+    ///
+    /// assert!(Unit::Second, 1e21 as i128);
+    /// ```
+    #[must_use]
+    pub const fn factor(&self) -> i128 {
+        match self {
+            Self::Century => NANOSECONDS_PER_CENTURY * ZEPTOSECONDS_PER_NANOSECONDS,
+            Self::Week => DAYS_PER_WEEK_I128 * NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS,
+            Self::Day => NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS,
+            Self::Hour => NANOSECONDS_PER_HOUR * ZEPTOSECONDS_PER_NANOSECONDS,
+            Self::Minute => NANOSECONDS_PER_MINUTE * ZEPTOSECONDS_PER_NANOSECONDS,
+            Self::Second => NANOSECONDS_PER_SECOND * ZEPTOSECONDS_PER_NANOSECONDS,
+            Self::Millisecond => NANOSECONDS_PER_MILLISECOND * ZEPTOSECONDS_PER_NANOSECONDS,
+            Self::Microsecond => NANOSECONDS_PER_MICROSECOND * ZEPTOSECONDS_PER_NANOSECONDS,
+            Self::Nanosecond => ZEPTOSECONDS_PER_NANOSECONDS,
+            Self::Picosecond => ZEPTOSECONDS_PER_PICOSECONDS,
+            Self::Femtosecond => ZEPTOSECONDS_PER_FEMPTOSECONDS,
+            Self::Attosecond => ZEPTOSECONDS_PER_ATTOSECONDS,
+            Self::Zeptosecond => 1,
+        }
+    }
+
     #[cfg(feature = "python")]
     fn __add__(&self, other: Self) -> Duration {
         *self + other
@@ -274,23 +300,7 @@ impl Mul<i128> for Unit {
     /// Converts the input values to i128 and creates a duration from that
     /// This method will necessarily ignore durations below nanoseconds
     fn mul(self, q: i128) -> Duration {
-        let factor_zs = match self {
-            Unit::Century => NANOSECONDS_PER_CENTURY * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Week => DAYS_PER_WEEK_I128 * NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Day => NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Hour => NANOSECONDS_PER_HOUR * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Minute => NANOSECONDS_PER_MINUTE * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Second => NANOSECONDS_PER_SECOND * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Millisecond => NANOSECONDS_PER_MILLISECOND * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Microsecond => NANOSECONDS_PER_MICROSECOND * ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Nanosecond => ZEPTOSECONDS_PER_NANOSECONDS,
-            Unit::Picosecond => ZEPTOSECONDS_PER_PICOSECONDS,
-            Unit::Femtosecond => ZEPTOSECONDS_PER_FEMPTOSECONDS,
-            Unit::Attosecond => ZEPTOSECONDS_PER_ATTOSECONDS,
-            Self::Zeptosecond => 1,
-        };
-
-        match q.checked_mul(factor_zs) {
+        match q.checked_mul(self.factor()) {
             Some(zeptoseconds) => Duration { zeptoseconds },
             None => {
                 if q.is_negative() {
@@ -348,27 +358,8 @@ impl Mul<f64> for Unit {
                 }
             }
 
-            // Now, compute the multiplicative factor.
-            let unit_factor_zs = match self {
-                Self::Century => NANOSECONDS_PER_CENTURY * ZEPTOSECONDS_PER_NANOSECONDS,
-                Self::Week => {
-                    DAYS_PER_WEEK_I128 * NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS
-                }
-                Self::Day => NANOSECONDS_PER_DAY * ZEPTOSECONDS_PER_NANOSECONDS,
-                Self::Hour => NANOSECONDS_PER_HOUR * ZEPTOSECONDS_PER_NANOSECONDS,
-                Self::Minute => NANOSECONDS_PER_MINUTE * ZEPTOSECONDS_PER_NANOSECONDS,
-                Self::Second => NANOSECONDS_PER_SECOND * ZEPTOSECONDS_PER_NANOSECONDS,
-                Self::Millisecond => NANOSECONDS_PER_MILLISECOND * ZEPTOSECONDS_PER_NANOSECONDS,
-                Self::Microsecond => NANOSECONDS_PER_MICROSECOND * ZEPTOSECONDS_PER_NANOSECONDS,
-                Self::Nanosecond => ZEPTOSECONDS_PER_NANOSECONDS,
-                Self::Picosecond => ZEPTOSECONDS_PER_PICOSECONDS,
-                Self::Femtosecond => ZEPTOSECONDS_PER_FEMPTOSECONDS,
-                Self::Attosecond => ZEPTOSECONDS_PER_ATTOSECONDS,
-                Self::Zeptosecond => 1,
-            };
-
             // Divide the unit factor by powers of ten.
-            let factor_zs = unit_factor_zs / 10_i128.pow(p as u32);
+            let factor_zs = self.factor() / 10_i128.pow(p as u32);
 
             Duration {
                 zeptoseconds: (new_val as i128) * factor_zs,

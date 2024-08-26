@@ -1400,7 +1400,7 @@ mod ut_epoch {
     #[test]
     #[cfg(feature = "serde")]
     fn test_serdes() {
-        let e = Epoch::from_gregorian_utc_at_midnight(2020, 01, 01);
+        let e = Epoch::from_gregorian_utc_at_midnight(2020, 1, 1);
         let content = r#""2020-01-01T00:00:00 UTC""#;
         assert_eq!(content, serde_json::to_string(&e).unwrap());
         let parsed: Epoch = serde_json::from_str(content).unwrap();
