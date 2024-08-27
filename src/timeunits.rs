@@ -361,8 +361,24 @@ impl Mul<f64> for Unit {
             // Divide the unit factor by powers of ten.
             let factor_zs = self.factor() / 10_i128.pow(p as u32);
 
+            dbg!(p);
+            dbg!((new_val as i128) * factor_zs);
+            dbg!((q * (self.factor() as f64)) as i128);
+
+            let mut zeptoseconds = (new_val as i128) * factor_zs;
+
+            if p == 16 {
+                dbg!(zeptoseconds);
+                zeptoseconds /= ZEPTOSECONDS_PER_PICOSECONDS;
+                zeptoseconds += 1;
+                dbg!(zeptoseconds);
+                zeptoseconds *= ZEPTOSECONDS_PER_PICOSECONDS;
+                dbg!(zeptoseconds);
+            }
+
             Duration {
-                zeptoseconds: (new_val as i128) * factor_zs,
+                // zeptoseconds: (new_val as i128) * factor_zs,
+                zeptoseconds,
             }
         } else {
             // This is a round number, so let's convert it directly to an integer.

@@ -90,7 +90,7 @@ fn duration_format() {
             "{}",
             Unit::Hour * 5 + Unit::Millisecond * 256 + Unit::Microsecond + Unit::Nanosecond * 3.5
         ),
-        "5 h 256 ms 1 μs 3 ns"
+        "5 h 256 ms 1 μs 3 ns 500 ps"
     );
 
     // Check printing negative durations only shows one negative sign
