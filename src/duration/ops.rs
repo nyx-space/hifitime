@@ -106,9 +106,9 @@ impl Mul<f64> for Duration {
                 // Yay, we've found the precision of this number
                 break;
             }
-            // Multiply by the precision
+            // Multiply by the precision, jumping by a factor of 1000 at every step for less iterations.
             // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b760579f103b7192c20413ebbe167b90
-            p += 1;
+            p += 3;
             new_val = q * ten.powi(p);
         }
 
