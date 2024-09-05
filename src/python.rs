@@ -17,6 +17,7 @@ use pyo3::{
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondsFile};
 use crate::prelude::*;
 use crate::ut1::Ut1Provider;
+use pyo3_stub_gen::{define_stub_info_gatherer, derive::*};
 
 // Keep the module at the top
 #[pymodule]
@@ -35,10 +36,12 @@ fn hifitime(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
+#[gen_stub_pyclass]
 #[pyclass]
 #[pyo3(name = "HifitimeError", extends = PyException)]
 pub struct PyHifitimeError {}
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl PyHifitimeError {
     #[new]
@@ -48,10 +51,12 @@ impl PyHifitimeError {
     }
 }
 
+#[gen_stub_pyclass]
 #[pyclass]
 #[pyo3(name = "ParsingError", extends = PyException)]
 pub struct PyParsingError {}
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl PyParsingError {
     #[new]
@@ -61,10 +66,12 @@ impl PyParsingError {
     }
 }
 
+#[gen_stub_pyclass]
 #[pyclass]
 #[pyo3(name = "DurationError", extends = PyException)]
 pub struct PyDurationError {}
 
+#[gen_stub_pymethods]
 #[pymethods]
 impl PyDurationError {
     #[new]
@@ -92,3 +99,5 @@ impl From<DurationError> for PyErr {
         PyException::new_err(err.to_string())
     }
 }
+
+define_stub_info_gatherer!(stub_info);

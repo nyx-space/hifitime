@@ -53,6 +53,9 @@ mod python;
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
+#[cfg(feature = "python")]
+use pyo3_stub_gen::derive::*;
+
 #[cfg(not(kani))]
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -79,6 +82,7 @@ pub const NAIF_K: f64 = 1.657e-3;
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Default, Eq)]
 #[repr(C)]
+#[cfg_attr(feature = "python", gen_stub_pyclass)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
 pub struct Epoch {

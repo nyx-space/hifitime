@@ -11,6 +11,9 @@
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
+#[cfg(feature = "python")]
+use pyo3_stub_gen::derive::*;
+
 use std::{fs::File, io::Read, path::Path};
 
 use core::ops::Index;
@@ -21,6 +24,7 @@ use crate::{
 };
 
 #[repr(C)]
+#[cfg_attr(feature = "python", gen_stub_pyclass)]
 #[cfg_attr(feature = "python", pyclass)]
 #[derive(Clone, Debug, Default)]
 /// A leap second provider that uses an IERS formatted leap seconds file.
@@ -100,6 +104,7 @@ impl LeapSecondsFile {
 }
 
 #[cfg(feature = "python")]
+#[cfg_attr(feature = "python", gen_stub_pymethods)]
 #[cfg_attr(feature = "python", pymethods)]
 impl LeapSecondsFile {
     #[new]

@@ -11,6 +11,9 @@
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
+#[cfg(feature = "python")]
+use pyo3_stub_gen::derive::*;
+
 #[cfg(feature = "std")]
 pub use super::leap_seconds_file::LeapSecondsFile;
 
@@ -21,6 +24,7 @@ pub trait LeapSecondProvider: DoubleEndedIterator<Item = LeapSecond> + Index<usi
 /// A structure representing a leap second
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[repr(C)]
+#[cfg_attr(feature = "python", gen_stub_pyclass)]
 #[cfg_attr(feature = "python", pyclass)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct LeapSecond {
@@ -90,6 +94,7 @@ const LATEST_LEAP_SECONDS: [LeapSecond; 42] = [
 /// List of leap seconds from https://www.ietf.org/timezones/data/leap-seconds.list .
 /// This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
 /// The unannoucned leap seconds come from dat.c in the SOFA library.
+#[cfg_attr(feature = "python", gen_stub_pyclass)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Clone, Debug)]
@@ -99,6 +104,7 @@ pub struct LatestLeapSeconds {
 }
 
 #[cfg(feature = "python")]
+#[cfg_attr(feature = "python", gen_stub_pymethods)]
 #[cfg_attr(feature = "python", pymethods)]
 impl LatestLeapSeconds {
     #[new]

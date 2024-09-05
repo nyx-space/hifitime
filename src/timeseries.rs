@@ -19,6 +19,9 @@ use num_traits::Float;
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
+#[cfg(feature = "python")]
+use pyo3_stub_gen::derive::*;
+
 /*
 
 NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/itertools_num/linspace.rs.html#78-93 .
@@ -28,6 +31,7 @@ NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/iter
 /// An iterator of a sequence of evenly spaced Epochs.
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "python", gen_stub_pyclass)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
 pub struct TimeSeries {

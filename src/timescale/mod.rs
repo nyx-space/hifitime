@@ -11,6 +11,9 @@
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
+#[cfg(feature = "python")]
+use pyo3_stub_gen::derive::*;
+
 #[cfg(kani)]
 mod kani;
 
@@ -81,6 +84,7 @@ pub(crate) const HIFITIME_REF_YEAR: i32 = 1900;
 
 /// Enum of the different time systems available
 #[non_exhaustive]
+#[cfg_attr(feature = "python", gen_stub_pyclass_enum)]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -171,6 +175,7 @@ impl TimeScale {
     }
 }
 
+#[cfg_attr(feature = "python", gen_stub_pymethods)]
 #[cfg_attr(feature = "python", pymethods)]
 impl TimeScale {
     /// Returns true if self takes leap seconds into account

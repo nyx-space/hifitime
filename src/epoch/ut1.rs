@@ -11,6 +11,9 @@
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
+#[cfg(feature = "python")]
+use pyo3_stub_gen::derive::*;
+
 use reqwest::{blocking::get, StatusCode};
 
 use tabled::settings::Style;
@@ -72,6 +75,7 @@ pub struct DeltaTaiUt1 {
 }
 
 #[repr(C)]
+#[cfg_attr(feature = "python", gen_stub_pyclass)]
 #[cfg_attr(feature = "python", pyclass)]
 #[derive(Clone, Debug, Default)]
 /// A structure storing all of the TAI-UT1 data
@@ -187,6 +191,7 @@ impl Ut1Provider {
 }
 
 #[cfg(feature = "python")]
+#[cfg_attr(feature = "python", gen_stub_pymethods)]
 #[cfg_attr(feature = "python", pymethods)]
 impl Ut1Provider {
     #[new]
