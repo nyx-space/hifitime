@@ -17,7 +17,7 @@ fn test_from_str() {
     for value in values {
         let (descriptor, expected) = value;
         let ts = TimeScale::from_str(descriptor);
-        assert_eq!(ts.is_ok(), true);
+        assert!(ts.is_ok());
         let ts = ts.unwrap();
         assert_eq!(ts, expected);
         // test to_str()/format()

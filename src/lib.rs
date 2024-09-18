@@ -20,7 +20,7 @@ pub const MJD_J1900: f64 = 15_020.0;
 /// Julian days between 01 Jan 2000 at **noon** and the Modified Julian Day at 17 November 1858.
 pub const MJD_J2000: f64 = 51_544.5;
 /// The Ephemeris Time epoch, in seconds
-pub const ET_EPOCH_S: i64 = 3_155_716_800;
+pub const ET_EPOCH_S: i128 = 3_155_716_800;
 /// Modified Julian Date in seconds as defined [here](http://tycho.usno.navy.mil/mjd.html). MJD epoch is Modified Julian Day at 17 November 1858 at midnight.
 pub const MJD_OFFSET: f64 = 2_400_000.5;
 /// `DAYS_PER_YEAR` corresponds to the number of days per year in the Julian calendar.
@@ -31,7 +31,7 @@ pub const DAYS_PER_YEAR_NLD: f64 = 365.0;
 pub const DAYS_PER_CENTURY: f64 = 36525.0;
 pub const DAYS_PER_CENTURY_I64: i64 = 36525;
 pub const DAYS_PER_WEEK: f64 = 7.0;
-pub const DAYS_PER_WEEK_I64: i64 = 7;
+pub const DAYS_PER_WEEK_I128: i128 = 7;
 /// `SECONDS_PER_MINUTE` defines the number of seconds per minute.
 pub const SECONDS_PER_MINUTE: f64 = 60.0;
 /// `SECONDS_PER_HOUR` defines the number of seconds per hour.

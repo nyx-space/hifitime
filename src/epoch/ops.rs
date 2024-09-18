@@ -133,12 +133,12 @@ impl Epoch {
     /// This is usually how GNSS receivers describe a timestamp.
     pub fn to_time_of_week(&self) -> (u32, u64) {
         let total_nanoseconds = self.duration.total_nanoseconds();
-        let weeks = total_nanoseconds / NANOSECONDS_PER_DAY as i128 / Weekday::DAYS_PER_WEEK_I128;
+        let weeks = total_nanoseconds / NANOSECONDS_PER_DAY / Weekday::DAYS_PER_WEEK_I128;
         // elapsed nanoseconds in current week:
         //   remove previously determined nb of weeks
         //   get residual nanoseconds
         let nanoseconds =
-            total_nanoseconds - weeks * NANOSECONDS_PER_DAY as i128 * Weekday::DAYS_PER_WEEK_I128;
+            total_nanoseconds - weeks * NANOSECONDS_PER_DAY * Weekday::DAYS_PER_WEEK_I128;
         (weeks as u32, nanoseconds as u64)
     }
 

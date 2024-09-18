@@ -1,5 +1,3 @@
-use std::f32::consts::E;
-
 use hifitime::efmt::consts::*;
 use hifitime::prelude::*;
 

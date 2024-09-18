@@ -21,14 +21,15 @@ impl From<Duration> for std::time::Duration {
     /// 1. If the duration is negative, this will return a std::time::Duration::ZERO.
     /// 2. If the duration larger than the MAX duration, this will return std::time::Duration::MAX
     fn from(hf_duration: Duration) -> Self {
-        let (sign, days, hours, minutes, seconds, milli, us, nano) = hf_duration.decompose();
-        if sign < 0 {
+        let mut parts = hf_duration.decompose();
+        if parts.sign < 0 {
             std::time::Duration::ZERO
         } else {
             // Build the seconds separately from the nanos.
-            let above_ns_f64: f64 =
-                Duration::compose(sign, days, hours, minutes, seconds, milli, us, 0).to_seconds();
-            std::time::Duration::new(above_ns_f64 as u64, nano as u32)
+            let nanos = parts.nanoseconds;
+            parts.nanoseconds = 0;
+            let above_ns_f64: f64 = Duration::from(parts).to_seconds();
+            std::time::Duration::new(above_ns_f64 as u64, nanos as u32)
         }
     }
 }
