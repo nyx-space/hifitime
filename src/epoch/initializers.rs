@@ -102,21 +102,18 @@ impl Epoch {
 
     #[must_use]
     pub fn from_mjd_tai(days: f64) -> Self {
+        Self::from_mjd_in_time_scale(days, TimeScale::TAI)
+    }
+
+    pub fn from_mjd_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
         assert!(
             days.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self::from_tai_duration((days - MJD_J1900) * Unit::Day)
-    }
-
-    pub fn from_mjd_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
-        // always refer to TAI/mjd
-        let mut e = Self::from_mjd_tai(days);
-        if time_scale.uses_leap_seconds() {
-            e.duration += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
+        Self {
+            duration: (days - MJD_J1900) * Unit::Day,
+            time_scale,
         }
-        e.time_scale = time_scale;
-        e
     }
 
     #[must_use]
@@ -142,21 +139,18 @@ impl Epoch {
 
     #[must_use]
     pub fn from_jde_tai(days: f64) -> Self {
+        Self::from_jde_in_time_scale(days, TimeScale::TAI)
+    }
+
+    fn from_jde_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
         assert!(
             days.is_finite(),
             "Attempted to initialize Epoch with non finite number"
         );
-        Self::from_tai_duration((days - MJD_J1900 - MJD_OFFSET) * Unit::Day)
-    }
-
-    fn from_jde_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
-        // always refer to TAI/jde
-        let mut e = Self::from_jde_tai(days);
-        if time_scale.uses_leap_seconds() {
-            e.duration += e.leap_seconds(true).unwrap_or(0.0) * Unit::Second;
+        Self {
+            duration: (days - MJD_J1900 - MJD_OFFSET) * Unit::Day,
+            time_scale,
         }
-        e.time_scale = time_scale;
-        e
     }
 
     #[must_use]

@@ -2143,3 +2143,32 @@ fn regression_test_gh_317() {
         nanos
     );
 }
+
+#[test]
+fn regression_test_gh_302() {
+    let days = 60660.0;
+    let mjd = Epoch::from_mjd_utc(days);
+    let extra_duration = 2 * Unit::Hour + 5 * Unit::Minute + 8 * Unit::Second;
+    let mjd_plus_duration = mjd + extra_duration;
+    assert_eq!(
+        mjd_plus_duration.to_mjd_utc_days(),
+        days + extra_duration.to_unit(Unit::Day)
+    );
+    assert_eq!(
+        mjd_plus_duration.to_gregorian_str(TimeScale::UTC),
+        "2024-12-16T02:05:08 UTC"
+    );
+
+    // Repeat with JDE
+    let jde = Epoch::from_jde_utc(days + MJD_OFFSET);
+    let extra_duration = 2 * Unit::Hour + 5 * Unit::Minute + 8 * Unit::Second;
+    let jde_plus_duration = jde + extra_duration;
+    assert_eq!(
+        mjd_plus_duration.to_mjd_utc_days(),
+        days + extra_duration.to_unit(Unit::Day)
+    );
+    assert_eq!(
+        jde_plus_duration.to_gregorian_str(TimeScale::UTC),
+        "2024-12-16T02:05:08 UTC"
+    );
+}
