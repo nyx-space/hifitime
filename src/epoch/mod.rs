@@ -23,7 +23,7 @@ mod system_time;
 mod kani_verif;
 
 #[cfg(feature = "ut1")]
-#[cfg_attr(docrs, doc(cfg(feature = "ut1")))]
+#[cfg_attr(docsrs, doc(cfg(feature = "ut1")))]
 pub mod ut1;
 
 pub mod leap_seconds;
@@ -112,6 +112,57 @@ impl<'de> Deserialize<'de> for Epoch {
 }
 
 // Defines the methods that should be classmethods in Python, but must be redefined as per https://github.com/PyO3/pyo3/issues/1003#issuecomment-844433346
+impl Epoch {
+    /// Get the accumulated number of leap seconds up to this Epoch from the provided LeapSecondProvider.
+    /// Returns None if the epoch is before 1960, year at which UTC was defined.
+    ///
+    /// # Why does this function return an `Option` when the other returns a value
+    /// This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960.
+    pub fn leap_seconds_with<L: LeapSecondProvider>(
+        &self,
+        iers_only: bool,
+        provider: L,
+    ) -> Option<f64> {
+        for leap_second in provider.rev() {
+            if self.to_tai_duration().to_seconds() >= leap_second.timestamp_tai_s
+                && (!iers_only || leap_second.announced_by_iers)
+            {
+                return Some(leap_second.delta_at);
+            }
+        }
+        None
+    }
+
+    /// Creates an epoch from given duration expressed in given timescale, i.e. since the given time scale's reference epoch.
+    ///
+    /// For example, if the duration is 1 day and the time scale is Ephemeris Time, then this will create an epoch of 2000-01-02 at midnight ET. If the duration is 1 day and the time scale is TAI, this will create an epoch of 1900-01-02 at noon, because the TAI reference epoch in Hifitime is chosen to be the J1900 epoch.
+    /// In case of ET, TDB Timescales, a duration since J2000 is expected.
+    #[must_use]
+    pub const fn from_duration(duration: Duration, ts: TimeScale) -> Self {
+        Self {
+            duration,
+            time_scale: ts,
+        }
+    }
+
+    fn delta_et_tai(seconds: f64) -> f64 {
+        // Calculate M, the mean anomaly.4
+        let m = NAIF_M0 + seconds * NAIF_M1;
+        // Calculate eccentric anomaly
+        let e = m + NAIF_EB * m.sin();
+
+        (TT_OFFSET_MS * Unit::Millisecond).to_seconds() + NAIF_K * e.sin()
+    }
+
+    fn inner_g(seconds: f64) -> f64 {
+        use core::f64::consts::TAU;
+        let g = TAU / 360.0 * 357.528 + 1.990_910_018_065_731e-7 * seconds;
+        // Return gamma
+        1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
+    }
+}
+
+#[cfg_attr(feature = "python", pymethods)]
 impl Epoch {
     #[must_use]
     /// Converts self to another time scale
@@ -237,57 +288,6 @@ impl Epoch {
         }
     }
 
-    /// Get the accumulated number of leap seconds up to this Epoch from the provided LeapSecondProvider.
-    /// Returns None if the epoch is before 1960, year at which UTC was defined.
-    ///
-    /// # Why does this function return an `Option` when the other returns a value
-    /// This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960.
-    pub fn leap_seconds_with<L: LeapSecondProvider>(
-        &self,
-        iers_only: bool,
-        provider: L,
-    ) -> Option<f64> {
-        for leap_second in provider.rev() {
-            if self.to_tai_duration().to_seconds() >= leap_second.timestamp_tai_s
-                && (!iers_only || leap_second.announced_by_iers)
-            {
-                return Some(leap_second.delta_at);
-            }
-        }
-        None
-    }
-
-    /// Creates an epoch from given duration expressed in given timescale, i.e. since the given time scale's reference epoch.
-    ///
-    /// For example, if the duration is 1 day and the time scale is Ephemeris Time, then this will create an epoch of 2000-01-02 at midnight ET. If the duration is 1 day and the time scale is TAI, this will create an epoch of 1900-01-02 at noon, because the TAI reference epoch in Hifitime is chosen to be the J1900 epoch.
-    /// In case of ET, TDB Timescales, a duration since J2000 is expected.
-    #[must_use]
-    pub const fn from_duration(duration: Duration, ts: TimeScale) -> Self {
-        Self {
-            duration,
-            time_scale: ts,
-        }
-    }
-
-    fn delta_et_tai(seconds: f64) -> f64 {
-        // Calculate M, the mean anomaly.4
-        let m = NAIF_M0 + seconds * NAIF_M1;
-        // Calculate eccentric anomaly
-        let e = m + NAIF_EB * m.sin();
-
-        (TT_OFFSET_MS * Unit::Millisecond).to_seconds() + NAIF_K * e.sin()
-    }
-
-    fn inner_g(seconds: f64) -> f64 {
-        use core::f64::consts::TAU;
-        let g = TAU / 360.0 * 357.528 + 1.990_910_018_065_731e-7 * seconds;
-        // Return gamma
-        1.658e-3 * (g + 1.67e-2 * g.sin()).sin()
-    }
-}
-
-#[cfg_attr(feature = "python", pymethods)]
-impl Epoch {
     #[must_use]
     /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
     pub fn leap_seconds_iers(&self) -> i32 {
