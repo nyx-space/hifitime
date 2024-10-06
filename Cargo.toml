@@ -75,6 +75,9 @@ web-sys = { version = "0.3", features = [
     'PerformanceTiming',
 ] }
 
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
+
 [[bench]]
 name = "crit_epoch"
 harness = false
