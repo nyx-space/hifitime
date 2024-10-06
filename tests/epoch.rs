@@ -2069,9 +2069,15 @@ fn regression_test_gh_282() {
 fn regression_test_gh_288() {
     use core::str::FromStr;
     let epoch = Epoch::from_str("2021-03-06 11:14:40.9960 GPST").unwrap();
+    let epoch_from_gpst =
+        Epoch::from_gregorian(2021, 3, 6, 11, 14, 40, 996_000_000, TimeScale::GPST);
 
     assert_eq!(
         "2021-03-06T11:14:40.996000000 GPST",
+        format!("{}", epoch.to_gregorian_str(TimeScale::GPST))
+    );
+    assert_eq!(
+        format!("{}", epoch_from_gpst.to_gregorian_str(TimeScale::GPST)),
         format!("{}", epoch.to_gregorian_str(TimeScale::GPST))
     );
     assert_eq!("2021-03-06T11:14:40.996000000 GPST", format!("{epoch}"));

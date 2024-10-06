@@ -15,7 +15,8 @@ use crate::{Duration, Epoch, HifitimeError};
 /// Clippy thinks these are the same type, but they aren't.
 #[allow(clippy::unnecessary_fallible_conversions)]
 pub(crate) fn duration_since_unix_epoch() -> Result<Duration, HifitimeError> {
-    // TODO: Check why there is a map_err and and_then
+    // map_err maps the duration_since error into a hifitime error, if the conversion to a SystemTime fails.
+    // Then we converts a valid SystemTime into a Hifitime duration, unless it fails via and_then
     web_time::SystemTime::now()
         .duration_since(web_time::SystemTime::UNIX_EPOCH)
         .map_err(|_| HifitimeError::SystemTimeError)
