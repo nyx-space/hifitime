@@ -8,9 +8,9 @@
  * Documentation: https://nyxspace.com/
  */
 
-use super::{Duration, Epoch, TimeScale, Unit, Weekday, TT_OFFSET_MS};
 use crate::epoch::system_time::duration_since_unix_epoch;
 use crate::leap_seconds::LeapSecond;
+use crate::{Duration, Epoch, TimeScale, Unit, Weekday, TT_OFFSET_MS};
 
 #[kani::proof]
 fn formal_epoch_reciprocity_tai() {

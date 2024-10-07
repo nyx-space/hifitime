@@ -142,7 +142,7 @@ impl Epoch {
         Self::from_jde_in_time_scale(days, TimeScale::TAI)
     }
 
-    fn from_jde_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
+    pub fn from_jde_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
         assert!(
             days.is_finite(),
             "Attempted to initialize Epoch with non finite number"

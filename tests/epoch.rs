@@ -2144,6 +2144,7 @@ fn regression_test_gh_317() {
     );
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn regression_test_gh_302() {
     let days = 60660.0;
