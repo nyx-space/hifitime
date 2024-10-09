@@ -17,7 +17,7 @@ use core::str::FromStr;
 use crate::epoch::leap_seconds_file::LeapSecondsFile;
 use pyo3::prelude::*;
 use pyo3::pyclass::CompareOp;
-use pyo3::types::PyType;
+use pyo3::types::{PyDateAccess, PyDateTime, PyTimeAccess, PyType, PyTzInfoAccess};
 
 #[pymethods]
 impl Epoch {
@@ -501,5 +501,49 @@ impl Epoch {
             CompareOp::Gt => *self > other,
             CompareOp::Ge => *self >= other,
         }
+    }
+
+    /// Returns a Python datetime object from this Epoch (truncating the nanoseconds away)
+    fn todatetime<'py>(&self, py: Python<'py>) -> Result<Bound<'py, PyDateTime>, PyErr> {
+        let (y, mm, dd, hh, min, s, nanos) =
+            Epoch::compute_gregorian(self.duration, TimeScale::UTC);
+
+        let datetime = PyDateTime::new_bound(py, y, mm, dd, hh, min, s, nanos / 1_000, None)?;
+
+        Ok(datetime)
+    }
+
+    /// Builds an Epoch in UTC from the provided datetime after timezone correction if any is present.
+    #[classmethod]
+    fn fromdatetime(
+        _cls: &Bound<'_, PyType>,
+        dt: &Bound<'_, PyAny>,
+    ) -> Result<Self, HifitimeError> {
+        let dt = dt
+            .downcast::<PyDateTime>()
+            .map_err(|e| HifitimeError::PythonError {
+                reason: e.to_string(),
+            })?;
+
+        // If the user tries to convert a timezone aware datetime into a naive one,
+        // we return a hard error. We could silently remove tzinfo, or assume local timezone
+        // and do a conversion, but better leave this decision to the user of the library.
+        let has_tzinfo = dt.get_tzinfo_bound().is_some();
+        if has_tzinfo {
+            return Err(HifitimeError::PythonError {
+                reason: "expected a datetime without tzinfo, call my_datetime.replace(tzinfo=None)"
+                    .to_string(),
+            });
+        }
+
+        Epoch::maybe_from_gregorian_utc(
+            dt.get_year(),
+            dt.get_month().into(),
+            dt.get_day().into(),
+            dt.get_hour().into(),
+            dt.get_minute().into(),
+            dt.get_second().into(),
+            dt.get_microsecond() * 1_000,
+        )
     }
 }
