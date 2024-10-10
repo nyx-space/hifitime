@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+ * Copyright (C) 2017-onwards Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -8,9 +8,9 @@
  * Documentation: https://nyxspace.com/
  */
 
-use super::{Duration, Epoch, TimeScale, Unit, Weekday, TT_OFFSET_MS};
 use crate::epoch::system_time::duration_since_unix_epoch;
 use crate::leap_seconds::LeapSecond;
+use crate::{Duration, Epoch, TimeScale, Unit, Weekday, TT_OFFSET_MS};
 
 #[kani::proof]
 fn formal_epoch_reciprocity_tai() {

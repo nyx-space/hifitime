@@ -2069,9 +2069,15 @@ fn regression_test_gh_282() {
 fn regression_test_gh_288() {
     use core::str::FromStr;
     let epoch = Epoch::from_str("2021-03-06 11:14:40.9960 GPST").unwrap();
+    let epoch_from_gpst =
+        Epoch::from_gregorian(2021, 3, 6, 11, 14, 40, 996_000_000, TimeScale::GPST);
 
     assert_eq!(
         "2021-03-06T11:14:40.996000000 GPST",
+        format!("{}", epoch.to_gregorian_str(TimeScale::GPST))
+    );
+    assert_eq!(
+        format!("{}", epoch_from_gpst.to_gregorian_str(TimeScale::GPST)),
         format!("{}", epoch.to_gregorian_str(TimeScale::GPST))
     );
     assert_eq!("2021-03-06T11:14:40.996000000 GPST", format!("{epoch}"));
@@ -2135,5 +2141,35 @@ fn regression_test_gh_317() {
             .to_qzsst_nanoseconds()
             .unwrap(),
         nanos
+    );
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn regression_test_gh_302() {
+    let days = 60660.0;
+    let mjd = Epoch::from_mjd_utc(days);
+    let extra_duration = 2 * Unit::Hour + 5 * Unit::Minute + 8 * Unit::Second;
+    let mjd_plus_duration = mjd + extra_duration;
+    assert_eq!(
+        mjd_plus_duration.to_mjd_utc_days(),
+        days + extra_duration.to_unit(Unit::Day)
+    );
+    assert_eq!(
+        mjd_plus_duration.to_gregorian_str(TimeScale::UTC),
+        "2024-12-16T02:05:08 UTC"
+    );
+
+    // Repeat with JDE
+    let jde = Epoch::from_jde_utc(days + MJD_OFFSET);
+    let extra_duration = 2 * Unit::Hour + 5 * Unit::Minute + 8 * Unit::Second;
+    let jde_plus_duration = jde + extra_duration;
+    assert_eq!(
+        mjd_plus_duration.to_mjd_utc_days(),
+        days + extra_duration.to_unit(Unit::Day)
+    );
+    assert_eq!(
+        jde_plus_duration.to_gregorian_str(TimeScale::UTC),
+        "2024-12-16T02:05:08 UTC"
     );
 }
