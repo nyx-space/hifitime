@@ -38,6 +38,11 @@ pub enum HifitimeError {
     Duration {
         source: DurationError,
     },
+    #[cfg(feature = "python")]
+    #[snafu(display("python interop error: {reason}"))]
+    PythonError {
+        reason: String,
+    },
 }
 
 #[cfg_attr(kani, derive(kani::Arbitrary))]

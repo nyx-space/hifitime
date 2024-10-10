@@ -1,5 +1,5 @@
 from hifitime import Duration, Epoch, HifitimeError, ParsingError, TimeScale, TimeSeries, Unit
-from datetime import datetime
+from datetime import datetime, timezone
 import pickle
 
 
@@ -109,3 +109,19 @@ def test_regression_gh249():
     assert e.strftime("%Y %m %d %H %M %S %f %T") == "2022 03 01 01 01 59 000000001 GPST"
     e = Epoch.init_from_gregorian(year=2022, month=3, day=1, hour=1, minute=1, second=59, nanos=1, time_scale=TimeScale.UTC)
     assert e.strftime("%Y %m %d %H %M %S %f %T") == "2022 03 01 01 01 59 000000001 UTC"
+
+def test_interop():
+    hifinow = Epoch.system_now()
+    lofinow = hifinow.todatetime()
+    hifirtn = Epoch.fromdatetime(lofinow)
+    assert hifirtn.timedelta(hifinow).abs() < Unit.Microsecond * 1
+    # Now test with timezone, expect an error
+    tz_datetime = datetime(2023, 10, 8, 15, 30, tzinfo=timezone.utc)
+    try:
+        Epoch.fromdatetime(tz_datetime)
+    except Exception as e:
+        print(e)
+    else:
+        assert False, "tz aware dt did not fail"
+    # Repeat after the strip
+    assert Epoch.fromdatetime(tz_datetime.replace(tzinfo=None)) == Epoch("2023-10-08 15:30:00")
