@@ -22,12 +22,14 @@ impl Duration {
     #[must_use]
     /// Returns the centuries and nanoseconds of this duration
     /// NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly.
+    /// :rtype: Tuple
     #[pyo3(name = "to_parts")]
     pub const fn py_to_parts(&self) -> (i16, u64) {
         (self.centuries, self.nanoseconds)
     }
 
     /// Returns the total nanoseconds in a signed 128 bit integer
+    /// :rtype: int
     #[pyo3(name = "total_nanoseconds")]
     pub fn py_total_nanoseconds(&self) -> i128 {
         self.total_nanoseconds()
@@ -35,17 +37,21 @@ impl Duration {
 
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
+    /// :rtype: float
     #[pyo3(name = "to_seconds")]
     pub fn py_to_seconds(&self) -> f64 {
         self.to_seconds()
     }
 
+    /// :type unit: Unit
+    /// :rtype: float
     #[pyo3(name = "to_unit")]
     pub fn py_to_unit(&self, unit: Unit) -> f64 {
         self.to_unit(unit)
     }
 
     /// Returns the absolute value of this duration
+    /// :rtype: Duration
     #[pyo3(name = "abs")]
     pub fn py_abs(&self) -> Self {
         self.abs()
@@ -55,12 +61,15 @@ impl Duration {
     /// + 0 if the number is zero
     /// + 1 if the number is positive
     /// + -1 if the number is negative
+    /// :rtype: int
     #[pyo3(name = "signum")]
     pub const fn py_signum(&self) -> i8 {
         self.signum()
     }
 
     /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns
+    ///
+    /// :rtype: Tuple
     #[pyo3(name = "decompose")]
     pub fn py_decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
         self.decompose()
@@ -81,6 +90,9 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.floor(1.hours() + 1.minutes()), 2.hours() + 2.minutes());
     /// assert_eq!(two_hours_three_min.floor(1.hours() + 5.minutes()), 1.hours() + 5.minutes());
     /// ```
+    ///
+    /// :type duration: Duration
+    /// :rtype: Duration
     #[pyo3(name = "floor")]
     pub fn py_floor(&self, duration: Self) -> Self {
         self.floor(duration)
@@ -101,6 +113,9 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.ceil(1.seconds()), two_hours_three_min + 1.seconds());
     /// assert_eq!(two_hours_three_min.ceil(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
     /// ```
+    ///
+    /// :type duration: Duration
+    /// :rtype: Duration
     #[pyo3(name = "ceil")]
     pub fn py_ceil(&self, duration: Self) -> Self {
         self.ceil(duration)
@@ -120,6 +135,9 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.round(1.seconds()), two_hours_three_min);
     /// assert_eq!(two_hours_three_min.round(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
     /// ```
+    ///
+    /// :type duration: Duration
+    /// :rtype: Duration
     #[pyo3(name = "round")]
     pub fn py_round(&self, duration: Self) -> Self {
         self.round(duration)
@@ -144,6 +162,8 @@ impl Duration {
     /// assert_eq!((47.hours() + 3.minutes()).approx(), 2.days());
     /// assert_eq!((49.hours() + 3.minutes()).approx(), 2.days());
     /// ```
+    ///
+    /// :rtype: Duration
     #[pyo3(name = "approx")]
     pub fn py_approx(&self) -> Self {
         self.approx()
@@ -160,6 +180,9 @@ impl Duration {
     /// assert_eq!(d0, d1.min(d0));
     /// assert_eq!(d0, d0.min(d1));
     /// ```
+    ///
+    /// :type other: Duration
+    /// :rtype: Duration
     #[pyo3(name = "min")]
     pub fn py_min(&self, other: Self) -> Self {
         *(self.min(&other))
@@ -176,12 +199,16 @@ impl Duration {
     /// assert_eq!(d1, d1.max(d0));
     /// assert_eq!(d1, d0.max(d1));
     /// ```
+    ///
+    /// :type other: Duration
+    /// :rtype: Duration
     #[pyo3(name = "max")]
     pub fn py_max(&self, other: Self) -> Self {
         *(self.max(&other))
     }
 
     /// Returns whether this is a negative or positive duration.
+    /// :rtype: bool
     #[pyo3(name = "is_negative")]
     pub fn py_is_negative(&self) -> bool {
         self.is_negative()
@@ -277,6 +304,7 @@ impl Duration {
         *self / other
     }
 
+    /// :rtype: bool
     fn __richcmp__(&self, other: Self, op: CompareOp) -> bool {
         match op {
             CompareOp::Lt => *self < other,
@@ -333,11 +361,23 @@ impl Duration {
     #[classmethod]
     #[pyo3(name = "from_parts")]
     /// Create a normalized duration from its parts
+    /// :type centuries: int
+    /// :type nanoseconds: int
+    /// :rtype: Duration
     fn py_from_parts(_cls: &Bound<'_, PyType>, centuries: i16, nanoseconds: u64) -> Self {
         Self::from_parts(centuries, nanoseconds)
     }
 
     /// Creates a new duration from its parts
+    /// :type sign: int
+    /// :type days: int
+    /// :type hours: int
+    /// :type minutes: int
+    /// :type seconds: int
+    /// :type milliseconds: int
+    /// :type microseconds: int
+    /// :type nanoseconds: int
+    /// :rtype: Duration
     #[allow(clippy::too_many_arguments)]
     #[classmethod]
     #[pyo3(name = "from_all_parts")]
@@ -364,6 +404,9 @@ impl Duration {
         )
     }
 
+    /// Creates a new Duration from its full nanoseconds
+    /// :type nanos: int
+    /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_total_nanoseconds")]
     fn py_from_total_nanoseconds(_cls: &Bound<'_, PyType>, nanos: i128) -> Self {

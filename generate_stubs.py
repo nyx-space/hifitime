@@ -107,7 +107,7 @@ def class_stubs(
     constants: List[ast.AST] = []
     for member_name, member_value in inspect.getmembers(cls_def):
         current_element_path = [*element_path, member_name]
-        if member_name == "__init__":
+        if member_name == "__init__" and "Error" not in cls_name:
             try:
                 inspect.signature(cls_def)  # we check it actually exists
                 methods = [
@@ -242,11 +242,13 @@ def function_stub(
     decorator_list = []
     if in_class and hasattr(fn_def, "__self__"):
         decorator_list.append(ast.Name("staticmethod"))
+    
+    print(f"Documenting {fn_name}")
 
     return ast.FunctionDef(
         fn_name,
         arguments_stub(fn_name, fn_def, doc or "", element_path, types_to_import),
-        body or [ast.Ellipsis()],
+        body or [ast.Constant()],
         decorator_list=decorator_list,
         returns=(
             returns_stub(fn_name, doc, element_path, types_to_import) if doc else None
@@ -262,9 +264,14 @@ def arguments_stub(
     element_path: List[str],
     types_to_import: Set[str],
 ) -> ast.arguments:
+    if "Error" in element_path[1]:
+        # Don't document errors
+        return
+
     real_parameters: Mapping[str, inspect.Parameter] = inspect.signature(
         callable_def
     ).parameters
+    
     if callable_name == "__init__":
         real_parameters = {
             "self": inspect.Parameter("self", inspect.Parameter.POSITIONAL_ONLY),
@@ -282,6 +289,9 @@ def arguments_stub(
             del param_names[0]
         for name, t in zip(param_names, builtin[0]):
             parsed_param_types[name] = t
+
+    elif callable_name in ["__add__", "__sub__", "__div__", "__mul__", "__radd__", "__rsub__", "__rdiv__", "__rmul__"]:
+        return
 
     # Types from comment
     for match in re.findall(
@@ -361,6 +371,12 @@ def arguments_stub(
 def returns_stub(
     callable_name: str, doc: str, element_path: List[str], types_to_import: Set[str]
 ) -> Optional[ast.AST]:
+    if "Error" in element_path[1]:
+        # Don't document errors
+        return
+
+    if callable_name in ["__add__", "__sub__", "__div__", "__mul__", "__radd__", "__rsub__", "__rdiv__", "__rmul__"]:
+        return
     m = re.findall(r"^ *:rtype: *([^\n]*) *$", doc, re.MULTILINE)
     if len(m) == 0:
         builtin = BUILTINS.get(callable_name)

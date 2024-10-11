@@ -63,6 +63,10 @@ pub mod ops;
 /// That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
 /// As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
 /// 2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
+///
+/// (Python documentation hints)
+/// :type string_repr: str
+/// :rtype: Duration
 #[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
