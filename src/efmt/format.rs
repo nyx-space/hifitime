@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+ * Copyright (C) 2017-onwards Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -110,6 +110,7 @@ const MAX_TOKENS: usize = 16;
 /// let fmt = Formatter::new(bday, consts::RFC2822);
 /// assert_eq!(format!("{fmt}"), format!("Tue, 29 Feb 2000 14:57:29"));
 /// ```
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Default, PartialEq)]
 pub struct Format {
     pub(crate) items: [Option<Item>; MAX_TOKENS],
@@ -415,6 +416,9 @@ impl FromStr for Format {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut me = Format::default();
         for token in s.split('%') {
+            if me.num_items == MAX_TOKENS && token.chars().next().is_some() {
+                return Err(ParsingError::UnknownFormat);
+            }
             match token.chars().next() {
                 Some(char) => match char {
                     'Y' => {

@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+ * Copyright (C) 2017-onwards Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -793,5 +793,34 @@ mod ut_gregorian {
         for year in leap_years.iter() {
             assert!(is_leap_year(*year));
         }
+    }
+}
+
+#[cfg(kani)]
+mod kani_harnesses {
+    use super::*;
+
+    #[kani::proof]
+    fn kani_harness_january_years() {
+        let year: i32 = kani::any();
+        january_years(year);
+    }
+
+    #[kani::proof]
+    fn kani_harness_july_years() {
+        let year: i32 = kani::any();
+        july_years(year);
+    }
+
+    #[kani::proof]
+    fn kani_harness_usual_days_per_month() {
+        let month: u8 = kani::any();
+        usual_days_per_month(month);
+    }
+
+    #[kani::proof]
+    fn kani_harness_is_leap_year() {
+        let year: i32 = kani::any();
+        is_leap_year(year);
     }
 }

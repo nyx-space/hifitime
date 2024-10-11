@@ -1,6 +1,6 @@
 /*
 * Hifitime, part of the Nyx Space tools
-* Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+* Copyright (C) 2017-onwards Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
 * This Source Code Form is subject to the terms of the Apache
 * v. 2.0. If a copy of the Apache License was not distributed with this
 * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -538,9 +538,11 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.floor(1.hours() + 5.minutes()), 1.hours() + 5.minutes());
     /// ```
     pub fn floor(&self, duration: Self) -> Self {
-        Self::from_total_nanoseconds(
-            self.total_nanoseconds() - self.total_nanoseconds() % duration.total_nanoseconds(),
-        )
+        Self::from_total_nanoseconds(if duration.total_nanoseconds() == 0 {
+            0
+        } else {
+            self.total_nanoseconds() - self.total_nanoseconds() % duration.total_nanoseconds()
+        })
     }
 
     /// Ceils this duration to the closest provided duration

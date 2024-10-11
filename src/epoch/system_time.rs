@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+ * Copyright (C) 2017-onwards Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -15,7 +15,8 @@ use crate::{Duration, Epoch, HifitimeError};
 /// Clippy thinks these are the same type, but they aren't.
 #[allow(clippy::unnecessary_fallible_conversions)]
 pub(crate) fn duration_since_unix_epoch() -> Result<Duration, HifitimeError> {
-    // TODO: Check why there is a map_err and and_then
+    // map_err maps the duration_since error into a hifitime error, if the conversion to a SystemTime fails.
+    // Then we converts a valid SystemTime into a Hifitime duration, unless it fails via and_then
     web_time::SystemTime::now()
         .duration_since(web_time::SystemTime::UNIX_EPOCH)
         .map_err(|_| HifitimeError::SystemTimeError)

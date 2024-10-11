@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+ * Copyright (C) 2017-onwards Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -64,6 +64,7 @@ impl Epoch {
     }
 }
 
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Debug, Default, Tabled)]
 pub struct DeltaTaiUt1 {
     pub epoch: Epoch,
@@ -231,5 +232,14 @@ impl Index<usize> for Ut1Provider {
 
     fn index(&self, index: usize) -> &Self::Output {
         self.data.index(index)
+    }
+}
+
+#[cfg(kani)]
+mod kani_harnesses {
+    use super::*;
+    #[kani::proof]
+    fn kani_harness_Ut1Provider_download_short_from_jpl() {
+        Ut1Provider::download_short_from_jpl();
     }
 }

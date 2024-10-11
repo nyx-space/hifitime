@@ -25,6 +25,9 @@ def test_strtime():
         print(f"caught {e}")
     else:
         raise AssertionError("failed to catch parsing error")
+    
+    epoch_tdb = epoch.to_time_scale(TimeScale.TDB)
+    assert str(epoch_tdb) == "2023-04-13T23:32:26.185636390 TDB"
 
 
 def test_utcnow():

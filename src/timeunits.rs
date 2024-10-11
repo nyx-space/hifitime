@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+ * Copyright (C) 2017-onwards Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -25,6 +25,7 @@ use crate::{
 };
 
 /// An Enum to perform time unit conversions.
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 pub enum Unit {
@@ -41,6 +42,7 @@ pub enum Unit {
 }
 
 /// An Enum to convert frequencies to their approximate duration, **rounded to the closest nanosecond**.
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 pub enum Freq {

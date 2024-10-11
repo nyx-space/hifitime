@@ -1,6 +1,6 @@
 /*
  * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+ * Copyright (C) 2017-onwards Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
  * This Source Code Form is subject to the terms of the Apache
  * v. 2.0. If a copy of the Apache License was not distributed with this
  * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
@@ -17,7 +17,7 @@ use super::format::Format;
 #[cfg(not(feature = "std"))]
 #[allow(unused_imports)] // Import is indeed used.
 use num_traits::Float;
-
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Default, Debug, PartialEq)]
 pub(crate) struct Item {
     pub(crate) token: Token,
@@ -76,6 +76,7 @@ impl Item {
     }
 }
 
+#[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct Formatter {
     epoch: Epoch,
