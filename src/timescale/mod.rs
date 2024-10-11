@@ -174,6 +174,7 @@ impl TimeScale {
 #[cfg_attr(feature = "python", pymethods)]
 impl TimeScale {
     /// Returns true if self takes leap seconds into account
+    /// :rtype: bool
     pub const fn uses_leap_seconds(&self) -> bool {
         matches!(self, Self::UTC)
     }

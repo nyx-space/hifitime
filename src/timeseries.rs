@@ -26,6 +26,13 @@ NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/iter
 */
 
 /// An iterator of a sequence of evenly spaced Epochs.
+///
+/// (Python documentation hints)
+/// :type start: Epoch
+/// :type end: Epoch
+/// :type step: Duration
+/// :type inclusive: bool
+/// :rtype: TimeSeries
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "python", pyclass)]

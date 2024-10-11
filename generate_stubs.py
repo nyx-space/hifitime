@@ -248,7 +248,7 @@ def function_stub(
     return ast.FunctionDef(
         fn_name,
         arguments_stub(fn_name, fn_def, doc or "", element_path, types_to_import),
-        body or [ast.Constant()],
+        body or [ast.Ellipsis()],
         decorator_list=decorator_list,
         returns=(
             returns_stub(fn_name, doc, element_path, types_to_import) if doc else None
