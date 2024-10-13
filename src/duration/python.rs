@@ -22,7 +22,7 @@ impl Duration {
     #[must_use]
     /// Returns the centuries and nanoseconds of this duration
     /// NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly.
-    /// :rtype: Tuple
+    /// :rtype: typing.Tuple
     #[pyo3(name = "to_parts")]
     pub const fn py_to_parts(&self) -> (i16, u64) {
         (self.centuries, self.nanoseconds)
@@ -69,7 +69,7 @@ impl Duration {
 
     /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns
     ///
-    /// :rtype: Tuple
+    /// :rtype: typing.Tuple
     #[pyo3(name = "decompose")]
     pub fn py_decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
         self.decompose()

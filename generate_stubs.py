@@ -266,7 +266,7 @@ def arguments_stub(
 ) -> ast.arguments:
     if "Error" in element_path[1]:
         # Don't document errors
-        return
+        return ast.arguments(posonlyargs=[], args=[], defaults=[], kwonlyargs=[])
 
     real_parameters: Mapping[str, inspect.Parameter] = inspect.signature(
         callable_def
@@ -291,7 +291,7 @@ def arguments_stub(
             parsed_param_types[name] = t
 
     elif callable_name in ["__add__", "__sub__", "__div__", "__mul__", "__radd__", "__rsub__", "__rdiv__", "__rmul__"]:
-        return
+        return ast.arguments(posonlyargs=[], args=[], defaults=[], kwonlyargs=[])
 
     # Types from comment
     for match in re.findall(
