@@ -1,9 +1,9 @@
 /*
-* Hifitime, part of the Nyx Space tools
-* Copyright (C) 2017-onwards Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
-* This Source Code Form is subject to the terms of the Apache
-* v. 2.0. If a copy of the Apache License was not distributed with this
-* file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
+* Hifitime
+* Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at https://mozilla.org/MPL/2.0/.
 *
 * Documentation: https://nyxspace.com/
 */
@@ -22,12 +22,14 @@ impl Duration {
     #[must_use]
     /// Returns the centuries and nanoseconds of this duration
     /// NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly.
+    /// :rtype: typing.Tuple
     #[pyo3(name = "to_parts")]
     pub const fn py_to_parts(&self) -> (i16, u64) {
         (self.centuries, self.nanoseconds)
     }
 
     /// Returns the total nanoseconds in a signed 128 bit integer
+    /// :rtype: int
     #[pyo3(name = "total_nanoseconds")]
     pub fn py_total_nanoseconds(&self) -> i128 {
         self.total_nanoseconds()
@@ -35,17 +37,21 @@ impl Duration {
 
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
+    /// :rtype: float
     #[pyo3(name = "to_seconds")]
     pub fn py_to_seconds(&self) -> f64 {
         self.to_seconds()
     }
 
+    /// :type unit: Unit
+    /// :rtype: float
     #[pyo3(name = "to_unit")]
     pub fn py_to_unit(&self, unit: Unit) -> f64 {
         self.to_unit(unit)
     }
 
     /// Returns the absolute value of this duration
+    /// :rtype: Duration
     #[pyo3(name = "abs")]
     pub fn py_abs(&self) -> Self {
         self.abs()
@@ -55,12 +61,15 @@ impl Duration {
     /// + 0 if the number is zero
     /// + 1 if the number is positive
     /// + -1 if the number is negative
+    /// :rtype: int
     #[pyo3(name = "signum")]
     pub const fn py_signum(&self) -> i8 {
         self.signum()
     }
 
     /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns
+    ///
+    /// :rtype: typing.Tuple
     #[pyo3(name = "decompose")]
     pub fn py_decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
         self.decompose()
@@ -81,6 +90,9 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.floor(1.hours() + 1.minutes()), 2.hours() + 2.minutes());
     /// assert_eq!(two_hours_three_min.floor(1.hours() + 5.minutes()), 1.hours() + 5.minutes());
     /// ```
+    ///
+    /// :type duration: Duration
+    /// :rtype: Duration
     #[pyo3(name = "floor")]
     pub fn py_floor(&self, duration: Self) -> Self {
         self.floor(duration)
@@ -101,6 +113,9 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.ceil(1.seconds()), two_hours_three_min + 1.seconds());
     /// assert_eq!(two_hours_three_min.ceil(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
     /// ```
+    ///
+    /// :type duration: Duration
+    /// :rtype: Duration
     #[pyo3(name = "ceil")]
     pub fn py_ceil(&self, duration: Self) -> Self {
         self.ceil(duration)
@@ -120,6 +135,9 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.round(1.seconds()), two_hours_three_min);
     /// assert_eq!(two_hours_three_min.round(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
     /// ```
+    ///
+    /// :type duration: Duration
+    /// :rtype: Duration
     #[pyo3(name = "round")]
     pub fn py_round(&self, duration: Self) -> Self {
         self.round(duration)
@@ -144,6 +162,8 @@ impl Duration {
     /// assert_eq!((47.hours() + 3.minutes()).approx(), 2.days());
     /// assert_eq!((49.hours() + 3.minutes()).approx(), 2.days());
     /// ```
+    ///
+    /// :rtype: Duration
     #[pyo3(name = "approx")]
     pub fn py_approx(&self) -> Self {
         self.approx()
@@ -160,6 +180,9 @@ impl Duration {
     /// assert_eq!(d0, d1.min(d0));
     /// assert_eq!(d0, d0.min(d1));
     /// ```
+    ///
+    /// :type other: Duration
+    /// :rtype: Duration
     #[pyo3(name = "min")]
     pub fn py_min(&self, other: Self) -> Self {
         *(self.min(&other))
@@ -176,12 +199,16 @@ impl Duration {
     /// assert_eq!(d1, d1.max(d0));
     /// assert_eq!(d1, d0.max(d1));
     /// ```
+    ///
+    /// :type other: Duration
+    /// :rtype: Duration
     #[pyo3(name = "max")]
     pub fn py_max(&self, other: Self) -> Self {
         *(self.max(&other))
     }
 
     /// Returns whether this is a negative or positive duration.
+    /// :rtype: bool
     #[pyo3(name = "is_negative")]
     pub fn py_is_negative(&self) -> bool {
         self.is_negative()
@@ -203,22 +230,81 @@ impl Duration {
         format!("{self} @ {self:p}")
     }
 
+    /// # Addition of Durations
+    /// Durations are centered on zero duration. Of the tuple, only the centuries may be negative, the nanoseconds are always positive
+    /// and represent the nanoseconds _into_ the current centuries.
+    ///
+    /// ## Examples
+    /// + `Duration { centuries: 0, nanoseconds: 1 }` is a positive duration of zero centuries and one nanosecond.
+    /// + `Duration { centuries: -1, nanoseconds: 1 }` is a negative duration representing "one century before zero minus one nanosecond"
+    ///
+    ///
+    /// :type other: hifitime.Duration
+    /// :rtype: Duration
     fn __add__(&self, other: Self) -> Duration {
         *self + other
     }
 
+    /// # Subtraction
+    /// This operation is a notch confusing with negative durations.
+    /// As described in the `Duration` structure, a Duration of (-1, NANOSECONDS_PER_CENTURY-1) is closer to zero
+    /// than (-1, 0).
+    ///
+    /// ## Algorithm
+    ///
+    /// ### A > B, and both are positive
+    ///
+    /// If A > B, then A.centuries is subtracted by B.centuries, and A.nanoseconds is subtracted by B.nanoseconds.
+    /// If an overflow occurs, e.g. A.nanoseconds < B.nanoseconds, the number of nanoseconds is increased by the number of nanoseconds per century,
+    /// and the number of centuries is decreased by one.
+    ///
+    /// ### A < B, and both are positive
+    ///
+    /// In this case, the resulting duration will be negative. The number of centuries is a signed integer, so it is set to the difference of A.centuries - B.centuries.
+    /// The number of nanoseconds however must be wrapped by the number of nanoseconds per century.
+    /// For example:, let A = (0, 1) and B = (1, 10), then the resulting duration will be (-2, NANOSECONDS_PER_CENTURY - (10 - 1)). In this case, the centuries are set
+    /// to -2 because B is _two_ centuries into the future (the number of centuries into the future is zero-indexed).
+    ///
+    /// ### A > B, both are negative
+    ///
+    /// In this case, we try to stick to normal arithmatics: (-9 - -10) = (-9 + 10) = +1.
+    /// In this case, we can simply add the components of the duration together.
+    /// For example, let A = (-1, NANOSECONDS_PER_CENTURY - 2), and B = (-1, NANOSECONDS_PER_CENTURY - 1). Respectively, A is _two_ nanoseconds _before_ Duration::ZERO
+    /// and B is _one_ nanosecond before Duration::ZERO. Then, A-B should be one nanoseconds before zero, i.e. (-1, NANOSECONDS_PER_CENTURY - 1).
+    /// This is because we _subtract_ "negative one nanosecond" from a "negative minus two nanoseconds", which corresponds to _adding_ the opposite, and the
+    /// opposite of "negative one nanosecond" is "positive one nanosecond".
+    ///
+    /// ### A < B, both are negative
+    ///
+    /// Just like in the prior case, we try to stick to normal arithmatics: (-10 - -9) = (-10 + 9) = -1.
+    ///
+    /// ### MIN is the minimum
+    ///
+    /// One cannot subtract anything from the MIN.
+    ///
+    /// ```
+    /// from hifitime import Duration
+    ///
+    /// one_ns = Duration.from_parts(0, 1)
+    /// assert Duration.MIN() - one_ns == Duration.MIN()
+    /// ```
+    ///
+    /// :rtype: hifitime.Duration
     fn __sub__(&self, other: Self) -> Duration {
         *self - other
     }
 
+    /// :rtype: hifitime.Duration
     fn __mul__(&self, other: f64) -> Duration {
         *self * other
     }
 
+    /// :rtype: hifitime.Duration
     fn __div__(&self, other: f64) -> Duration {
         *self / other
     }
 
+    /// :rtype: bool
     fn __richcmp__(&self, other: Self, op: CompareOp) -> bool {
         match op {
             CompareOp::Lt => *self < other,
@@ -275,11 +361,23 @@ impl Duration {
     #[classmethod]
     #[pyo3(name = "from_parts")]
     /// Create a normalized duration from its parts
+    /// :type centuries: int
+    /// :type nanoseconds: int
+    /// :rtype: Duration
     fn py_from_parts(_cls: &Bound<'_, PyType>, centuries: i16, nanoseconds: u64) -> Self {
         Self::from_parts(centuries, nanoseconds)
     }
 
     /// Creates a new duration from its parts
+    /// :type sign: int
+    /// :type days: int
+    /// :type hours: int
+    /// :type minutes: int
+    /// :type seconds: int
+    /// :type milliseconds: int
+    /// :type microseconds: int
+    /// :type nanoseconds: int
+    /// :rtype: Duration
     #[allow(clippy::too_many_arguments)]
     #[classmethod]
     #[pyo3(name = "from_all_parts")]
@@ -306,6 +404,9 @@ impl Duration {
         )
     }
 
+    /// Creates a new Duration from its full nanoseconds
+    /// :type nanos: int
+    /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_total_nanoseconds")]
     fn py_from_total_nanoseconds(_cls: &Bound<'_, PyType>, nanos: i128) -> Self {

@@ -1,12 +1,12 @@
 /*
- * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2017-onwards Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
- * This Source Code Form is subject to the terms of the Apache
- * v. 2.0. If a copy of the Apache License was not distributed with this
- * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Documentation: https://nyxspace.com/
- */
+* Hifitime
+* Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at https://mozilla.org/MPL/2.0/.
+*
+* Documentation: https://nyxspace.com/
+*/
 
 use pyo3::{
     exceptions::PyException,
@@ -17,6 +17,7 @@ use pyo3::{
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondsFile};
 use crate::prelude::*;
 use crate::ut1::Ut1Provider;
+use crate::MonthName;
 
 // Keep the module at the top
 #[pymodule]
@@ -29,6 +30,7 @@ fn hifitime(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<LatestLeapSeconds>()?;
     m.add_class::<LeapSecondsFile>()?;
     m.add_class::<Ut1Provider>()?;
+    m.add_class::<MonthName>()?;
     m.add_class::<PyHifitimeError>()?;
     m.add_class::<PyDurationError>()?;
     m.add_class::<PyParsingError>()?;

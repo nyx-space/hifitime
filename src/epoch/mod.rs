@@ -1,12 +1,12 @@
 /*
- * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2017-onwards Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
- * This Source Code Form is subject to the terms of the Apache
- * v. 2.0. If a copy of the Apache License was not distributed with this
- * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Documentation: https://nyxspace.com/
- */
+* Hifitime
+* Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at https://mozilla.org/MPL/2.0/.
+*
+* Documentation: https://nyxspace.com/
+*/
 
 mod formatting;
 mod gregorian;
@@ -75,6 +75,10 @@ pub const NAIF_K: f64 = 1.657e-3;
 /// Defines a nanosecond-precision Epoch.
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
+///
+/// (Python documentation hints)
+/// :type string_repr: str
+/// :rtype: Epoch
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Default, Eq)]
 #[repr(C)]
@@ -169,6 +173,9 @@ impl Epoch {
     ///
     /// As per the [Rust naming convention](https://rust-lang.github.io/api-guidelines/naming.html#ad-hoc-conversions-follow-as_-to_-into_-conventions-c-conv),
     /// this borrows an Epoch and returns an owned Epoch.
+    ///
+    /// :type ts: TimeScale
+    /// :rtype: Epoch
     pub fn to_time_scale(&self, ts: TimeScale) -> Self {
         if ts == self.time_scale {
             // Do nothing, just return a copy
@@ -290,6 +297,7 @@ impl Epoch {
 
     #[must_use]
     /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
+    /// :rtype: int
     pub fn leap_seconds_iers(&self) -> i32 {
         match self.leap_seconds(true) {
             Some(v) => v as i32,
@@ -302,6 +310,8 @@ impl Epoch {
     ///
     /// # Why does this function return an `Option` when the other returns a value
     /// This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960.
+    /// :type iers_only: bool
+    /// :rtype: float
     pub fn leap_seconds(&self, iers_only: bool) -> Option<f64> {
         self.leap_seconds_with(iers_only, LatestLeapSeconds::default())
     }
@@ -309,6 +319,7 @@ impl Epoch {
     #[cfg(feature = "std")]
     #[must_use]
     /// The standard ISO format of this epoch (six digits of subseconds) in the _current_ time scale, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options.
+    /// :rtype: str
     pub fn to_isoformat(&self) -> String {
         use crate::efmt::consts::ISO8601_STD;
         use crate::efmt::Formatter;
@@ -318,6 +329,8 @@ impl Epoch {
     #[must_use]
     /// Returns this epoch with respect to the provided time scale.
     /// This is needed to correctly perform duration conversions in dynamical time scales (e.g. TDB).
+    /// :type ts: TimeScale
+    /// :rtype: Duration
     pub fn to_duration_in_time_scale(&self, ts: TimeScale) -> Duration {
         self.to_time_scale(ts).duration
     }
@@ -326,6 +339,9 @@ impl Epoch {
     /// This will return an overflow error if more than one century has past since the reference epoch in the provided time scale.
     /// If this is _not_ an issue, you should use `epoch.to_duration_in_time_scale().to_parts()` to retrieve both the centuries and the nanoseconds
     /// in that century.
+    ///
+    /// :type time_scale: TimeScale
+    /// :rtype: int
     #[allow(clippy::wrong_self_convention)]
     fn to_nanoseconds_in_time_scale(&self, time_scale: TimeScale) -> Result<u64, HifitimeError> {
         let (centuries, nanoseconds) = self.to_duration_in_time_scale(time_scale).to_parts();
@@ -340,54 +356,65 @@ impl Epoch {
 
     #[must_use]
     /// Returns the number of TAI seconds since J1900
+    /// :rtype: float
     pub fn to_tai_seconds(&self) -> f64 {
         self.to_tai_duration().to_seconds()
     }
 
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in TAI
+    /// :rtype: Duration
     pub fn to_tai_duration(&self) -> Duration {
         self.to_time_scale(TimeScale::TAI).duration
     }
 
     #[must_use]
     /// Returns the epoch as a floating point value in the provided unit
+    /// :type unit: Unit
+    /// :rtype: float
     pub fn to_tai(&self, unit: Unit) -> f64 {
         self.to_tai_duration().to_unit(unit)
     }
 
     #[must_use]
     /// Returns the TAI parts of this duration
+    /// :rtype: typing.Tuple
     pub fn to_tai_parts(&self) -> (i16, u64) {
         self.to_tai_duration().to_parts()
     }
 
     #[must_use]
     /// Returns the number of days since J1900 in TAI
+    /// :rtype: float
     pub fn to_tai_days(&self) -> f64 {
         self.to_tai(Unit::Day)
     }
 
     #[must_use]
     /// Returns the number of UTC seconds since the TAI epoch
+    /// :rtype: float
     pub fn to_utc_seconds(&self) -> f64 {
         self.to_utc(Unit::Second)
     }
 
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in UTC
+    /// :rtype: Duration
     pub fn to_utc_duration(&self) -> Duration {
         self.to_time_scale(TimeScale::UTC).duration
     }
 
     #[must_use]
     /// Returns the number of UTC seconds since the TAI epoch
+    /// :type unit: Unit
+    /// :rtype: float
     pub fn to_utc(&self, unit: Unit) -> f64 {
         self.to_utc_duration().to_unit(unit)
     }
 
     #[must_use]
     /// Returns the number of UTC days since the TAI epoch
+    /// :rtype: float
     pub fn to_utc_days(&self) -> f64 {
         self.to_utc(Unit::Day)
     }
@@ -395,36 +422,44 @@ impl Epoch {
     #[must_use]
     /// `as_mjd_days` creates an Epoch from the provided Modified Julian Date in days as explained
     /// [here](http://tycho.usno.navy.mil/mjd.html). MJD epoch is Modified Julian Day at 17 November 1858 at midnight.
+    /// :rtype: float
     pub fn to_mjd_tai_days(&self) -> f64 {
         self.to_mjd_tai(Unit::Day)
     }
 
     #[must_use]
     /// Returns the Modified Julian Date in seconds TAI.
+    /// :rtype: float
     pub fn to_mjd_tai_seconds(&self) -> f64 {
         self.to_mjd_tai(Unit::Second)
     }
 
     #[must_use]
     /// Returns this epoch as a duration in the requested units in MJD TAI
+    /// :type unit: Unit
+    /// :rtype: float
     pub fn to_mjd_tai(&self, unit: Unit) -> f64 {
         (self.to_tai_duration() + Unit::Day * MJD_J1900).to_unit(unit)
     }
 
     #[must_use]
     /// Returns the Modified Julian Date in days UTC.
+    /// :rtype: float
     pub fn to_mjd_utc_days(&self) -> f64 {
         self.to_mjd_utc(Unit::Day)
     }
 
     #[must_use]
     /// Returns the Modified Julian Date in the provided unit in UTC.
+    /// :type unit: Unit
+    /// :rtype: float
     pub fn to_mjd_utc(&self, unit: Unit) -> f64 {
         (self.to_utc_duration() + Unit::Day * MJD_J1900).to_unit(unit)
     }
 
     #[must_use]
     /// Returns the Modified Julian Date in seconds UTC.
+    /// :rtype: float
     pub fn to_mjd_utc_seconds(&self) -> f64 {
         self.to_mjd_utc(Unit::Second)
     }
@@ -433,154 +468,181 @@ impl Epoch {
     /// Returns the Julian days from epoch 01 Jan -4713, 12:00 (noon)
     /// as explained in "Fundamentals of astrodynamics and applications", Vallado et al.
     /// 4th edition, page 182, and on [Wikipedia](https://en.wikipedia.org/wiki/Julian_day).
+    /// :rtype: float
     pub fn to_jde_tai_days(&self) -> f64 {
         self.to_jde_tai(Unit::Day)
     }
 
     #[must_use]
     /// Returns the Julian Days from epoch 01 Jan -4713 12:00 (noon) in desired Duration::Unit
+    /// :type unit: Unit
+    /// :rtype: float
     pub fn to_jde_tai(&self, unit: Unit) -> f64 {
         self.to_jde_tai_duration().to_unit(unit)
     }
 
     #[must_use]
     /// Returns the Julian Days from epoch 01 Jan -4713 12:00 (noon) as a Duration
+    /// :rtype: Duration
     pub fn to_jde_tai_duration(&self) -> Duration {
         self.to_tai_duration() + Unit::Day * MJD_J1900 + Unit::Day * MJD_OFFSET
     }
 
     #[must_use]
     /// Returns the Julian seconds in TAI.
+    /// :rtype: float
     pub fn to_jde_tai_seconds(&self) -> f64 {
         self.to_jde_tai(Unit::Second)
     }
 
     #[must_use]
     /// Returns the Julian days in UTC.
+    /// :rtype: float
     pub fn to_jde_utc_days(&self) -> f64 {
         self.to_jde_utc_duration().to_unit(Unit::Day)
     }
 
     #[must_use]
     /// Returns the Julian days in UTC as a `Duration`
+    /// :rtype: Duration
     pub fn to_jde_utc_duration(&self) -> Duration {
         self.to_utc_duration() + Unit::Day * (MJD_J1900 + MJD_OFFSET)
     }
 
     #[must_use]
     /// Returns the Julian Days in UTC seconds.
+    /// :rtype: float
     pub fn to_jde_utc_seconds(&self) -> f64 {
         self.to_jde_utc_duration().to_seconds()
     }
 
     #[must_use]
     /// Returns seconds past TAI epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
+    /// :rtype: float
     pub fn to_tt_seconds(&self) -> f64 {
         self.to_tt_duration().to_seconds()
     }
 
     #[must_use]
     /// Returns `Duration` past TAI epoch in Terrestrial Time (TT).
+    /// :rtype: Duration
     pub fn to_tt_duration(&self) -> Duration {
         self.to_time_scale(TimeScale::TT).duration
     }
 
     #[must_use]
     /// Returns days past TAI epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
+    /// :rtype: float
     pub fn to_tt_days(&self) -> f64 {
         self.to_tt_duration().to_unit(Unit::Day)
     }
 
     #[must_use]
     /// Returns the centuries passed J2000 TT
+    /// :rtype: float
     pub fn to_tt_centuries_j2k(&self) -> f64 {
         (self.to_tt_duration() - Unit::Second * ET_EPOCH_S).to_unit(Unit::Century)
     }
 
     #[must_use]
     /// Returns the duration past J2000 TT
+    /// :rtype: Duration
     pub fn to_tt_since_j2k(&self) -> Duration {
         self.to_tt_duration() - Unit::Second * ET_EPOCH_S
     }
 
     #[must_use]
     /// Returns days past Julian epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
+    /// :rtype: float
     pub fn to_jde_tt_days(&self) -> f64 {
         self.to_jde_tt_duration().to_unit(Unit::Day)
     }
 
     #[must_use]
+    /// :rtype: Duration
     pub fn to_jde_tt_duration(&self) -> Duration {
         self.to_tt_duration() + Unit::Day * (MJD_J1900 + MJD_OFFSET)
     }
 
     #[must_use]
     /// Returns days past Modified Julian epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))
+    /// :rtype: float
     pub fn to_mjd_tt_days(&self) -> f64 {
         self.to_mjd_tt_duration().to_unit(Unit::Day)
     }
 
     #[must_use]
+    /// :rtype: Duration
     pub fn to_mjd_tt_duration(&self) -> Duration {
         self.to_tt_duration() + Unit::Day * MJD_J1900
     }
 
     #[must_use]
     /// Returns seconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    /// :rtype: float
     pub fn to_gpst_seconds(&self) -> f64 {
         self.to_gpst_duration().to_seconds()
     }
 
     #[must_use]
     /// Returns `Duration` past GPS time Epoch.
+    /// :rtype: Duration
     pub fn to_gpst_duration(&self) -> Duration {
         self.to_time_scale(TimeScale::GPST).duration
     }
 
     /// Returns nanoseconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// NOTE: This function will return an error if the centuries past GPST time are not zero.
+    /// :rtype: int
     pub fn to_gpst_nanoseconds(&self) -> Result<u64, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::GPST)
     }
 
     #[must_use]
     /// Returns days past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    /// :rtype: float
     pub fn to_gpst_days(&self) -> f64 {
         self.to_gpst_duration().to_unit(Unit::Day)
     }
 
     #[must_use]
     /// Returns seconds past QZSS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    /// :rtype: float
     pub fn to_qzsst_seconds(&self) -> f64 {
         self.to_qzsst_duration().to_seconds()
     }
 
     #[must_use]
     /// Returns `Duration` past QZSS time Epoch.
+    /// :rtype: Duration
     pub fn to_qzsst_duration(&self) -> Duration {
         self.to_time_scale(TimeScale::QZSST).duration
     }
 
     /// Returns nanoseconds past QZSS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// NOTE: This function will return an error if the centuries past QZSST time are not zero.
+    /// :rtype: int
     pub fn to_qzsst_nanoseconds(&self) -> Result<u64, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::QZSST)
     }
 
     #[must_use]
     /// Returns days past QZSS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    /// :rtype: float
     pub fn to_qzsst_days(&self) -> f64 {
         self.to_gpst_duration().to_unit(Unit::Day)
     }
 
     #[must_use]
     /// Returns seconds past GST (Galileo) Time Epoch
+    /// :rtype: float
     pub fn to_gst_seconds(&self) -> f64 {
         self.to_gst_duration().to_seconds()
     }
 
     #[must_use]
     /// Returns `Duration` past GST (Galileo) time Epoch.
+    /// :rtype: Duration
     pub fn to_gst_duration(&self) -> Duration {
         self.to_time_scale(TimeScale::GST).duration
     }
@@ -588,6 +650,7 @@ impl Epoch {
     /// Returns nanoseconds past GST (Galileo) Time Epoch, starting on August 21st 1999 Midnight UT
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// NOTE: This function will return an error if the centuries past GST time are not zero.
+    /// :rtype: int
     pub fn to_gst_nanoseconds(&self) -> Result<u64, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::GST)
     }
@@ -596,18 +659,21 @@ impl Epoch {
     /// Returns days past GST (Galileo) Time Epoch,
     /// starting on August 21st 1999 Midnight UT
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
+    /// :rtype: float
     pub fn to_gst_days(&self) -> f64 {
         self.to_gst_duration().to_unit(Unit::Day)
     }
 
     #[must_use]
     /// Returns seconds past BDT (BeiDou) Time Epoch
+    /// :rtype: float
     pub fn to_bdt_seconds(&self) -> f64 {
         self.to_bdt_duration().to_seconds()
     }
 
     #[must_use]
     /// Returns `Duration` past BDT (BeiDou) time Epoch.
+    /// :rtype: Duration
     pub fn to_bdt_duration(&self) -> Duration {
         self.to_tai_duration() - BDT_REF_EPOCH.to_tai_duration()
     }
@@ -615,6 +681,7 @@ impl Epoch {
     #[must_use]
     /// Returns days past BDT (BeiDou) Time Epoch, defined as Jan 01 2006 UTC
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
+    /// :rtype: float
     pub fn to_bdt_days(&self) -> f64 {
         self.to_bdt_duration().to_unit(Unit::Day)
     }
@@ -622,6 +689,7 @@ impl Epoch {
     /// Returns nanoseconds past BDT (BeiDou) Time Epoch, defined as Jan 01 2006 UTC
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// NOTE: This function will return an error if the centuries past GST time are not zero.
+    /// :rtype: int
     pub fn to_bdt_nanoseconds(&self) -> Result<u64, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::BDT)
     }
@@ -629,36 +697,43 @@ impl Epoch {
     #[allow(clippy::wrong_self_convention)]
     #[must_use]
     /// Returns the Duration since the UNIX epoch UTC midnight 01 Jan 1970.
+    /// :rtype: Duration
     fn to_unix_duration(&self) -> Duration {
         self.to_duration_in_time_scale(TimeScale::UTC) - UNIX_REF_EPOCH.to_utc_duration()
     }
 
     #[must_use]
     /// Returns the duration since the UNIX epoch in the provided unit.
+    /// :type unit: Unit
+    /// :rtype: float
     pub fn to_unix(&self, unit: Unit) -> f64 {
         self.to_unix_duration().to_unit(unit)
     }
 
     #[must_use]
     /// Returns the number seconds since the UNIX epoch defined 01 Jan 1970 midnight UTC.
+    /// :rtype: float
     pub fn to_unix_seconds(&self) -> f64 {
         self.to_unix(Unit::Second)
     }
 
     #[must_use]
     /// Returns the number milliseconds since the UNIX epoch defined 01 Jan 1970 midnight UTC.
+    /// :rtype: float
     pub fn to_unix_milliseconds(&self) -> f64 {
         self.to_unix(Unit::Millisecond)
     }
 
     #[must_use]
     /// Returns the number days since the UNIX epoch defined 01 Jan 1970 midnight UTC.
+    /// :rtype: float
     pub fn to_unix_days(&self) -> f64 {
         self.to_unix(Unit::Day)
     }
 
     #[must_use]
     /// Returns the Ephemeris Time seconds past 2000 JAN 01 midnight, matches NASA/NAIF SPICE.
+    /// :rtype: float
     pub fn to_et_seconds(&self) -> f64 {
         self.to_et_duration().to_seconds()
     }
@@ -672,6 +747,7 @@ impl Epoch {
     /// line with IERS and the documentation in the leap seconds list.
     ///
     /// In order to match SPICE, the as_et_duration() function will manually get rid of that difference.
+    /// :rtype: Duration
     pub fn to_et_duration(&self) -> Duration {
         self.to_time_scale(TimeScale::ET).duration
     }
@@ -691,23 +767,28 @@ impl Epoch {
     /// 6. Set the new candidate as the TDB seconds since J2000 and loop until step 5 breaks the loop, or we've done five iterations.
     /// 7. At this stage, we have a good approximation of the TDB seconds since J2000.
     /// 8. Reverse the algorithm given that approximation: compute the `g` offset, compute the difference between TDB and TAI, add the TT offset (32.184 s), and offset by the difference between J1900 and J2000.
+    ///
+    /// :rtype: Duration
     pub fn to_tdb_duration(&self) -> Duration {
         self.to_time_scale(TimeScale::TDB).duration
     }
 
     #[must_use]
     /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. <https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB>)
+    /// :rtype: float
     pub fn to_tdb_seconds(&self) -> f64 {
         self.to_tdb_duration().to_seconds()
     }
 
     #[must_use]
     /// Returns the Ephemeris Time JDE past epoch
+    /// :rtype: float
     pub fn to_jde_et_days(&self) -> f64 {
         self.to_jde_et_duration().to_unit(Unit::Day)
     }
 
     #[must_use]
+    /// :rtype: Duration
     pub fn to_jde_et_duration(&self) -> Duration {
         self.to_et_duration()
             + Unit::Day * (MJD_J1900 + MJD_OFFSET)
@@ -715,10 +796,13 @@ impl Epoch {
     }
 
     #[must_use]
+    /// :type unit: Unit
+    /// :rtype: float
     pub fn to_jde_et(&self, unit: Unit) -> f64 {
         self.to_jde_et_duration().to_unit(unit)
     }
 
+    /// :rtype: Duration
     #[must_use]
     pub fn to_jde_tdb_duration(&self) -> Duration {
         self.to_tdb_duration()
@@ -728,36 +812,42 @@ impl Epoch {
 
     #[must_use]
     /// Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. <https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB>)
+    /// :rtype: float
     pub fn to_jde_tdb_days(&self) -> f64 {
         self.to_jde_tdb_duration().to_unit(Unit::Day)
     }
 
     #[must_use]
     /// Returns the number of days since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
+    /// :rtype: float
     pub fn to_tdb_days_since_j2000(&self) -> f64 {
         self.to_tdb_duration().to_unit(Unit::Day)
     }
 
     #[must_use]
     /// Returns the number of centuries since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)
+    /// :rtype: float
     pub fn to_tdb_centuries_since_j2000(&self) -> f64 {
         self.to_tdb_duration().to_unit(Unit::Century)
     }
 
     #[must_use]
     /// Returns the number of days since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
+    /// :rtype: float
     pub fn to_et_days_since_j2000(&self) -> f64 {
         self.to_et_duration().to_unit(Unit::Day)
     }
 
     #[must_use]
     /// Returns the number of centuries since Ephemeris Time (ET) J2000 (used for Archinal et al. rotations)
+    /// :rtype: float
     pub fn to_et_centuries_since_j2000(&self) -> f64 {
         self.to_et_duration().to_unit(Unit::Century)
     }
 
     #[must_use]
     /// Returns the duration since the start of the year
+    /// :rtype: Duration
     pub fn duration_in_year(&self) -> Duration {
         let start_of_year = Self::from_gregorian(self.year(), 1, 1, 0, 0, 0, 0, self.time_scale);
         self.duration - start_of_year.duration
@@ -765,52 +855,62 @@ impl Epoch {
 
     #[must_use]
     /// Returns the number of days since the start of the year.
+    /// :rtype: float
     pub fn day_of_year(&self) -> f64 {
         self.duration_in_year().to_unit(Unit::Day) + 1.0
     }
 
     #[must_use]
     /// Returns the number of Gregorian years of this epoch in the current time scale.
+    /// :rtype: int
     pub fn year(&self) -> i32 {
         Self::compute_gregorian(self.duration, self.time_scale).0
     }
 
     #[must_use]
     /// Returns the year and the days in the year so far (days of year).
+    /// :rtype: typing.Tuple
     pub fn year_days_of_year(&self) -> (i32, f64) {
         (self.year(), self.day_of_year())
     }
 
     /// Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    /// :rtype: int
     pub fn hours(&self) -> u64 {
         self.duration.decompose().2
     }
 
     /// Returns the minutes of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    /// :rtype: int
     pub fn minutes(&self) -> u64 {
         self.duration.decompose().3
     }
 
     /// Returns the seconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    /// :rtype: int
     pub fn seconds(&self) -> u64 {
         self.duration.decompose().4
     }
 
     /// Returns the milliseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    /// :rtype: int
     pub fn milliseconds(&self) -> u64 {
         self.duration.decompose().5
     }
 
     /// Returns the microseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    /// :rtype: int
     pub fn microseconds(&self) -> u64 {
         self.duration.decompose().6
     }
 
     /// Returns the nanoseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
+    /// :rtype: int
     pub fn nanoseconds(&self) -> u64 {
         self.duration.decompose().7
     }
 
+    /// :rtype: MonthName
     pub fn month_name(&self) -> MonthName {
         let month = Self::compute_gregorian(self.duration, self.time_scale).1;
         month.into()
@@ -818,6 +918,7 @@ impl Epoch {
 
     #[cfg(feature = "std")]
     /// Returns this epoch in UTC in the RFC3339 format
+    /// :rtype: str
     pub fn to_rfc3339(&self) -> String {
         let ts = TimeScale::UTC;
         let (y, mm, dd, hh, min, s, nanos) =
