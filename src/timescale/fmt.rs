@@ -1,12 +1,12 @@
 /*
- * Hifitime, part of the Nyx Space tools
- * Copyright (C) 2017-onwards Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
- * This Source Code Form is subject to the terms of the Apache
- * v. 2.0. If a copy of the Apache License was not distributed with this
- * file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
- *
- * Documentation: https://nyxspace.com/
- */
+* Hifitime
+* Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at https://mozilla.org/MPL/2.0/.
+*
+* Documentation: https://nyxspace.com/
+*/
 
 use core::fmt;
 use core::str::FromStr;
