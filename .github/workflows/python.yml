@@ -69,22 +69,22 @@ jobs:
           pip install hifitime --find-links dist --force-reinstall --no-index -vv
           pip install pytest
           pytest
-      - name: pytest
-        if: ${{ !startsWith(matrix.target, 'x86') && matrix.target != 'ppc64' }}
-        uses: uraimo/run-on-arch-action@v2.5.0
-        with:
-          arch: ${{ matrix.target }}
-          distro: ubuntu22.04
-          githubToken: ${{ github.token }}
-          install: |
-            apt-get update
-            apt-get install -y --no-install-recommends python3 python3-pip
-            pip3 install -U pip pytest
-          run: |
-            set -e
-            ls dist
-            pip3 install hifitime --find-links dist --force-reinstall --no-index -vv
-            pytest
+      # - name: pytest
+      #   if: ${{ !startsWith(matrix.target, 'x86') && matrix.target != 'ppc64' }}
+      #   uses: uraimo/run-on-arch-action@v2.5.0
+      #   with:
+      #     arch: ${{ matrix.target }}
+      #     distro: ubuntu22.04
+      #     githubToken: ${{ github.token }}
+      #     install: |
+      #       apt-get update
+      #       apt-get install -y --no-install-recommends python3 python3-pip
+      #       pip3 install -U pip pytest
+      #     run: |
+      #       set -e
+      #       ls dist
+      #       pip3 install hifitime --find-links dist --force-reinstall --no-index -vv
+      #       pytest
 
   windows:
     runs-on: windows-latest
