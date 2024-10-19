@@ -1,6 +1,6 @@
 # Introduction to Hifitime
 
-Hifitime is a powerful Rust and Python library designed for time management. It provides extensive functionalities with precise operations for time calculation in different time scales, making it suitable for engineering and scientific applications where general relativity and time dilation matter. Hifitime guarantees nanosecond precision for 65,536 years around 01 January 1900 TAI. Hifitime is also formally verified using the [`Kani` model checker](https://model-checking.github.io/kani/), read more about it [this verification here](https://model-checking.github.io/kani-verifier-blog/2023/03/31/how-kani-helped-find-bugs-in-hifitime.html).
+Hifitime is a powerful Rust and Python library designed for time management. It provides extensive functionalities with precise operations for time calculation in different time scales, making it suitable for engineering and scientific applications where general relativity and time dilation matter. Hifitime guarantees nanosecond precision for 65,536 years around the reference epoch of the initialization time scale, e.g. 01 January 1900 for TAI. Hifitime is also formally verified using the [`Kani` model checker](https://model-checking.github.io/kani/), read more about it [this verification here](https://model-checking.github.io/kani-verifier-blog/2023/03/31/how-kani-helped-find-bugs-in-hifitime.html).
 
 Most users of Hifitime will only need to rely on the `Epoch` and `Duration` structures, and optionally the `Weekday` enum for week based computations. Scientific applications may make use of the `TimeScale` enum as well.
 
@@ -277,19 +277,7 @@ Disadvantages:
 1. Most astrodynamics applications require the computation of a duration in floating point values such as when querying an ephemeris. This design leads to an overhead of about 5.2 nanoseconds according to the benchmarks (`Duration to f64 seconds` benchmark). You may run the benchmarks with `cargo bench`.
 
 ## Epoch
-The Epoch is simply a wrapper around a Duration. All epochs are stored in TAI duration with respect to 01 January 1900 at noon (the official TAI epoch). The choice of TAI meets the [Standard of Fundamental Astronomy (SOFA)](https://www.iausofa.org/) recommendation of opting for a glitch-free time scale (i.e. without discontinuities like leap seconds or non-uniform seconds like TDB).
-
-### Printing and parsing
-
-Epochs can be formatted and parsed in the following time scales:
-
-+ UTC: `{epoch}`
-+ TAI: `{epoch:x}`
-+ TT: `{epoch:X}`
-+ TDB: `{epoch:e}`
-+ ET: `{epoch:E}`
-+ UNIX: `{epoch:p}`
-+ GPS: `{epoch:o}`
+The Epoch stores a duration with respect to the reference of a time scale, and that time scale itself. For monotonic time on th Earth, [Standard of Fundamental Astronomy (SOFA)](https://www.iausofa.org/) recommends of opting for a glitch-free time scale like TAI (i.e. without discontinuities like leap seconds or non-uniform seconds like TDB).
 
 ## Leap second support
 
@@ -311,7 +299,7 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 
 ## 4.0.0
 
-_This update is not mearly an iteration, but a redesign in how time scale are handled in hifitime, fixing nanosecond rounding errors, and improving the Python user experience. As of version 4.0.0, Hifitime is licensed under the Mozilla Public License version 2, refer to [discussion #274](https://github.com/nyx-space/hifitime/discussions/274) for details._
+_This update is not mearly an iteration, but a redesign in how time scale are handled in hifitime, fixing nanosecond rounding errors, and improving the Python user experience. Refer to the [blog post](https://nyxspace.com/blog/2024/10/17/hifitime-version-400-a-leap-forward-in-time-management/?utm_source=gh-readme) for details. As of version 4.0.0, Hifitime is licensed under the Mozilla Public License version 2, refer to [discussion #274](https://github.com/nyx-space/hifitime/discussions/274) for details._
 
 ## Breaking changes
 
