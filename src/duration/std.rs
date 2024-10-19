@@ -21,15 +21,16 @@ impl From<Duration> for std::time::Duration {
     /// 1. If the duration is negative, this will return a std::time::Duration::ZERO.
     /// 2. If the duration larger than the MAX duration, this will return std::time::Duration::MAX
     fn from(hf_duration: Duration) -> Self {
-        let (sign, days, hours, minutes, seconds, milli, us, nano) = hf_duration.decompose();
-        if sign < 0 {
-            std::time::Duration::ZERO
-        } else {
-            // Build the seconds separately from the nanos.
-            let above_ns_f64: f64 =
-                Duration::compose(sign, days, hours, minutes, seconds, milli, us, 0).to_seconds();
-            std::time::Duration::new(above_ns_f64 as u64, nano as u32)
-        }
+        const NANOS_PER_SEC: u128 = std::time::Duration::from_secs(1).as_nanos();
+        let nanos = hf_duration.total_nanoseconds();
+        let unsigned_nanos = u128::try_from(nanos).unwrap_or(0);
+
+        let secs: u64 = (unsigned_nanos / NANOS_PER_SEC)
+            .try_into()
+            .unwrap_or(u64::MAX);
+        let subsec_nanos = (unsigned_nanos % NANOS_PER_SEC) as u32;
+
+        std::time::Duration::new(secs, subsec_nanos)
     }
 }
 
@@ -40,6 +41,6 @@ impl From<std::time::Duration> for Duration {
     /// 1. If the duration is negative, this will return a std::time::Duration::ZERO.
     /// 2. If the duration larger than the MAX duration, this will return std::time::Duration::MAX
     fn from(std_duration: std::time::Duration) -> Self {
-        std_duration.as_secs_f64() * Unit::Second
+        Duration::from_total_nanoseconds(std_duration.as_nanos().try_into().unwrap_or(i128::MAX))
     }
 }
