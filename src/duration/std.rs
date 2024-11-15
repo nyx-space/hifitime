@@ -15,11 +15,12 @@ extern crate core;
 use super::Duration;
 
 impl From<Duration> for std::time::Duration {
-    /// Converts a duration into an std::time::Duration
+    /// Converts a Duration into a std::time::Duration
     ///
     /// # Limitations
-    /// 1. If the duration is negative, this will return a std::time::Duration::ZERO.
-    /// 2. If the duration is larger than the MAX duration, this will return std::time::Duration::MAX
+    /// 1. If the Duration is negative, this will return a std::time::Duration::ZERO.
+    /// 2. If the Duration is Duration::MAX, this will return
+    ///     the equivalent of std::time::Duration::from_secs(103407943680000)
     fn from(hf_duration: Duration) -> Self {
         use crate::NANOSECONDS_PER_SECOND;
         if hf_duration.signum() == -1 {
@@ -39,11 +40,10 @@ impl From<Duration> for std::time::Duration {
 }
 
 impl From<std::time::Duration> for Duration {
-    /// Converts a duration into an std::time::Duration
+    /// Converts a std::time::Duration into a Duration
     ///
     /// # Limitations
-    /// 1. If the duration is negative, this will return a std::time::Duration::ZERO.
-    /// 2. If the duration is larger than the MAX duration, this will return std::time::Duration::MAX
+    /// 1. If the std::time::Duration is larger than Duration::MAX, this will return Duration::MAX
     fn from(std_duration: std::time::Duration) -> Self {
         Duration::from_total_nanoseconds(std_duration.as_nanos().try_into().unwrap_or(i128::MAX))
     }
