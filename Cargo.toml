@@ -20,7 +20,7 @@ name = "hifitime"
 [dependencies]
 serde = { version = "1.0.155", optional = true }
 serde_derive = { version = "1.0.155", optional = true }
-pyo3 = { version = "0.22.0", features = [
+pyo3 = { version = "0.23.1", features = [
     "extension-module",
     "multiple-pymethods",
 ], optional = true }
