@@ -531,6 +531,32 @@ fn std_time_duration() {
     // Check that a negative hifitime duration is zero in std time
     let std_duration: StdDuration = (-hf_duration).into();
     assert_eq!(std_duration, StdDuration::ZERO);
+
+    // Check that a StdDuration::MAX, which is a longer duration than
+    // hifitime::Duration, is hifitime::Duration::MAX on conversion
+    assert_eq!(Duration::MAX, Into::<Duration>::into(StdDuration::MAX));
+
+    // Check that when Duration::MAX is converteed into StdDuration,
+    // its conversion is equivalent to a StdDuration of
+    // 103407943680000 seconds
+    assert_eq!(
+        StdDuration::from_secs(103407943680000),
+        Into::<StdDuration>::into(Duration::MAX)
+    );
+
+    // Check that conversions are in fact lossless at large durations.
+    // This tests large numbers below the seconds equivalent when converting
+    // Duration::MAX into a StdDuration
+    let std_duration: StdDuration = StdDuration::from_secs(100000000000000);
+    let hf_duration: Duration = std_duration.into();
+    assert_eq!(StdDuration::from_secs(100000000000000), hf_duration.into());
+
+    let std_duration: StdDuration = StdDuration::from_secs(103407943680000 - 1);
+    let hf_duration: Duration = std_duration.into();
+    assert_eq!(
+        StdDuration::from_secs(103407943680000 - 1),
+        hf_duration.into()
+    );
 }
 
 #[test]
