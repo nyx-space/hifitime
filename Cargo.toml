@@ -9,7 +9,7 @@ repository = "https://github.com/nyx-space/hifitime"
 keywords = ["date", "time", "science", "leap-second", "no-std"]
 categories = ["date-and-time", "no-std"]
 readme = "README.md"
-license = "Apache-2.0"
+license = "MPL-2.0"
 exclude = ["*.tar.gz", "data/"]
 edition = "2021"
 
