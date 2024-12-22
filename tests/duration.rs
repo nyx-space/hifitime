@@ -514,6 +514,33 @@ fn duration_from_str() {
 
     assert!(Duration::from_str("").is_err(),);
     assert!(Duration::from_str("+").is_err(),);
+
+    assert_eq!(Duration::from_str("  -5 days ").unwrap(), -5 * Unit::Day);
+
+    assert_eq!(
+        Duration::from_str("-5 h 256 ms 1 ns").unwrap(),
+        -(5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond)
+    );
+
+    assert_eq!(
+        Duration::from_str("  -5 days 1 ns ").unwrap(),
+        -(5 * Unit::Day + 1 * Unit::Nanosecond)
+    );
+
+    assert_eq!(
+        Duration::from_str("  -145 ns ").unwrap(),
+        -145 * Unit::Nanosecond
+    );
+
+    assert_eq!(
+        Duration::from_str("-123 μs").unwrap(),
+        -123 * Unit::Microsecond
+    );
+
+    assert_eq!(
+        Duration::from_str("  -1 μs 99 ns ").unwrap(),
+        -(1 * Unit::Microsecond + 99 * Unit::Nanosecond)
+    );
 }
 
 #[cfg(feature = "std")]
