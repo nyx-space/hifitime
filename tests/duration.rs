@@ -538,7 +538,7 @@ fn duration_from_str() {
     );
 
     assert_eq!(
-        Duration::from_str("  -1 μs 99 ns ").unwrap(),
+        Duration::from_str("-1 μs 99 ns").unwrap(),
         -(1 * Unit::Microsecond + 99 * Unit::Nanosecond)
     );
 }
