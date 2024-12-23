@@ -2,14 +2,6 @@ use hifitime::{
     Duration, Freq, Frequencies, TimeUnits, Unit, NANOSECONDS_PER_CENTURY, NANOSECONDS_PER_MINUTE,
 };
 
-#[cfg(feature = "std")]
-extern crate core;
-
-#[cfg(feature = "std")]
-use core::f64::EPSILON;
-#[cfg(not(feature = "std"))]
-use std::f64::EPSILON;
-
 #[test]
 fn time_unit() {
     // Check that the same number is created for different types
@@ -38,28 +30,28 @@ fn time_unit() {
     // let five_seconds = Unit::Second * 5.0;
     let five_seconds = 5.0.seconds();
     let sum: Duration = seven_hours + six_minutes + five_seconds;
-    assert!((sum.to_seconds() - 25565.0).abs() < EPSILON);
+    assert!((sum.to_seconds() - 25565.0).abs() < f64::EPSILON);
 
     let neg_sum = -sum;
-    assert!((neg_sum.to_seconds() + 25565.0).abs() < EPSILON);
+    assert!((neg_sum.to_seconds() + 25565.0).abs() < f64::EPSILON);
 
     assert_eq!(neg_sum.abs(), sum, "abs failed");
 
     let sub: Duration = seven_hours - six_minutes - five_seconds;
-    assert!((sub.to_seconds() - 24835.0).abs() < EPSILON);
+    assert!((sub.to_seconds() - 24835.0).abs() < f64::EPSILON);
 
     // Test fractional
     let quarter_hour = 0.25 * Unit::Hour;
     let third_hour = (1.0 / 3.0) * Unit::Hour;
     let sum: Duration = quarter_hour + third_hour;
-    assert!((sum.to_unit(Unit::Minute) - 35.0).abs() < EPSILON);
+    assert!((sum.to_unit(Unit::Minute) - 35.0).abs() < f64::EPSILON);
 
     let quarter_hour = -0.25 * Unit::Hour;
     let third_hour: Duration = -1 * Unit::Hour / 3;
     let sum: Duration = quarter_hour + third_hour;
     let delta = sum.to_unit(Unit::Millisecond).floor() - sum.to_unit(Unit::Second).floor() * 1000.0;
-    assert!(delta < EPSILON);
-    assert!((sum.to_unit(Unit::Minute) + 35.0).abs() < EPSILON);
+    assert!(delta < f64::EPSILON);
+    assert!((sum.to_unit(Unit::Minute) + 35.0).abs() < f64::EPSILON);
 }
 
 #[test]

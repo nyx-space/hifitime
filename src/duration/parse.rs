@@ -12,6 +12,35 @@ use super::{Duration, Unit};
 use crate::{HifitimeError, ParsingError};
 use core::str::FromStr;
 
+// Lookup table for units: (unit string, index in decomposed array)
+const UNITS: &[(&str, usize)] = &[
+    ("d", 0),
+    ("days", 0),
+    ("day", 0),
+    ("h", 1),
+    ("hours", 1),
+    ("hour", 1),
+    ("hr", 1),
+    ("min", 2),
+    ("mins", 2),
+    ("minute", 2),
+    ("minutes", 2),
+    ("s", 3),
+    ("second", 3),
+    ("seconds", 3),
+    ("sec", 3),
+    ("ms", 4),
+    ("millisecond", 4),
+    ("milliseconds", 4),
+    ("μs", 5),
+    ("us", 5),
+    ("microsecond", 5),
+    ("microseconds", 5),
+    ("ns", 6),
+    ("nanosecond", 6),
+    ("nanoseconds", 6),
+];
+
 impl FromStr for Duration {
     type Err = HifitimeError;
 
@@ -132,55 +161,23 @@ fn parse_duration(s: &str) -> Result<Duration, HifitimeError> {
                 };
 
                 let start_idx = prev_idx;
-                let pos = if cmp_chars_to_str(s, start_idx, "d")
-                    || cmp_chars_to_str(s, start_idx, "days")
-                    || cmp_chars_to_str(s, start_idx, "day")
-                {
-                    0
-                } else if cmp_chars_to_str(s, start_idx, "h")
-                    || cmp_chars_to_str(s, start_idx, "hours")
-                    || cmp_chars_to_str(s, start_idx, "hour")
-                    || cmp_chars_to_str(s, start_idx, "hr")
-                {
-                    1
-                } else if cmp_chars_to_str(s, start_idx, "min")
-                    || cmp_chars_to_str(s, start_idx, "mins")
-                    || cmp_chars_to_str(s, start_idx, "minute")
-                    || cmp_chars_to_str(s, start_idx, "minutes")
-                {
-                    2
-                } else if cmp_chars_to_str(s, start_idx, "s")
-                    || cmp_chars_to_str(s, start_idx, "second")
-                    || cmp_chars_to_str(s, start_idx, "seconds")
-                    || cmp_chars_to_str(s, start_idx, "sec")
-                {
-                    3
-                } else if cmp_chars_to_str(s, start_idx, "ms")
-                    || cmp_chars_to_str(s, start_idx, "millisecond")
-                    || cmp_chars_to_str(s, start_idx, "milliseconds")
-                {
-                    4
-                } else if cmp_chars_to_str(s, start_idx, "μs")
-                    || cmp_chars_to_str(s, start_idx, "us")
-                    || cmp_chars_to_str(s, start_idx, "microsecond")
-                    || cmp_chars_to_str(s, start_idx, "microseconds")
-                {
-                    5
-                } else if cmp_chars_to_str(s, start_idx, "ns")
-                    || cmp_chars_to_str(s, start_idx, "nanosecond")
-                    || cmp_chars_to_str(s, start_idx, "nanoseconds")
-                {
-                    6
-                } else {
+                let mut found_unit = false;
+                for &(unit_str, pos) in UNITS {
+                    if cmp_chars_to_str(s, start_idx, unit_str) {
+                        decomposed[pos] = latest_value;
+                        seeking_number = true;
+                        prev_idx = end_idx;
+                        found_unit = true;
+                        break;
+                    }
+                }
+
+                if !found_unit {
                     return Err(HifitimeError::Parse {
                         source: ParsingError::UnknownOrMissingUnit,
                         details: "unknown unit",
                     });
-                };
-
-                decomposed[pos] = latest_value;
-                seeking_number = true;
-                prev_idx = end_idx;
+                }
             }
             prev_char_was_space = true;
         } else {
@@ -194,58 +191,28 @@ fn parse_duration(s: &str) -> Result<Duration, HifitimeError> {
     // Handle the last element if the string didn't end with a space
     if !seeking_number {
         let start_idx = prev_idx;
-        let pos = if cmp_chars_to_str(s, start_idx, "d")
-            || cmp_chars_to_str(s, start_idx, "days")
-            || cmp_chars_to_str(s, start_idx, "day")
-        {
-            0
-        } else if cmp_chars_to_str(s, start_idx, "h")
-            || cmp_chars_to_str(s, start_idx, "hours")
-            || cmp_chars_to_str(s, start_idx, "hour")
-            || cmp_chars_to_str(s, start_idx, "hr")
-        {
-            1
-        } else if cmp_chars_to_str(s, start_idx, "min")
-            || cmp_chars_to_str(s, start_idx, "mins")
-            || cmp_chars_to_str(s, start_idx, "minute")
-            || cmp_chars_to_str(s, start_idx, "minutes")
-        {
-            2
-        } else if cmp_chars_to_str(s, start_idx, "s")
-            || cmp_chars_to_str(s, start_idx, "second")
-            || cmp_chars_to_str(s, start_idx, "seconds")
-            || cmp_chars_to_str(s, start_idx, "sec")
-        {
-            3
-        } else if cmp_chars_to_str(s, start_idx, "ms")
-            || cmp_chars_to_str(s, start_idx, "millisecond")
-            || cmp_chars_to_str(s, start_idx, "milliseconds")
-        {
-            4
-        } else if cmp_chars_to_str(s, start_idx, "μs")
-            || cmp_chars_to_str(s, start_idx, "us")
-            || cmp_chars_to_str(s, start_idx, "microsecond")
-            || cmp_chars_to_str(s, start_idx, "microseconds")
-        {
-            5
-        } else if cmp_chars_to_str(s, start_idx, "ns")
-            || cmp_chars_to_str(s, start_idx, "nanosecond")
-            || cmp_chars_to_str(s, start_idx, "nanoseconds")
-        {
-            6
-        } else {
+        let mut found_unit = false;
+        for &(unit_str, pos) in UNITS {
+            if cmp_chars_to_str(s, start_idx, unit_str) {
+                decomposed[pos] = latest_value;
+                found_unit = true;
+                break;
+            }
+        }
+
+        if !found_unit {
             return Err(HifitimeError::Parse {
                 source: ParsingError::UnknownOrMissingUnit,
                 details: "unknown unit",
             });
-        };
-        decomposed[pos] = latest_value;
+        }
     } else if prev_idx < s.len() {
         return Err(HifitimeError::Parse {
             source: ParsingError::UnknownOrMissingUnit,
             details: "expect a unit after the last numeric",
         });
     }
+
     Ok(Duration::compose_f64(
         1,
         decomposed[0],
