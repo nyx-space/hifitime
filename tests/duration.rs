@@ -180,12 +180,12 @@ fn test_ops() {
 
     assert_eq!(
         (-0.25 * Unit::Hour).total_nanoseconds(),
-        i128::from(15 * NANOSECONDS_PER_MINUTE) * -1
+        -i128::from(15 * NANOSECONDS_PER_MINUTE)
     );
 
     assert_eq!(
         (-0.25 * Unit::Hour - 0.25 * Unit::Hour).total_nanoseconds(),
-        i128::from(30 * NANOSECONDS_PER_MINUTE) * -1
+        -i128::from(30 * NANOSECONDS_PER_MINUTE)
     );
 
     #[cfg(feature = "std")]

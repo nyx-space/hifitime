@@ -77,9 +77,9 @@ impl FromStr for Duration {
         let duration = parse_duration(&s[skip..])?;
 
         if sign == -1 {
-            return Ok(-duration);
+            Ok(-duration)
         } else {
-            return Ok(duration);
+            Ok(duration)
         }
     }
 }
@@ -125,11 +125,11 @@ fn parse_duration(s: &str) -> Result<Duration, HifitimeError> {
                     seeking_number = false;
                 }
             } else {
-                let mut end_idx = idx;
-                for (inner_idx, _) in s[idx..].char_indices() {
-                    end_idx = idx + inner_idx;
-                    break;
-                }
+                let end_idx = if let Some((inner_idx, _)) = s[idx..].char_indices().next() {
+                    idx + inner_idx
+                } else {
+                    idx
+                };
 
                 let start_idx = prev_idx;
                 let pos = if cmp_chars_to_str(s, start_idx, "d")
