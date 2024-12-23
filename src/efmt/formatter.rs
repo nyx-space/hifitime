@@ -95,8 +95,8 @@ impl Formatter {
 
     pub fn with_timezone(epoch: Epoch, offset: Duration, format: Format) -> Self {
         Self {
-            epoch: epoch + offset,
-            offset,
+            epoch: epoch - offset,
+            offset: -offset,
             format,
         }
     }

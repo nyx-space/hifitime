@@ -471,6 +471,8 @@ fn duration_from_str() {
         -(1 * Unit::Hour + 15 * Unit::Minute)
     );
 
+    assert_eq!(Duration::from_str("-05:00").unwrap(), -5 * Unit::Hour);
+
     assert_eq!(
         Duration::from_str("+01:15").unwrap(),
         1 * Unit::Hour + 15 * Unit::Minute

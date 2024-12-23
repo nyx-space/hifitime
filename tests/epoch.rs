@@ -1884,6 +1884,13 @@ fn test_epoch_formatter() {
 
     assert_eq!(init_str, format!("{fmtd}"));
 
+    let init_str = "1994-11-05T08:15:30+05:00";
+    let e = Epoch::from_str(init_str).unwrap();
+
+    let fmtd = Formatter::with_timezone(e, Duration::from_str("+05:00").unwrap(), RFC3339_FLEX);
+
+    assert_eq!(init_str, format!("{fmtd}"));
+
     assert_eq!(
         format!("{:?}", Format::from_str("%A, ").unwrap()),
         "EpochFormat:`Weekday, `"
