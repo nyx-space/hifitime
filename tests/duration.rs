@@ -2,14 +2,6 @@ use hifitime::{
     Duration, Freq, Frequencies, TimeUnits, Unit, NANOSECONDS_PER_CENTURY, NANOSECONDS_PER_MINUTE,
 };
 
-#[cfg(feature = "std")]
-extern crate core;
-
-#[cfg(feature = "std")]
-use core::f64::EPSILON;
-#[cfg(not(feature = "std"))]
-use std::f64::EPSILON;
-
 #[test]
 fn time_unit() {
     // Check that the same number is created for different types
@@ -38,28 +30,28 @@ fn time_unit() {
     // let five_seconds = Unit::Second * 5.0;
     let five_seconds = 5.0.seconds();
     let sum: Duration = seven_hours + six_minutes + five_seconds;
-    assert!((sum.to_seconds() - 25565.0).abs() < EPSILON);
+    assert!((sum.to_seconds() - 25565.0).abs() < f64::EPSILON);
 
     let neg_sum = -sum;
-    assert!((neg_sum.to_seconds() + 25565.0).abs() < EPSILON);
+    assert!((neg_sum.to_seconds() + 25565.0).abs() < f64::EPSILON);
 
     assert_eq!(neg_sum.abs(), sum, "abs failed");
 
     let sub: Duration = seven_hours - six_minutes - five_seconds;
-    assert!((sub.to_seconds() - 24835.0).abs() < EPSILON);
+    assert!((sub.to_seconds() - 24835.0).abs() < f64::EPSILON);
 
     // Test fractional
     let quarter_hour = 0.25 * Unit::Hour;
     let third_hour = (1.0 / 3.0) * Unit::Hour;
     let sum: Duration = quarter_hour + third_hour;
-    assert!((sum.to_unit(Unit::Minute) - 35.0).abs() < EPSILON);
+    assert!((sum.to_unit(Unit::Minute) - 35.0).abs() < f64::EPSILON);
 
     let quarter_hour = -0.25 * Unit::Hour;
     let third_hour: Duration = -1 * Unit::Hour / 3;
     let sum: Duration = quarter_hour + third_hour;
     let delta = sum.to_unit(Unit::Millisecond).floor() - sum.to_unit(Unit::Second).floor() * 1000.0;
-    assert!(delta < EPSILON);
-    assert!((sum.to_unit(Unit::Minute) + 35.0).abs() < EPSILON);
+    assert!(delta < f64::EPSILON);
+    assert!((sum.to_unit(Unit::Minute) + 35.0).abs() < f64::EPSILON);
 }
 
 #[test]
@@ -180,12 +172,12 @@ fn test_ops() {
 
     assert_eq!(
         (-0.25 * Unit::Hour).total_nanoseconds(),
-        i128::from(15 * NANOSECONDS_PER_MINUTE) * -1
+        -i128::from(15 * NANOSECONDS_PER_MINUTE)
     );
 
     assert_eq!(
         (-0.25 * Unit::Hour - 0.25 * Unit::Hour).total_nanoseconds(),
-        i128::from(30 * NANOSECONDS_PER_MINUTE) * -1
+        -i128::from(30 * NANOSECONDS_PER_MINUTE)
     );
 
     #[cfg(feature = "std")]
@@ -471,6 +463,8 @@ fn duration_from_str() {
         -(1 * Unit::Hour + 15 * Unit::Minute)
     );
 
+    assert_eq!(Duration::from_str("-05:00").unwrap(), -5 * Unit::Hour);
+
     assert_eq!(
         Duration::from_str("+01:15").unwrap(),
         1 * Unit::Hour + 15 * Unit::Minute
@@ -514,6 +508,33 @@ fn duration_from_str() {
 
     assert!(Duration::from_str("").is_err(),);
     assert!(Duration::from_str("+").is_err(),);
+
+    assert_eq!(Duration::from_str("  -5 days ").unwrap(), -5 * Unit::Day);
+
+    assert_eq!(
+        Duration::from_str("-5 h 256 ms 1 ns").unwrap(),
+        -(5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond)
+    );
+
+    assert_eq!(
+        Duration::from_str("  -5 days 1 ns ").unwrap(),
+        -(5 * Unit::Day + 1 * Unit::Nanosecond)
+    );
+
+    assert_eq!(
+        Duration::from_str("  -145 ns ").unwrap(),
+        -145 * Unit::Nanosecond
+    );
+
+    assert_eq!(
+        Duration::from_str("-123 μs").unwrap(),
+        -123 * Unit::Microsecond
+    );
+
+    assert_eq!(
+        Duration::from_str("-1 μs 99 ns").unwrap(),
+        -(1 * Unit::Microsecond + 99 * Unit::Nanosecond)
+    );
 }
 
 #[cfg(feature = "std")]

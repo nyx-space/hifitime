@@ -183,7 +183,7 @@ fn test_wrapping() {
     for i in 0..24 {
         // Test wrapping
         let add = monday + i;
-        let expected: Weekday = i.rem_euclid(Weekday::MAX.into()).into();
+        let expected: Weekday = i.rem_euclid(Weekday::MAX).into();
         assert_eq!(
             add, expected,
             "expecting {:?} got {:?} for {:02} conversion",

@@ -289,8 +289,7 @@ impl Mul<f64> for Unit {
     /// Creates a duration from that f64
     ///
     /// ## Limitations
-    /// 1. If the input value times the unit does not fit on a Duration, then Duration::MAX or Duration::MIN will be returned
-    /// depending on whether the value would have overflowed or underflowed (respectively).
+    /// 1. If the input value times the unit does not fit on a Duration, then Duration::MAX or Duration::MIN will be returned depending on whether the value would have overflowed or underflowed (respectively).
     /// 2. Floating point operations may round differently on different processors. It's advised to use integer initialization of Durations whenever possible.
     fn mul(self, q: f64) -> Duration {
         let factor = match self {
