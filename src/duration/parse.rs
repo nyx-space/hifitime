@@ -330,5 +330,5 @@ fn parse_offset(s: &str) -> Result<Duration, HifitimeError> {
         }
     }
 
-    Ok(-(hours * Unit::Hour + minutes * Unit::Minute + seconds * Unit::Second))
+    Ok(hours * Unit::Hour + minutes * Unit::Minute + seconds * Unit::Second)
 }
