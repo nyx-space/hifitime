@@ -17,6 +17,10 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 name = "hifitime"
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docrs", "--generate-link-to-definition"]
+
 [dependencies]
 serde = { version = "1.0.155", optional = true }
 serde_derive = { version = "1.0.155", optional = true }
