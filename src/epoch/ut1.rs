@@ -89,8 +89,19 @@ impl Ut1Provider {
 
     /// Build a UT1 provider by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.long> (long time scale UT1 data) and parsing it.
     pub fn download_from_jpl(version: &str) -> Result<Self, HifitimeError> {
-        println!("http://eop2-external.jpl.nasa.gov/eop2/{}", version);
-        match get(format!("https://eop2-external.jpl.nasa.gov/eop2/{}", version)).call() {
+        let a = get(format!(
+            "https://eop2-external.jpl.nasa.gov/eop2/{}",
+            version
+        ))
+        .header(
+            "User-Agent",
+            format!("hifitime/{}", env!("CARGO_PKG_VERSION")),
+        )
+        .call();
+
+        println!("a: {:?}", a);
+
+        match a {
             Ok(resp) => Self::from_eop_data(resp.into_body().read_to_string().expect(
                 format!("failed to read response body from JPL for version {version}",).as_str(),
             )),
