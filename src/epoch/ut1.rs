@@ -11,7 +11,7 @@
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
-use ureq::get;
+use ureq::Agent;
 use ureq::Error;
 
 use tabled::settings::Style;
@@ -89,17 +89,20 @@ impl Ut1Provider {
 
     /// Build a UT1 provider by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.long> (long time scale UT1 data) and parsing it.
     pub fn download_from_jpl(version: &str) -> Result<Self, HifitimeError> {
-        let a = get(format!(
-            "https://eop2-external.jpl.nasa.gov/eop2/{}",
-            version
-        ))
-        .header(
-            "User-Agent",
-            format!("hifitime/{}", env!("CARGO_PKG_VERSION")),
-        )
-        .call();
+        let url = format!("https://eop2-external.jpl.nasa.gov/eop2/{}", version);
 
-        println!("a: {:?}", a);
+        let config = Agent::config_builder()
+            .timeout_global(Some(Duration::from_seconds(10.).into()))
+            .build();
+        let agent: Agent = config.into();
+
+        let a = agent
+            .get(url)
+            .header(
+            "User-Agent", 
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36"
+            )
+            .call();
 
         match a {
             Ok(resp) => Self::from_eop_data(resp.into_body().read_to_string().expect(
