@@ -11,7 +11,8 @@
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
-use reqwest::{blocking::get, StatusCode};
+use ureq::get;
+use ureq::Error;
 
 use tabled::settings::Style;
 use tabled::{Table, Tabled};
@@ -88,18 +89,17 @@ impl Ut1Provider {
 
     /// Build a UT1 provider by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.long> (long time scale UT1 data) and parsing it.
     pub fn download_from_jpl(version: &str) -> Result<Self, HifitimeError> {
-        match get(format!(
-            "https://eop2-external.jpl.nasa.gov/eop2/{}",
-            version
-        )) {
-            Ok(resp) => {
-                let eop_data = String::from_utf8(resp.bytes().unwrap().to_vec()).unwrap();
-                Self::from_eop_data(eop_data)
-            }
-            Err(e) => Err(HifitimeError::Parse {
-                source: ParsingError::DownloadError {
-                    code: e.status().unwrap_or(StatusCode::SEE_OTHER),
-                },
+        println!("http://eop2-external.jpl.nasa.gov/eop2/{}", version);
+        match get(format!("https://eop2-external.jpl.nasa.gov/eop2/{}", version)).call() {
+            Ok(resp) => Self::from_eop_data(resp.into_body().read_to_string().expect(
+                format!("failed to read response body from JPL for version {version}",).as_str(),
+            )),
+            Err(Error::StatusCode(code)) => Err(HifitimeError::Parse {
+                source: ParsingError::DownloadError { code: code },
+                details: "when downloading EOP2 file from JPL",
+            }),
+            Err(_) => Err(HifitimeError::Parse {
+                source: ParsingError::UnknownFormat,
                 details: "when downloading EOP2 file from JPL",
             }),
         }
