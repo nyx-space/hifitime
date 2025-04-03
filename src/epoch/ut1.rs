@@ -11,7 +11,7 @@
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
-use ureq::Agent;
+use ureq::get;
 use ureq::Error;
 
 use tabled::settings::Style;
@@ -91,20 +91,8 @@ impl Ut1Provider {
     pub fn download_from_jpl(version: &str) -> Result<Self, HifitimeError> {
         let url = format!("https://eop2-external.jpl.nasa.gov/eop2/{}", version);
 
-        let config = Agent::config_builder()
-            .timeout_global(Some(Duration::from_seconds(10.).into()))
-            .build();
-        let agent: Agent = config.into();
-
-        let a = agent
-            .get(url)
-            .header(
-            "User-Agent", 
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36"
-            )
-            .call();
-
-        match a {
+        // Download the file
+        match get(url).call() {
             Ok(resp) => Self::from_eop_data(resp.into_body().read_to_string().expect(
                 format!("failed to read response body from JPL for version {version}",).as_str(),
             )),
