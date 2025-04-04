@@ -81,6 +81,9 @@ web-sys = { version = "0.3", features = [
     'PerformanceTiming',
 ] }
 
+[target.aarch64-unknown-linux-gnu.env]
+CFLAGS="-D__ARM_ARCH=8"
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(kani)'] }
 

@@ -93,9 +93,15 @@ impl Ut1Provider {
 
         // Download the file
         match get(url).call() {
-            Ok(resp) => Self::from_eop_data(resp.into_body().read_to_string().expect(
-                format!("failed to read response body from JPL for version {version}",).as_str(),
-            )),
+            Ok(resp) => {
+                let Ok(jpl_response) = resp.into_body().read_to_string() else {
+                    return Err(HifitimeError::Parse {
+                        source: ParsingError::UnknownFormat,
+                        details: "when reading EOP2 file from JPL",
+                    });
+                };
+                Self::from_eop_data(jpl_response)
+            }
             Err(Error::StatusCode(code)) => Err(HifitimeError::Parse {
                 source: ParsingError::DownloadError { code: code },
                 details: "when downloading EOP2 file from JPL",
