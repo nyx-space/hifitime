@@ -3,7 +3,7 @@ use crate::{Epoch, TimeScale, Unit};
 /// Errors during [TimeOffset] exploitation
 #[derive(Debug)]
 pub enum TimeOffsetError {
-    /// Timescales should be identical when defining a new [TimeOffset]!
+    /// Timescales should not be identical when defining a new [TimeOffset]!
     IdenticalTimescales,
     /// Epoch is not expressed in one of the two supported [TimeScale]s!
     NotSupportedTimescale,
