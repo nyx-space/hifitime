@@ -94,6 +94,15 @@ impl TimeOffset {
             .unwrap()
     }
 
+    /// Define a new |[TimeScale::BDT] - [TimeScale::GPST]| [TimeOffset] from time of week components
+    pub fn from_bdt_gpst_time_of_week(
+        t_ref_nanos: (u32, u64),
+        polynomials: (f64, f64, f64),
+    ) -> Self {
+        Self::from_reference_time_of_week(t_ref_nanos, TimeScale::BDT, TimeScale::GPST, polynomials)
+            .unwrap()
+    }
+
     /// Define a new |[TimeScale::BDT] - [TimeScale::UTC]| [TimeOffset] from time of week components
     pub fn from_bdt_utc_time_of_week(
         t_ref_nanos: (u32, u64),
