@@ -258,12 +258,105 @@ impl TimeOffset {
     }
 }
 
-pub trait TimeShift {
-    /// Convert and shift [TimeScale] using provided [TimeOffset] structure.
-    fn time_offset(&self, timeoffset: TimeOffset) -> Self
-    where
-        Self: Sized;
+#[cfg(test)]
+mod test {
+    use crate::{Epoch, TimeOffset, TimeScale, Unit};
 
-    /// Convert and shift [TimeScale] using provided [TimeOffset] structure.
-    fn time_offset_mut(&mut self, timeoffset: TimeOffset);
+    #[test]
+    fn test_1ns_time_offset() {
+        // Tests the TimeOffset API with values slightly above hifitime precision.
+        let polynomials = (1E-9, 1E-9, 0.0);
+
+        let known_timescales = [
+            TimeScale::UTC,
+            TimeScale::TAI,
+            TimeScale::GPST,
+            TimeScale::GST,
+            TimeScale::BDT,
+            TimeScale::QZSST,
+        ];
+
+        for ref_ts in known_timescales.iter() {
+            for lhs_ts in known_timescales.iter() {
+                // random t_ref in LHS timescale
+                let t_ref = Epoch::from_gregorian(2020, 1, 1, 0, 0, 0, 0, *lhs_ts);
+
+                // create valid TimeOffset
+                let time_offset = TimeOffset::from_reference_epoch(t_ref, *ref_ts, polynomials);
+
+                if ref_ts != lhs_ts {
+                    // valid use case
+                    let time_offset = time_offset.unwrap();
+
+                    // some time later within that week
+                    let instant = t_ref + 1.0 * Unit::Day;
+
+                    // API should work
+                    let _ = time_offset.time_correction_seconds(instant).unwrap();
+
+                    // Test that conversion did work
+                    let converted = time_offset.epoch_time_correction(instant).unwrap();
+                    assert_eq!(
+                        converted.time_scale, *ref_ts,
+                        "epoch_time_correction did not translate timescale!"
+                    );
+
+                    // Epoch should remain the same because a0 is below current Hifitime precision
+                } else {
+                    // invalid use case
+                    assert!(time_offset.is_err());
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn test_sub_nano_time_offset() {
+        // for what it's worth.. tests that
+        // Epoch is not translated if a0 < 1ns which is below Epoch
+        // precision (for all timescales).
+        let polynomials = (1E-10, 0.0, 0.0);
+
+        let known_timescales = [
+            TimeScale::UTC,
+            TimeScale::TAI,
+            TimeScale::GPST,
+            TimeScale::GST,
+            TimeScale::BDT,
+            TimeScale::QZSST,
+        ];
+
+        for ref_ts in known_timescales.iter() {
+            for lhs_ts in known_timescales.iter() {
+                // random t_ref in LHS timescale
+                let t_ref = Epoch::from_gregorian(2020, 1, 1, 0, 0, 0, 0, *lhs_ts);
+
+                // create valid TimeOffset
+                let time_offset = TimeOffset::from_reference_epoch(t_ref, *ref_ts, polynomials);
+
+                if ref_ts != lhs_ts {
+                    // valid use case
+                    let time_offset = time_offset.unwrap();
+
+                    // some time later within that week
+                    let instant = t_ref + 1.0 * Unit::Day;
+
+                    // API should work
+                    let _ = time_offset.time_correction_seconds(instant).unwrap();
+
+                    // Test that conversion did work
+                    let converted = time_offset.epoch_time_correction(instant).unwrap();
+                    assert_eq!(
+                        converted.time_scale, *ref_ts,
+                        "epoch_time_correction did not translate timescale!"
+                    );
+
+                    // Epoch should remain the same because a0 is below current Hifitime precision
+                } else {
+                    // invalid use case
+                    assert!(time_offset.is_err());
+                }
+            }
+        }
+    }
 }
