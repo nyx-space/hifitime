@@ -287,8 +287,10 @@ mod test {
                 if ref_ts != lhs_ts {
                     // valid use case
                     let time_offset = time_offset.unwrap();
-
-                    // 1. some time later within that week
+                    
+                    ///////////////////////////////////////
+                    // 1. some time LATER within that week
+                    ///////////////////////////////////////
                     let instant = t_ref + 1.0 * Unit::Day;
 
                     // this is a simple case of a static offset
@@ -310,15 +312,17 @@ mod test {
                     let dt = (converted - instant).to_seconds();
                     assert_eq!(dt, polynomials.0);
 
-                    // 2. some time before within that week (works both ways)
+                    /////////////////////////////////////////////////////////
+                    // 2. some time BEFORE within that week (works both ways)
+                    /////////////////////////////////////////////////////////
                     let instant = t_ref - 1.0 * Unit::Day;
 
                     // this is a simple case of a static offset
                     let dt_s = time_offset.time_correction_seconds(instant).unwrap();
-                    assert_eq!(dt_s, -polynomials.0);
+                    assert_eq!(dt_s, polynomials.0); // same static offset
 
                     let dt_nanos = time_offset.time_correction_nanos(instant).unwrap();
-                    assert_eq!(dt_nanos, -polynomials.0 * 1E9);
+                    assert_eq!(dt_nanos, polynomials.0 * 1E9); // same static offset
 
                     // Test that conversion did work
                     let converted = time_offset.epoch_time_correction(instant).unwrap();
@@ -330,7 +334,8 @@ mod test {
 
                     // this is a simple case of a static offset
                     let dt = (converted - instant).to_seconds();
-                    assert_eq!(dt, -polynomials.0);
+                    assert_eq!(dt, polynomials.0);
+
                 } else {
                     // invalid use case
                     assert!(time_offset.is_err());
