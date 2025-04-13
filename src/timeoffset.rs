@@ -165,7 +165,7 @@ impl TimeOffset {
     /// Define a new [TimeOffset] with new reference [TimeScale], while preserving other components.
     /// NB: this should be expressed in the left-hand side [TimeScale] and we do not verify it!
     pub fn with_reference_timescale(&self, ts: TimeScale) -> Self {
-        let mut s = self.clone();
+        let mut s = *self;
         s.rhs = ts;
         s
     }
@@ -174,21 +174,21 @@ impl TimeOffset {
     /// This needs to be coupled to either [Self::with_reference_time_of_week_nanos] or
     /// [Self::with_reference_epoch] to remain correct.
     pub fn with_lhs_timescale(&self, ts: TimeScale) -> Self {
-        let mut s = self.clone();
+        let mut s = *self;
         s.lhs = ts;
         s
     }
 
     /// Define a new [TimeOffset] with new reference time of week (in nanoseconds), while preserving other components.
     pub fn with_reference_time_of_week_nanos(&self, t_ref_nanos: (u32, u64)) -> Self {
-        let mut s = self.clone();
+        let mut s = *self;
         s.t_ref_nanos = t_ref_nanos;
         s
     }
 
     /// Define a new [TimeOffset] with new reference [Epoch] with 1 ns precision.
     pub fn with_reference_epoch(&self, t_ref: Epoch) -> Result<Self, TimeOffsetError> {
-        let mut s = self.clone();
+        let mut s = *self;
 
         if t_ref.time_scale != self.lhs {
             return Err(TimeOffsetError::InvalidTimescale);
@@ -200,7 +200,7 @@ impl TimeOffset {
 
     /// Define a new [TimeOffset] with new polynomials, while preserving other components.
     pub fn with_polynomials(&self, polynomials: (f64, f64, f64)) -> Self {
-        let mut s = self.clone();
+        let mut s = *self;
         s.polynomials = polynomials;
         s
     }
