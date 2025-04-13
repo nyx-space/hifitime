@@ -71,6 +71,9 @@ pub use timeunits::*;
 mod timeseries;
 pub use timeseries::*;
 
+mod timeoffset;
+pub use timeoffset::*;
+
 mod weekday;
 pub use weekday::*;
 
