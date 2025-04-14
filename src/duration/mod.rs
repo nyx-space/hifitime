@@ -1,9 +1,9 @@
 /*
-* Hifitime, part of the Nyx Space tools
-* Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
-* This Source Code Form is subject to the terms of the Apache
-* v. 2.0. If a copy of the Apache License was not distributed with this
-* file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
+* Hifitime
+* Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at https://mozilla.org/MPL/2.0/.
 *
 * Documentation: https://nyxspace.com/
 */
@@ -63,13 +63,17 @@ pub mod ops;
 ///
 /// **Important conventions:**
 /// 1. The negative durations can be mentally modeled "BC" years. One hours before 01 Jan 0000, it was "-1" years but  365 days and 23h into the current day.
-/// It was decided that the nanoseconds corresponds to the nanoseconds _into_ the current century. In other words,
-/// a duration with centuries = -1 and nanoseconds = 0 is _a greater duration_ (further from zero) than centuries = -1 and nanoseconds = 1.
-/// Duration zero minus one nanosecond returns a century of -1 and a nanosecond set to the number of nanoseconds in one century minus one.
-/// That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
-/// As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
+///     It was decided that the nanoseconds corresponds to the nanoseconds _into_ the current century. In other words,
+///     a duration with centuries = -1 and nanoseconds = 0 is _a greater duration_ (further from zero) than centuries = -1 and nanoseconds = 1.
+///     Duration zero minus one nanosecond returns a century of -1 and a nanosecond set to the number of nanoseconds in one century minus one.
+///     That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
+///     As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
 /// 2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
 #[derive(Clone, Copy, Debug, Hash, PartialOrd, PartialEq, Eq, Ord)]
+///
+/// (Python documentation hints)
+/// :type string_repr: str
+/// :rtype: Duration
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]

@@ -20,17 +20,18 @@ permissions:
 
 jobs:
   linux:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
       matrix:
         target: [x86_64, x86, aarch64, armv7, ppc64le]
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Setup Python on ${{ matrix.target }} 
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          check-latest: false
-          allow-prereleases: false
+          python-version: ">=3.9"
+      
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -52,9 +53,9 @@ jobs:
                 apt update -y && apt-get install -y libssl-dev openssl pkg-config
             fi
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-linux-${{ matrix.target }}
           path: dist
       - name: pytest
         if: ${{ startsWith(matrix.target, 'x86_64') }}
@@ -65,22 +66,6 @@ jobs:
           pip install hifitime --find-links dist --force-reinstall --no-index -vv
           pip install pytest
           pytest
-      - name: pytest
-        if: ${{ !startsWith(matrix.target, 'x86') && matrix.target != 'ppc64' }}
-        uses: uraimo/run-on-arch-action@v2.5.0
-        with:
-          arch: ${{ matrix.target }}
-          distro: ubuntu22.04
-          githubToken: ${{ github.token }}
-          install: |
-            apt-get update
-            apt-get install -y --no-install-recommends python3 python3-pip
-            pip3 install -U pip pytest
-          run: |
-            set -e
-            ls dist
-            pip3 install hifitime --find-links dist --force-reinstall --no-index -vv
-            pytest
 
   windows:
     runs-on: windows-latest
@@ -100,9 +85,9 @@ jobs:
           args: --release --out dist --find-interpreter -F python
           sccache: 'true'
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheels-windows-${{ matrix.target }}
           path: dist
       - name: pytest
         if: ${{ !startsWith(matrix.target, 'aarch64') }}
@@ -132,7 +117,7 @@ jobs:
           sccache: 'true'
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wheels-macos-13
           path: dist
@@ -191,7 +176,7 @@ jobs:
           command: sdist
           args: --out dist
       - name: Upload sdist
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: wheels
           path: dist
@@ -202,9 +187,8 @@ jobs:
     if: github.ref_type == 'tag'
     needs: [linux, windows, macos-13, macos-14, sdist]
     steps:
-      - uses: actions/download-artifact@v3
-        with:
-          name: wheels
+      - uses: actions/download-artifact@v4
+
       - name: Publish to PyPI
         uses: PyO3/maturin-action@v1
         env:

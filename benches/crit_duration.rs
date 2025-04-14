@@ -10,7 +10,7 @@ pub fn criterion_benchmark(c: &mut Criterion) {
             b.iter(|| {
                 let interval_length_s: f64 = 6311433599.999999;
                 let interval_length: Duration = black_box(interval_length_s * Unit::Second);
-                interval_length.total_nanoseconds()
+                interval_length.to_parts();
             })
         },
     );

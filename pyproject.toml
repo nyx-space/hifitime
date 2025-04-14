@@ -1,10 +1,14 @@
 [build-system]
-requires = ["maturin>=1.5,<1.6"]
+requires = ["maturin>=1.7,<1.8"]
 build-backend = "maturin"
+
+[tool.maturin]
+profile = "release"
+features = ["python"]
 
 [project]
 name = "hifitime"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Topic :: Scientific/Engineering :: Astronomy",

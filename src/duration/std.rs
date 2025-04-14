@@ -1,9 +1,9 @@
 /*
-* Hifitime, part of the Nyx Space tools
-* Copyright (C) 2023 Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
-* This Source Code Form is subject to the terms of the Apache
-* v. 2.0. If a copy of the Apache License was not distributed with this
-* file, You can obtain one at https://www.apache.org/licenses/LICENSE-2.0.
+* Hifitime
+* Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at https://mozilla.org/MPL/2.0/.
 *
 * Documentation: https://nyxspace.com/
 */
@@ -12,35 +12,39 @@
 
 extern crate core;
 
-use super::{Duration, Unit};
+use super::Duration;
 
 impl From<Duration> for std::time::Duration {
-    /// Converts a duration into an std::time::Duration
+    /// Converts a Duration into a std::time::Duration
     ///
     /// # Limitations
-    /// 1. If the duration is negative, this will return a std::time::Duration::ZERO.
-    /// 2. If the duration larger than the MAX duration, this will return std::time::Duration::MAX
+    /// 1. If the Duration is negative, this will return a std::time::Duration::ZERO.
+    /// 2. If the Duration is Duration::MAX, this will return
+    ///     the equivalent of std::time::Duration::from_secs(103407943680000)
     fn from(hf_duration: Duration) -> Self {
-        let mut parts = hf_duration.decompose();
-        if parts.sign < 0 {
+        use crate::NANOSECONDS_PER_SECOND;
+        if hf_duration.signum() == -1 {
             std::time::Duration::ZERO
         } else {
-            // Build the seconds separately from the nanos.
-            let nanos = parts.nanoseconds;
-            parts.nanoseconds = 0;
-            let above_ns_f64: f64 = Duration::from(parts).to_seconds();
-            std::time::Duration::new(above_ns_f64 as u64, nanos as u32)
+            let nanos = hf_duration.total_nanoseconds();
+            let unsigned_nanos = u128::try_from(nanos).unwrap_or(0);
+
+            let secs: u64 = (unsigned_nanos / NANOSECONDS_PER_SECOND as u128)
+                .try_into()
+                .unwrap_or(u64::MAX);
+            let subsec_nanos = (unsigned_nanos % NANOSECONDS_PER_SECOND as u128) as u32;
+
+            std::time::Duration::new(secs, subsec_nanos)
         }
     }
 }
 
 impl From<std::time::Duration> for Duration {
-    /// Converts a duration into an std::time::Duration
+    /// Converts a std::time::Duration into a Duration
     ///
     /// # Limitations
-    /// 1. If the duration is negative, this will return a std::time::Duration::ZERO.
-    /// 2. If the duration larger than the MAX duration, this will return std::time::Duration::MAX
+    /// 1. If the std::time::Duration is larger than Duration::MAX, this will return Duration::MAX
     fn from(std_duration: std::time::Duration) -> Self {
-        std_duration.as_secs_f64() * Unit::Second
+        Duration::from_total_nanoseconds(std_duration.as_nanos().try_into().unwrap_or(i128::MAX))
     }
 }

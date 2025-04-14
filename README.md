@@ -1,6 +1,6 @@
 # Introduction to Hifitime
 
-Hifitime is a powerful Rust and Python library designed for time management. It provides extensive functionalities with precise operations for time calculation in different time scales, making it suitable for engineering and scientific applications where general relativity and time dilation matter. Hifitime guarantees nanosecond precision for 65,536 years around 01 January 1900 TAI. Hifitime is also formally verified using the [`Kani` model checker](https://model-checking.github.io/kani/), read more about it [this verification here](https://model-checking.github.io/kani-verifier-blog/2023/03/31/how-kani-helped-find-bugs-in-hifitime.html).
+Hifitime is a powerful Rust and Python library designed for time management. It provides extensive functionalities with precise operations for time calculation in different time scales, making it suitable for engineering and scientific applications where general relativity and time dilation matter. Hifitime guarantees nanosecond precision for 65,536 years around the reference epoch of the initialization time scale, e.g. 01 January 1900 for TAI. Hifitime is also formally verified using the [`Kani` model checker](https://model-checking.github.io/kani/), read more about it [this verification here](https://model-checking.github.io/kani-verifier-blog/2023/03/31/how-kani-helped-find-bugs-in-hifitime.html).
 
 Most users of Hifitime will only need to rely on the `Epoch` and `Duration` structures, and optionally the `Weekday` enum for week based computations. Scientific applications may make use of the `TimeScale` enum as well.
 
@@ -277,19 +277,7 @@ Disadvantages:
 1. Most astrodynamics applications require the computation of a duration in floating point values such as when querying an ephemeris. This design leads to an overhead of about 5.2 nanoseconds according to the benchmarks (`Duration to f64 seconds` benchmark). You may run the benchmarks with `cargo bench`.
 
 ## Epoch
-The Epoch is simply a wrapper around a Duration. All epochs are stored in TAI duration with respect to 01 January 1900 at noon (the official TAI epoch). The choice of TAI meets the [Standard of Fundamental Astronomy (SOFA)](https://www.iausofa.org/) recommendation of opting for a glitch-free time scale (i.e. without discontinuities like leap seconds or non-uniform seconds like TDB).
-
-### Printing and parsing
-
-Epochs can be formatted and parsed in the following time scales:
-
-+ UTC: `{epoch}`
-+ TAI: `{epoch:x}`
-+ TT: `{epoch:X}`
-+ TDB: `{epoch:e}`
-+ ET: `{epoch:E}`
-+ UNIX: `{epoch:p}`
-+ GPS: `{epoch:o}`
+The Epoch stores a duration with respect to the reference of a time scale, and that time scale itself. For monotonic time on th Earth, [Standard of Fundamental Astronomy (SOFA)](https://www.iausofa.org/) recommends of opting for a glitch-free time scale like TAI (i.e. without discontinuities like leap seconds or non-uniform seconds like TDB).
 
 ## Leap second support
 
@@ -309,12 +297,51 @@ In order to provide full interoperability with NAIF, hifitime uses the NAIF algo
 
 # Changelog
 
-## 4.0.0 (WIP)
+## 4.0.0
 
-+ Minimum Support Rust Version (MSRV) bumped to 1.77.0
-+ Major refactoring of the code for ease of maintenance and removal of deprecrated functions from 3.x
-+ Centralization of all time scale conversions into the `to_time_scale` function -- huge effort by [@gwbres](https://github.com/gwbres)
-+ Removed `der` encoding/decoding for Epoch and Duration.
+_This update is not mearly an iteration, but a redesign in how time scale are handled in hifitime, fixing nanosecond rounding errors, and improving the Python user experience. Refer to the [blog post](https://nyxspace.com/blog/2024/10/17/hifitime-version-400-a-leap-forward-in-time-management/?utm_source=gh-readme) for details. As of version 4.0.0, Hifitime is licensed under the Mozilla Public License version 2, refer to [discussion #274](https://github.com/nyx-space/hifitime/discussions/274) for details._
+
+## Breaking changes
+
+* Refactor epoch to keep time in its own time scale by @gwbres and @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/280
+* Duration serde now human readable + Display of Epoch is now Gregorian in its initialization time scale by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/299
+* Improve error handling (switching to `snafu`) by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/300
+* Breaking change: renamed Julian date constants and removed other Julian date constants by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/307
+* Minimum Support Rust Version (MSRV) bumped to 1.77.0
+
+_Note:_ as of version 4.0.0, dependency updates will increment the minor version.
+
+## New features / improvements
+
+* Support exceptions in Python by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/301
+* Add Python regression test for #249 by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/305
+* MJD/JDE UTC fix + `to_time_scale` now available in Python by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/332
+* Add Python datetime interop by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/333
+* Add autogenerated Kani harnesses by @cvick32 in https://github.com/nyx-space/hifitime/pull/316
+* Kani autogen follow on by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/318
+
+
+## Bug fixes
+
+* Fix bug in `to_gregorian_str`  by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/308
+* Fix conversion to Gregorian by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/303
+* Rename `EpochError` to `HifitimeError` and add exception testing by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/315
+* Prevent rounding of the GNSS from nanoseconds initializers by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/319
+* Fix ceil with zero duration by @cardigan1008 in https://github.com/nyx-space/hifitime/pull/323
+* Fix token exceed in from_str() by @cardigan1008 in https://github.com/nyx-space/hifitime/pull/324
+
+
+The main change in this refactoring is that `Epoch`s now keep the time in their own time scales. This greatly simplifies conversion between time scales, and ensures that all computations happen in the same time scale as the initialization time scale, then no sub-nanosecond rounding error could be introduced.
+
+## Maintenance
+
+* Removed der dependency by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/297
+* Refactor epochrs as a module by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/298
+* 4.0.0 dev gh 237 by @gwbres in https://github.com/nyx-space/hifitime/pull/289
+* Introduce doc_cfg and mark ut1 within ut1 crate feature by @gwbres in https://github.com/nyx-space/hifitime/pull/321
+* Update pyo3 requirement from 0.21.1 to 0.22.0 by @dependabot in https://github.com/nyx-space/hifitime/pull/312
+* Update tabled requirement from 0.15.0 to 0.16.0 by @dependabot in https://github.com/nyx-space/hifitime/pull/325
+* Update lexical-core requirement from 0.8.5 to 1.0.1 by @dependabot in https://github.com/nyx-space/hifitime/pull/330
 
 ## 3.9.0
 
@@ -433,5 +460,15 @@ The exact steps should be:
 1. Jump into the virtual environment: `source .venv/bin/activate` (e.g.)
 1. Make sure pytest is installed: `pip install pytest`
 1. Build hifitime specifying the output folder of the Python egg: `maturin build -F python --out dist`
-1. Install the egg: `pip install dist/hifitime-4.0.0.dev1-cp311-cp311-linux_x86_64.whl`
+1. Install the egg: `pip install dist/hifitime-4.0.0.alpha1-cp311-cp311-linux_x86_64.whl`
 1. Run the tests using the environmental pytest: `.venv/bin/pytest`
+
+### Type hinting
+
+Hifitime uses the approach from [`dora`](https://github.com/dora-rs/dora/pull/493) to enable type hinting in IDEs. This approach requires running `maturin` twice: once to generate to the bindings and a second time for it to incorporate the `pyi` file.
+
+```bash
+maturin develop -F python;
+python generate_stubs.py hifitime hifitime.pyi;
+maturin develop
+```
