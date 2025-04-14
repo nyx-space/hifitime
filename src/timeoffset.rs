@@ -30,7 +30,7 @@ impl TimeOffset {
     /// Define a new [TimeOffset] from this reference [Epoch] expressed
     /// in left-hand side [TimeScale] to rhs [TimeScale]
     pub fn from_reference_epoch(
-        t_ref: Epoch,
+        ref_epoch: Epoch,
         rhs: TimeScale,
         polynomials: (f64, f64, f64),
     ) -> Result<Self, TimeOffsetError> {
