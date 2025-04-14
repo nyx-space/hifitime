@@ -189,7 +189,7 @@ assert_eq!(format!("{rounded}"), "12 min");
 
 // And this works on Epochs as well.
 let previous_post = Epoch::from_gregorian_utc_hms(2015, 2, 7, 11, 22, 33);
-let example_now = Epoch::from_gregorian_utc_hms(2015, 8, 17, 22, 55, 01);
+let example_now = Epoch::from_gregorian_utc_hms(2015, 8, 17, 22, 55, 1);
 
 // We'll round to the nearest fifteen days
 let this_much_ago = example_now - previous_post;

@@ -28,24 +28,18 @@ impl Epoch {
         let sign = duration_wrt_ref.signum();
         let (days, hours, minutes, seconds, milliseconds, microseconds, nanos) = if sign < 0 {
             // For negative epochs, the computation of days and time must account for the time as it'll cause the days computation to be off by one.
-            let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-                duration_wrt_ref.decompose();
+            let mut time_parts = duration_wrt_ref.decompose();
 
+            let days = time_parts.days;
+
+            time_parts.sign = 1;
+            time_parts.centuries = 0;
+            time_parts.days = 0;
             // Recompute the time since we count backward and not forward for negative durations.
-            let time = Duration::compose(
-                0,
-                0,
-                hours,
-                minutes,
-                seconds,
-                milliseconds,
-                microseconds,
-                nanos,
-            );
+            let time = Duration::from(time_parts);
 
             // Compute the correct time.
-            let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-                (24 * Unit::Hour - time).decompose();
+            let parts = (24 * Unit::Hour - time).decompose();
 
             let days_f64 = if time > Duration::ZERO {
                 -((days + 1) as f64)
@@ -55,25 +49,25 @@ impl Epoch {
 
             (
                 days_f64,
-                hours,
-                minutes,
-                seconds,
-                milliseconds,
-                microseconds,
-                nanos,
+                parts.hours,
+                parts.minutes,
+                parts.seconds,
+                parts.milliseconds,
+                parts.microseconds,
+                parts.nanoseconds,
             )
         } else {
             // For positive epochs, the computation of days and time is trivally the decomposition of the duration.
-            let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-                duration_wrt_ref.decompose();
+            let parts = duration_wrt_ref.decompose();
+
             (
-                days as f64,
-                hours,
-                minutes,
-                seconds,
-                milliseconds,
-                microseconds,
-                nanos,
+                parts.days as f64,
+                parts.hours,
+                parts.minutes,
+                parts.seconds,
+                parts.milliseconds,
+                parts.microseconds,
+                parts.nanoseconds,
             )
         };
 
@@ -270,7 +264,7 @@ impl Epoch {
                 }
                 Some(days) => {
                     // Initialize the duration as the number of days since the reference year (may be negative).
-                    Unit::Day * i64::from(days)
+                    Unit::Day * i128::from(days)
                 }
             },
         };
@@ -301,13 +295,13 @@ impl Epoch {
         };
 
         // Add the number of days based on the input month
-        duration_wrt_ref += Unit::Day * i64::from(cumul_days[(month - 1) as usize]);
+        duration_wrt_ref += Unit::Day * i128::from(cumul_days[(month - 1) as usize]);
         // Add the number of days based on the input day and time.
-        duration_wrt_ref += Unit::Day * i64::from(day - 1)
-            + Unit::Hour * i64::from(hour)
-            + Unit::Minute * i64::from(minute)
-            + Unit::Second * i64::from(second)
-            + Unit::Nanosecond * i64::from(nanos);
+        duration_wrt_ref += Unit::Day * i128::from(day - 1)
+            + Unit::Hour * i128::from(hour)
+            + Unit::Minute * i128::from(minute)
+            + Unit::Second * i128::from(second)
+            + Unit::Nanosecond * i128::from(nanos);
 
         if second == 60 {
             // Herein lies the whole ambiguity of leap seconds. Two different UTC dates exist at the
@@ -624,9 +618,9 @@ impl Epoch {
 
         let tz = if offset_sign > 0 {
             // We oppose the sign in the string to undo the offset
-            -(i64::from(decomposed[7]) * Unit::Hour + i64::from(decomposed[8]) * Unit::Minute)
+            -(i128::from(decomposed[7]) * Unit::Hour + i128::from(decomposed[8]) * Unit::Minute)
         } else {
-            i64::from(decomposed[7]) * Unit::Hour + i64::from(decomposed[8]) * Unit::Minute
+            i128::from(decomposed[7]) * Unit::Hour + i128::from(decomposed[8]) * Unit::Minute
         };
 
         let epoch = Self::maybe_from_gregorian(

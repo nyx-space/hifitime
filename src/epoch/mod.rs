@@ -60,8 +60,8 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[allow(unused_imports)] // Import is indeed used.
 use num_traits::Float;
 
-pub(crate) const TT_OFFSET_MS: i64 = 32_184;
-pub(crate) const ET_OFFSET_US: i64 = 32_184_935;
+pub(crate) const TT_OFFSET_MS: i128 = 32_184;
+pub(crate) const ET_OFFSET_US: i128 = 32_184_935;
 
 /// NAIF leap second kernel data for M_0 used to calculate the mean anomaly of the heliocentric orbit of the Earth-Moon barycenter.
 pub const NAIF_M0: f64 = 6.239996;
@@ -343,15 +343,11 @@ impl Epoch {
     /// :type time_scale: TimeScale
     /// :rtype: int
     #[allow(clippy::wrong_self_convention)]
-    fn to_nanoseconds_in_time_scale(&self, time_scale: TimeScale) -> Result<u64, HifitimeError> {
-        let (centuries, nanoseconds) = self.to_duration_in_time_scale(time_scale).to_parts();
-        if centuries != 0 {
-            Err(HifitimeError::Duration {
-                source: DurationError::Overflow,
-            })
-        } else {
-            Ok(nanoseconds)
-        }
+    fn to_nanoseconds_in_time_scale(&self, time_scale: TimeScale) -> Result<i128, HifitimeError> {
+        // TODO: never fails
+        Ok(self
+            .to_duration_in_time_scale(time_scale)
+            .total_nanoseconds())
     }
 
     #[must_use]
@@ -374,13 +370,6 @@ impl Epoch {
     /// :rtype: float
     pub fn to_tai(&self, unit: Unit) -> f64 {
         self.to_tai_duration().to_unit(unit)
-    }
-
-    #[must_use]
-    /// Returns the TAI parts of this duration
-    /// :rtype: typing.Tuple
-    pub fn to_tai_parts(&self) -> (i16, u64) {
-        self.to_tai_duration().to_parts()
     }
 
     #[must_use]
@@ -594,7 +583,7 @@ impl Epoch {
     /// Returns nanoseconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// NOTE: This function will return an error if the centuries past GPST time are not zero.
     /// :rtype: int
-    pub fn to_gpst_nanoseconds(&self) -> Result<u64, HifitimeError> {
+    pub fn to_gpst_nanoseconds(&self) -> Result<i128, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::GPST)
     }
 
@@ -622,7 +611,7 @@ impl Epoch {
     /// Returns nanoseconds past QZSS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// NOTE: This function will return an error if the centuries past QZSST time are not zero.
     /// :rtype: int
-    pub fn to_qzsst_nanoseconds(&self) -> Result<u64, HifitimeError> {
+    pub fn to_qzsst_nanoseconds(&self) -> Result<i128, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::QZSST)
     }
 
@@ -651,7 +640,7 @@ impl Epoch {
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// NOTE: This function will return an error if the centuries past GST time are not zero.
     /// :rtype: int
-    pub fn to_gst_nanoseconds(&self) -> Result<u64, HifitimeError> {
+    pub fn to_gst_nanoseconds(&self) -> Result<i128, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::GST)
     }
 
@@ -690,7 +679,7 @@ impl Epoch {
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// NOTE: This function will return an error if the centuries past GST time are not zero.
     /// :rtype: int
-    pub fn to_bdt_nanoseconds(&self) -> Result<u64, HifitimeError> {
+    pub fn to_bdt_nanoseconds(&self) -> Result<i128, HifitimeError> {
         self.to_nanoseconds_in_time_scale(TimeScale::BDT)
     }
 
@@ -877,37 +866,37 @@ impl Epoch {
     /// Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in.
     /// :rtype: int
     pub fn hours(&self) -> u64 {
-        self.duration.decompose().2
+        self.duration.decompose().hours as u64
     }
 
     /// Returns the minutes of the Gregorian representation  of this epoch in the time scale it was initialized in.
     /// :rtype: int
     pub fn minutes(&self) -> u64 {
-        self.duration.decompose().3
+        self.duration.decompose().minutes as u64
     }
 
     /// Returns the seconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     /// :rtype: int
     pub fn seconds(&self) -> u64 {
-        self.duration.decompose().4
+        self.duration.decompose().seconds as u64
     }
 
     /// Returns the milliseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     /// :rtype: int
     pub fn milliseconds(&self) -> u64 {
-        self.duration.decompose().5
+        self.duration.decompose().milliseconds as u64
     }
 
     /// Returns the microseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     /// :rtype: int
     pub fn microseconds(&self) -> u64 {
-        self.duration.decompose().6
+        self.duration.decompose().microseconds as u64
     }
 
     /// Returns the nanoseconds of the Gregorian representation  of this epoch in the time scale it was initialized in.
     /// :rtype: int
     pub fn nanoseconds(&self) -> u64 {
-        self.duration.decompose().7
+        self.duration.decompose().nanoseconds as u64
     }
 
     /// :rtype: MonthName
@@ -1067,7 +1056,9 @@ fn rem_euclid_f64(lhs: f64, rhs: f64) -> f64 {
 #[cfg(test)]
 mod ut_epoch {
 
-    use super::{div_rem_f64, Duration, Epoch};
+    use crate::Unit;
+
+    use super::{div_rem_f64, Epoch};
 
     #[test]
     fn div_rem_f64_test() {
@@ -1098,17 +1089,17 @@ mod ut_epoch {
         Out[10]: 0.2291307542978747
 
          */
-        let e = Epoch::from_tai_duration(Duration::from_parts(1, 723038437000000000));
+        let e = Epoch::from_tai_duration(1 * Unit::Century + 723038437 * Unit::Second);
         let days_d = e.to_et_days_since_j2000();
         let centuries_t = e.to_et_centuries_since_j2000();
-        assert!((days_d - 8369.000800729873).abs() < f64::EPSILON);
-        assert!((centuries_t - 0.2291307542978747).abs() < f64::EPSILON);
+        assert!(dbg!(days_d - 8369.000800729873).abs() < f64::EPSILON);
+        assert!(dbg!(centuries_t - 0.2291307542978747).abs() < f64::EPSILON);
     }
 
     #[test]
     #[cfg(feature = "serde")]
     fn test_serdes() {
-        let e = Epoch::from_gregorian_utc_at_midnight(2020, 01, 01);
+        let e = Epoch::from_gregorian_utc_at_midnight(2020, 1, 1);
         let content = r#""2020-01-01T00:00:00 UTC""#;
         assert_eq!(content, serde_json::to_string(&e).unwrap());
         let parsed: Epoch = serde_json::from_str(content).unwrap();

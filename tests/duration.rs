@@ -1,6 +1,4 @@
-use hifitime::{
-    Duration, Freq, Frequencies, TimeUnits, Unit, NANOSECONDS_PER_CENTURY, NANOSECONDS_PER_MINUTE,
-};
+use hifitime::{Duration, Freq, Frequencies, TimeUnits, Unit, NANOSECONDS_PER_MINUTE};
 
 #[test]
 fn time_unit() {
@@ -84,7 +82,7 @@ fn duration_format() {
             "{}",
             Unit::Hour * 5 + Unit::Millisecond * 256 + Unit::Microsecond + Unit::Nanosecond * 3.5
         ),
-        "5 h 256 ms 1 μs 3 ns"
+        "5 h 256 ms 1 μs 3 ns 500 ps"
     );
 
     // Check printing negative durations only shows one negative sign
@@ -151,8 +149,14 @@ fn duration_format() {
     assert_eq!(delta * -1.0, 0.0);
     assert_eq!(format!("{}", sum), "-35 min");
 
-    assert_eq!(format!("{}", Duration::MAX), "1196851200 days");
-    assert_eq!(format!("{}", Duration::MIN), "-1196851200 days");
+    assert_eq!(
+        format!("{}", Duration::MAX),
+        "1969226660422 days 2 h 20 min 21 s 558 ms 9 μs 736 ns"
+    );
+    assert_eq!(
+        format!("{}", Duration::MIN),
+        "-1969226660422 days 2 h 20 min 21 s 558 ms 9 μs 736 ns"
+    );
     assert_eq!(format!("{}", Duration::ZERO), "0 ns");
 
     // The `e` format will print this as a floating point value.
@@ -167,7 +171,7 @@ fn duration_format() {
 fn test_ops() {
     assert_eq!(
         (0.25 * Unit::Hour).total_nanoseconds(),
-        (15 * NANOSECONDS_PER_MINUTE).into()
+        (15 * NANOSECONDS_PER_MINUTE)
     );
 
     assert_eq!(
@@ -200,52 +204,27 @@ fn test_ops() {
     println!("{}", quarter_hour);
 
     let min_quarter_hour = -0.5 * half_hour;
-    assert_eq!(min_quarter_hour, -15.minutes());
+    assert_eq!(min_quarter_hour, -(15.minutes()));
     #[cfg(feature = "std")]
     println!("{}", min_quarter_hour);
-}
-
-#[test]
-fn test_ops_near_bounds() {
-    assert_eq!(Duration::MAX - Duration::MAX, 0 * Unit::Nanosecond);
-    assert_eq!(Duration::MIN - Duration::MIN, 0 * Unit::Nanosecond);
-
-    // Check that the special cases of the bounds themselves don't prevent correct math.
-    assert_eq!(
-        (Duration::MIN - 1 * Unit::Nanosecond) - (Duration::MIN - 1 * Unit::Nanosecond),
-        0 * Unit::Nanosecond
-    );
-
-    let tt_offset_ns: u64 = 32_184_000_000;
-    let duration = Duration::from_parts(-32767, 0);
-    let exp = Duration::from_parts(-32768, NANOSECONDS_PER_CENTURY - tt_offset_ns);
-    assert_eq!(
-        duration - Duration::from_total_nanoseconds(tt_offset_ns.into()),
-        exp
-    );
-
-    // Test the zero crossing with a large negative value
-    assert_eq!(
-        2 * Unit::Nanosecond - (-1 * Unit::Century),
-        1 * Unit::Century + 2 * Unit::Nanosecond
-    );
-
-    // Check that we saturate one way but not the other for MIN
-    assert_eq!(Duration::MIN - 1 * Unit::Nanosecond, Duration::MIN);
-    assert_ne!(Duration::MIN + 1 * Unit::Nanosecond, Duration::MIN);
-
-    // Check that we saturate one way but not the other for MAX
-    assert_eq!(Duration::MAX + 1 * Unit::Nanosecond, Duration::MAX);
-    assert_ne!(Duration::MAX - 1 * Unit::Nanosecond, Duration::MAX);
 }
 
 #[test]
 fn test_neg() {
     assert_eq!(Duration::MIN_NEGATIVE, -Duration::MIN_POSITIVE);
     assert_eq!(Duration::MIN_POSITIVE, -Duration::MIN_NEGATIVE);
-    assert_eq!(2.nanoseconds(), -(2.0.nanoseconds()));
-    assert_eq!(Duration::MIN, -Duration::MAX);
-    assert_eq!(Duration::MAX, -Duration::MIN);
+    assert_eq!(
+        Duration::MIN,
+        Duration {
+            zeptoseconds: i128::MIN
+        }
+    );
+    assert_eq!(
+        Duration::MAX,
+        Duration {
+            zeptoseconds: i128::MAX
+        }
+    );
 }
 
 #[test]
@@ -282,13 +261,10 @@ fn test_extremes() {
     );
 
     // Add i64 tests
-    let d = Duration::from_truncated_nanoseconds(i64::MAX);
+    let d = Duration::from_total_nanoseconds(i128::MAX);
     #[cfg(feature = "std")]
     println!("{}", d);
-    assert_eq!(
-        Duration::from_truncated_nanoseconds(d.truncated_nanoseconds()),
-        d
-    );
+    assert_eq!(Duration::from_total_nanoseconds(d.total_nanoseconds()), d);
 
     let past_min = Duration::from_total_nanoseconds(i128::MIN);
     assert_eq!(past_min, Duration::MIN);
@@ -360,11 +336,11 @@ fn duration_floor_ceil_round() {
     // These are from here: https://www.geeksforgeeks.org/time-round-function-in-golang-with-examples/
     let d = 5.minutes() + 7.seconds();
     assert_eq!(d.floor(6.seconds()), 5.minutes() + 6.seconds());
-    assert_eq!(d.floor(-6.seconds()), 5.minutes() + 6.seconds());
+    assert_eq!(d.floor(-(6.seconds())), 5.minutes() + 6.seconds());
     assert_eq!(d.ceil(6.seconds()), 5.minutes() + 12.seconds());
-    println!("{}", d.ceil(-6.seconds()));
+    println!("{}", d.ceil(-(6.seconds())));
     println!("{}", 5.minutes() + 12.seconds());
-    assert_eq!(d.ceil(-6.seconds()), 5.minutes() + 12.seconds());
+    assert_eq!(d.ceil(-(6.seconds())), 5.minutes() + 12.seconds());
 
     let d = 3.minutes() + 73.671.seconds();
     assert_eq!(d, 4.minutes() + 13.seconds() + 671.milliseconds());
@@ -584,15 +560,15 @@ fn std_time_duration() {
 fn test_decompose() {
     let pos = 5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond;
 
-    let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) = pos.decompose();
-    assert_eq!(sign, 0);
-    assert_eq!(days, 0);
-    assert_eq!(hours, 5);
-    assert_eq!(minutes, 0);
-    assert_eq!(seconds, 0);
-    assert_eq!(milliseconds, 256);
-    assert_eq!(microseconds, 0);
-    assert_eq!(nanos, 1);
+    let parts = pos.decompose();
+    assert_eq!(parts.sign, 1);
+    assert_eq!(parts.days, 0);
+    assert_eq!(parts.hours, 5);
+    assert_eq!(parts.minutes, 0);
+    assert_eq!(parts.seconds, 0);
+    assert_eq!(parts.milliseconds, 256);
+    assert_eq!(parts.microseconds, 0);
+    assert_eq!(parts.nanoseconds, 1);
 
     // A negative duration works in the same way, only the sign is different.
     let neg = -(5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond);
@@ -600,15 +576,15 @@ fn test_decompose() {
     assert_eq!(neg.abs(), pos);
     assert!(neg.is_negative());
 
-    let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) = neg.decompose();
-    assert_eq!(sign, -1);
-    assert_eq!(days, 0);
-    assert_eq!(hours, 5);
-    assert_eq!(minutes, 0);
-    assert_eq!(seconds, 0);
-    assert_eq!(milliseconds, 256);
-    assert_eq!(microseconds, 0);
-    assert_eq!(nanos, 1);
+    let parts = neg.decompose();
+    assert_eq!(parts.sign, -1);
+    assert_eq!(parts.days, 0);
+    assert_eq!(parts.hours, 5);
+    assert_eq!(parts.minutes, 0);
+    assert_eq!(parts.seconds, 0);
+    assert_eq!(parts.milliseconds, 256);
+    assert_eq!(parts.microseconds, 0);
+    assert_eq!(parts.nanoseconds, 1);
 }
 
 #[test]
@@ -630,7 +606,7 @@ fn regression_test_gh_244() {
     let zero = Duration::ZERO;
     // Test that the ceil of a zero duration is still zero.
     assert_eq!(zero.ceil(zero), zero);
-    let non_zero = Duration::from_parts(1, 23456);
+    let non_zero = Duration::from_total_nanoseconds(23456);
     // Test that the ceil of a non-zero duration by zero is still zero.
     assert_eq!(non_zero.ceil(zero), zero);
     // Test that the ceil of a zero duration by a non-zero is non-zero duration.

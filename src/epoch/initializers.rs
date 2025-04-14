@@ -33,12 +33,6 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch.
-    pub fn from_tai_parts(centuries: i16, nanoseconds: u64) -> Self {
-        Self::from_tai_duration(Duration::from_parts(centuries, nanoseconds))
-    }
-
-    #[must_use]
     /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
     pub fn from_tai_seconds(seconds: f64) -> Self {
         assert!(
@@ -270,7 +264,10 @@ impl Epoch {
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use GPS as a time source.
     pub fn from_gpst_nanoseconds(nanoseconds: u64) -> Self {
-        Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::GPST)
+        Self::from_duration(
+            Duration::from_total_nanoseconds(nanoseconds.into()),
+            TimeScale::GPST,
+        )
     }
 
     #[must_use]
@@ -292,7 +289,10 @@ impl Epoch {
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use QZSS as a time source.
     pub fn from_qzsst_nanoseconds(nanoseconds: u64) -> Self {
-        Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::QZSST)
+        Self::from_duration(
+            Duration::from_total_nanoseconds(nanoseconds.into()),
+            TimeScale::QZSST,
+        )
     }
 
     #[must_use]
@@ -316,7 +316,10 @@ impl Epoch {
     /// starting August 21st 1999 midnight (UTC)
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
     pub fn from_gst_nanoseconds(nanoseconds: u64) -> Self {
-        Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::GST)
+        Self::from_duration(
+            Duration::from_total_nanoseconds(nanoseconds.into()),
+            TimeScale::GST,
+        )
     }
 
     #[must_use]
@@ -338,7 +341,10 @@ impl Epoch {
     /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use BDT as a time source.
     pub fn from_bdt_nanoseconds(nanoseconds: u64) -> Self {
-        Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::BDT)
+        Self::from_duration(
+            Duration::from_total_nanoseconds(nanoseconds.into()),
+            TimeScale::BDT,
+        )
     }
 
     #[must_use]

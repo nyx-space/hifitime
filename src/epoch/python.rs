@@ -10,7 +10,9 @@
 
 // Here lives all of the implementations that are only built with the pyhon feature.
 
-use crate::{prelude::Format, Duration, Epoch, HifitimeError, TimeScale};
+use crate::{
+    prelude::Format, Duration, Epoch, HifitimeError, TimeScale, ZEPTOSECONDS_PER_NANOSECONDS,
+};
 
 use core::str::FromStr;
 
@@ -35,7 +37,10 @@ impl Epoch {
     /// :type nanoseconds: int
     /// :rtype: Epoch
     fn init_from_tai_parts(_cls: &Bound<'_, PyType>, centuries: i16, nanoseconds: u64) -> Self {
-        Self::from_tai_parts(centuries, nanoseconds)
+        Self::from_tai_parts(
+            centuries,
+            (nanoseconds as i128).saturating_mul(ZEPTOSECONDS_PER_NANOSECONDS),
+        )
     }
 
     #[classmethod]
@@ -193,7 +198,9 @@ impl Epoch {
     /// :type nanoseconds: float
     /// :rtype: Epoch
     fn init_from_gpst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
-        Self::from_gpst_nanoseconds(nanoseconds)
+        Self::from_gpst_nanoseconds(
+            (nanoseconds as i128).saturating_mul(ZEPTOSECONDS_PER_NANOSECONDS),
+        )
     }
 
     #[classmethod]
@@ -221,7 +228,9 @@ impl Epoch {
     /// :type nanoseconds: int
     /// :rtype: Epoch
     fn init_from_qzsst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
-        Self::from_qzsst_nanoseconds(nanoseconds)
+        Self::from_qzsst_nanoseconds(
+            (nanoseconds as i128).saturating_mul(ZEPTOSECONDS_PER_NANOSECONDS),
+        )
     }
 
     #[classmethod]
@@ -252,7 +261,9 @@ impl Epoch {
     /// :type nanoseconds: float
     /// :rtype: Epoch
     fn init_from_gst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
-        Self::from_gst_nanoseconds(nanoseconds)
+        Self::from_gst_nanoseconds(
+            (nanoseconds as i128).saturating_mul(ZEPTOSECONDS_PER_NANOSECONDS),
+        )
     }
 
     #[classmethod]
@@ -280,7 +291,9 @@ impl Epoch {
     /// :type nanoseconds: float
     /// :rtype: Epoch
     fn init_from_bdt_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
-        Self::from_bdt_nanoseconds(nanoseconds)
+        Self::from_bdt_nanoseconds(
+            (nanoseconds as i128).saturating_mul(ZEPTOSECONDS_PER_NANOSECONDS),
+        )
     }
 
     #[classmethod]
