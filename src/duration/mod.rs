@@ -50,6 +50,7 @@ pub const NANOSECONDS_PER_MINUTE: u64 = 60 * NANOSECONDS_PER_SECOND;
 pub const NANOSECONDS_PER_HOUR: u64 = 60 * NANOSECONDS_PER_MINUTE;
 pub const NANOSECONDS_PER_DAY: u64 = 24 * NANOSECONDS_PER_HOUR;
 pub const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_DAY;
+pub const ZEPTOSECONDS_PER_NANOSECOND: u64 = 1_000_000_000_000;
 
 pub mod ops;
 
@@ -74,12 +75,17 @@ pub mod ops;
 pub struct Duration {
     pub(crate) centuries: i16,
     pub(crate) nanoseconds: u64,
+    pub(crate) zeptoseconds: u64,
 }
 
 impl PartialEq for Duration {
     fn eq(&self, other: &Self) -> bool {
         if self.centuries == other.centuries {
-            self.nanoseconds == other.nanoseconds
+            if self.nanoseconds == other.nanoseconds {
+                self.zeptoseconds == other.zeptoseconds
+            } else {
+                false
+            }
         } else if (self.centuries.saturating_sub(other.centuries)).saturating_abs() == 1
             && (self.centuries == 0 || other.centuries == 0)
         {
@@ -101,6 +107,7 @@ impl Hash for Duration {
     fn hash<H: Hasher>(&self, hasher: &mut H) {
         self.centuries.hash(hasher);
         self.nanoseconds.hash(hasher);
+        self.zeptoseconds.hash(hasher);
     }
 }
 
@@ -140,24 +147,28 @@ impl Duration {
     pub const ZERO: Self = Self {
         centuries: 0,
         nanoseconds: 0,
+        zeptoseconds: 0,
     };
 
     /// Maximum duration that can be represented
     pub const MAX: Self = Self {
         centuries: i16::MAX,
         nanoseconds: NANOSECONDS_PER_CENTURY,
+        zeptoseconds: ZEPTOSECONDS_PER_NANOSECOND,
     };
 
     /// Minimum duration that can be represented
     pub const MIN: Self = Self {
         centuries: i16::MIN,
         nanoseconds: 0,
+        zeptoseconds: 0,
     };
 
     /// Smallest duration that can be represented
     pub const EPSILON: Self = Self {
         centuries: 0,
-        nanoseconds: 1,
+        nanoseconds: 0,
+        zeptoseconds: 1,
     };
 
     /// Minimum positive duration is one nanoseconds
@@ -167,25 +178,27 @@ impl Duration {
     pub const MIN_NEGATIVE: Self = Self {
         centuries: -1,
         nanoseconds: NANOSECONDS_PER_CENTURY - 1,
+        zeptoseconds: ZEPTOSECONDS_PER_NANOSECOND - 1,
     };
 
     #[must_use]
     /// Create a normalized duration from its parts
-    pub fn from_parts(centuries: i16, nanoseconds: u64) -> Self {
+    pub fn from_parts(centuries: i16, nanoseconds: u64, zeptoseconds: u64) -> Self {
         let mut me = Self {
             centuries,
             nanoseconds,
+            zeptoseconds,
         };
         me.normalize();
         me
     }
 
     #[must_use]
-    /// Converts the total nanoseconds as i128 into this Duration (saving 48 bits)
+    /// Converts the total zeptoseconds as i128 into this Duration (saving 48 bits)
     pub fn from_total_nanoseconds(nanos: i128) -> Self {
         // In this function, we simply check that the input data can be casted. The `normalize` function will check whether more work needs to be done.
         if nanos == 0 {
-            Self::ZERO
+            return Self::ZERO;
         } else {
             let centuries_i128 = nanos.div_euclid(NANOSECONDS_PER_CENTURY.into());
             let remaining_nanos_i128 = nanos.rem_euclid(NANOSECONDS_PER_CENTURY.into());
@@ -197,7 +210,7 @@ impl Duration {
                 // We know that the centuries fit, and we know that the nanos are less than the number
                 // of nanos per centuries, and rem_euclid guarantees that it's positive, so the
                 // casting will work fine every time.
-                Self::from_parts(centuries_i128 as i16, remaining_nanos_i128 as u64)
+                Self::from_parts(centuries_i128 as i16, remaining_nanos_i128 as u64, 0)
             }
         }
     }
@@ -213,9 +226,10 @@ impl Duration {
             Self::from_parts(
                 -1 - (extra_centuries as i16),
                 NANOSECONDS_PER_CENTURY - rem_nanos,
+                0, // TODO
             )
         } else {
-            Self::from_parts(0, nanos.unsigned_abs())
+            Self::from_parts(0, nanos.unsigned_abs(), 0)
         }
     }
 
@@ -464,9 +478,9 @@ impl Duration {
         self.centuries.signum() as i8
     }
 
-    /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns
+    /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns, ps, fs, as, zs
     #[must_use]
-    pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
+    pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64, u64, u64, u64, u64) {
         let mut me = *self;
         let sign = me.signum();
         me = me.abs();
@@ -494,6 +508,10 @@ impl Duration {
             milliseconds as u64,
             microseconds as u64,
             nanoseconds as u64,
+            0,
+            0,
+            0,
+            0,
         )
     }
 
@@ -511,7 +529,7 @@ impl Duration {
     /// ```
     #[must_use]
     pub fn subdivision(&self, unit: Unit) -> Option<Duration> {
-        let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
+        let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds, _, _, _, _) =
             self.decompose();
 
         match unit {
@@ -523,6 +541,7 @@ impl Duration {
             Unit::Hour => Some((hours as i64) * unit),
             Unit::Day => Some((days as i64) * unit),
             Unit::Week | Unit::Century => None,
+            _ => None,
         }
     }
 
@@ -619,7 +638,7 @@ impl Duration {
     /// assert_eq!((49.hours() + 3.minutes()).approx(), 2.days());
     /// ```
     pub fn approx(&self) -> Self {
-        let (_, days, hours, minutes, seconds, milli, us, _) = self.decompose();
+        let (_, days, hours, minutes, seconds, milli, us, _, _, _, _, _) = self.decompose();
 
         let round_to = if days > 0 {
             1 * Unit::Day
@@ -690,12 +709,27 @@ impl fmt::Display for Duration {
         if self.total_nanoseconds() == 0 {
             write!(f, "0 ns")
         } else {
-            let (sign, days, hours, minutes, seconds, milli, us, nano) = self.decompose();
+            let (
+                sign,
+                days,
+                hours,
+                minutes,
+                seconds,
+                milli,
+                us,
+                nanos,
+                picos,
+                femtos,
+                attos,
+                zeptos,
+            ) = self.decompose();
             if sign == -1 {
                 write!(f, "-")?;
             }
 
-            let values = [days, hours, minutes, seconds, milli, us, nano];
+            let values = [
+                days, hours, minutes, seconds, milli, us, nanos, picos, femtos, attos, zeptos,
+            ];
             let units = [
                 if days > 1 { "days" } else { "day" },
                 "h",
@@ -704,6 +738,10 @@ impl fmt::Display for Duration {
                 "ms",
                 "μs",
                 "ns",
+                "ps",
+                "fs",
+                "as",
+                "zs",
             ];
 
             let mut insert_space = false;
@@ -772,7 +810,7 @@ impl PartialOrd<Unit> for Duration {
 
 #[cfg(test)]
 mod ut_duration {
-    use super::{Duration, TimeUnits, Unit, NANOSECONDS_PER_CENTURY};
+    use super::{Duration, TimeUnits, Unit, NANOSECONDS_PER_CENTURY, ZEPTOSECONDS_PER_NANOSECOND};
 
     #[test]
     #[cfg(feature = "serde")]
@@ -803,7 +841,8 @@ mod ut_duration {
 
         let min_p = Duration::MIN_POSITIVE;
         assert_eq!(min_p.centuries, 0);
-        assert_eq!(min_p.nanoseconds, 1);
+        assert_eq!(min_p.nanoseconds, 0);
+        assert_eq!(min_p.zeptoseconds, 1);
 
         let min_n = Duration::MIN_NEGATIVE;
         assert_eq!(min_n.centuries, -1);
@@ -815,6 +854,7 @@ mod ut_duration {
         let max_n1 = Duration::MAX - 1 * Unit::Nanosecond;
         assert_eq!(max_n1.centuries, i16::MAX);
         assert_eq!(max_n1.nanoseconds, NANOSECONDS_PER_CENTURY - 1);
+        assert_eq!(max_n1.zeptoseconds, ZEPTOSECONDS_PER_NANOSECOND);
     }
 
     #[test]
@@ -822,8 +862,20 @@ mod ut_duration {
         let d = -73000.days();
         let out_days = d.to_unit(Unit::Day);
         assert_eq!(out_days, -73000.0);
-        let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
-            d.decompose();
+        let (
+            sign,
+            days,
+            hours,
+            minutes,
+            seconds,
+            milliseconds,
+            microseconds,
+            nanoseconds,
+            _,
+            _,
+            _,
+            _,
+        ) = d.decompose();
         assert_eq!(sign, -1);
         assert_eq!(days, 73000);
         assert_eq!(hours, 0);

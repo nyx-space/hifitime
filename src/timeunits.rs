@@ -29,6 +29,10 @@ use crate::{
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 pub enum Unit {
+    Zeptosecond,
+    Attosecond,
+    Femtosecond,
+    Picosecond,
     Nanosecond,
     Microsecond,
     Millisecond,
@@ -95,6 +99,18 @@ pub trait TimeUnits: Copy + Mul<Unit, Output = Duration> {
     }
     fn nanoseconds(self) -> Duration {
         self * Unit::Nanosecond
+    }
+    fn picoseconds(self) -> Duration {
+        self * Unit::Picosecond
+    }
+    fn femtoseconds(self) -> Duration {
+        self * Unit::Femtosecond
+    }
+    fn attoseconds(self) -> Duration {
+        self * Unit::Attosecond
+    }
+    fn zeptoseconds(self) -> Duration {
+        self * Unit::Zeptosecond
     }
 }
 
@@ -174,6 +190,10 @@ impl Unit {
             Unit::Millisecond => 1e-3,
             Unit::Microsecond => 1e-6,
             Unit::Nanosecond => 1e-9,
+            Unit::Picosecond => 1e-12,
+            Unit::Femtosecond => 1e-15,
+            Unit::Attosecond => 1e-18,
+            Unit::Zeptosecond => 1e-21,
         }
     }
 
@@ -203,14 +223,18 @@ impl Unit {
 impl From<Unit> for u8 {
     fn from(unit: Unit) -> Self {
         match unit {
-            Unit::Nanosecond => 1,
-            Unit::Microsecond => 2,
-            Unit::Millisecond => 3,
-            Unit::Minute => 4,
-            Unit::Hour => 5,
-            Unit::Day => 6,
-            Unit::Week => 7,
-            Unit::Century => 8,
+            Unit::Zeptosecond => 1,
+            Unit::Attosecond => 2,
+            Unit::Femtosecond => 3,
+            Unit::Picosecond => 4,
+            Unit::Nanosecond => 5,
+            Unit::Microsecond => 6,
+            Unit::Millisecond => 7,
+            Unit::Minute => 8,
+            Unit::Hour => 9,
+            Unit::Day => 10,
+            Unit::Week => 11,
+            Unit::Century => 12,
             Unit::Second => 0,
         }
     }
@@ -226,14 +250,18 @@ impl From<&Unit> for u8 {
 impl From<u8> for Unit {
     fn from(val: u8) -> Self {
         match val {
-            1 => Unit::Nanosecond,
-            2 => Unit::Microsecond,
-            3 => Unit::Millisecond,
-            4 => Unit::Minute,
-            5 => Unit::Hour,
-            6 => Unit::Day,
-            7 => Unit::Week,
-            8 => Unit::Century,
+            1 => Unit::Zeptosecond,
+            2 => Unit::Attosecond,
+            3 => Unit::Femtosecond,
+            4 => Unit::Picosecond,
+            5 => Unit::Nanosecond,
+            6 => Unit::Microsecond,
+            7 => Unit::Millisecond,
+            8 => Unit::Minute,
+            9 => Unit::Hour,
+            10 => Unit::Day,
+            11 => Unit::Week,
+            12 => Unit::Century,
             _ => Unit::Second,
         }
     }
@@ -245,7 +273,15 @@ impl Mul<i64> for Unit {
     /// Converts the input values to i128 and creates a duration from that
     /// This method will necessarily ignore durations below nanoseconds
     fn mul(self, q: i64) -> Duration {
-        let factor = match self {
+        if q == 0 {
+            // obvious case
+            return Duration::ZERO;
+        }
+
+        let mut duration = Duration::default();
+
+        // number of nanoseconds we will mutiply by
+        let nanos_factor = match self {
             Unit::Century => NANOSECONDS_PER_CENTURY as i64,
             Unit::Week => NANOSECONDS_PER_DAY as i64 * DAYS_PER_WEEK_I64,
             Unit::Day => NANOSECONDS_PER_DAY as i64,
@@ -255,31 +291,36 @@ impl Mul<i64> for Unit {
             Unit::Millisecond => NANOSECONDS_PER_MILLISECOND as i64,
             Unit::Microsecond => NANOSECONDS_PER_MICROSECOND as i64,
             Unit::Nanosecond => 1,
+            _ => 0,
         };
 
-        match q.checked_mul(factor) {
+        match q.checked_mul(nanos_factor) {
             Some(total_ns) => {
                 if total_ns.abs() < i64::MAX {
-                    Duration::from_truncated_nanoseconds(total_ns)
+                    duration = Duration::from_truncated_nanoseconds(total_ns);
                 } else {
-                    Duration::from_total_nanoseconds(i128::from(total_ns))
+                    duration = Duration::from_total_nanoseconds(i128::from(total_ns));
                 }
             }
             None => {
                 // Does not fit on an i64, let's do this again on an 128.
                 let q = i128::from(q);
-                match q.checked_mul(factor.into()) {
-                    Some(total_ns) => Duration::from_total_nanoseconds(total_ns),
+                match q.checked_mul(nanos_factor.into()) {
+                    Some(total_ns) => {
+                        duration = Duration::from_total_nanoseconds(total_ns);
+                    }
                     None => {
                         if q.is_negative() {
-                            Duration::MIN
+                            duration = Duration::MIN;
                         } else {
-                            Duration::MAX
+                            duration = Duration::MAX;
                         }
                     }
                 }
             }
         }
+
+        duration
     }
 }
 
@@ -292,7 +333,8 @@ impl Mul<f64> for Unit {
     /// 1. If the input value times the unit does not fit on a Duration, then Duration::MAX or Duration::MIN will be returned depending on whether the value would have overflowed or underflowed (respectively).
     /// 2. Floating point operations may round differently on different processors. It's advised to use integer initialization of Durations whenever possible.
     fn mul(self, q: f64) -> Duration {
-        let factor = match self {
+        // Nanoseconds multiplication factor
+        let nanos_factor = match self {
             Unit::Century => NANOSECONDS_PER_CENTURY as f64,
             Unit::Week => NANOSECONDS_PER_DAY as f64 * DAYS_PER_WEEK,
             Unit::Day => NANOSECONDS_PER_DAY as f64,
@@ -302,15 +344,16 @@ impl Mul<f64> for Unit {
             Unit::Millisecond => NANOSECONDS_PER_MILLISECOND as f64,
             Unit::Microsecond => NANOSECONDS_PER_MICROSECOND as f64,
             Unit::Nanosecond => 1.0,
+            Unit::Picosecond | Unit::Femtosecond | Unit::Attosecond | Unit::Zeptosecond => 0.0,
         };
 
         // Bound checking to prevent overflows
-        if q >= f64::MAX / factor {
+        if q >= f64::MAX / nanos_factor {
             Duration::MAX
-        } else if q <= f64::MIN / factor {
+        } else if q <= f64::MIN / nanos_factor {
             Duration::MIN
         } else {
-            let total_ns = q * factor;
+            let total_ns = q * nanos_factor;
             if total_ns.abs() < (i64::MAX as f64) {
                 Duration::from_truncated_nanoseconds(total_ns as i64)
             } else {
@@ -325,8 +368,8 @@ fn test_unit_conversion() {
     for unit_u8 in 0..u8::MAX {
         let unit = Unit::from(unit_u8);
         let unit_u8_back: u8 = unit.into();
-        // If the u8 is greater than 9, it isn't valid and necessarily encoded as Second.
-        if unit_u8 < 9 {
+        // If the u8 is greater than 13, it isn't valid and necessarily encoded as Second.
+        if unit_u8 < 13 {
             assert_eq!(unit_u8_back, unit_u8, "got {unit_u8_back} want {unit_u8}");
         } else {
             assert_eq!(unit, Unit::Second);

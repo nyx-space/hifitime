@@ -369,7 +369,7 @@ impl Neg for Duration {
             match NANOSECONDS_PER_CENTURY.checked_sub(self.nanoseconds) {
                 Some(nanoseconds) => {
                     // yay
-                    Self::from_parts(-self.centuries - 1, nanoseconds)
+                    Self::from_parts(-self.centuries - 1, nanoseconds, 0)
                 }
                 None => {
                     if self > Duration::ZERO {

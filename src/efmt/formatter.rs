@@ -178,7 +178,7 @@ impl fmt::Display for Formatter {
                     }
                     Token::OffsetHours => {
                         write_sep(f, i, &self.format)?;
-                        let (sign, days, mut hours, minutes, seconds, _, _, _) =
+                        let (sign, days, mut hours, minutes, seconds, _, _, _, _, _, _, _) =
                             self.offset.decompose();
 
                         if days > 0 {
@@ -249,7 +249,7 @@ impl fmt::Display for Formatter {
                 match item.token {
                     Token::OffsetHours => {
                         write_sep(f, i, &self.format)?;
-                        let (sign, days, mut hours, minutes, seconds, _, _, _) =
+                        let (sign, days, mut hours, minutes, seconds, _, _, _, _, _, _, _) =
                             self.offset.decompose();
 
                         if days > 0 {

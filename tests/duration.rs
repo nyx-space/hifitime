@@ -217,8 +217,8 @@ fn test_ops_near_bounds() {
     );
 
     let tt_offset_ns: u64 = 32_184_000_000;
-    let duration = Duration::from_parts(-32767, 0);
-    let exp = Duration::from_parts(-32768, NANOSECONDS_PER_CENTURY - tt_offset_ns);
+    let duration = Duration::from_parts(-32767, 0, 0);
+    let exp = Duration::from_parts(-32768, NANOSECONDS_PER_CENTURY - tt_offset_ns, 0);
     assert_eq!(
         duration - Duration::from_total_nanoseconds(tt_offset_ns.into()),
         exp
@@ -250,14 +250,18 @@ fn test_neg() {
 
 #[test]
 fn test_extremes() {
+    // from_total_nanoseconds reciprocal
     let d = Duration::from_total_nanoseconds(i128::MAX);
-
     assert_eq!(Duration::from_total_nanoseconds(d.total_nanoseconds()), d);
+
+    // from_total_nanoseconds with minimum +1
     let d = Duration::from_total_nanoseconds(i128::MIN + 1);
     assert_eq!(d, Duration::MIN);
+
     // Test min positive
     let d_min = Duration::from_total_nanoseconds(Duration::MIN_POSITIVE.total_nanoseconds());
     assert_eq!(d_min, Duration::MIN_POSITIVE);
+
     // Test difference between min durations
     assert_eq!(
         Duration::MIN_POSITIVE - Duration::MIN_NEGATIVE,
@@ -584,7 +588,8 @@ fn std_time_duration() {
 fn test_decompose() {
     let pos = 5 * Unit::Hour + 256 * Unit::Millisecond + Unit::Nanosecond;
 
-    let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) = pos.decompose();
+    let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos, _, _, _, _) =
+        pos.decompose();
     assert_eq!(sign, 0);
     assert_eq!(days, 0);
     assert_eq!(hours, 5);
@@ -600,7 +605,8 @@ fn test_decompose() {
     assert_eq!(neg.abs(), pos);
     assert!(neg.is_negative());
 
-    let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos) = neg.decompose();
+    let (sign, days, hours, minutes, seconds, milliseconds, microseconds, nanos, _, _, _, _) =
+        neg.decompose();
     assert_eq!(sign, -1);
     assert_eq!(days, 0);
     assert_eq!(hours, 5);
@@ -630,7 +636,7 @@ fn regression_test_gh_244() {
     let zero = Duration::ZERO;
     // Test that the ceil of a zero duration is still zero.
     assert_eq!(zero.ceil(zero), zero);
-    let non_zero = Duration::from_parts(1, 23456);
+    let non_zero = Duration::from_parts(1, 23456, 0);
     // Test that the ceil of a non-zero duration by zero is still zero.
     assert_eq!(non_zero.ceil(zero), zero);
     // Test that the ceil of a zero duration by a non-zero is non-zero duration.

@@ -1098,7 +1098,7 @@ mod ut_epoch {
         Out[10]: 0.2291307542978747
 
          */
-        let e = Epoch::from_tai_duration(Duration::from_parts(1, 723038437000000000));
+        let e = Epoch::from_tai_duration(Duration::from_parts(1, 723038437000000000, 0));
         let days_d = e.to_et_days_since_j2000();
         let centuries_t = e.to_et_centuries_since_j2000();
         assert!((days_d - 8369.000800729873).abs() < f64::EPSILON);

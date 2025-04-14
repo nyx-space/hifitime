@@ -363,9 +363,15 @@ impl Duration {
     /// Create a normalized duration from its parts
     /// :type centuries: int
     /// :type nanoseconds: int
+    /// :type zeptoseconds: int
     /// :rtype: Duration
-    fn py_from_parts(_cls: &Bound<'_, PyType>, centuries: i16, nanoseconds: u64) -> Self {
-        Self::from_parts(centuries, nanoseconds)
+    fn py_from_parts(
+        _cls: &Bound<'_, PyType>,
+        centuries: i16,
+        nanoseconds: u64,
+        zeptoseconds: u64,
+    ) -> Self {
+        Self::from_parts(centuries, nanoseconds, zeptoseconds)
     }
 
     /// Creates a new duration from its parts

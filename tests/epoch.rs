@@ -1924,7 +1924,7 @@ fn test_to_tai_time_scale() {
     let j2000_ref = J2000_REF_EPOCH;
     assert_eq!(j2000_ref, j2000_ref.to_time_scale(TimeScale::TAI));
     let j2000_to_j1900 = j2000_ref - j1900_ref;
-    assert_eq!(j2000_to_j1900, Duration::from_parts(1, 0));
+    assert_eq!(j2000_to_j1900, Duration::from_parts(1, 0, 0));
 }
 
 #[cfg(feature = "std")]

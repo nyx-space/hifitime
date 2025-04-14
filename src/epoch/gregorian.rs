@@ -28,7 +28,7 @@ impl Epoch {
         let sign = duration_wrt_ref.signum();
         let (days, hours, minutes, seconds, milliseconds, microseconds, nanos) = if sign < 0 {
             // For negative epochs, the computation of days and time must account for the time as it'll cause the days computation to be off by one.
-            let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+            let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos, _, _, _, _) =
                 duration_wrt_ref.decompose();
 
             // Recompute the time since we count backward and not forward for negative durations.
@@ -44,7 +44,7 @@ impl Epoch {
             );
 
             // Compute the correct time.
-            let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+            let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanos, _, _, _, _) =
                 (24 * Unit::Hour - time).decompose();
 
             let days_f64 = if time > Duration::ZERO {
@@ -64,7 +64,7 @@ impl Epoch {
             )
         } else {
             // For positive epochs, the computation of days and time is trivally the decomposition of the duration.
-            let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
+            let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos, _, _, _, _) =
                 duration_wrt_ref.decompose();
             (
                 days as f64,

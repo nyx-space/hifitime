@@ -26,6 +26,7 @@ pub const J1900_REF_EPOCH: Epoch = Epoch {
     duration: Duration {
         centuries: 0,
         nanoseconds: 43200000000000,
+        zeptoseconds: 0,
     },
     time_scale: TimeScale::TAI,
 };
@@ -36,6 +37,7 @@ pub const J2000_REF_EPOCH: Epoch = Epoch {
     duration: Duration {
         centuries: 1,
         nanoseconds: 43200000000000,
+        zeptoseconds: 0,
     },
     time_scale: TimeScale::TAI,
 };
@@ -43,6 +45,7 @@ pub const J2000_REF_EPOCH: Epoch = Epoch {
 pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
     nanoseconds: 2_524_953_619_000_000_000, // XXX
+    zeptoseconds: 0,
 });
 pub const SECONDS_GPS_TAI_OFFSET: f64 = 2_524_953_619.0;
 pub const SECONDS_GPS_TAI_OFFSET_I64: i64 = 2_524_953_619;
@@ -56,6 +59,7 @@ pub const QZSST_REF_EPOCH: Epoch = GPST_REF_EPOCH;
 pub const GST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
     nanoseconds: 3_144_268_819_000_000_000, // 3_144_268_800_000_000_000,
+    zeptoseconds: 0,
 });
 pub const SECONDS_GST_TAI_OFFSET: f64 = 3_144_268_819.0;
 pub const SECONDS_GST_TAI_OFFSET_I64: i64 = 3_144_268_819;
@@ -66,6 +70,7 @@ pub const SECONDS_GST_TAI_OFFSET_I64: i64 = 3_144_268_819;
 pub const BDT_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 1,
     nanoseconds: 189_302_433_000_000_000, //189_302_400_000_000_000,
+    zeptoseconds: 0,
 });
 pub const SECONDS_BDT_TAI_OFFSET: f64 = 3_345_062_433.0;
 pub const SECONDS_BDT_TAI_OFFSET_I64: i64 = 3_345_062_433;
@@ -74,6 +79,7 @@ pub const SECONDS_BDT_TAI_OFFSET_I64: i64 = 3_345_062_433;
 pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     centuries: 0,
     nanoseconds: 2_208_988_800_000_000_000,
+    zeptoseconds: 0,
 });
 
 /// Reference year of the Hifitime prime epoch.
@@ -146,19 +152,23 @@ impl TimeScale {
                 Duration {
                     centuries: 0,
                     nanoseconds: 3155716800000000000,
+                    zeptoseconds: 0,
                 }
             }
             TimeScale::GPST | TimeScale::QZSST => Duration {
                 centuries: 0,
                 nanoseconds: 2_524_953_619_000_000_000,
+                zeptoseconds: 0,
             },
             TimeScale::GST => Duration {
                 centuries: 0,
                 nanoseconds: 3_144_268_819_000_000_000,
+                zeptoseconds: 0,
             },
             TimeScale::BDT => Duration {
                 centuries: 1,
                 nanoseconds: 189_302_433_000_000_000,
+                zeptoseconds: 0,
             },
             _ => Duration::ZERO,
         }
