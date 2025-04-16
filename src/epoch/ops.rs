@@ -225,10 +225,8 @@ impl Epoch {
 
         // supports any interpolation gap. But applications should remain within
         // current week (to the very least..)
-        let dt_s = (*self - reference_epoch).to_seconds();
-
-        let correction =
-            polynomials.constant + polynomials.rate * dt_s + polynomials.accel * dt_s.powi(2);
+        let dt = *self - reference_epoch;
+        let correction = polynomials.correction_duration(dt);
 
         // coarse conversion
         let converted = self.to_time_scale(target);
