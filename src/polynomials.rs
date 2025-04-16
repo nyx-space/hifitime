@@ -1,6 +1,11 @@
 //! Polynomial Duration wrapper used in interpolation processes
 use crate::Duration;
 
+#[cfg(doc)]
+use crate::TimeScale;
+
+/// Interpolation [Polynomials] used for example in [TimeScale] 
+/// maintenance, precise monitoring or conversions.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct Polynomials {
     /// Constant offset [Duration], regardless of the interpolation interval
@@ -49,5 +54,17 @@ impl Polynomials {
             rate: Duration::from_nanoseconds(drift_ns_s),
             accel: Default::default(),
         }
+    }
+
+    /// Calculate the correction (as [Duration] once again) from [Self] and given
+    /// the interpolation time interval
+    pub fn correction_duration(&self, time_interval: Duration) -> Duration {
+        let dt_s = time_interval.to_seconds();
+        let (a0, a1, a2) = (
+            self.constant.to_seconds(),
+            self.rate.to_seconds(),
+            self.accel.to_seconds(),
+        );
+        Duration::from_seconds(a0 + a1 * dt_s + a2 * dt_s.powi(2))
     }
 }
