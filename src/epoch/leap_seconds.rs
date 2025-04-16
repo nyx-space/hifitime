@@ -87,7 +87,7 @@ const LATEST_LEAP_SECONDS: [LeapSecond; 42] = [
     LeapSecond::new(3_692_217_600.0, 37.0, true),      // IERS: 01 Jan 2017
 ];
 
-/// List of leap seconds from https://www.ietf.org/timezones/data/leap-seconds.list .
+/// List of leap seconds from <https://www.ietf.org/timezones/data/leap-seconds.list>.
 /// This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
 /// The unannoucned leap seconds come from dat.c in the SOFA library.
 #[cfg_attr(feature = "python", pyclass)]
