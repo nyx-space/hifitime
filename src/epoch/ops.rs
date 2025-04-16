@@ -150,7 +150,10 @@ impl Epoch {
     ///
     /// ## Input
     /// - forward: whether this is forward or backward conversion.
-    /// - reference_epoch: any reference [Epoch] for the provided [Polynomials].
+    /// For example, using GPST-UTC [Polynomials]
+    ///   - GPST->UTC is the forward conversion
+    ///   - UTC->GPST is the backwards conversion
+    /// - reference_epoch: any reference [Epoch] for the provided [Polynomials].  
     /// While we support any time difference, it should remain short in pratice
     /// (a day at most, for precise applications).
     /// - polynomials: that must be valid for this reference [Epoch], used in the equation

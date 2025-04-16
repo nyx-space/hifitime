@@ -4,7 +4,7 @@ use crate::Duration;
 #[cfg(doc)]
 use crate::TimeScale;
 
-/// Interpolation [Polynomials] used for example in [TimeScale] 
+/// Interpolation [Polynomials] used for example in [TimeScale]
 /// maintenance, precise monitoring or conversions.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub struct Polynomials {
