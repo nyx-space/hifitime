@@ -151,7 +151,7 @@ impl Epoch {
     /// - forward: whether this is forward or backward conversion.
     /// For example, using GPST-UTC [Polynomials]
     ///   - GPST->UTC is the forward conversion
-    ///   - UTC->GPST is the backwards conversion
+    ///   - UTC->GPST is the backward conversion
     /// - reference_epoch: any reference [Epoch] for the provided [Polynomials].  
     /// While we support any time difference, it should remain short in pratice
     /// (a day at most, for precise applications).
