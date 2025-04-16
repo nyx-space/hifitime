@@ -183,7 +183,7 @@ impl Epoch {
     /// // Verify we did transition to UTC
     /// assert_eq!(t_utc.time_scale, TimeScale::UTC);
     ///
-    /// // Verify the resulting [Epoch] is the coarse GPST->UTC transition + simplistic fine correction
+    /// // Verify the resulting [Epoch] is the coarse GPST->UTC transition + fine correction
     /// let reversed = t_utc.to_time_scale(TimeScale::GPST) + 1.0 * Unit::Nanosecond;
     /// assert_eq!(reversed, t_gpst);
     ///
