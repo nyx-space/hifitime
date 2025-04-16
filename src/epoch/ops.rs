@@ -13,7 +13,7 @@ use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 use crate::{
-    errors::HifitimeError, Duration, Epoch, Polynomials, TimeScale, Unit, Weekday,
+    errors::HifitimeError, Duration, Epoch, Polynomial, TimeScale, Unit, Weekday,
     NANOSECONDS_PER_DAY,
 };
 
@@ -145,23 +145,23 @@ impl Epoch {
         (weeks as u32, nanoseconds as u64)
     }
 
-    /// Converts this [Epoch] into targeted [TimeScale] using provided [Polynomials].
+    /// Converts this [Epoch] into targeted [TimeScale] using provided [Polynomial].
     ///
     /// ## Input
     /// - forward: whether this is forward or backward conversion.
-    /// For example, using GPST-UTC [Polynomials]
+    /// For example, using GPST-UTC [Polynomial]
     ///   - GPST->UTC is the forward conversion
     ///   - UTC->GPST is the backward conversion
-    /// - reference_epoch: any reference [Epoch] for the provided [Polynomials].  
+    /// - reference_epoch: any reference [Epoch] for the provided [Polynomial].  
     /// While we support any time difference, it should remain short in pratice
     /// (a day at most, for precise applications).
-    /// - polynomials: that must be valid for this reference [Epoch], used in the equation
-    /// a0 + a1 *dt + a2 *dt² = GPST-UTC for example.
+    /// - polynomial: that must be valid for this reference [Epoch], used in the equation
+    /// a0 + a1*dt + a2*dt² = GPST-UTC for example.
     /// - target: targetted [TimeScale] we will transition to.
     ///
     /// Example:
     /// ```
-    /// use hifitime::{Epoch, TimeScale, Polynomials, Unit};
+    /// use hifitime::{Epoch, TimeScale, Polynomial, Unit};
     ///
     /// // random GPST Epoch for forward conversion to UTC
     /// let t_gpst = Epoch::from_gregorian(2020, 01, 01, 0, 0, 0, 0, TimeScale::GPST);
@@ -169,7 +169,7 @@ impl Epoch {
     /// // Let's say we know the GPST-UTC polynomials for that day,
     /// // They allow precise forward transition from GPST to UTC,
     /// // and precise backward transition from UTC to GPST.
-    /// let gpst_utc_polynomials = Polynomials::from_constant_offset_nanoseconds(1.0);
+    /// let gpst_utc_polynomials = Polynomial::from_constant_offset_nanoseconds(1.0);
     ///
     /// // This is the reference [Epoch] attached to the publication of these polynomials.
     /// // You should use polynomials that remain valid and were provided recently (usually one day at most).
@@ -214,7 +214,7 @@ impl Epoch {
         &self,
         forward: bool,
         reference_epoch: Self,
-        polynomials: Polynomials,
+        polynomial: Polynomial,
         target: TimeScale,
     ) -> Result<Self, HifitimeError> {
         if self.time_scale == target {
@@ -227,7 +227,7 @@ impl Epoch {
         // supports any interpolation gap. But applications should remain within
         // current week (to the very least..)
         let dt = *self - reference_epoch;
-        let correction = polynomials.correction_duration(dt);
+        let correction = polynomial.correction_duration(dt);
 
         // coarse conversion
         let converted = self.to_time_scale(target);

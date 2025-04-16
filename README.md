@@ -261,7 +261,7 @@ This library is validated against NASA/NAIF SPICE for the Ephemeris Time to Univ
 + UNIX
 
 Hifitime offers means to convert between time scales coarsely and precisely. 
-The `Polynomials` structure allows description of the state of a Timescale with respect
+The `Polynomial` structure allows description of the state of a Timescale with respect
 to a reference, as typically needed by precise applications or Timescale monitoring & maintenance.
 
 ## Non-features
