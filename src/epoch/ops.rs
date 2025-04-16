@@ -173,8 +173,8 @@ impl Epoch {
     ///
     /// // This is the reference [Epoch] attached to the publication of these polynomials.
     /// // You should use polynomials that remain valid and were provided recently (usually one day at most).
-    /// // Here we take a +1 hour example.
-    /// let gpst_reference = t_gpst + 1.0 * Unit::Hour;
+    /// // Example: polynomials were published 1 hour ago.
+    /// let gpst_reference = t_gpst - 1.0 * Unit::Hour;
     ///
     /// // Forward conversion (to UTC) GPST - a0 + a1 *dt + a2*dt² = UTC
     /// let t_utc = t_gpst.precise_timescale_conversion(true, gpst_reference, gpst_utc_polynomials, TimeScale::UTC)
@@ -194,11 +194,11 @@ impl Epoch {
     ///
     /// assert_eq!(backwards, t_gpst);
     ///
-    /// // It is important to understand that your reference point does not have to be in the future.
-    /// // It can be in the past as well. The only logic that should prevail is to always minimize interpolation gap.
-    /// // In other words, any newer interpolation polynomials publication that reduces the interpolation gap should be prefered.
-    /// // Even if their publication is in the future.
-    /// let gpst_reference = t_gpst - 1.0 * Unit::Hour;
+    /// // It is important to understand that your reference point does not have to be in the past.
+    /// // The only logic that should prevail is to always minimize interpolation gap.
+    /// // In other words, if you can access future interpolation information that would minimize the data gap, they should prevail.
+    /// // Example: +30' in the future.
+    /// let gpst_reference = t_gpst + 30.0 * Unit::Minute;
     ///
     /// // Forward conversion (to UTC) but using polynomials that were released 1 hour after t_gpst
     /// let t_utc = t_gpst.precise_timescale_conversion(true, gpst_reference, gpst_utc_polynomials, TimeScale::UTC)
