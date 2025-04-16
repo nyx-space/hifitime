@@ -24,7 +24,7 @@ impl Polynomials {
     }
 
     /// Create a [Polynomials] structure from a static offset expressed in nanoseconds
-    pub fn from_constant_nanoseconds_offset(nanos: f64) -> Self {
+    pub fn from_constant_offset_nanoseconds(nanos: f64) -> Self {
         Self {
             constant: Duration::from_nanoseconds(nanos),
             rate: Default::default(),
@@ -43,7 +43,7 @@ impl Polynomials {
 
     /// Create a [Polynomials] structure from a static offset and drift,
     /// in nanoseconds and nanoseconds.s⁻¹
-    pub fn from_offset_ns_rate_ns_s(offset_ns: f64, drift_ns_s: f64) -> Self {
+    pub fn from_offset_rate_nanoseconds(offset_ns: f64, drift_ns_s: f64) -> Self {
         Self {
             constant: Duration::from_nanoseconds(offset_ns),
             rate: Duration::from_nanoseconds(drift_ns_s),

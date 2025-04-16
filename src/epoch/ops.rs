@@ -168,7 +168,7 @@ impl Epoch {
     /// // Let's say we know the GPST-UTC polynomials for that day,
     /// // They allow precise forward transition from GPST to UTC,
     /// // and precise backward transition from UTC to GPST.
-    /// let gpst_utc_polynomials = Polynomials::from_constant_nanoseconds_offset(1.0);
+    /// let gpst_utc_polynomials = Polynomials::from_constant_offset_nanoseconds(1.0);
     ///
     /// // This is the reference [Epoch] attached to the publication of these polynomials.
     /// // You should use polynomials that remain valid and were provided recently (usually one day at most).

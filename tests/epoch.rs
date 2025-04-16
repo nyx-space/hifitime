@@ -2195,7 +2195,7 @@ fn precise_timescale_conversion() {
     // which means we can precisely convert GPST to UTC or UTC to GPST for that day.
     // This is a simplistic example, where any precise correction will "simply" be
     // a 1 nanosecond offset, regardless of the gap at interpolation time.
-    let gpst_utc_polynomials = Polynomials::from_constant_nanoseconds_offset(1.0);
+    let gpst_utc_polynomials = Polynomials::from_constant_offset_nanoseconds(1.0);
 
     // This is the reference [Epoch] attached in the publication of these polynomials.
     // You should use polynomials that remain valid and were provided recently (usually one day at most).
