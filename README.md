@@ -312,7 +312,7 @@ _This update is not mearly an iteration, but a redesign in how time scale are ha
 * Duration serde now human readable + Display of Epoch is now Gregorian in its initialization time scale by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/299
 * Improve error handling (switching to `snafu`) by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/300
 * Breaking change: renamed Julian date constants and removed other Julian date constants by @ChristopherRabotin in https://github.com/nyx-space/hifitime/pull/307
-* Minimum Support Rust Version (MSRV) bumped to 1.77.0
+* Minimum Support Rust Version (MSRV) bumped to 1.81.0
 
 _Note:_ as of version 4.0.0, dependency updates will increment the minor version.
 
