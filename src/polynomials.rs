@@ -1,6 +1,9 @@
 //! Polynomial Duration wrapper used in interpolation processes
 use crate::Duration;
 
+#[cfg(not(feature = "std"))]
+use num_traits::Float;
+
 #[cfg(doc)]
 use crate::TimeScale;
 
