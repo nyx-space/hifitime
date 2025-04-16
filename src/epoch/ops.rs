@@ -145,7 +145,6 @@ impl Epoch {
         (weeks as u32, nanoseconds as u64)
     }
 
-    #[must_use]
     /// Converts this [Epoch] into targetted [TimeScale] using provided [Polynomials].
     ///
     /// ## Input
