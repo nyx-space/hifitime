@@ -12,7 +12,10 @@ use core::cmp::{Ord, Ordering, PartialEq, PartialOrd};
 use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
-use crate::{Duration, Epoch, TimeScale, Unit, Weekday, NANOSECONDS_PER_DAY};
+use crate::{
+    errors::HifitimeError, Duration, Epoch, Polynomials, TimeScale, Unit, Weekday,
+    DAYS_PER_WEEK_I64, NANOSECONDS_PER_DAY, NANOSECONDS_PER_SECOND,
+};
 
 #[cfg(not(feature = "std"))]
 #[allow(unused_imports)] // Import is indeed used.
@@ -140,6 +143,119 @@ impl Epoch {
         let nanoseconds =
             total_nanoseconds - weeks * NANOSECONDS_PER_DAY as i128 * Weekday::DAYS_PER_WEEK_I128;
         (weeks as u32, nanoseconds as u64)
+    }
+
+    #[must_use]
+    /// Converts this [Epoch] into targetted [TimeScale] using provided polynomial terms
+    /// for a high precision interpolation.
+    ///
+    /// ## Input
+    /// - forward: whether this is forward or backward conversion.
+    /// - reference_epoch: reference [Epoch]. In practice, the time difference must remain
+    /// short to obtain precise results. Also, the time difference is expressed
+    /// in elapsed weeks and nanoseconds within week. You have [Self::to_time_of_week]
+    /// or [Self::from_time_of_week] to verify the validity of your polynomial terms.
+    /// - polynomials: that must be valid for this reference [Epoch], used in the equation
+    /// a0 + a1 *dt + a2 *dt² = GPST-UTC for example.
+    /// - target: targetted [TimeScale] we will transition to.
+    ///
+    /// Example:
+    /// ```
+    /// use hifitime::{Epoch, TimeScale, Polynomials, Unit};
+    ///
+    /// // random GPST Epoch for forward conversion to UTC
+    /// let t_gpst = Epoch::from_gregorian(2020, 01, 01, 0, 0, 0, 0, TimeScale::GPST);
+    ///
+    /// // Let's say we know the GPST-UTC polynomials for that day,
+    /// // They allow precise forward transition from GPST to UTC,
+    /// // and precise backward transition from UTC to GPST.
+    /// let gpst_utc_polynomials = Polynomials::from_constant_nanoseconds_offset(1.0);
+    ///
+    /// // This is the reference [Epoch] attached to the publication of these polynomials.
+    /// // You should use polynomials that remain valid and were provided recently (usually one day at most).
+    /// // Here we take a +1 hour example.
+    /// let gpst_reference = t_gpst + 1.0 * Unit::Hour;
+    ///
+    /// // Forward conversion (to UTC) GPST - a0 + a1 *dt + a2*dt² = UTC
+    /// let t_utc = t_gpst.precise_timescale_conversion(true, gpst_reference, gpst_utc_polynomials, TimeScale::UTC)
+    ///     .unwrap();
+    ///
+    /// // Verify we did transition to UTC
+    /// assert_eq!(t_utc.time_scale, TimeScale::UTC);
+    ///
+    /// // Verify the resulting [Epoch] is the coarse GPST->UTC transition + simplistic fine correction
+    /// let reversed = t_utc.to_time_scale(TimeScale::GPST) + 1.0 * Unit::Nanosecond;
+    /// assert_eq!(reversed, t_gpst);
+    ///
+    /// // Apply the backward transition, from t_utc back to t_gpst.
+    /// // The timescale conversion works both ways: (from UTC) GPST = UTC + a0 + a1 *dt + a2*dt²
+    /// let backwards = t_utc.precise_timescale_conversion(false, gpst_reference, gpst_utc_polynomials, TimeScale::GPST)
+    ///     .unwrap();
+    ///
+    /// assert_eq!(backwards, t_gpst);
+    ///
+    /// // It is important to understand that your reference point does not have to be in the future.
+    /// // It can be in the past as well. The only logic that should prevail is to always minimize interpolation gap.
+    /// // In other words, any newer interpolation polynomials publication that reduces the interpolation gap should be prefered.
+    /// // Even if their publication is in the future.
+    /// let gpst_reference = t_gpst - 1.0 * Unit::Hour;
+    ///
+    /// // Forward conversion (to UTC) but using polynomials that were released 1 hour after t_gpst
+    /// let t_utc = t_gpst.precise_timescale_conversion(true, gpst_reference, gpst_utc_polynomials, TimeScale::UTC)
+    ///     .unwrap();
+    ///
+    /// // Verifications
+    /// assert_eq!(t_utc.time_scale, TimeScale::UTC);
+    ///
+    /// let reversed = t_utc.to_time_scale(TimeScale::GPST) + 1.0 * Unit::Nanosecond;
+    /// assert_eq!(reversed, t_gpst);
+    /// ```
+    pub fn precise_timescale_conversion(
+        &self,
+        forward: bool,
+        reference_epoch: Self,
+        polynomials: Polynomials,
+        target: TimeScale,
+    ) -> Result<Self, HifitimeError> {
+        if self.time_scale == target {
+            // Incorrect operation.
+            return Err(HifitimeError::SystemTimeError);
+        }
+
+        let reference_epoch = reference_epoch.to_time_scale(self.time_scale);
+
+        let (ref_week, ref_nanos) = reference_epoch.to_time_of_week();
+        let (t_week, tow_nanos) = self.to_time_of_week();
+
+        let mut dt_nanos = tow_nanos as i64 - ref_nanos as i64;
+
+        // supports any interpolation gap, but applications should remain within
+        // current week (to the very least..)
+        if ref_week != t_week {
+            let week_diff_nanos =
+                (t_week - ref_week) as u64 * NANOSECONDS_PER_DAY * DAYS_PER_WEEK_I64 as u64;
+
+            dt_nanos += week_diff_nanos as i64;
+        }
+
+        let dt_s = (dt_nanos / NANOSECONDS_PER_SECOND as i64) as f64;
+
+        let correction =
+            polynomials.constant + polynomials.rate * dt_s + polynomials.accel * dt_s.powi(2);
+
+        // coarse conversion
+        let converted = self.to_time_scale(target);
+
+        // fine correction
+        if forward {
+            // GPST-UTC = a0+a1+a2
+            //      UTC = GPST -a0-a1-a2
+            Ok(converted - correction)
+        } else {
+            // GPST-UTC = a0+a1+a2
+            // GPST     = a0+a1+a2 + UTC
+            Ok(converted + correction)
+        }
     }
 
     #[must_use]
