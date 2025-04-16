@@ -2185,3 +2185,22 @@ fn regression_test_gh_302() {
         "2024-12-16T02:05:08 UTC"
     );
 }
+
+#[test]
+fn glonasst() {
+    use core::str::FromStr;
+    let ref_glonasst_utc = Epoch::from_gregorian_utc(1996, 01, 01, 0, 0, 0, 0);
+
+    let glonasst_from_str = Epoch::from_str("1996-01-01T00:00:00 GLONASST").unwrap();
+
+    assert_eq!(glonasst_from_str.time_scale, TimeScale::GLONASST);
+
+    assert_eq!(
+        glonasst_from_str.duration,
+        Duration::ZERO,
+        "Initialization at ref epoch should be zero"
+    );
+
+    assert_eq!(glonasst_from_str, Epoch::from_glonasst_seconds(0.0));
+    assert_eq!(glonasst_from_str, ref_glonasst_utc);
+}

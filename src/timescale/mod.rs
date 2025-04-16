@@ -76,6 +76,12 @@ pub const UNIX_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
     nanoseconds: 2_208_988_800_000_000_000,
 });
 
+/// GLONASST (Glonass): 1996 Dec 31st Midnight
+pub const GLONASST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
+    centuries: 0,
+    nanoseconds: 3_029_443_200_000_000_000,
+});
+
 /// Reference year of the Hifitime prime epoch.
 pub(crate) const HIFITIME_REF_YEAR: i32 = 1900;
 
@@ -103,6 +109,9 @@ pub enum TimeScale {
     BDT,
     /// QZSS Time scale has the same properties as GPST but with dedicated clocks
     QZSST,
+    /// GLONASST (Glonass Time scale) tracks UTC(SU) (the russian UTC realization) within 1ms at all times.
+    /// Unlike other GNSS timescales, it behaves like UTC and implements leap seconds.
+    GLONASST,
 }
 
 impl Default for TimeScale {
@@ -119,12 +128,16 @@ impl TimeScale {
             Self::GPST => 4,
             Self::TAI | Self::TDB | Self::UTC | Self::GST | Self::BDT => 3,
             Self::ET | Self::TT => 2,
+            Self::GLONASST => 8,
         }
     }
 
     /// Returns true if Self is based off a GNSS constellation
     pub const fn is_gnss(&self) -> bool {
-        matches!(self, Self::GPST | Self::GST | Self::BDT | Self::QZSST)
+        matches!(
+            self,
+            Self::GPST | Self::GST | Self::BDT | Self::QZSST | Self::GLONASST
+        )
     }
 
     /// Returns this time scale's reference epoch: Time Scale initialization date,
@@ -160,6 +173,10 @@ impl TimeScale {
                 centuries: 1,
                 nanoseconds: 189_302_433_000_000_000,
             },
+            TimeScale::GLONASST => Duration {
+                centuries: 0,
+                nanoseconds: 3_029_443_200_000_000_000,
+            },
             _ => Duration::ZERO,
         }
     }
@@ -194,6 +211,7 @@ impl From<TimeScale> for u8 {
             TimeScale::GST => 6,
             TimeScale::BDT => 7,
             TimeScale::QZSST => 8,
+            TimeScale::GLONASST => 9,
         }
     }
 }
@@ -211,6 +229,7 @@ impl From<u8> for TimeScale {
             6 => Self::GST,
             7 => Self::BDT,
             8 => Self::QZSST,
+            9 => Self::GLONASST,
             _ => Self::TAI,
         }
     }
@@ -236,7 +255,7 @@ mod unit_test_timescale {
             let ts = TimeScale::from(ts_u8);
             let ts_u8_back: u8 = ts.into();
             // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
-            if ts_u8 < 9 {
+            if ts_u8 < 10 {
                 assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
             } else {
                 assert_eq!(ts, TimeScale::TAI);

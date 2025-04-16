@@ -274,6 +274,28 @@ impl Epoch {
     }
 
     #[must_use]
+    /// Initialize an Epoch from the number of seconds since the Glonass Time Epoch,
+    /// defined as UTC midnight of December 31st to January 1st of 1996.
+    pub fn from_glonasst_seconds(seconds: f64) -> Self {
+        Self::from_duration(seconds * Unit::Second, TimeScale::GLONASST)
+    }
+
+    #[must_use]
+    /// Initialize an Epoch from the number of seconds since the Glonass Time Epoch,
+    /// defined as UTC midnight of December 31st to January 1st of 1996.
+    pub fn from_glonasst_days(days: f64) -> Self {
+        Self::from_duration(days * Unit::Day, TimeScale::GLONASST)
+    }
+
+    #[must_use]
+    /// Initialize an Epoch from the number of seconds since the Glonass Time Epoch,
+    /// defined as UTC midnight of December 31st to January 1st of 1996.
+    /// This may be useful for time keeping devices that use GLONASST as a time source.
+    pub fn from_glonasst_nanoseconds(nanoseconds: u64) -> Self {
+        Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::GLONASST)
+    }
+
+    #[must_use]
     /// Initialize an Epoch from the number of seconds since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     pub fn from_qzsst_seconds(seconds: f64) -> Self {

@@ -32,8 +32,8 @@ use crate::duration::{Duration, Unit};
 use crate::errors::{DurationError, ParseSnafu};
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
 use crate::{
-    HifitimeError, MonthName, TimeScale, TimeUnits, BDT_REF_EPOCH, ET_EPOCH_S, GPST_REF_EPOCH,
-    GST_REF_EPOCH, MJD_J1900, MJD_OFFSET, QZSST_REF_EPOCH, UNIX_REF_EPOCH,
+    HifitimeError, MonthName, TimeScale, TimeUnits, BDT_REF_EPOCH, ET_EPOCH_S, GLONASST_REF_EPOCH,
+    GPST_REF_EPOCH, GST_REF_EPOCH, MJD_J1900, MJD_OFFSET, QZSST_REF_EPOCH, UNIX_REF_EPOCH,
 };
 use core::cmp::Eq;
 use core::str::FromStr;
@@ -224,6 +224,12 @@ impl Epoch {
                 TimeScale::GST => self.duration + GST_REF_EPOCH.to_tai_duration(),
                 TimeScale::BDT => self.duration + BDT_REF_EPOCH.to_tai_duration(),
                 TimeScale::QZSST => self.duration + QZSST_REF_EPOCH.to_tai_duration(),
+                TimeScale::GLONASST => {
+                    let mut tai_assumption = *self;
+                    tai_assumption.time_scale = TimeScale::TAI;
+                    tai_assumption += GLONASST_REF_EPOCH.to_tai_duration();
+                    self.duration + tai_assumption.leap_seconds(true).unwrap_or(0.0).seconds()
+                }
             };
 
             // Convert to the desired time scale from the TAI duration
@@ -286,6 +292,16 @@ impl Epoch {
                 TimeScale::GST => prime_epoch_offset - GST_REF_EPOCH.to_tai_duration(),
                 TimeScale::BDT => prime_epoch_offset - BDT_REF_EPOCH.to_tai_duration(),
                 TimeScale::QZSST => prime_epoch_offset - QZSST_REF_EPOCH.to_tai_duration(),
+                TimeScale::GLONASST => {
+                    // same logic as UTC with +3h static offset
+                    let epoch = Self {
+                        duration: prime_epoch_offset,
+                        time_scale: TimeScale::TAI,
+                    };
+                    // GLONASST = UTC(SU ~=UTC) +3h
+                    // GLONASST = TAI - leap_seconds +3h
+                    prime_epoch_offset - epoch.leap_seconds(true).unwrap_or(0.0).seconds()
+                }
             };
 
             Self {

@@ -28,6 +28,7 @@ impl fmt::Display for TimeScale {
             Self::GST => write!(f, "GST"),
             Self::BDT => write!(f, "BDT"),
             Self::QZSST => write!(f, "QZSST"),
+            Self::GLONASST => write!(f, "GLONASST"),
         }
     }
 }
@@ -41,6 +42,7 @@ impl fmt::LowerHex for TimeScale {
             Self::GST => write!(f, "GAL"),
             Self::BDT => write!(f, "BDS"),
             Self::QZSST => write!(f, "QZSS"),
+            Self::GLONASST => write!(f, "GLO"),
             _ => write!(f, "{self}"),
         }
     }
@@ -69,6 +71,8 @@ impl FromStr for TimeScale {
             Ok(Self::BDT)
         } else if val == "QZSST" || val == "QZSS" {
             Ok(Self::QZSST)
+        } else if val == "GLONASST" || val == "GLO" {
+            Ok(Self::GLONASST)
         } else {
             Err(ParsingError::TimeSystem)
         }
