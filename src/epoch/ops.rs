@@ -146,8 +146,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Converts this [Epoch] into targetted [TimeScale] using provided polynomial terms
-    /// for a high precision interpolation.
+    /// Converts this [Epoch] into targetted [TimeScale] using provided [Polynomials].
     ///
     /// ## Input
     /// - forward: whether this is forward or backward conversion.
