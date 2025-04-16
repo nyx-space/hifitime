@@ -14,7 +14,7 @@ use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 use crate::{
     errors::HifitimeError, Duration, Epoch, Polynomials, TimeScale, Unit, Weekday,
-    DAYS_PER_WEEK_I64, NANOSECONDS_PER_DAY, NANOSECONDS_PER_SECOND,
+    NANOSECONDS_PER_DAY,
 };
 
 #[cfg(not(feature = "std"))]
@@ -151,10 +151,9 @@ impl Epoch {
     ///
     /// ## Input
     /// - forward: whether this is forward or backward conversion.
-    /// - reference_epoch: reference [Epoch]. In practice, the time difference must remain
-    /// short to obtain precise results. Also, the time difference is expressed
-    /// in elapsed weeks and nanoseconds within week. You have [Self::to_time_of_week]
-    /// or [Self::from_time_of_week] to verify the validity of your polynomial terms.
+    /// - reference_epoch: any reference [Epoch] for the provided [Polynomials].
+    /// While we support any time difference, it should remain short in pratice
+    /// (a day at most, for precise applications).
     /// - polynomials: that must be valid for this reference [Epoch], used in the equation
     /// a0 + a1 *dt + a2 *dt² = GPST-UTC for example.
     /// - target: targetted [TimeScale] we will transition to.
@@ -224,21 +223,9 @@ impl Epoch {
 
         let reference_epoch = reference_epoch.to_time_scale(self.time_scale);
 
-        let (ref_week, ref_nanos) = reference_epoch.to_time_of_week();
-        let (t_week, tow_nanos) = self.to_time_of_week();
-
-        let mut dt_nanos = tow_nanos as i64 - ref_nanos as i64;
-
-        // supports any interpolation gap, but applications should remain within
+        // supports any interpolation gap. But applications should remain within
         // current week (to the very least..)
-        if ref_week != t_week {
-            let week_diff_nanos =
-                (t_week - ref_week) as u64 * NANOSECONDS_PER_DAY * DAYS_PER_WEEK_I64 as u64;
-
-            dt_nanos += week_diff_nanos as i64;
-        }
-
-        let dt_s = (dt_nanos / NANOSECONDS_PER_SECOND as i64) as f64;
+        let dt_s = (*self - reference_epoch).to_seconds();
 
         let correction =
             polynomials.constant + polynomials.rate * dt_s + polynomials.accel * dt_s.powi(2);
