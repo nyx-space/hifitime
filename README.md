@@ -259,6 +259,11 @@ This library is validated against NASA/NAIF SPICE for the Ephemeris Time to Univ
 + Galileo System Time (GST)
 + BeiDou Time (BDT)
 + UNIX
+
+Hifitime offers means to convert between time scales coarsely and precisely. 
+The `Polynomial` structure allows description of the state of a Timescale with respect
+to a reference, as typically needed by precise applications or Timescale monitoring & maintenance.
+
 ## Non-features
 * Time-agnostic / date-only epochs. Hifitime only supports the combination of date and time, but the `Epoch::{at_midnight, at_noon}` is provided as helper functions.
 
