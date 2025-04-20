@@ -7,9 +7,13 @@ use num_traits::Float;
 #[cfg(doc)]
 use crate::TimeScale;
 
+#[cfg(feature = "serde")]
+use serde_derive::{Deserialize, Serialize};
+
 /// Interpolation [Polynomial] used for example in [TimeScale]
 /// maintenance, precise monitoring or conversions.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Polynomial {
     /// Constant offset [Duration], regardless of the interpolation interval
     pub constant: Duration,
