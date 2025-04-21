@@ -1,6 +1,8 @@
 //! Polynomial Duration wrapper used in interpolation processes
 use crate::Duration;
 
+use core::fmt;
+
 #[cfg(not(feature = "std"))]
 use num_traits::Float;
 
@@ -10,9 +12,20 @@ use crate::TimeScale;
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
 
+#[cfg(feature = "python")]
+use pyo3::prelude::*;
+
 /// Interpolation [Polynomial] used for example in [TimeScale]
 /// maintenance, precise monitoring or conversions.
+///
+/// (Python documentation hints)
+/// :type constant: Duration
+/// :type rate: Duration
+/// :type accel: Duration
+/// :rtype: Polynomial
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
+#[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Polynomial {
     /// Constant offset [Duration], regardless of the interpolation interval
@@ -73,5 +86,33 @@ impl Polynomial {
             self.accel.to_seconds(),
         );
         Duration::from_seconds(a0 + a1 * dt_s + a2 * dt_s.powi(2))
+    }
+}
+
+impl fmt::Display for Polynomial {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "offset={} rate={} accel={}", self.constant, self.rate, self.accel)
+    }
+}
+
+#[cfg(feature = "python")]
+#[pymethods]
+impl Polynomial {
+    #[new]
+    fn new_py(constant: Duration, rate: Duration, accel: Duration) -> Self {
+        Self {
+            constant,
+            rate,
+            accel,
+        }
+    }
+
+    fn __str__(&self) -> String {
+        format!("{self}")
+    }
+
+    #[cfg(feature = "python")]
+    fn __eq__(&self, other: Self) -> bool {
+        *self == other
     }
 }
