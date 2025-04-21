@@ -91,7 +91,11 @@ impl Polynomial {
 
 impl fmt::Display for Polynomial {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "offset={} rate={} accel={}", self.constant, self.rate, self.accel)
+        write!(
+            f,
+            "offset={} rate={} accel={}",
+            self.constant, self.rate, self.accel
+        )
     }
 }
 
