@@ -77,6 +77,9 @@ pub use weekday::*;
 mod month;
 pub use month::*;
 
+mod polynomial;
+pub use polynomial::Polynomial;
+
 pub mod prelude {
     pub use crate::efmt::{Format, Formatter};
     pub use crate::{
