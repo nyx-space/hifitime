@@ -17,12 +17,16 @@ use crate::{
     NANOSECONDS_PER_DAY,
 };
 
+#[cfg(feature = "python")]
+use pyo3::prelude::*;
+
 #[cfg(not(feature = "std"))]
 #[allow(unused_imports)] // Import is indeed used.
 use num_traits::Float;
 
 use super::rem_euclid_f64;
 
+#[cfg_attr(feature = "python", pymethods)]
 impl Epoch {
     /// Returns the minimum of the two epochs.
     ///

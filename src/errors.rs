@@ -16,9 +16,6 @@ use std::io::ErrorKind as IOError;
 
 use lexical_core::Error as LexicalError;
 
-#[cfg(feature = "ut1")]
-use reqwest::StatusCode;
-
 use crate::Weekday;
 
 /// Errors handles all oddities which may occur in this library.
@@ -90,7 +87,7 @@ pub enum ParsingError {
     },
     #[cfg(feature = "ut1")]
     DownloadError {
-        code: StatusCode,
+        code: u16,
     },
 }
 
