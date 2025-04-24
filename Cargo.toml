@@ -35,7 +35,7 @@ lexical-core = { version = "1.0.1", default-features = false, features = [
     "parse-integers",
     "parse-floats",
 ] }
-tabled = { version = "0.17.0", optional = true }
+tabled = { version = "0.18.0", optional = true }
 openssl = { version = "0.10", features = ["vendored"], optional = true }
 web-time = { version = "1.0.0", optional = true }
 snafu = { version = "0.8.2", default-features = false }
