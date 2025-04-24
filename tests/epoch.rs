@@ -2188,7 +2188,7 @@ fn regression_test_gh_302() {
 
 #[test]
 fn precise_timescale_conversion() {
-    // random GPST Epoch for forward conversion to UTC
+    // Arbitrary GPST Epoch for forward conversion to UTC
     let t_gpst = Epoch::from_gregorian(2020, 01, 01, 0, 0, 0, 0, TimeScale::GPST);
 
     // Let's say we know the GPST-UTC polynomials for that day,

@@ -415,6 +415,18 @@ impl Epoch {
         }
     }
 
+    /// :rtype: Duration
+    #[getter]
+    fn get_duration(&self) -> PyResult<Duration> {
+        Ok(self.duration)
+    }
+
+    /// :rtype: TimeScale
+    #[getter]
+    fn get_time_scale(&self) -> PyResult<TimeScale> {
+        Ok(self.time_scale)
+    }
+
     /// Get the accumulated number of leap seconds up to this Epoch from the provided LeapSecondProvider.
     /// Returns None if the epoch is before 1960, year at which UTC was defined.
     ///
@@ -484,7 +496,7 @@ impl Epoch {
         let (y, mm, dd, hh, min, s, nanos) =
             Epoch::compute_gregorian(self.duration, TimeScale::UTC);
 
-        let datetime = PyDateTime::new_bound(py, y, mm, dd, hh, min, s, nanos / 1_000, None)?;
+        let datetime = PyDateTime::new(py, y, mm, dd, hh, min, s, nanos / 1_000, None)?;
 
         Ok(datetime)
     }
@@ -504,7 +516,7 @@ impl Epoch {
         // If the user tries to convert a timezone aware datetime into a naive one,
         // we return a hard error. We could silently remove tzinfo, or assume local timezone
         // and do a conversion, but better leave this decision to the user of the library.
-        let has_tzinfo = dt.get_tzinfo_bound().is_some();
+        let has_tzinfo = dt.get_tzinfo().is_some();
         if has_tzinfo {
             return Err(HifitimeError::PythonError {
                 reason: "expected a datetime without tzinfo, call my_datetime.replace(tzinfo=None)"
