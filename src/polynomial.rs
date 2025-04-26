@@ -40,6 +40,31 @@ pub struct Polynomial {
     pub accel: Duration,
 }
 
+impl From<(f64, f64, f64)> for Polynomial {
+    /// Converts (f64, f64, f64) triplet, oftentimes
+    /// noted (a0, a1, a2) as (offset (s), drift (s.s⁻¹), drift change (s.s⁻²))
+    /// to [Polynomial] structure, that allows precise [TimeScale] translation.
+    fn from(triplet: (f64, f64, f64)) -> Self {
+        Self {
+            constant: Duration::from_seconds(triplet.0),
+            rate: Duration::from_seconds(triplet.1),
+            accel: Duration::from_seconds(triplet.2),
+        }
+    }
+}
+
+impl From<Polynomial> for (f64, f64, f64) {
+    /// Converts [Polynomial] to (f64, f64, f64) triplet, oftentimes
+    /// noted (a0, a1, a2) as (offset (s), drift (s.s⁻¹), drift change (s.s⁻²)).
+    fn from(polynomial: Polynomial) -> Self {
+        (
+            polynomial.constant.to_seconds(),
+            polynomial.rate.to_seconds(),
+            polynomial.accel.to_seconds(),
+        )
+    }
+}
+
 #[cfg_attr(feature = "python", pymethods)]
 impl Polynomial {
     /// Calculate the correction (as [Duration] once again) from [Self] and given
