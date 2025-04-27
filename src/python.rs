@@ -17,7 +17,7 @@ use pyo3::{
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondsFile};
 use crate::prelude::*;
 use crate::ut1::Ut1Provider;
-use crate::MonthName;
+use crate::{MonthName, Polynomial, Weekday};
 
 // Keep the module at the top
 #[pymodule]
@@ -34,6 +34,8 @@ fn hifitime(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyHifitimeError>()?;
     m.add_class::<PyDurationError>()?;
     m.add_class::<PyParsingError>()?;
+    m.add_class::<Polynomial>()?;
+    m.add_class::<Weekday>()?;
     Ok(())
 }
 

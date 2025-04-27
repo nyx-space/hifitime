@@ -1,4 +1,4 @@
-from hifitime import Duration, Epoch, HifitimeError, ParsingError, TimeScale, TimeSeries, Unit
+from hifitime import Duration, Epoch, HifitimeError, ParsingError, Polynomial, TimeScale, TimeSeries, Unit, Weekday
 from datetime import datetime, timezone
 import pickle
 
@@ -28,6 +28,9 @@ def test_strtime():
     
     epoch_tdb = epoch.to_time_scale(TimeScale.TDB)
     assert str(epoch_tdb) == "2023-04-13T23:32:26.185636390 TDB"
+    assert epoch_tdb.time_scale == TimeScale.TDB
+
+    assert epoch.next(Weekday.Monday) == Epoch("2023-04-17T23:31:17 UTC")
 
 
 def test_utcnow():
@@ -81,6 +84,7 @@ def test_duration_eq():
     dur = Duration("37 min 26 s")
     assert pickle.loads(pickle.dumps(dur)) == dur
 
+
 def test_epoch_exceptions():
     try:
         Epoch("invalid")
@@ -104,11 +108,13 @@ def test_epoch_exceptions():
     else:
         raise AssertionError("failed to catch as base exception")
 
+
 def test_regression_gh249():
     e = Epoch.init_from_gregorian(year=2022, month=3, day=1, hour=1, minute=1, second=59, nanos=1, time_scale=TimeScale.GPST)
     assert e.strftime("%Y %m %d %H %M %S %f %T") == "2022 03 01 01 01 59 000000001 GPST"
     e = Epoch.init_from_gregorian(year=2022, month=3, day=1, hour=1, minute=1, second=59, nanos=1, time_scale=TimeScale.UTC)
     assert e.strftime("%Y %m %d %H %M %S %f %T") == "2022 03 01 01 01 59 000000001 UTC"
+
 
 def test_interop():
     hifinow = Epoch.system_now()
@@ -125,3 +131,26 @@ def test_interop():
         assert False, "tz aware dt did not fail"
     # Repeat after the strip
     assert Epoch.fromdatetime(tz_datetime.replace(tzinfo=None)) == Epoch("2023-10-08 15:30:00")
+
+
+def test_polynomial():
+    t_gpst = Epoch.init_from_gregorian(2020, 1, 1, 0, 0, 0, 0, TimeScale.GPST)
+
+    gpst_utc_polynomials = Polynomial.from_constant_offset_nanoseconds(1.0)
+    gpst_reference = t_gpst - Unit.Hour * 1.0
+    t_utc = t_gpst.precise_timescale_conversion(True, gpst_reference, gpst_utc_polynomials, TimeScale.UTC)
+
+    assert t_utc.time_scale == TimeScale.UTC
+
+    reversed = t_utc.to_time_scale(TimeScale.GPST) + Unit.Nanosecond * 1.0
+    assert reversed == t_gpst
+
+    backwards = t_utc.precise_timescale_conversion(False, gpst_reference, gpst_utc_polynomials, TimeScale.GPST)
+    assert backwards == t_gpst
+
+    gpst_reference = t_gpst - Unit.Minute * 30.0
+    t_utc = t_gpst.precise_timescale_conversion(True, gpst_reference, gpst_utc_polynomials, TimeScale.UTC)
+    assert t_utc.time_scale == TimeScale.UTC
+
+    reversed = t_utc.to_time_scale(TimeScale.GPST) + Unit.Nanosecond * 1.0
+    assert reversed == t_gpst

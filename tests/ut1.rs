@@ -31,7 +31,7 @@ fn test_ut1_from_jpl() {
     use hifitime::Epoch;
 
     // Download a specific version of the UT1 file
-    let provider = Ut1Provider::download_from_jpl("221222_190002-marge_eop2.short").unwrap();
+    let provider = Ut1Provider::download_from_jpl("2022/221222_190002-marge_eop2.short").unwrap();
 
     println!("{}", provider);
 
@@ -46,6 +46,6 @@ fn test_ut1_from_jpl() {
     let ut1_epoch = epoch.to_ut1(provider);
     assert_eq!(
         format!("{:x}", ut1_epoch),
-        "2022-01-03T03:05:43.789100000 TAI",
+        "2022-01-03T03:05:06.679020600 TAI",
     );
 }
