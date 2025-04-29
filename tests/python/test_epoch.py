@@ -36,7 +36,7 @@ def test_strtime():
 def test_utcnow():
     epoch = Epoch.system_now()
     try:
-        dt = datetime.now(datetime.UTC)
+        dt = datetime.now(timezone.utc)
     except Exception:
         dt = datetime.utcnow()
 
@@ -65,7 +65,7 @@ def test_time_series():
         print(f"#{num}:\t{epoch}")
 
     assert num == 10
-    # Once consummed, the iterator in the time series will be different,
+    # Once consumed, the iterator in the time series will be different,
     # so the pickling will return something different
     assert pickle.loads(pickle.dumps(time_series)) != time_series
 
