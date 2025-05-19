@@ -51,7 +51,7 @@ ut1 = ["std", "ureq", "tabled", "openssl"]
 
 [dev-dependencies]
 serde_json = "1.0.91"
-criterion = "0.5.1"
+criterion = "0.6.0"
 iai = "0.1"
 
 [target.wasm32-unknown-unknown.dependencies]
