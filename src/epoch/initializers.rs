@@ -344,7 +344,7 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the provided duration since UTC midnight 1970 January 01.
     pub fn from_ptp_duration(duration: Duration) -> Self {
-        Self::from_duration(duration, TimeScale::TAI)
+        Self::from_duration(UNIX_REF_EPOCH.to_utc_duration() + duration, TimeScale::TAI)
     }
 
     #[must_use]
