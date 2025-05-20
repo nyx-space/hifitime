@@ -574,6 +574,19 @@ fn ptp() {
         format!("{}", Epoch::from_ptp_seconds(1744360085.799052032)),
         "2025-04-11T08:28:05.799052032 TAI"
     );
+
+    assert_eq!(
+        format!("{}", Epoch::from_ptp_nanoseconds(1744360085799052032)),
+        "2025-04-11T08:28:05.799052032 TAI"
+    );
+
+    assert_eq!(
+        format!(
+            "{}",
+            Epoch::from_ptp_duration(Duration::from_parts(0, 1744360085799052032))
+        ),
+        "2025-04-11T08:28:05.799052032 TAI"
+    );
 }
 
 #[test]

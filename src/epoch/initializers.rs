@@ -351,17 +351,14 @@ impl Epoch {
     /// Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) second timestamp since TAI midnight 1970 January 01.
     /// PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems.
     pub fn from_ptp_seconds(seconds: f64) -> Self {
-        Self::from_ptp_duration(UNIX_REF_EPOCH.to_tai_duration() + seconds * Unit::Second)
+        Self::from_ptp_duration(seconds * Unit::Second)
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) nanoseconds timestamp since TAI midnight 1970 January 01.
     /// PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems.
     pub fn from_ptp_nanoseconds(nanoseconds: u64) -> Self {
-        Self::from_duration(
-            UNIX_REF_EPOCH.to_tai_duration() + Duration::from_parts(0, nanoseconds),
-            TimeScale::TAI,
-        )
+        Self::from_ptp_duration(Duration::from_parts(0, nanoseconds))
     }
 
     #[must_use]
