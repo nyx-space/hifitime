@@ -342,10 +342,16 @@ impl Epoch {
     }
 
     #[must_use]
+    /// Initialize an Epoch from the provided duration since UTC midnight 1970 January 01.
+    pub fn from_ptp_duration(duration: Duration) -> Self {
+        Self::from_duration(duration, TimeScale::TAI)
+    }
+
+    #[must_use]
     /// Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) second timestamp since TAI midnight 1970 January 01.
     /// PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems.
     pub fn from_ptp_seconds(seconds: f64) -> Self {
-        Self::from_tai_duration(UNIX_REF_EPOCH.to_tai_duration() + seconds * Unit::Second)
+        Self::from_ptp_duration(UNIX_REF_EPOCH.to_tai_duration() + seconds * Unit::Second)
     }
 
     #[must_use]
