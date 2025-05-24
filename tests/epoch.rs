@@ -564,6 +564,32 @@ fn beidou_time_scale() {
 }
 
 #[test]
+fn ptp() {
+    assert_eq!(
+        format!("{}", Epoch::from_ptp_seconds(0.0)),
+        "1970-01-01T00:00:00 TAI"
+    );
+
+    assert_eq!(
+        format!("{}", Epoch::from_ptp_seconds(1744360085.799052032)),
+        "2025-04-11T08:28:05.799052032 TAI"
+    );
+
+    assert_eq!(
+        format!("{}", Epoch::from_ptp_nanoseconds(1744360085799052032)),
+        "2025-04-11T08:28:05.799052032 TAI"
+    );
+
+    assert_eq!(
+        format!(
+            "{}",
+            Epoch::from_ptp_duration(Duration::from_parts(0, 1744360085799052032))
+        ),
+        "2025-04-11T08:28:05.799052032 TAI"
+    );
+}
+
+#[test]
 fn unix() {
     // Continuous check that the system time as reported by this machine is within millisecond accuracy of what we compute
     #[cfg(feature = "std")]
