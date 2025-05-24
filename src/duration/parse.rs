@@ -142,7 +142,7 @@ fn parse_duration(s: &str) -> Result<Duration, HifitimeError> {
                         });
                     }
 
-                    match lexical_core::parse(s[prev_idx..idx].as_bytes()) {
+                    match lexical_core::parse(&s.as_bytes()[prev_idx..idx]) {
                         Ok(val) => latest_value = val,
                         Err(_) => {
                             return Err(HifitimeError::Parse {
@@ -246,7 +246,7 @@ fn parse_offset(s: &str) -> Result<Duration, HifitimeError> {
     };
 
     // Fetch the hours
-    let hours: i64 = match lexical_core::parse(s[indexes.0..indexes.1].as_bytes()) {
+    let hours: i64 = match lexical_core::parse(&s.as_bytes()[indexes.0..indexes.1]) {
         Ok(val) => val,
         Err(err) => {
             return Err(HifitimeError::Parse {

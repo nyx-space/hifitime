@@ -1,6 +1,7 @@
 use core::str::FromStr;
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use hifitime::{Duration, Unit};
+use std::hint::black_box;
 
 #[allow(unused_must_use)]
 pub fn criterion_benchmark(c: &mut Criterion) {
