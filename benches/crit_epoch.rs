@@ -1,5 +1,6 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use criterion::{criterion_group, criterion_main, Criterion};
 use hifitime::{Duration, Epoch, Unit};
+use std::hint::black_box;
 
 #[allow(unused_must_use)]
 pub fn criterion_benchmark(c: &mut Criterion) {

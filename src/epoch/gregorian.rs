@@ -588,7 +588,7 @@ impl Epoch {
                     });
                 }
 
-                match lexical_core::parse(s[prev_idx..end_idx].as_bytes()) {
+                match lexical_core::parse(&s.as_bytes()[prev_idx..end_idx]) {
                     Ok(val) => {
                         // Check that this valid is OK for the token we're reading it as.
                         prev_token.value_ok(val)?;

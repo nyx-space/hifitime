@@ -153,14 +153,13 @@ impl Epoch {
     ///
     /// ## Input
     /// - forward: whether this is forward or backward conversion.
-    /// For example, using GPST-UTC [Polynomial]
+    ///   For example, using GPST-UTC [Polynomial]
     ///   - GPST->UTC is the forward conversion
     ///   - UTC->GPST is the backward conversion
     /// - reference_epoch: any reference [Epoch] for the provided [Polynomial].  
-    /// While we support any time difference, it should remain short in pratice
-    /// (a day at most, for precise applications).
-    /// - polynomial: that must be valid for this reference [Epoch], used in the equation
-    /// a0 + a1*dt + a2*dt² = GPST-UTC for example.
+    ///
+    /// While we support any time difference, it should remain short in pratice (a day at most, for precise applications).
+    /// - polynomial: that must be valid for this reference [Epoch], used in the equation `a0 + a1*dt + a2*dt² = GPST-UTC` for example.
     /// - target: targetted [TimeScale] we will transition to.
     ///
     /// Example:

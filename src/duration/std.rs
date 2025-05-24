@@ -19,8 +19,7 @@ impl From<Duration> for std::time::Duration {
     ///
     /// # Limitations
     /// 1. If the Duration is negative, this will return a std::time::Duration::ZERO.
-    /// 2. If the Duration is Duration::MAX, this will return
-    ///     the equivalent of std::time::Duration::from_secs(103407943680000)
+    /// 2. If the Duration is Duration::MAX, this will return the equivalent of std::time::Duration::from_secs(103407943680000)
     fn from(hf_duration: Duration) -> Self {
         use crate::NANOSECONDS_PER_SECOND;
         if hf_duration.signum() == -1 {

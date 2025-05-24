@@ -359,7 +359,6 @@ impl SubAssign<Unit> for Duration {
 impl Neg for Duration {
     type Output = Self;
 
-    #[must_use]
     fn neg(self) -> Self::Output {
         if self == Self::MIN {
             Self::MAX
