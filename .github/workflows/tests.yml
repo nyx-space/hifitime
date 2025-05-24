@@ -88,7 +88,6 @@ jobs:
       - name: Install stable toolchain
         uses: dtolnay/rust-toolchain@master
         with:
-          toolchain: 1.77
           components: rustfmt, clippy
 
       - name: Run cargo fmt
