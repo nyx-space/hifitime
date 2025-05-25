@@ -184,10 +184,13 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
-    if: github.ref_type == 'tag'
+    #if: github.ref_type == 'tag'
     needs: [linux, windows, macos-13, macos-14, sdist]
     steps:
       - uses: actions/download-artifact@v4
+        with:
+            pattern: wheels-*
+            merge-multiple: true
 
       - name: Publish to PyPI
         uses: PyO3/maturin-action@v1
