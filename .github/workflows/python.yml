@@ -188,6 +188,9 @@ jobs:
     needs: [linux, windows, macos-13, macos-14, sdist]
     steps:
       - uses: actions/download-artifact@v4
+        with:
+            pattern: wheels-*
+            merge-multiple: true
 
       - name: Publish to PyPI
         uses: PyO3/maturin-action@v1
