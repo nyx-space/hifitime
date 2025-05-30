@@ -26,7 +26,7 @@ impl Epoch {
     /// Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch.
     /// :type duration: Duration
     /// :rtype: Epoch
-    fn from_tai_duration(_cls: &Bound<'_, PyType>, duration: Duration) -> Self {
+    fn py_from_tai_duration(_cls: &Bound<'_, PyType>, duration: Duration) -> Self {
         Self::from_tai_duration(duration)
     }
 
@@ -35,8 +35,8 @@ impl Epoch {
     /// Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch.
     /// :type duration: Duration
     /// :rtype: Epoch
-    const fn init_from_tai_duration(_cls: &Bound<'_, PyType>, duration: Duration) -> Self {
-        Self::from_tai_duration(_cls, duration)
+    fn init_from_tai_duration(_cls: &Bound<'_, PyType>, duration: Duration) -> Self {
+        Self::py_from_tai_duration(_cls, duration)
     }
 
     #[classmethod]
@@ -45,7 +45,7 @@ impl Epoch {
     /// :type centuries: int
     /// :type nanoseconds: int
     /// :rtype: Epoch
-    fn from_tai_parts(_cls: &Bound<'_, PyType>, centuries: i16, nanoseconds: u64) -> Self {
+    fn py_from_tai_parts(_cls: &Bound<'_, PyType>, centuries: i16, nanoseconds: u64) -> Self {
         Self::from_tai_parts(centuries, nanoseconds)
     }
 
@@ -56,7 +56,7 @@ impl Epoch {
     /// :type nanoseconds: int
     /// :rtype: Epoch
     fn init_from_tai_parts(_cls: &Bound<'_, PyType>, centuries: i16, nanoseconds: u64) -> Self {
-        Self::from_tai_parts(_cls, centuries, nanoseconds)
+        Self::py_from_tai_parts(_cls, centuries, nanoseconds)
     }
 
     #[classmethod]
@@ -64,7 +64,7 @@ impl Epoch {
     /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
     /// :type seconds: float
     /// :rtype: Epoch
-    fn from_tai_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
+    fn py_from_tai_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_tai_seconds(seconds)
     }
 
@@ -74,7 +74,7 @@ impl Epoch {
     /// :type seconds: float
     /// :rtype: Epoch
     fn init_from_tai_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
-        Self::from_tai_seconds(_cls, seconds)
+        Self::py_from_tai_seconds(_cls, seconds)
     }
 
     #[classmethod]
@@ -82,7 +82,7 @@ impl Epoch {
     /// Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight
     /// :type days: float
     /// :rtype: Epoch
-    fn from_tai_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
+    fn py_from_tai_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_tai_days(days)
     }
 
@@ -92,7 +92,7 @@ impl Epoch {
     /// :type days: float
     /// :rtype: Epoch
     fn init_from_tai_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
-        Self::from_tai_days(_cls, days)
+        Self::py_from_tai_days(_cls, days)
     }
 
     #[classmethod]
@@ -100,7 +100,7 @@ impl Epoch {
     /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
     /// :type seconds: float
     /// :rtype: Epoch
-    fn from_utc_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
+    fn py_from_utc_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_utc_seconds(seconds)
     }
 
@@ -110,7 +110,7 @@ impl Epoch {
     /// :type seconds: float
     /// :rtype: Epoch
     fn init_from_utc_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
-        Self::from_utc_seconds(_cls, seconds)
+        Self::py_from_utc_seconds(_cls, seconds)
     }
 
     #[classmethod]
@@ -118,7 +118,7 @@ impl Epoch {
     /// Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight
     /// :type days: float
     /// :rtype: Epoch
-    fn from_utc_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
+    fn py_from_utc_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_utc_days(days)
     }
 
@@ -128,7 +128,7 @@ impl Epoch {
     /// :type days: float
     /// :rtype: Epoch
     fn init_from_utc_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
-        Self::from_utc_days(_cls, days)
+        Self::py_from_utc_days(_cls, days)
     }
 
     #[classmethod]
@@ -136,7 +136,7 @@ impl Epoch {
     /// Initialize an Epoch from given MJD in TAI time scale
     /// :type days: float
     /// :rtype: Epoch
-    fn from_mjd_tai(_cls: &Bound<'_, PyType>, days: f64) -> Self {
+    fn py_from_mjd_tai(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_mjd_tai(days)
     }
 
@@ -146,7 +146,7 @@ impl Epoch {
     /// :type days: float
     /// :rtype: Epoch
     fn init_from_mjd_tai(_cls: &Bound<'_, PyType>, days: f64) -> Self {
-        Self::from_mjd_tai(_cls, days)
+        Self::py_from_mjd_tai(_cls, days)
     }
 
     #[classmethod]
@@ -154,7 +154,7 @@ impl Epoch {
     /// Initialize an Epoch from given MJD in UTC time scale
     /// :type days: float
     /// :rtype: Epoch
-    fn from_mjd_utc(_cls: &Bound<'_, PyType>, days: f64) -> Self {
+    fn py_from_mjd_utc(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_mjd_utc(days)
     }
 
@@ -164,7 +164,7 @@ impl Epoch {
     /// :type days: float
     /// :rtype: Epoch
     fn init_from_mjd_utc(_cls: &Bound<'_, PyType>, days: f64) -> Self {
-        Self::from_mjd_utc(_cls, days)
+        Self::py_from_mjd_utc(_cls, days)
     }
 
     #[classmethod]
@@ -172,7 +172,7 @@ impl Epoch {
     /// Initialize an Epoch from given JDE in TAI time scale
     /// :type days: float
     /// :rtype: Epoch
-    fn from_jde_tai(_cls: &Bound<'_, PyType>, days: f64) -> Self {
+    fn py_from_jde_tai(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_jde_tai(days)
     }
 
@@ -182,7 +182,7 @@ impl Epoch {
     /// :type days: float
     /// :rtype: Epoch
     fn init_from_jde_tai(_cls: &Bound<'_, PyType>, days: f64) -> Self {
-        Self::from_jde_tai(_cls, days)
+        Self::py_from_jde_tai(_cls, days)
     }
 
     #[classmethod]
@@ -190,7 +190,7 @@ impl Epoch {
     /// Initialize an Epoch from given JDE in UTC time scale
     /// :type days: float
     /// :rtype: Epoch
-    fn from_jde_utc(_cls: &Bound<'_, PyType>, days: f64) -> Self {
+    fn py_from_jde_utc(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_jde_utc(days)
     }
 
@@ -200,7 +200,7 @@ impl Epoch {
     /// :type days: float
     /// :rtype: Epoch
     fn init_from_jde_utc(_cls: &Bound<'_, PyType>, days: f64) -> Self {
-        Self::from_jde_utc(_cls, days)
+        Self::py_from_jde_utc(_cls, days)
     }
 
     #[classmethod]
@@ -208,7 +208,7 @@ impl Epoch {
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
     /// :type seconds: float
     /// :rtype: Epoch
-    fn from_tt_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
+    fn py_from_tt_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_tt_seconds(seconds)
     }
 
@@ -218,7 +218,7 @@ impl Epoch {
     /// :type seconds: float
     /// :rtype: Epoch
     fn init_from_tt_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
-        Self::from_tt_seconds(_cls, seconds)
+        Self::py_from_tt_seconds(_cls, seconds)
     }
 
     #[classmethod]
@@ -226,7 +226,7 @@ impl Epoch {
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
     /// :type duration: Duration
     /// :rtype: Epoch
-    fn from_tt_duration(_cls: &Bound<'_, PyType>, duration: Duration) -> Self {
+    fn py_from_tt_duration(_cls: &Bound<'_, PyType>, duration: Duration) -> Self {
         Self::from_tt_duration(duration)
     }
 
@@ -236,7 +236,7 @@ impl Epoch {
     /// :type duration: Duration
     /// :rtype: Epoch
     fn init_from_tt_duration(_cls: &Bound<'_, PyType>, duration: Duration) -> Self {
-        Self::from_tt_duration(_cls, duration)
+        Self::py_from_tt_duration(_cls, duration)
     }
 
     #[classmethod]
@@ -244,7 +244,7 @@ impl Epoch {
     /// Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)
     /// :type seconds_since_j2000: float
     /// :rtype: Epoch
-    fn from_et_seconds(_cls: &Bound<'_, PyType>, seconds_since_j2000: f64) -> Epoch {
+    fn py_from_et_seconds(_cls: &Bound<'_, PyType>, seconds_since_j2000: f64) -> Epoch {
         Self::from_et_seconds(seconds_since_j2000)
     }
 
@@ -254,7 +254,7 @@ impl Epoch {
     /// :type seconds_since_j2000: float
     /// :rtype: Epoch
     fn init_from_et_seconds(_cls: &Bound<'_, PyType>, seconds_since_j2000: f64) -> Epoch {
-        Self::from_et_seconds(_cls, seconds_since_j2000)
+        Self::py_from_et_seconds(_cls, seconds_since_j2000)
     }
 
     #[classmethod]
@@ -262,7 +262,7 @@ impl Epoch {
     /// Initialize an Epoch from the Ephemeris Time duration past 2000 JAN 01 (J2000 reference)
     /// :type duration_since_j2000: Duration
     /// :rtype: Epoch
-    fn from_et_duration(_cls: &Bound<'_, PyType>, duration_since_j2000: Duration) -> Self {
+    fn py_from_et_duration(_cls: &Bound<'_, PyType>, duration_since_j2000: Duration) -> Self {
         Self::from_et_duration(duration_since_j2000)
     }
 
@@ -272,7 +272,7 @@ impl Epoch {
     /// :type duration_since_j2000: Duration
     /// :rtype: Epoch
     fn init_from_et_duration(_cls: &Bound<'_, PyType>, duration_since_j2000: Duration) -> Self {
-        Self::from_et_duration(_cls, duration_since_j2000)
+        Self::py_from_et_duration(_cls, duration_since_j2000)
     }
 
     #[classmethod]
@@ -282,7 +282,7 @@ impl Epoch {
     /// In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ESA algorithm should be exactly correct.
     /// :type seconds_j2000: float
     /// :rtype: Epoch
-    fn from_tdb_seconds(_cls: &Bound<'_, PyType>, seconds_j2000: f64) -> Epoch {
+    fn py_from_tdb_seconds(_cls: &Bound<'_, PyType>, seconds_j2000: f64) -> Epoch {
         Self::from_tdb_seconds(seconds_j2000)
     }
 
@@ -294,7 +294,7 @@ impl Epoch {
     /// :type seconds_j2000: float
     /// :rtype: Epoch
     fn init_from_tdb_seconds(_cls: &Bound<'_, PyType>, seconds_j2000: f64) -> Epoch {
-        Self::from_tdb_seconds(_cls, seconds_j2000)
+        Self::py_from_tdb_seconds(_cls, seconds_j2000)
     }
 
     #[classmethod]
@@ -302,7 +302,7 @@ impl Epoch {
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI.
     ///  :type duration_since_j2000: Duration
     /// :rtype: Epoch
-    fn from_tdb_duration(_cls: &Bound<'_, PyType>, duration_since_j2000: Duration) -> Epoch {
+    fn py_from_tdb_duration(_cls: &Bound<'_, PyType>, duration_since_j2000: Duration) -> Epoch {
         Self::from_tdb_duration(duration_since_j2000)
     }
 
@@ -312,7 +312,7 @@ impl Epoch {
     ///  :type duration_since_j2000: Duration
     /// :rtype: Epoch
     fn init_from_tdb_duration(_cls: &Bound<'_, PyType>, duration_since_j2000: Duration) -> Epoch {
-        Self::from_tdb_duration(_cls, duration_since_j2000)
+        Self::py_from_tdb_duration(_cls, duration_since_j2000)
     }
 
     #[classmethod]
@@ -320,7 +320,7 @@ impl Epoch {
     /// Initialize from the JDE days
     /// :type days: float
     /// :rtype: Epoch
-    fn from_jde_et(_cls: &Bound<'_, PyType>, days: f64) -> Self {
+    fn py_from_jde_et(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_jde_et(days)
     }
 
@@ -330,7 +330,7 @@ impl Epoch {
     /// :type days: float
     /// :rtype: Epoch
     fn init_from_jde_et(_cls: &Bound<'_, PyType>, days: f64) -> Self {
-        Self::from_jde_et(_cls, days)
+        Self::py_from_jde_et(_cls, days)
     }
 
     #[classmethod]
@@ -338,7 +338,7 @@ impl Epoch {
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days
     /// :type days: float
     /// :rtype: Epoch
-    fn from_jde_tdb(_cls: &Bound<'_, PyType>, days: f64) -> Self {
+    fn py_from_jde_tdb(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_jde_tdb(days)
     }
 
@@ -348,7 +348,7 @@ impl Epoch {
     /// :type days: float
     /// :rtype: Epoch
     fn init_from_jde_tdb(_cls: &Bound<'_, PyType>, days: f64) -> Self {
-        Self::from_jde_tdb(_cls, days)
+        Self::py_from_jde_tdb(_cls, days)
     }
 
     #[classmethod]
@@ -357,7 +357,7 @@ impl Epoch {
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// :type seconds: float
     /// :rtype: Epoch
-    fn from_gpst_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
+    fn py_from_gpst_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_gpst_seconds(seconds)
     }
 
@@ -368,7 +368,7 @@ impl Epoch {
     /// :type seconds: float
     /// :rtype: Epoch
     fn init_from_gpst_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
-        Self::from_gpst_seconds(_cls, seconds)
+        Self::py_from_gpst_seconds(_cls, seconds)
     }
 
     #[classmethod]
@@ -377,7 +377,7 @@ impl Epoch {
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// :type days: float
     /// :rtype: Epoch
-    fn from_gpst_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
+    fn py_from_gpst_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_gpst_days(days)
     }
 
@@ -388,7 +388,7 @@ impl Epoch {
     /// :type days: float
     /// :rtype: Epoch
     fn init_from_gpst_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
-        Self::from_gpst_days(_cls, days)
+        Self::py_from_gpst_days(_cls, days)
     }
 
     #[classmethod]
@@ -398,7 +398,7 @@ impl Epoch {
     /// This may be useful for time keeping devices that use GPS as a time source.
     /// :type nanoseconds: float
     /// :rtype: Epoch
-    fn from_gpst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
+    fn py_from_gpst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
         Self::from_gpst_nanoseconds(nanoseconds)
     }
 
@@ -410,7 +410,7 @@ impl Epoch {
     /// :type nanoseconds: float
     /// :rtype: Epoch
     fn init_from_gpst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
-        Self::from_gpst_nanoseconds(_cls, nanoseconds)
+        Self::py_from_gpst_nanoseconds(_cls, nanoseconds)
     }
 
     #[classmethod]
@@ -419,7 +419,7 @@ impl Epoch {
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// :type seconds: float
     /// :rtype: Epoch
-    fn from_qzsst_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
+    fn py_from_qzsst_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_qzsst_seconds(seconds)
     }
 
@@ -430,7 +430,7 @@ impl Epoch {
     /// :type seconds: float
     /// :rtype: Epoch
     fn init_from_qzsst_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
-        Self::from_qzsst_seconds(_cls, seconds)
+        Self::py_from_qzsst_seconds(_cls, seconds)
     }
 
     #[classmethod]
@@ -439,7 +439,7 @@ impl Epoch {
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// :type days: float
     /// :rtype: Epoch
-    fn from_qzsst_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
+    fn py_from_qzsst_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_qzsst_days(days)
     }
 
@@ -450,7 +450,7 @@ impl Epoch {
     /// :type days: float
     /// :rtype: Epoch
     fn init_from_qzsst_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
-        Self::from_qzsst_days(_cls, days)
+        Self::py_from_qzsst_days(_cls, days)
     }
 
     #[classmethod]
@@ -460,7 +460,7 @@ impl Epoch {
     /// This may be useful for time keeping devices that use QZSS as a time source.
     /// :type nanoseconds: int
     /// :rtype: Epoch
-    fn from_qzsst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
+    fn py_from_qzsst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
         Self::from_qzsst_nanoseconds(nanoseconds)
     }
 
@@ -472,7 +472,7 @@ impl Epoch {
     /// :type nanoseconds: int
     /// :rtype: Epoch
     fn init_from_qzsst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
-        Self::from_qzsst_nanoseconds(_cls, nanoseconds)
+        Self::py_from_qzsst_nanoseconds(_cls, nanoseconds)
     }
 
     #[classmethod]
@@ -482,7 +482,7 @@ impl Epoch {
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// :type seconds: float
     /// :rtype: Epoch
-    fn from_gst_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
+    fn py_from_gst_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_gst_seconds(seconds)
     }
 
@@ -494,7 +494,7 @@ impl Epoch {
     /// :type seconds: float
     /// :rtype: Epoch
     fn init_from_gst_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
-        Self::from_gst_seconds(_cls, seconds)
+        Self::py_from_gst_seconds(_cls, seconds)
     }
 
     #[classmethod]
@@ -504,7 +504,7 @@ impl Epoch {
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// :type days: float
     /// :rtype: Epoch
-    fn from_gst_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
+    fn py_from_gst_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_gst_days(days)
     }
 
@@ -516,7 +516,7 @@ impl Epoch {
     /// :type days: float
     /// :rtype: Epoch
     fn init_from_gst_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
-        Self::from_gst_days(_cls, days)
+        Self::py_from_gst_days(_cls, days)
     }
 
     #[classmethod]
@@ -527,7 +527,7 @@ impl Epoch {
     /// This may be useful for time keeping devices that use GST as a time source.
     /// :type nanoseconds: float
     /// :rtype: Epoch
-    fn from_gst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
+    fn py_from_gst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
         Self::from_gst_nanoseconds(nanoseconds)
     }
 
@@ -540,7 +540,7 @@ impl Epoch {
     /// :type nanoseconds: float
     /// :rtype: Epoch
     fn init_from_gst_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
-        Self::from_gst_nanoseconds(_cls, nanoseconds)
+        Self::py_from_gst_nanoseconds(_cls, nanoseconds)
     }
 
     #[classmethod]
@@ -549,7 +549,7 @@ impl Epoch {
     /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// :type seconds: float
     /// :rtype: Epoch
-    fn from_bdt_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
+    fn py_from_bdt_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_bdt_seconds(seconds)
     }
 
@@ -560,7 +560,7 @@ impl Epoch {
     /// :type seconds: float
     /// :rtype: Epoch
     fn init_from_bdt_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
-        Self::from_bdt_seconds(_cls, seconds)
+        Self::py_from_bdt_seconds(_cls, seconds)
     }
 
     #[classmethod]
@@ -569,7 +569,7 @@ impl Epoch {
     /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// :type days: float
     /// :rtype: Epoch
-    fn from_bdt_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
+    fn py_from_bdt_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
         Self::from_bdt_days(days)
     }
 
@@ -580,7 +580,7 @@ impl Epoch {
     /// :type days: float
     /// :rtype: Epoch
     fn init_from_bdt_days(_cls: &Bound<'_, PyType>, days: f64) -> Self {
-        Self::from_bdt_days(_cls, days)
+        Self::py_from_bdt_days(_cls, days)
     }
 
     #[classmethod]
@@ -590,7 +590,7 @@ impl Epoch {
     /// This may be useful for time keeping devices that use BDT as a time source.
     /// :type nanoseconds: float
     /// :rtype: Epoch
-    fn from_bdt_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
+    fn py_from_bdt_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
         Self::from_bdt_nanoseconds(nanoseconds)
     }
 
@@ -602,7 +602,7 @@ impl Epoch {
     /// :type nanoseconds: float
     /// :rtype: Epoch
     fn init_from_bdt_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
-        Self::from_bdt_nanoseconds(_cls, nanoseconds)
+        Self::py_from_bdt_nanoseconds(_cls, nanoseconds)
     }
 
     #[classmethod]
@@ -610,7 +610,7 @@ impl Epoch {
     /// Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01.
     /// :type seconds: float
     /// :rtype: Epoch
-    fn from_unix_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
+    fn py_from_unix_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
         Self::from_unix_seconds(seconds)
     }
 
@@ -620,7 +620,7 @@ impl Epoch {
     /// :type seconds: float
     /// :rtype: Epoch
     fn init_from_unix_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
-        Self::from_unix_seconds(_cls, seconds)
+        Self::py_from_unix_seconds(_cls, seconds)
     }
 
     #[classmethod]
@@ -628,7 +628,7 @@ impl Epoch {
     /// Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01.
     /// :type milliseconds: float
     /// :rtype: Epoch
-    fn from_unix_milliseconds(_cls: &Bound<'_, PyType>, milliseconds: f64) -> Self {
+    fn py_from_unix_milliseconds(_cls: &Bound<'_, PyType>, milliseconds: f64) -> Self {
         Self::from_unix_milliseconds(milliseconds)
     }
 
@@ -638,7 +638,7 @@ impl Epoch {
     /// :type milliseconds: float
     /// :rtype: Epoch
     fn init_from_unix_milliseconds(_cls: &Bound<'_, PyType>, milliseconds: f64) -> Self {
-        Self::from_unix_milliseconds(_cls, milliseconds)
+        Self::py_from_unix_milliseconds(_cls, milliseconds)
     }
 
     #[classmethod]
@@ -653,7 +653,7 @@ impl Epoch {
     /// :type nanos: int
     /// :type time_scale: TimeScale
     /// :rtype: Epoch
-    fn from_gregorian(
+    fn py_from_gregorian(
         _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
@@ -690,7 +690,7 @@ impl Epoch {
         nanos: u32,
         time_scale: TimeScale,
     ) -> Result<Self, HifitimeError> {
-        Self::from_gregorian(_cls, year, month, day, hour, minute, second, nanos, time_scale)
+        Self::py_from_gregorian(_cls, year, month, day, hour, minute, second, nanos, time_scale)
     }
 
     #[classmethod]
@@ -701,7 +701,7 @@ impl Epoch {
     /// :type day: int
     /// :type time_scale: TimeScale
     /// :rtype: Epoch
-    fn from_gregorian_at_noon(
+    fn py_from_gregorian_at_noon(
         _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
@@ -726,7 +726,7 @@ impl Epoch {
         day: u8,
         time_scale: TimeScale,
     ) -> Result<Self, HifitimeError> {
-        Self::from_gregorian_at_noon(_cls, year, month, day, time_scale)
+        Self::py_from_gregorian_at_noon(_cls, year, month, day, time_scale)
     }
 
     #[classmethod]
@@ -737,7 +737,7 @@ impl Epoch {
     /// :type day: int
     /// :type time_scale: TimeScale
     /// :rtype: Epoch
-    fn from_gregorian_at_midnight(
+    fn py_from_gregorian_at_midnight(
         _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
@@ -762,7 +762,7 @@ impl Epoch {
         day: u8,
         time_scale: TimeScale,
     ) -> Result<Self, HifitimeError> {
-        Self::from_gregorian_at_midnight(_cls, year, month, day, time_scale)
+        Self::py_from_gregorian_at_midnight(_cls, year, month, day, time_scale)
     }
 
     #[classmethod]
@@ -778,7 +778,7 @@ impl Epoch {
     /// :type second: int
     /// :type nanos: int
     /// :rtype: Epoch
-    fn from_gregorian_utc(
+    fn py_from_gregorian_utc(
         _cls: &Bound<'_, PyType>,
         year: i32,
         month: u8,
@@ -814,7 +814,7 @@ impl Epoch {
         second: u8,
         nanos: u32,
     ) -> Result<Self, HifitimeError> {
-        Self::from_gregorian_utc(_cls, year, month, day, hour, minute, second, nanos)
+        Self::py_from_gregorian_utc(_cls, year, month, day, hour, minute, second, nanos)
     }
 
     #[classmethod]
