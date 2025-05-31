@@ -117,7 +117,15 @@ impl Token {
                 }
             }
             Self::WeekdayDecimal => {
-                Ok(()) // We modulo it anyway
+                // C89: 0 = Sunday, 6 = Saturday
+                if !(0..=6).contains(&val) {
+                    Err(HifitimeError::Parse {
+                        source: ParsingError::ValueError,
+                        details: "invalid C89 weekday decimal (must be 0-6)",
+                    })
+                } else {
+                    Ok(())
+                }
             }
             Self::Weekday
             | Self::WeekdayShort
