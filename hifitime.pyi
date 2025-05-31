@@ -889,7 +889,7 @@ Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
         """Returns the seconds of the Gregorian representation  of this epoch in the time scale it was initialized in."""
 
     def strftime(self, format_str: str) -> str:
-        """Formats the epoch according to the given format string. Supports a subset of C89 and hifitime-specific format codes. Refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for available format options"""
+        """Formats the epoch according to the given format string. Supports a subset of C89 and hifitime-specific format codes. Refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for available format options."""
 
     @staticmethod
     def strptime(epoch_str: str, format_str: str) -> Epoch:
