@@ -828,7 +828,7 @@ impl Epoch {
         Self::from_format_str(&epoch_str, &format_str).map_err(|e| PyErr::from(e))
     }
 
-    /// Equivalent to `datetime.strftime`, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options
+    /// Formats the epoch according to the given format string. Supports a subset of C89 and hifitime-specific format codes. Refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for available format options.
     /// :type format_str: str
     /// :rtype: str
     fn strftime(&self, format_str: String) -> PyResult<String> {
