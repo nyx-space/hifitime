@@ -110,9 +110,9 @@ def test_epoch_exceptions():
 
 
 def test_regression_gh249():
-    e = Epoch.init_from_gregorian(year=2022, month=3, day=1, hour=1, minute=1, second=59, nanos=1, time_scale=TimeScale.GPST)
+    e = Epoch.from_gregorian(year=2022, month=3, day=1, hour=1, minute=1, second=59, nanos=1, time_scale=TimeScale.GPST)
     assert e.strftime("%Y %m %d %H %M %S %f %T") == "2022 03 01 01 01 59 000000001 GPST"
-    e = Epoch.init_from_gregorian(year=2022, month=3, day=1, hour=1, minute=1, second=59, nanos=1, time_scale=TimeScale.UTC)
+    e = Epoch.from_gregorian(year=2022, month=3, day=1, hour=1, minute=1, second=59, nanos=1, time_scale=TimeScale.UTC)
     assert e.strftime("%Y %m %d %H %M %S %f %T") == "2022 03 01 01 01 59 000000001 UTC"
 
 
@@ -134,7 +134,7 @@ def test_interop():
 
 
 def test_polynomial():
-    t_gpst = Epoch.init_from_gregorian(2020, 1, 1, 0, 0, 0, 0, TimeScale.GPST)
+    t_gpst = Epoch.from_gregorian(2020, 1, 1, 0, 0, 0, 0, TimeScale.GPST)
 
     gpst_utc_polynomials = Polynomial.from_constant_offset_nanoseconds(1.0)
     gpst_reference = t_gpst - Unit.Hour * 1.0
