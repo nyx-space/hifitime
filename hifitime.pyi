@@ -1,3 +1,4 @@
+import datetime
 import typing
 
 @typing.final
@@ -246,9 +247,6 @@ add a note to the exception"""
         """Exception.with_traceback(tb) --
 set self.__traceback__ to tb and return self."""
 
-    def __delattr__():
-        """Implement delattr(self, name)."""
-
     def __getattribute__():
         """Return getattr(self, name)."""
 
@@ -257,9 +255,6 @@ set self.__traceback__ to tb and return self."""
 
     def __repr__():
         """Return repr(self)."""
-
-    def __setattr__():
-        """Implement setattr(self, name, value)."""
 
     def __setstate__():...
 
@@ -273,6 +268,8 @@ class Epoch:
 Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
 
 (Python documentation hints)"""
+    duration: Duration
+    time_scale: TimeScale
 
     def __init__(self, string_repr: str) -> Epoch:
         """Defines a nanosecond-precision Epoch.
@@ -281,11 +278,56 @@ Refer to the appropriate functions for initializing this Epoch from different ti
 
 (Python documentation hints)"""
 
+    def ceil(self, duration: Duration) -> Epoch:
+        """Ceils this epoch to the closest provided duration in the TAI time scale
+
+# Example
+```
+use hifitime::{Epoch, TimeUnits};
+
+let e = Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 57, 43);
+assert_eq!(
+e.ceil(1.hours()),
+Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
+);
+
+// 45 minutes is a multiple of 3 minutes, hence this result
+let e = Epoch::from_gregorian_tai(2022, 10, 3, 17, 44, 29, 898032665);
+assert_eq!(
+e.ceil(3.minutes()),
+Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 45, 0)
+);
+```"""
+
     def day_of_year(self) -> float:
         """Returns the number of days since the start of the year."""
 
     def duration_in_year(self) -> Duration:
         """Returns the duration since the start of the year"""
+
+    def floor(self, duration: Duration) -> Epoch:
+        """Floors this epoch to the closest provided duration
+
+# Example
+```
+use hifitime::{Epoch, TimeUnits};
+
+let e = Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 57, 43);
+assert_eq!(
+e.floor(1.hours()),
+Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 0, 0)
+);
+
+let e = Epoch::from_gregorian_tai(2022, 10, 3, 17, 44, 29, 898032665);
+assert_eq!(
+e.floor(3.minutes()),
+Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 42, 0)
+);
+```"""
+
+    @staticmethod
+    def fromdatetime(dt: datetime.datetime) -> Epoch:
+        """Builds an Epoch in UTC from the provided datetime after timezone correction if any is present."""
 
     def hours(self) -> int:
         """Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in."""
@@ -476,11 +518,41 @@ Returns None if the epoch is before 1960, year at which UTC was defined.
 # Why does this function return an `Option` when the other returns a value
 This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960."""
 
+    def max(self, other: Epoch) -> Epoch:
+        """Returns the maximum of the two epochs.
+
+```
+use hifitime::Epoch;
+
+let e0 = Epoch::from_gregorian_utc_at_midnight(2022, 10, 20);
+let e1 = Epoch::from_gregorian_utc_at_midnight(2022, 10, 21);
+
+assert_eq!(e1, e1.max(e0));
+assert_eq!(e1, e0.max(e1));
+```
+
+_Note:_ this uses a pointer to `self` which will be copied immediately because Python requires a pointer."""
+
     def microseconds(self) -> int:
         """Returns the microseconds of the Gregorian representation  of this epoch in the time scale it was initialized in."""
 
     def milliseconds(self) -> int:
         """Returns the milliseconds of the Gregorian representation  of this epoch in the time scale it was initialized in."""
+
+    def min(self, other: Epoch) -> Epoch:
+        """Returns the minimum of the two epochs.
+
+```
+use hifitime::Epoch;
+
+let e0 = Epoch::from_gregorian_utc_at_midnight(2022, 10, 20);
+let e1 = Epoch::from_gregorian_utc_at_midnight(2022, 10, 21);
+
+assert_eq!(e0, e1.min(e0));
+assert_eq!(e0, e0.min(e1));
+```
+
+_Note:_ this uses a pointer to `self` which will be copied immediately because Python requires a pointer."""
 
     def minutes(self) -> int:
         """Returns the minutes of the Gregorian representation  of this epoch in the time scale it was initialized in."""
@@ -489,6 +561,127 @@ This is to match the `iauDat` function of SOFA (src/dat.c). That function will r
 
     def nanoseconds(self) -> int:
         """Returns the nanoseconds of the Gregorian representation  of this epoch in the time scale it was initialized in."""
+
+    def next(self, weekday: Weekday) -> Epoch:
+        """Returns the next weekday.
+
+```
+use hifitime::prelude::*;
+
+let epoch = Epoch::from_gregorian_utc_at_midnight(1988, 1, 2);
+assert_eq!(epoch.weekday_utc(), Weekday::Saturday);
+assert_eq!(epoch.next(Weekday::Sunday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 3));
+assert_eq!(epoch.next(Weekday::Monday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 4));
+assert_eq!(epoch.next(Weekday::Tuesday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 5));
+assert_eq!(epoch.next(Weekday::Wednesday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 6));
+assert_eq!(epoch.next(Weekday::Thursday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 7));
+assert_eq!(epoch.next(Weekday::Friday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 8));
+assert_eq!(epoch.next(Weekday::Saturday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 9));
+```"""
+
+    def next_weekday_at_midnight(self, weekday: Weekday) -> Epoch:...
+
+    def next_weekday_at_noon(self, weekday: Weekday) -> Epoch:...
+
+    def precise_timescale_conversion(self, forward: bool, reference_epoch: Epoch, polynomial: Polynomial, target: TimeScale) -> Epoch:
+        """Converts this [Epoch] into targeted [TimeScale] using provided [Polynomial].
+
+## Input
+- forward: whether this is forward or backward conversion.
+For example, using GPST-UTC [Polynomial]
+- GPST->UTC is the forward conversion
+- UTC->GPST is the backward conversion
+- reference_epoch: any reference [Epoch] for the provided [Polynomial].
+
+While we support any time difference, it should remain short in pratice (a day at most, for precise applications).
+- polynomial: that must be valid for this reference [Epoch], used in the equation `a0 + a1*dt + a2*dt² = GPST-UTC` for example.
+- target: targetted [TimeScale] we will transition to.
+
+Example:
+```
+use hifitime::{Epoch, TimeScale, Polynomial, Unit};
+
+// random GPST Epoch for forward conversion to UTC
+let t_gpst = Epoch::from_gregorian(2020, 01, 01, 0, 0, 0, 0, TimeScale::GPST);
+
+// Let's say we know the GPST-UTC polynomials for that day,
+// They allow precise forward transition from GPST to UTC,
+// and precise backward transition from UTC to GPST.
+let gpst_utc_polynomials = Polynomial::from_constant_offset_nanoseconds(1.0);
+
+// This is the reference [Epoch] attached to the publication of these polynomials.
+// You should use polynomials that remain valid and were provided recently (usually one day at most).
+// Example: polynomials were published 1 hour ago.
+let gpst_reference = t_gpst - 1.0 * Unit::Hour;
+
+// Forward conversion (to UTC) GPST - a0 + a1 *dt + a2*dt² = UTC
+let t_utc = t_gpst.precise_timescale_conversion(true, gpst_reference, gpst_utc_polynomials, TimeScale::UTC)
+.unwrap();
+
+// Verify we did transition to UTC
+assert_eq!(t_utc.time_scale, TimeScale::UTC);
+
+// Verify the resulting [Epoch] is the coarse GPST->UTC transition + fine correction
+let reversed = t_utc.to_time_scale(TimeScale::GPST) + 1.0 * Unit::Nanosecond;
+assert_eq!(reversed, t_gpst);
+
+// Apply the backward transition, from t_utc back to t_gpst.
+// The timescale conversion works both ways: (from UTC) GPST = UTC + a0 + a1 *dt + a2*dt²
+let backwards = t_utc.precise_timescale_conversion(false, gpst_reference, gpst_utc_polynomials, TimeScale::GPST)
+.unwrap();
+
+assert_eq!(backwards, t_gpst);
+
+// It is important to understand that your reference point does not have to be in the past.
+// The only logic that should prevail is to always minimize interpolation gap.
+// In other words, if you can access future interpolation information that would minimize the data gap, they should prevail.
+// Example: +30' in the future.
+let gpst_reference = t_gpst + 30.0 * Unit::Minute;
+
+// Forward conversion (to UTC) but using polynomials that were released 1 hour after t_gpst
+let t_utc = t_gpst.precise_timescale_conversion(true, gpst_reference, gpst_utc_polynomials, TimeScale::UTC)
+.unwrap();
+
+// Verifications
+assert_eq!(t_utc.time_scale, TimeScale::UTC);
+
+let reversed = t_utc.to_time_scale(TimeScale::GPST) + 1.0 * Unit::Nanosecond;
+assert_eq!(reversed, t_gpst);
+```"""
+
+    def previous(self, weekday: Weekday) -> Epoch:
+        """Returns the next weekday.
+
+```
+use hifitime::prelude::*;
+
+let epoch = Epoch::from_gregorian_utc_at_midnight(1988, 1, 2);
+assert_eq!(epoch.previous(Weekday::Friday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 1));
+assert_eq!(epoch.previous(Weekday::Thursday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 31));
+assert_eq!(epoch.previous(Weekday::Wednesday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 30));
+assert_eq!(epoch.previous(Weekday::Tuesday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 29));
+assert_eq!(epoch.previous(Weekday::Monday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 28));
+assert_eq!(epoch.previous(Weekday::Sunday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 27));
+assert_eq!(epoch.previous(Weekday::Saturday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 26));
+```"""
+
+    def previous_weekday_at_midnight(self, weekday: Weekday) -> Epoch:...
+
+    def previous_weekday_at_noon(self, weekday: Weekday) -> Epoch:...
+
+    def round(self, duration: Duration) -> Epoch:
+        """Rounds this epoch to the closest provided duration in TAI
+
+# Example
+```
+use hifitime::{Epoch, TimeUnits};
+
+let e = Epoch::from_gregorian_tai_hms(2022, 5, 20, 17, 57, 43);
+assert_eq!(
+e.round(1.hours()),
+Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
+);
+```"""
 
     def seconds(self) -> int:
         """Returns the seconds of the Gregorian representation  of this epoch in the time scale it was initialized in."""
@@ -703,6 +896,11 @@ past J2000, one cannot solve the revert the operation analytically. Instead, we 
     def to_tdb_seconds(self) -> float:
         """Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. <https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB>)"""
 
+    def to_time_of_week(self) -> typing.Tuple[int]:
+        """Converts this epoch into the time of week, represented as a rolling week counter into that time scale
+and the number of nanoseconds elapsed in current week (since closest Sunday midnight).
+This is usually how GNSS receivers describe a timestamp."""
+
     def to_time_scale(self, ts: TimeScale) -> Epoch:
         """Converts self to another time scale
 
@@ -750,6 +948,20 @@ this borrows an Epoch and returns an owned Epoch."""
 
     def to_utc_seconds(self) -> float:
         """Returns the number of UTC seconds since the TAI epoch"""
+
+    def todatetime(self) -> datetime.datetime:
+        """Returns a Python datetime object from this Epoch (truncating the nanoseconds away)"""
+
+    def weekday(self) -> Weekday:
+        """Returns weekday (uses the TAI representation for this calculation)."""
+
+    def weekday_in_time_scale(self, time_scale: TimeScale) -> Weekday:
+        """Returns the weekday in provided time scale **ASSUMING** that the reference epoch of that time scale is a Monday.
+You _probably_ do not want to use this. You probably either want `weekday()` or `weekday_utc()`.
+Several time scales do _not_ have a reference day that's on a Monday, e.g. BDT."""
+
+    def weekday_utc(self) -> Weekday:
+        """Returns weekday in UTC timescale"""
 
     def year(self) -> int:
         """Returns the number of Gregorian years of this epoch in the current time scale."""
@@ -811,9 +1023,6 @@ add a note to the exception"""
         """Exception.with_traceback(tb) --
 set self.__traceback__ to tb and return self."""
 
-    def __delattr__():
-        """Implement delattr(self, name)."""
-
     def __getattribute__():
         """Return getattr(self, name)."""
 
@@ -823,9 +1032,6 @@ set self.__traceback__ to tb and return self."""
     def __repr__():
         """Return repr(self)."""
 
-    def __setattr__():
-        """Implement setattr(self, name, value)."""
-
     def __setstate__():...
 
     def __str__():
@@ -833,12 +1039,12 @@ set self.__traceback__ to tb and return self."""
 
 @typing.final
 class LatestLeapSeconds:
-    """List of leap seconds from https://www.ietf.org/timezones/data/leap-seconds.list .
+    """List of leap seconds from <https://www.ietf.org/timezones/data/leap-seconds.list>.
 This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
 The unannoucned leap seconds come from dat.c in the SOFA library."""
 
     def __init__(self) -> None:
-        """List of leap seconds from https://www.ietf.org/timezones/data/leap-seconds.list .
+        """List of leap seconds from <https://www.ietf.org/timezones/data/leap-seconds.list>.
 This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
 The unannoucned leap seconds come from dat.c in the SOFA library."""
 
@@ -914,9 +1120,6 @@ add a note to the exception"""
         """Exception.with_traceback(tb) --
 set self.__traceback__ to tb and return self."""
 
-    def __delattr__():
-        """Implement delattr(self, name)."""
-
     def __getattribute__():
         """Return getattr(self, name)."""
 
@@ -926,12 +1129,57 @@ set self.__traceback__ to tb and return self."""
     def __repr__():
         """Return repr(self)."""
 
-    def __setattr__():
-        """Implement setattr(self, name, value)."""
-
     def __setstate__():...
 
     def __str__():
+        """Return str(self)."""
+
+@typing.final
+class Polynomial:
+    """Interpolation [Polynomial] used for example in [TimeScale]
+maintenance, precise monitoring or conversions.
+
+(Python documentation hints)"""
+
+    def correction_duration(self, time_interval: Duration) -> Duration:
+        """Calculate the correction (as [Duration] once again) from [Self] and given
+the interpolation time interval"""
+
+    @staticmethod
+    def from_constant_offset(constant: Duration) -> Polynomial:
+        """Create a [Polynomial] structure that is only made of a static offset"""
+
+    @staticmethod
+    def from_constant_offset_nanoseconds(nanos: float) -> Polynomial:
+        """Create a [Polynomial] structure from a static offset expressed in nanoseconds"""
+
+    @staticmethod
+    def from_offset_and_rate(constant: Duration, rate: Duration) -> Polynomial:
+        """Create a [Polynomial] structure from both static offset and rate of change:"""
+
+    @staticmethod
+    def from_offset_rate_nanoseconds(offset_ns: float, drift_ns_s: float) -> Polynomial:
+        """Create a [Polynomial] structure from a static offset and drift, in nanoseconds and nanoseconds.s⁻¹"""
+
+    def __eq__(self, value: typing.Any) -> bool:
+        """Return self==value."""
+
+    def __ge__(self, value: typing.Any) -> bool:
+        """Return self>=value."""
+
+    def __gt__(self, value: typing.Any) -> bool:
+        """Return self>value."""
+
+    def __le__(self, value: typing.Any) -> bool:
+        """Return self<=value."""
+
+    def __lt__(self, value: typing.Any) -> bool:
+        """Return self<value."""
+
+    def __ne__(self, value: typing.Any) -> bool:
+        """Return self!=value."""
+
+    def __str__(self) -> str:
         """Return str(self)."""
 
 @typing.final
@@ -1085,3 +1333,37 @@ class Ut1Provider:
 
     def __repr__(self) -> str:
         """Return repr(self)."""
+
+@typing.final
+class Weekday:
+
+    def __eq__(self, value: typing.Any) -> bool:
+        """Return self==value."""
+
+    def __ge__(self, value: typing.Any) -> bool:
+        """Return self>=value."""
+
+    def __gt__(self, value: typing.Any) -> bool:
+        """Return self>value."""
+
+    def __int__(self) -> None:
+        """int(self)"""
+
+    def __le__(self, value: typing.Any) -> bool:
+        """Return self<=value."""
+
+    def __lt__(self, value: typing.Any) -> bool:
+        """Return self<value."""
+
+    def __ne__(self, value: typing.Any) -> bool:
+        """Return self!=value."""
+
+    def __repr__(self) -> str:
+        """Return repr(self)."""
+    Friday: Weekday = ...
+    Monday: Weekday = ...
+    Saturday: Weekday = ...
+    Sunday: Weekday = ...
+    Thursday: Weekday = ...
+    Tuesday: Weekday = ...
+    Wednesday: Weekday = ...

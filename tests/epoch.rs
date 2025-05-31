@@ -2273,9 +2273,9 @@ fn test_tdb_continuity_around_j2000() {
     let small_offset = Unit::Microsecond; // 1 microsecond
     let tolerance = 1.0 * Unit::Nanosecond; // Tolerance for round-trip conversion
 
-    let epoch_before_j2000_tdb = Epoch::from_tdb_seconds(-small_offset.to_seconds());
+    let epoch_before_j2000_tdb = Epoch::from_tdb_seconds(-small_offset.in_seconds());
     let epoch_at_j2000_tdb = j2000_tdb;
-    let epoch_after_j2000_tdb = Epoch::from_tdb_seconds(small_offset.to_seconds());
+    let epoch_after_j2000_tdb = Epoch::from_tdb_seconds(small_offset.in_seconds());
 
     // Test ordering
     assert!(
@@ -2319,19 +2319,19 @@ fn test_tdb_continuity_around_j2000() {
         round_trip_after,
         epoch_after_j2000_tdb - round_trip_after
     );
-
 }
 
 #[test]
 fn test_et_continuity_around_j2000() {
     let j2000_et = Epoch::from_et_seconds(0.0);
     let small_offset = Unit::Microsecond; // 1 microsecond
-                                          // ET conversion can have larger errors due to Newton-Raphson
+
+    // ET conversion can have larger errors due to Newton-Raphson
     let tolerance = 150.0 * Unit::Nanosecond;
 
-    let epoch_before_j2000_et = Epoch::from_et_seconds(-small_offset.to_seconds());
+    let epoch_before_j2000_et = Epoch::from_et_seconds(-small_offset.in_seconds());
     let epoch_at_j2000_et = j2000_et;
-    let epoch_after_j2000_et = Epoch::from_et_seconds(small_offset.to_seconds());
+    let epoch_after_j2000_et = Epoch::from_et_seconds(small_offset.in_seconds());
 
     // Test ordering
     assert!(
@@ -2375,5 +2375,4 @@ fn test_et_continuity_around_j2000() {
         round_trip_after,
         epoch_after_j2000_et - round_trip_after
     );
-
 }
