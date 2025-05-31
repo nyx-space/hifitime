@@ -69,6 +69,8 @@ impl From<Polynomial> for (f64, f64, f64) {
 impl Polynomial {
     /// Calculate the correction (as [Duration] once again) from [Self] and given
     /// the interpolation time interval
+    /// :type time_interval: Duration
+    /// :rtype: Duration
     pub fn correction_duration(&self, time_interval: Duration) -> Duration {
         let dt_s = time_interval.to_seconds();
         let (a0, a1, a2) = (
@@ -134,6 +136,8 @@ impl fmt::Display for Polynomial {
 #[cfg_attr(feature = "python", pymethods)]
 impl Polynomial {
     /// Create a [Polynomial] structure that is only made of a static offset
+    /// :type constant: Duration
+    /// :rtype: Polynomial
     #[classmethod]
     pub fn from_constant_offset(_cls: &Bound<'_, PyType>, constant: Duration) -> Self {
         Self {
@@ -144,6 +148,8 @@ impl Polynomial {
     }
 
     /// Create a [Polynomial] structure from a static offset expressed in nanoseconds
+    /// :type nanos: float
+    /// :rtype: Polynomial
     #[classmethod]
     pub fn from_constant_offset_nanoseconds(_cls: &Bound<'_, PyType>, nanos: f64) -> Self {
         Self {
@@ -154,6 +160,9 @@ impl Polynomial {
     }
 
     /// Create a [Polynomial] structure from both static offset and rate of change:
+    /// :type constant: Duration
+    /// :type rate: Duration
+    /// :rtype: Polynomial
     #[classmethod]
     pub fn from_offset_and_rate(
         _cls: &Bound<'_, PyType>,
@@ -167,8 +176,10 @@ impl Polynomial {
         }
     }
 
-    /// Create a [Polynomial] structure from a static offset and drift,
-    /// in nanoseconds and nanoseconds.s⁻¹
+    /// Create a [Polynomial] structure from a static offset and drift, in nanoseconds and nanoseconds.s⁻¹
+    /// :type offset_ns: float
+    /// :type drift_ns_s: float
+    /// :rtype: Polynomial
     #[classmethod]
     pub fn from_offset_rate_nanoseconds(
         _cls: &Bound<'_, PyType>,

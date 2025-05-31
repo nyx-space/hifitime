@@ -54,9 +54,18 @@ fn formal_epoch_reciprocity_tt() {
     // No TT Days initializer
 }
 
-// Skip ET, kani chokes on the Newton Raphson loop.
+// Kani verification for ET is skipped.
+// Reason: Kani struggles with formally verifying the Newton-Raphson iteration
+// used in ET <-> TAI conversions. This involves floating-point arithmetic,
+// complex loop invariants, and convergence criteria that are challenging for
+// current formal verification tools like Kani.
 
-// Skip TDB
+// Kani verification for TDB is skipped.
+// Reason: TDB conversions also involve complex calculations (similar to ET but with
+// different astronomical terms) and floating-point arithmetic. Formally verifying
+// these transformations with arbitrary inputs in Kani is challenging.
+// The specific test case below (`formal_epoch_reciprocity_tdb`) was an attempt
+// to debug issues with a particular duration value but highlights the difficulties.
 //
 // #[kani::proof]
 #[test]
@@ -82,7 +91,11 @@ fn formal_epoch_reciprocity_tdb() {
     }
 }
 
-// Skip UTC, kani chokes on the leap seconds counting.
+// Kani verification for UTC is skipped.
+// Reason: Kani struggles with the leap second counting logic. This involves:
+// 1. Accessing an external, dynamically sized list of leap seconds (LATEST_LEAP_SECONDS).
+// 2. Complex conditional paths and iteration when determining the applicable number of leap seconds.
+// These aspects are challenging to model and verify exhaustively with Kani.
 
 #[kani::proof]
 #[test]

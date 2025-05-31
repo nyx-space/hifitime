@@ -2266,3 +2266,113 @@ fn precise_timescale_conversion() {
     let reversed = t_utc.to_time_scale(TimeScale::GPST) + 1.0 * Unit::Nanosecond;
     assert_eq!(reversed, t_gpst);
 }
+
+#[test]
+fn test_tdb_continuity_around_j2000() {
+    let j2000_tdb = Epoch::from_tdb_seconds(0.0);
+    let small_offset = Unit::Microsecond; // 1 microsecond
+    let tolerance = 1.0 * Unit::Nanosecond; // Tolerance for round-trip conversion
+
+    let epoch_before_j2000_tdb = Epoch::from_tdb_seconds(-small_offset.in_seconds());
+    let epoch_at_j2000_tdb = j2000_tdb;
+    let epoch_after_j2000_tdb = Epoch::from_tdb_seconds(small_offset.in_seconds());
+
+    // Test ordering
+    assert!(
+        epoch_before_j2000_tdb < epoch_at_j2000_tdb,
+        "TDB: before < at J2000 failed"
+    );
+    assert!(
+        epoch_at_j2000_tdb < epoch_after_j2000_tdb,
+        "TDB: at < after J2000 failed"
+    );
+
+    // Test round-trip conversion (TDB -> TAI -> TDB)
+    let round_trip_before = epoch_before_j2000_tdb
+        .to_time_scale(TimeScale::TAI)
+        .to_time_scale(TimeScale::TDB);
+    let round_trip_at = epoch_at_j2000_tdb
+        .to_time_scale(TimeScale::TAI)
+        .to_time_scale(TimeScale::TDB);
+    let round_trip_after = epoch_after_j2000_tdb
+        .to_time_scale(TimeScale::TAI)
+        .to_time_scale(TimeScale::TDB);
+
+    assert!(
+        (epoch_before_j2000_tdb - round_trip_before).abs() < tolerance,
+        "TDB round-trip 'before' failed: original: {:?}, round_trip: {:?}, diff: {:?}",
+        epoch_before_j2000_tdb,
+        round_trip_before,
+        epoch_before_j2000_tdb - round_trip_before
+    );
+    assert!(
+        (epoch_at_j2000_tdb - round_trip_at).abs() < tolerance,
+        "TDB round-trip 'at' failed: original: {:?}, round_trip: {:?}, diff: {:?}",
+        epoch_at_j2000_tdb,
+        round_trip_at,
+        epoch_at_j2000_tdb - round_trip_at
+    );
+    assert!(
+        (epoch_after_j2000_tdb - round_trip_after).abs() < tolerance,
+        "TDB round-trip 'after' failed: original: {:?}, round_trip: {:?}, diff: {:?}",
+        epoch_after_j2000_tdb,
+        round_trip_after,
+        epoch_after_j2000_tdb - round_trip_after
+    );
+}
+
+#[test]
+fn test_et_continuity_around_j2000() {
+    let j2000_et = Epoch::from_et_seconds(0.0);
+    let small_offset = Unit::Microsecond; // 1 microsecond
+
+    // ET conversion can have larger errors due to Newton-Raphson
+    let tolerance = 150.0 * Unit::Nanosecond;
+
+    let epoch_before_j2000_et = Epoch::from_et_seconds(-small_offset.in_seconds());
+    let epoch_at_j2000_et = j2000_et;
+    let epoch_after_j2000_et = Epoch::from_et_seconds(small_offset.in_seconds());
+
+    // Test ordering
+    assert!(
+        epoch_before_j2000_et < epoch_at_j2000_et,
+        "ET: before < at J2000 failed"
+    );
+    assert!(
+        epoch_at_j2000_et < epoch_after_j2000_et,
+        "ET: at < after J2000 failed"
+    );
+
+    // Test round-trip conversion (ET -> TAI -> ET)
+    let round_trip_before = epoch_before_j2000_et
+        .to_time_scale(TimeScale::TAI)
+        .to_time_scale(TimeScale::ET);
+    let round_trip_at = epoch_at_j2000_et
+        .to_time_scale(TimeScale::TAI)
+        .to_time_scale(TimeScale::ET);
+    let round_trip_after = epoch_after_j2000_et
+        .to_time_scale(TimeScale::TAI)
+        .to_time_scale(TimeScale::ET);
+
+    assert!(
+        (epoch_before_j2000_et - round_trip_before).abs() < tolerance,
+        "ET round-trip 'before' failed: original: {:?}, round_trip: {:?}, diff: {:?}",
+        epoch_before_j2000_et,
+        round_trip_before,
+        epoch_before_j2000_et - round_trip_before
+    );
+    assert!(
+        (epoch_at_j2000_et - round_trip_at).abs() < tolerance,
+        "ET round-trip 'at' failed: original: {:?}, round_trip: {:?}, diff: {:?}",
+        epoch_at_j2000_et,
+        round_trip_at,
+        epoch_at_j2000_et - round_trip_at
+    );
+    assert!(
+        (epoch_after_j2000_et - round_trip_after).abs() < tolerance,
+        "ET round-trip 'after' failed: original: {:?}, round_trip: {:?}, diff: {:?}",
+        epoch_after_j2000_et,
+        round_trip_after,
+        epoch_after_j2000_et - round_trip_after
+    );
+}

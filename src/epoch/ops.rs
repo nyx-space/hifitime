@@ -41,6 +41,8 @@ impl Epoch {
     /// ```
     ///
     /// _Note:_ this uses a pointer to `self` which will be copied immediately because Python requires a pointer.
+    /// :type other: Epoch
+    /// :rtype: Epoch
     pub fn min(&self, other: Self) -> Self {
         if *self < other {
             *self
@@ -62,6 +64,8 @@ impl Epoch {
     /// ```
     ///
     /// _Note:_ this uses a pointer to `self` which will be copied immediately because Python requires a pointer.
+    /// :type other: Epoch
+    /// :rtype: Epoch
     pub fn max(&self, other: Self) -> Self {
         if *self > other {
             *self
@@ -89,6 +93,8 @@ impl Epoch {
     ///     Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 42, 0)
     /// );
     /// ```
+    /// :type duration: Duration
+    /// :rtype: Epoch
     pub fn floor(&self, duration: Duration) -> Self {
         Self::from_duration(self.duration.floor(duration), self.time_scale)
     }
@@ -113,6 +119,8 @@ impl Epoch {
     ///     Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 45, 0)
     /// );
     /// ```
+    /// :type duration: Duration
+    /// :rtype: Epoch
     pub fn ceil(&self, duration: Duration) -> Self {
         Self::from_duration(self.duration.ceil(duration), self.time_scale)
     }
@@ -130,6 +138,8 @@ impl Epoch {
     ///     Epoch::from_gregorian_tai_hms(2022, 5, 20, 18, 0, 0)
     /// );
     /// ```
+    /// :type duration: Duration
+    /// :rtype: Epoch
     pub fn round(&self, duration: Duration) -> Self {
         Self::from_duration(self.duration.round(duration), self.time_scale)
     }
@@ -138,6 +148,7 @@ impl Epoch {
     /// Converts this epoch into the time of week, represented as a rolling week counter into that time scale
     /// and the number of nanoseconds elapsed in current week (since closest Sunday midnight).
     /// This is usually how GNSS receivers describe a timestamp.
+    /// :rtype: typing.Tuple[int]
     pub fn to_time_of_week(&self) -> (u32, u64) {
         let total_nanoseconds = self.duration.total_nanoseconds();
         let weeks = total_nanoseconds / NANOSECONDS_PER_DAY as i128 / Weekday::DAYS_PER_WEEK_I128;
@@ -213,6 +224,11 @@ impl Epoch {
     /// let reversed = t_utc.to_time_scale(TimeScale::GPST) + 1.0 * Unit::Nanosecond;
     /// assert_eq!(reversed, t_gpst);
     /// ```
+    /// :type forward: bool
+    /// :type reference_epoch: Epoch
+    /// :type polynomial: Polynomial
+    /// :type target: TimeScale
+    /// :rtype: Epoch
     pub fn precise_timescale_conversion(
         &self,
         forward: bool,
@@ -251,6 +267,8 @@ impl Epoch {
     /// Returns the weekday in provided time scale **ASSUMING** that the reference epoch of that time scale is a Monday.
     /// You _probably_ do not want to use this. You probably either want `weekday()` or `weekday_utc()`.
     /// Several time scales do _not_ have a reference day that's on a Monday, e.g. BDT.
+    /// :type time_scale: TimeScale
+    /// :rtype: Weekday
     pub fn weekday_in_time_scale(&self, time_scale: TimeScale) -> Weekday {
         (rem_euclid_f64(
             self.to_duration_in_time_scale(time_scale)
@@ -263,6 +281,7 @@ impl Epoch {
 
     #[must_use]
     /// Returns weekday (uses the TAI representation for this calculation).
+    /// :rtype: Weekday
     pub fn weekday(&self) -> Weekday {
         // J1900 was a Monday so we just have to modulo the number of days by the number of days per week.
         // The function call will be optimized away.
@@ -271,6 +290,7 @@ impl Epoch {
 
     #[must_use]
     /// Returns weekday in UTC timescale
+    /// :rtype: Weekday
     pub fn weekday_utc(&self) -> Weekday {
         self.weekday_in_time_scale(TimeScale::UTC)
     }
@@ -291,6 +311,8 @@ impl Epoch {
     /// assert_eq!(epoch.next(Weekday::Friday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 8));
     /// assert_eq!(epoch.next(Weekday::Saturday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 9));
     /// ```
+    /// :type weekday: Weekday
+    /// :rtype: Epoch
     pub fn next(&self, weekday: Weekday) -> Self {
         let delta_days = self.weekday() - weekday;
         if delta_days == Duration::ZERO {
@@ -300,11 +322,15 @@ impl Epoch {
         }
     }
 
+    /// :type weekday: Weekday
+    /// :rtype: Epoch
     #[must_use]
     pub fn next_weekday_at_midnight(&self, weekday: Weekday) -> Self {
         self.next(weekday).with_hms_strict(0, 0, 0)
     }
 
+    /// :type weekday: Weekday
+    /// :rtype: Epoch
     #[must_use]
     pub fn next_weekday_at_noon(&self, weekday: Weekday) -> Self {
         self.next(weekday).with_hms_strict(12, 0, 0)
@@ -325,6 +351,8 @@ impl Epoch {
     /// assert_eq!(epoch.previous(Weekday::Sunday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 27));
     /// assert_eq!(epoch.previous(Weekday::Saturday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 26));
     /// ```
+    /// :type weekday: Weekday
+    /// :rtype: Epoch
     pub fn previous(&self, weekday: Weekday) -> Self {
         let delta_days = weekday - self.weekday();
         if delta_days == Duration::ZERO {
@@ -334,11 +362,15 @@ impl Epoch {
         }
     }
 
+    /// :type weekday: Weekday
+    /// :rtype: Epoch
     #[must_use]
     pub fn previous_weekday_at_midnight(&self, weekday: Weekday) -> Self {
         self.previous(weekday).with_hms_strict(0, 0, 0)
     }
 
+    /// :type weekday: Weekday
+    /// :rtype: Epoch
     #[must_use]
     pub fn previous_weekday_at_noon(&self, weekday: Weekday) -> Self {
         self.previous(weekday).with_hms_strict(12, 0, 0)
