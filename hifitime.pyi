@@ -326,6 +326,172 @@ Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 42, 0)
 ```"""
 
     @staticmethod
+    def from_bdt_days(days: float) -> Epoch:
+        """Initialize an Epoch from the number of days since the BeiDou Time Epoch,
+defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
+
+    @staticmethod
+    def from_bdt_nanoseconds(nanoseconds: float) -> Epoch:
+        """Initialize an Epoch from the number of days since the BeiDou Time Epoch,
+defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
+This may be useful for time keeping devices that use BDT as a time source."""
+
+    @staticmethod
+    def from_bdt_seconds(seconds: float) -> Epoch:
+        """Initialize an Epoch from the number of seconds since the BeiDou Time Epoch,
+defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
+
+    @staticmethod
+    def from_et_duration(duration_since_j2000: Duration) -> Epoch:
+        """Initialize an Epoch from the Ephemeris Time duration past 2000 JAN 01 (J2000 reference)"""
+
+    @staticmethod
+    def from_et_seconds(seconds_since_j2000: float) -> Epoch:
+        """Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)"""
+
+    @staticmethod
+    def from_gpst_days(days: float) -> Epoch:
+        """Initialize an Epoch from the number of days since the GPS Time Epoch,
+defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
+
+    @staticmethod
+    def from_gpst_nanoseconds(nanoseconds: float) -> Epoch:
+        """Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
+defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+This may be useful for time keeping devices that use GPS as a time source."""
+
+    @staticmethod
+    def from_gpst_seconds(seconds: float) -> Epoch:
+        """Initialize an Epoch from the number of seconds since the GPS Time Epoch,
+defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
+
+    @staticmethod
+    def from_gregorian(year: int, month: int, day: int, hour: int, minute: int, second: int, nanos: int, time_scale: TimeScale) -> Epoch:
+        """Initialize from the Gregorian parts"""
+
+    @staticmethod
+    def from_gregorian_at_midnight(year: int, month: int, day: int, time_scale: TimeScale) -> Epoch:
+        """Initialize from the Gregorian parts, time set to midnight"""
+
+    @staticmethod
+    def from_gregorian_at_noon(year: int, month: int, day: int, time_scale: TimeScale) -> Epoch:
+        """Initialize from the Gregorian parts, time set to noon"""
+
+    @staticmethod
+    def from_gregorian_utc(year: int, month: int, day: int, hour: int, minute: int, second: int, nanos: int) -> Epoch:
+        """Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
+Use maybe_from_gregorian_tai if unsure."""
+
+    @staticmethod
+    def from_gst_days(days: float) -> Epoch:
+        """Initialize an Epoch from the number of days since the Galileo Time Epoch,
+starting on August 21st 1999 Midnight UT,
+(cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
+
+    @staticmethod
+    def from_gst_nanoseconds(nanoseconds: float) -> Epoch:
+        """Initialize an Epoch from the number of nanoseconds since the Galileo Time Epoch,
+starting on August 21st 1999 Midnight UT,
+(cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
+This may be useful for time keeping devices that use GST as a time source."""
+
+    @staticmethod
+    def from_gst_seconds(seconds: float) -> Epoch:
+        """Initialize an Epoch from the number of seconds since the Galileo Time Epoch,
+starting on August 21st 1999 Midnight UT,
+(cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
+
+    @staticmethod
+    def from_jde_et(days: float) -> Epoch:
+        """Initialize from the JDE days"""
+
+    @staticmethod
+    def from_jde_tai(days: float) -> Epoch:
+        """Initialize an Epoch from given JDE in TAI time scale"""
+
+    @staticmethod
+    def from_jde_tdb(days: float) -> Epoch:
+        """Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days"""
+
+    @staticmethod
+    def from_jde_utc(days: float) -> Epoch:
+        """Initialize an Epoch from given JDE in UTC time scale"""
+
+    @staticmethod
+    def from_mjd_tai(days: float) -> Epoch:
+        """Initialize an Epoch from given MJD in TAI time scale"""
+
+    @staticmethod
+    def from_mjd_utc(days: float) -> Epoch:
+        """Initialize an Epoch from given MJD in UTC time scale"""
+
+    @staticmethod
+    def from_qzsst_days(days: float) -> Epoch:
+        """Initialize an Epoch from the number of days since the QZSS Time Epoch,
+defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
+
+    @staticmethod
+    def from_qzsst_nanoseconds(nanoseconds: int) -> Epoch:
+        """Initialize an Epoch from the number of nanoseconds since the QZSS Time Epoch,
+defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+This may be useful for time keeping devices that use QZSS as a time source."""
+
+    @staticmethod
+    def from_qzsst_seconds(seconds: float) -> Epoch:
+        """Initialize an Epoch from the number of seconds since the QZSS Time Epoch,
+defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
+
+    @staticmethod
+    def from_tai_days(days: float) -> Epoch:
+        """Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight"""
+
+    @staticmethod
+    def from_tai_duration(duration: Duration) -> Epoch:
+        """Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch."""
+
+    @staticmethod
+    def from_tai_parts(centuries: int, nanoseconds: int) -> Epoch:
+        """Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch."""
+
+    @staticmethod
+    def from_tai_seconds(seconds: float) -> Epoch:
+        """Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight"""
+
+    @staticmethod
+    def from_tdb_duration(duration_since_j2000: Duration) -> Epoch:
+        """Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI."""
+
+    @staticmethod
+    def from_tdb_seconds(seconds_j2000: float) -> Epoch:
+        """Initialize an Epoch from Dynamic Barycentric Time (TDB) seconds past 2000 JAN 01 midnight (difference than SPICE)
+NOTE: This uses the ESA algorithm, which is a notch more complicated than the SPICE algorithm, but more precise.
+In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ESA algorithm should be exactly correct."""
+
+    @staticmethod
+    def from_tt_duration(duration: Duration) -> Epoch:
+        """Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)"""
+
+    @staticmethod
+    def from_tt_seconds(seconds: float) -> Epoch:
+        """Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)"""
+
+    @staticmethod
+    def from_unix_milliseconds(milliseconds: float) -> Epoch:
+        """Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01."""
+
+    @staticmethod
+    def from_unix_seconds(seconds: float) -> Epoch:
+        """Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01."""
+
+    @staticmethod
+    def from_utc_days(days: float) -> Epoch:
+        """Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight"""
+
+    @staticmethod
+    def from_utc_seconds(seconds: float) -> Epoch:
+        """Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight"""
+
+    @staticmethod
     def fromdatetime(dt: datetime.datetime) -> Epoch:
         """Builds an Epoch in UTC from the provided datetime after timezone correction if any is present."""
 
@@ -334,169 +500,205 @@ Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 42, 0)
 
     @staticmethod
     def init_from_bdt_days(days: float) -> Epoch:
-        """Initialize an Epoch from the number of days since the BeiDou Time Epoch,
+        """WARNING: Deprecated since 4.1.1; Use `from_bdt_days` instead
+Initialize an Epoch from the number of days since the BeiDou Time Epoch,
 defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
 
     @staticmethod
     def init_from_bdt_nanoseconds(nanoseconds: float) -> Epoch:
-        """Initialize an Epoch from the number of days since the BeiDou Time Epoch,
+        """WARNING: Deprecated since 4.1.1; Use `from_bdt_nanoseconds` instead
+Initialize an Epoch from the number of days since the BeiDou Time Epoch,
 defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
 This may be useful for time keeping devices that use BDT as a time source."""
 
     @staticmethod
     def init_from_bdt_seconds(seconds: float) -> Epoch:
-        """Initialize an Epoch from the number of seconds since the BeiDou Time Epoch,
+        """WARNING: Deprecated since 4.1.1; Use `from_bdt_seconds` instead
+Initialize an Epoch from the number of seconds since the BeiDou Time Epoch,
 defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
 
     @staticmethod
     def init_from_et_duration(duration_since_j2000: Duration) -> Epoch:
-        """Initialize an Epoch from the Ephemeris Time duration past 2000 JAN 01 (J2000 reference)"""
+        """WARNING: Deprecated since 4.1.1; Use `from_et_duration` instead
+Initialize an Epoch from the Ephemeris Time duration past 2000 JAN 01 (J2000 reference)"""
 
     @staticmethod
     def init_from_et_seconds(seconds_since_j2000: float) -> Epoch:
-        """Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)"""
+        """WARNING: Deprecated since 4.1.1; Use `from_et_seconds` instead
+Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)"""
 
     @staticmethod
     def init_from_gpst_days(days: float) -> Epoch:
-        """Initialize an Epoch from the number of days since the GPS Time Epoch,
+        """WARNING: Deprecated since 4.1.1; Use `from_gpst_days` instead
+Initialize an Epoch from the number of days since the GPS Time Epoch,
 defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
     @staticmethod
     def init_from_gpst_nanoseconds(nanoseconds: float) -> Epoch:
-        """Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
+        """WARNING: Deprecated since 4.1.1; Use `from_gpst_nanoseconds` instead
+Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
 defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
 This may be useful for time keeping devices that use GPS as a time source."""
 
     @staticmethod
     def init_from_gpst_seconds(seconds: float) -> Epoch:
-        """Initialize an Epoch from the number of seconds since the GPS Time Epoch,
+        """WARNING: Deprecated since 4.1.1; Use `from_gpst_seconds` instead
+Initialize an Epoch from the number of seconds since the GPS Time Epoch,
 defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
     @staticmethod
     def init_from_gregorian(year: int, month: int, day: int, hour: int, minute: int, second: int, nanos: int, time_scale: TimeScale) -> Epoch:
-        """Initialize from the Gregorian parts"""
+        """WARNING: Deprecated since 4.1.1; Use `from_gregorian` instead
+Initialize from the Gregorian parts"""
 
     @staticmethod
     def init_from_gregorian_at_midnight(year: int, month: int, day: int, time_scale: TimeScale) -> Epoch:
-        """Initialize from the Gregorian parts, time set to midnight"""
+        """WARNING: Deprecated since 4.1.1; Use `from_gregorian_at_midnight` instead
+Initialize from the Gregorian parts, time set to midnight"""
 
     @staticmethod
     def init_from_gregorian_at_noon(year: int, month: int, day: int, time_scale: TimeScale) -> Epoch:
-        """Initialize from the Gregorian parts, time set to noon"""
+        """WARNING: Deprecated since 4.1.1; Use `from_gregorian_at_noon` instead
+Initialize from the Gregorian parts, time set to noon"""
 
     @staticmethod
     def init_from_gregorian_utc(year: int, month: int, day: int, hour: int, minute: int, second: int, nanos: int) -> Epoch:
-        """Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
+        """WARNING: Deprecated since 4.1.1; Use `from_gregorian_utc` instead
+Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
 Use maybe_from_gregorian_tai if unsure."""
 
     @staticmethod
     def init_from_gst_days(days: float) -> Epoch:
-        """Initialize an Epoch from the number of days since the Galileo Time Epoch,
+        """WARNING: Deprecated since 4.1.1; Use `from_gst_days` instead
+Initialize an Epoch from the number of days since the Galileo Time Epoch,
 starting on August 21st 1999 Midnight UT,
 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
 
     @staticmethod
     def init_from_gst_nanoseconds(nanoseconds: float) -> Epoch:
-        """Initialize an Epoch from the number of nanoseconds since the Galileo Time Epoch,
+        """WARNING: Deprecated since 4.1.1; Use `from_gst_nanoseconds` instead
+Initialize an Epoch from the number of nanoseconds since the Galileo Time Epoch,
 starting on August 21st 1999 Midnight UT,
 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
 This may be useful for time keeping devices that use GST as a time source."""
 
     @staticmethod
     def init_from_gst_seconds(seconds: float) -> Epoch:
-        """Initialize an Epoch from the number of seconds since the Galileo Time Epoch,
+        """WARNING: Deprecated since 4.1.1; Use `from_gst_seconds` instead
+Initialize an Epoch from the number of seconds since the Galileo Time Epoch,
 starting on August 21st 1999 Midnight UT,
 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
 
     @staticmethod
     def init_from_jde_et(days: float) -> Epoch:
-        """Initialize from the JDE days"""
+        """WARNING: Deprecated since 4.1.1; Use `from_jde_et` instead
+Initialize from the JDE days"""
 
     @staticmethod
     def init_from_jde_tai(days: float) -> Epoch:
-        """Initialize an Epoch from given JDE in TAI time scale"""
+        """WARNING: Deprecated since 4.1.1; Use `from_jde_tai` instead
+Initialize an Epoch from given JDE in TAI time scale"""
 
     @staticmethod
     def init_from_jde_tdb(days: float) -> Epoch:
-        """Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days"""
+        """WARNING: Deprecated since 4.1.1; Use `from_jde_tdb` instead
+Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days"""
 
     @staticmethod
     def init_from_jde_utc(days: float) -> Epoch:
-        """Initialize an Epoch from given JDE in UTC time scale"""
+        """WARNING: Deprecated since 4.1.1; Use `from_jde_utc` instead
+Initialize an Epoch from given JDE in UTC time scale"""
 
     @staticmethod
     def init_from_mjd_tai(days: float) -> Epoch:
-        """Initialize an Epoch from given MJD in TAI time scale"""
+        """WARNING: Deprecated since 4.1.1; Use `from_mjd_tai` instead
+Initialize an Epoch from given MJD in TAI time scale"""
 
     @staticmethod
     def init_from_mjd_utc(days: float) -> Epoch:
-        """Initialize an Epoch from given MJD in UTC time scale"""
+        """WARNING: Deprecated since 4.1.1; Use `from_mjd_utc` instead
+Initialize an Epoch from given MJD in UTC time scale"""
 
     @staticmethod
     def init_from_qzsst_days(days: float) -> Epoch:
-        """Initialize an Epoch from the number of days since the QZSS Time Epoch,
+        """WARNING: Deprecated since 4.1.1; Use `from_qzsst_days` instead
+Initialize an Epoch from the number of days since the QZSS Time Epoch,
 defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
     @staticmethod
     def init_from_qzsst_nanoseconds(nanoseconds: int) -> Epoch:
-        """Initialize an Epoch from the number of nanoseconds since the QZSS Time Epoch,
+        """WARNING: Deprecated since 4.1.1; Use `from_qzsst_nanoseconds` instead
+Initialize an Epoch from the number of nanoseconds since the QZSS Time Epoch,
 defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
 This may be useful for time keeping devices that use QZSS as a time source."""
 
     @staticmethod
     def init_from_qzsst_seconds(seconds: float) -> Epoch:
-        """Initialize an Epoch from the number of seconds since the QZSS Time Epoch,
+        """WARNING: Deprecated since 4.1.1; Use `from_qzsst_seconds` instead
+Initialize an Epoch from the number of seconds since the QZSS Time Epoch,
 defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
     @staticmethod
     def init_from_tai_days(days: float) -> Epoch:
-        """Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight"""
+        """WARNING: Deprecated since 4.1.1; Use `from_tai_days` instead
+Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight"""
 
     @staticmethod
     def init_from_tai_duration(duration: Duration) -> Epoch:
-        """Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch."""
+        """WARNING: Deprecated since 4.1.1; Use `from_tai_duration` instead
+Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch."""
 
     @staticmethod
     def init_from_tai_parts(centuries: int, nanoseconds: int) -> Epoch:
-        """Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch."""
+        """WARNING: Deprecated since 4.1.1; Use `from_tai_parts` instead
+Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch."""
 
     @staticmethod
     def init_from_tai_seconds(seconds: float) -> Epoch:
-        """Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight"""
+        """WARNING: Deprecated since 4.1.1; Use `from_tai_seconds` instead
+Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight"""
 
     @staticmethod
     def init_from_tdb_duration(duration_since_j2000: Duration) -> Epoch:
-        """Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI."""
+        """WARNING: Deprecated since 4.1.1; Use `from_tdb_duration` instead
+Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI."""
 
     @staticmethod
     def init_from_tdb_seconds(seconds_j2000: float) -> Epoch:
-        """Initialize an Epoch from Dynamic Barycentric Time (TDB) seconds past 2000 JAN 01 midnight (difference than SPICE)
+        """WARNING: Deprecated since 4.1.1; Use `from_tdb_seconds` instead
+Initialize an Epoch from Dynamic Barycentric Time (TDB) seconds past 2000 JAN 01 midnight (difference than SPICE)
 NOTE: This uses the ESA algorithm, which is a notch more complicated than the SPICE algorithm, but more precise.
 In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ESA algorithm should be exactly correct."""
 
     @staticmethod
     def init_from_tt_duration(duration: Duration) -> Epoch:
-        """Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)"""
+        """WARNING: Deprecated since 4.1.1; Use `from_tt_duration` instead
+Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)"""
 
     @staticmethod
     def init_from_tt_seconds(seconds: float) -> Epoch:
-        """Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)"""
+        """WARNING: Deprecated since 4.1.1; Use `from_tt_seconds` instead
+Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)"""
 
     @staticmethod
     def init_from_unix_milliseconds(milliseconds: float) -> Epoch:
-        """Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01."""
+        """WARNING: Deprecated since 4.1.1; Use `from_unix_milliseconds` instead
+Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01."""
 
     @staticmethod
     def init_from_unix_seconds(seconds: float) -> Epoch:
-        """Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01."""
+        """WARNING: Deprecated since 4.1.1; Use `from_unix_seconds` instead
+Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01."""
 
     @staticmethod
     def init_from_utc_days(days: float) -> Epoch:
-        """Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight"""
+        """WARNING: Deprecated since 4.1.1; Use `from_utc_days` instead
+Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight"""
 
     @staticmethod
     def init_from_utc_seconds(seconds: float) -> Epoch:
-        """Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight"""
+        """WARNING: Deprecated since 4.1.1; Use `from_utc_seconds` instead
+Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight"""
 
     def isoformat(self) -> str:
         """Equivalent to `datetime.isoformat`, and truncated to 23 chars, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options"""

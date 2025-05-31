@@ -31,7 +31,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_tai_duration` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_tai_duration` instead
     /// Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch.
     /// :type duration: Duration
     /// :rtype: Epoch
@@ -50,7 +50,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_tai_parts` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_tai_parts` instead
     /// Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch.
     /// :type centuries: int
     /// :type nanoseconds: int
@@ -69,7 +69,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_tai_seconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_tai_seconds` instead
     /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
     /// :type seconds: float
     /// :rtype: Epoch
@@ -87,7 +87,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_tai_days` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_tai_days` instead
     /// Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight
     /// :type days: float
     /// :rtype: Epoch
@@ -105,7 +105,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_utc_seconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_utc_seconds` instead
     /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
     /// :type seconds: float
     /// :rtype: Epoch
@@ -123,7 +123,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_utc_days` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_utc_days` instead
     /// Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight
     /// :type days: float
     /// :rtype: Epoch
@@ -141,7 +141,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_mjd_tai` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_mjd_tai` instead
     /// Initialize an Epoch from given MJD in TAI time scale
     /// :type days: float
     /// :rtype: Epoch
@@ -159,7 +159,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_mjd_utc` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_mjd_utc` instead
     /// Initialize an Epoch from given MJD in UTC time scale
     /// :type days: float
     /// :rtype: Epoch
@@ -177,7 +177,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_jde_tai` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_jde_tai` instead
     /// Initialize an Epoch from given JDE in TAI time scale
     /// :type days: float
     /// :rtype: Epoch
@@ -195,7 +195,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_jde_utc` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_jde_utc` instead
     /// Initialize an Epoch from given JDE in UTC time scale
     /// :type days: float
     /// :rtype: Epoch
@@ -213,7 +213,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_tt_seconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_tt_seconds` instead
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
     /// :type seconds: float
     /// :rtype: Epoch
@@ -231,7 +231,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_tt_duration` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_tt_duration` instead
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
     /// :type duration: Duration
     /// :rtype: Epoch
@@ -249,7 +249,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_et_seconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_et_seconds` instead
     /// Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)
     /// :type seconds_since_j2000: float
     /// :rtype: Epoch
@@ -267,7 +267,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_et_duration` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_et_duration` instead
     /// Initialize an Epoch from the Ephemeris Time duration past 2000 JAN 01 (J2000 reference)
     /// :type duration_since_j2000: Duration
     /// :rtype: Epoch
@@ -287,7 +287,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_tdb_seconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_tdb_seconds` instead
     /// Initialize an Epoch from Dynamic Barycentric Time (TDB) seconds past 2000 JAN 01 midnight (difference than SPICE)
     /// NOTE: This uses the ESA algorithm, which is a notch more complicated than the SPICE algorithm, but more precise.
     /// In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ESA algorithm should be exactly correct.
@@ -307,7 +307,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_tdb_duration` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_tdb_duration` instead
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI.
     ///  :type duration_since_j2000: Duration
     /// :rtype: Epoch
@@ -325,7 +325,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_jde_et` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_jde_et` instead
     /// Initialize from the JDE days
     /// :type days: float
     /// :rtype: Epoch
@@ -343,7 +343,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_jde_tdb` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_jde_tdb` instead
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days
     /// :type days: float
     /// :rtype: Epoch
@@ -362,7 +362,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_gpst_seconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_gpst_seconds` instead
     /// Initialize an Epoch from the number of seconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// :type seconds: float
@@ -382,7 +382,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_gpst_days` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_gpst_days` instead
     /// Initialize an Epoch from the number of days since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// :type days: float
@@ -403,7 +403,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_gpst_nanoseconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_gpst_nanoseconds` instead
     /// Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use GPS as a time source.
@@ -424,7 +424,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_qzsst_seconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_qzsst_seconds` instead
     /// Initialize an Epoch from the number of seconds since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// :type seconds: float
@@ -444,7 +444,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_qzsst_days` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_qzsst_days` instead
     /// Initialize an Epoch from the number of days since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// :type days: float
@@ -465,7 +465,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_qzsst_nanoseconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_qzsst_nanoseconds` instead
     /// Initialize an Epoch from the number of nanoseconds since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use QZSS as a time source.
@@ -487,7 +487,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_gst_seconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_gst_seconds` instead
     /// Initialize an Epoch from the number of seconds since the Galileo Time Epoch,
     /// starting on August 21st 1999 Midnight UT,
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
@@ -509,7 +509,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_gst_days` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_gst_days` instead
     /// Initialize an Epoch from the number of days since the Galileo Time Epoch,
     /// starting on August 21st 1999 Midnight UT,
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
@@ -532,7 +532,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_gst_nanoseconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_gst_nanoseconds` instead
     /// Initialize an Epoch from the number of nanoseconds since the Galileo Time Epoch,
     /// starting on August 21st 1999 Midnight UT,
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
@@ -554,7 +554,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_bdt_seconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_bdt_seconds` instead
     /// Initialize an Epoch from the number of seconds since the BeiDou Time Epoch,
     /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// :type seconds: float
@@ -574,7 +574,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_bdt_days` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_bdt_days` instead
     /// Initialize an Epoch from the number of days since the BeiDou Time Epoch,
     /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// :type days: float
@@ -595,7 +595,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_bdt_nanoseconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_bdt_nanoseconds` instead
     /// Initialize an Epoch from the number of days since the BeiDou Time Epoch,
     /// defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use BDT as a time source.
@@ -615,7 +615,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_unix_seconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_unix_seconds` instead
     /// Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01.
     /// :type seconds: float
     /// :rtype: Epoch
@@ -633,7 +633,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_unix_milliseconds` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_unix_milliseconds` instead
     /// Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01.
     /// :type milliseconds: float
     /// :rtype: Epoch
@@ -668,7 +668,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_gregorian` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_gregorian` instead
     /// Initialize from the Gregorian parts
     /// :type year: int
     /// :type month: int
@@ -690,7 +690,9 @@ impl Epoch {
         nanos: u32,
         time_scale: TimeScale,
     ) -> Result<Self, HifitimeError> {
-        Self::py_from_gregorian(_cls, year, month, day, hour, minute, second, nanos, time_scale)
+        Self::py_from_gregorian(
+            _cls, year, month, day, hour, minute, second, nanos, time_scale,
+        )
     }
 
     #[classmethod]
@@ -712,7 +714,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_gregorian_at_noon` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_gregorian_at_noon` instead
     /// Initialize from the Gregorian parts, time set to noon
     /// :type year: int
     /// :type month: int
@@ -746,9 +748,9 @@ impl Epoch {
     ) -> Result<Self, HifitimeError> {
         Self::maybe_from_gregorian(year, month, day, 0, 0, 0, 0, time_scale)
     }
-    
+
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_gregorian_at_midnight` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_gregorian_at_midnight` instead
     /// Initialize from the Gregorian parts, time set to midnight
     /// :type year: int
     /// :type month: int
@@ -792,7 +794,7 @@ impl Epoch {
     }
 
     #[classmethod]
-    #[deprecated(since = "4.2.0", note = "Use `from_gregorian_utc` instead")]
+    /// WARNING: Deprecated since 4.1.1; Use `from_gregorian_utc` instead
     /// Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian_tai if unsure.
     ///
