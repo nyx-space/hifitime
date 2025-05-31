@@ -98,8 +98,12 @@ pub trait TimeUnits: Copy + Mul<Unit, Output = Duration> {
     }
 }
 
-/// A trait to automatically convert some primitives to an approximate frequency as a duration, **rounded to the closest nanosecond**
-/// Does not support more than 1 GHz (because max precision of a duration is 1 nanosecond)
+/// A trait to automatically convert some primitives to an approximate frequency as a duration.
+///
+/// **Note on Precision:** The conversion is rounded to the closest nanosecond because `Duration`
+/// has nanosecond precision. Frequencies greater than 1 GHz (i.e., periods less than 1 nanosecond)
+/// cannot be accurately represented. Such high frequencies will result in a `Duration` of zero
+/// or an inaccurate, truncated nanosecond value.
 ///
 /// ```
 /// use hifitime::prelude::*;
@@ -112,7 +116,7 @@ pub trait TimeUnits: Copy + Mul<Unit, Output = Duration> {
 /// assert_eq!(1.GHz(), 1.nanoseconds());
 /// // LIMITATIONS
 /// assert_eq!(240.MHz(), 4.nanoseconds()); // 240 MHz is actually 4.1666.. nanoseconds, not 4 exactly!
-/// assert_eq!(10.GHz(), 0.nanoseconds()); // NOTE: anything greater than 1 GHz is NOT supported
+/// assert_eq!(10.GHz(), 0.nanoseconds()); // As 10 GHz corresponds to 0.1 ns, it's truncated to 0 ns.
 /// ```
 #[allow(non_snake_case)]
 pub trait Frequencies: Copy + Mul<Freq, Output = Duration> {

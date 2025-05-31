@@ -926,6 +926,7 @@ impl Epoch {
     }
 
     /// Returns a Python datetime object from this Epoch (truncating the nanoseconds away)
+    /// :rtype: datetime.datetime
     fn todatetime<'py>(&self, py: Python<'py>) -> Result<Bound<'py, PyDateTime>, PyErr> {
         let (y, mm, dd, hh, min, s, nanos) =
             Epoch::compute_gregorian(self.duration, TimeScale::UTC);
@@ -936,6 +937,8 @@ impl Epoch {
     }
 
     /// Builds an Epoch in UTC from the provided datetime after timezone correction if any is present.
+    /// :type dt: datetime.datetime
+    /// :rtype: Epoch
     #[classmethod]
     fn fromdatetime(
         _cls: &Bound<'_, PyType>,
