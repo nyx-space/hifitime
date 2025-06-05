@@ -122,7 +122,7 @@ impl Epoch {
     ///
     /// # Why does this function return an `Option` when the other returns a value
     /// This is to match the `iauDat` function of SOFA (src/dat.c). That function will return a warning and give up if the start date is before 1960.
-    pub fn leap_seconds_with<L: LeapSecondProvider>(
+    pub fn tai_to_utc_offset_with_provider<L: LeapSecondProvider>(
         &self,
         iers_only: bool,
         provider: L,
@@ -131,6 +131,26 @@ impl Epoch {
             if self.to_tai_duration().to_seconds() >= leap_second.timestamp_tai_s
                 && (!iers_only || leap_second.announced_by_iers)
             {
+                return Some(leap_second.delta_at);
+            }
+        }
+        None
+    }
+
+    /// Calculates the TAI-UTC offset for a given UTC epoch duration using the provided LeapSecondProvider.
+    /// This function is private and intended for internal use.
+    fn utc_to_tai_offset_with_provider<L: LeapSecondProvider>(
+        utc_epoch_duration: Duration,
+        provider: L,
+        iers_only: bool,
+    ) -> Option<f64> {
+        for leap_second in provider.rev() {
+            if iers_only && !leap_second.announced_by_iers {
+                continue;
+            }
+            // Calculate the UTC time equivalent to when delta_at became active
+            let utc_transition_point_seconds = leap_second.timestamp_tai_s - leap_second.delta_at;
+            if utc_epoch_duration.to_seconds() >= utc_transition_point_seconds {
                 return Some(leap_second.delta_at);
             }
         }
@@ -215,10 +235,11 @@ impl Epoch {
                     self.duration - delta_tdb_tai + self.time_scale.prime_epoch_offset()
                 }
                 TimeScale::UTC => {
-                    // Assume this is TAI
-                    let mut tai_assumption = *self;
-                    tai_assumption.time_scale = TimeScale::TAI;
-                    self.duration + tai_assumption.leap_seconds(true).unwrap_or(0.0).seconds()
+                    // self is the epoch in UTC. self.duration is its duration since J1900 UTC.
+                    // We need TAI = UTC + offset.
+                    // The utc_to_tai_offset_with_provider function is an associated function.
+                    let offset_val = Epoch::utc_to_tai_offset_with_provider(self.duration, LatestLeapSeconds::default(), true).unwrap_or(0.0);
+                    self.duration + offset_val.seconds()
                 }
                 TimeScale::GPST => self.duration + GPST_REF_EPOCH.to_tai_duration(),
                 TimeScale::GST => self.duration + GST_REF_EPOCH.to_tai_duration(),
@@ -274,13 +295,15 @@ impl Epoch {
                     prime_epoch_offset + delta_tdb_tai - ts.prime_epoch_offset()
                 }
                 TimeScale::UTC => {
-                    // Assume it's TAI
-                    let epoch = Self {
-                        duration: prime_epoch_offset,
+                    // Assume prime_epoch_offset is in TAI. Convert to UTC.
+                    // UTC = TAI - offset.
+                    let tai_epoch_for_conversion = Self {
+                        duration: prime_epoch_offset, // This is TAI duration from J1900 TAI
                         time_scale: TimeScale::TAI,
                     };
-                    // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
-                    prime_epoch_offset - epoch.leap_seconds(true).unwrap_or(0.0).seconds()
+                    // Call the renamed function.
+                    let offset_val = tai_epoch_for_conversion.tai_to_utc_offset_with_provider(true, LatestLeapSeconds::default()).unwrap_or(0.0);
+                    prime_epoch_offset - offset_val.seconds()
                 }
                 TimeScale::GPST => prime_epoch_offset - GPST_REF_EPOCH.to_tai_duration(),
                 TimeScale::GST => prime_epoch_offset - GST_REF_EPOCH.to_tai_duration(),
@@ -299,7 +322,7 @@ impl Epoch {
     /// Get the accumulated number of leap seconds up to this Epoch accounting only for the IERS leap seconds.
     /// :rtype: int
     pub fn leap_seconds_iers(&self) -> i32 {
-        match self.leap_seconds(true) {
+        match self.tai_to_utc_offset_with_provider(true, LatestLeapSeconds::default()) {
             Some(v) => v as i32,
             None => 0,
         }
@@ -313,7 +336,7 @@ impl Epoch {
     /// :type iers_only: bool
     /// :rtype: float
     pub fn leap_seconds(&self, iers_only: bool) -> Option<f64> {
-        self.leap_seconds_with(iers_only, LatestLeapSeconds::default())
+        self.tai_to_utc_offset_with_provider(iers_only, LatestLeapSeconds::default())
     }
 
     #[cfg(feature = "std")]

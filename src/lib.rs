@@ -56,7 +56,7 @@ mod parser;
 pub mod errors;
 pub use errors::{DurationError, HifitimeError, ParsingError};
 
-mod epoch;
+pub mod epoch; // Made public
 pub use epoch::*;
 
 mod duration;
