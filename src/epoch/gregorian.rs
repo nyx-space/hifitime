@@ -162,7 +162,6 @@ impl Epoch {
 
     #[must_use]
     /// Converts the Epoch to the Gregorian UTC equivalent as (year, month, day, hour, minute, second).
-    /// WARNING: Nanoseconds are lost in this conversion!
     ///
     /// # Example
     /// ```
@@ -196,7 +195,6 @@ impl Epoch {
 
     #[must_use]
     /// Converts the Epoch to the Gregorian TAI equivalent as (year, month, day, hour, minute, second).
-    /// WARNING: Nanoseconds are lost in this conversion!
     ///
     /// # Example
     /// ```
@@ -213,6 +211,36 @@ impl Epoch {
     pub fn to_gregorian_tai(&self) -> (i32, u8, u8, u8, u8, u8, u32) {
         let ts = TimeScale::TAI;
         Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts)
+    }
+
+    #[must_use]
+    /// Converts the Epoch to the Gregorian in the provided time scale as (year, month, day, hour, minute, second).
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::{Epoch, TimeScale};
+    /// let dt = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
+    /// let (y, m, d, h, min, s, n) = dt.to_gregorian(TimeScale::TAI);
+    /// assert_eq!(y, 1972);
+    /// assert_eq!(m, 1);
+    /// assert_eq!(d, 1);
+    /// assert_eq!(h, 0);
+    /// assert_eq!(min, 0);
+    /// assert_eq!(s, 0);
+    /// assert_eq!(n, 0);
+    ///
+    /// // The epoch will be converted to UTC prior to returning the Gregorian parts.
+    /// let (y, m, d, h, min, s, n) = dt.to_gregorian(TimeScale::UTC);
+    /// assert_eq!(y, 1971);
+    /// assert_eq!(m, 12);
+    /// assert_eq!(d, 31);
+    /// assert_eq!(h, 23);
+    /// assert_eq!(min, 59);
+    /// assert_eq!(s, 50);
+    /// assert_eq!(n, 0);
+    /// ```
+    pub fn to_gregorian(&self, time_scale: TimeScale) -> (i32, u8, u8, u8, u8, u8, u32) {
+        Self::compute_gregorian(self.to_duration_in_time_scale(time_scale), time_scale)
     }
 
     /// Attempts to build an Epoch from the provided Gregorian date and time in TAI.
