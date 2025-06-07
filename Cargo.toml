@@ -45,7 +45,7 @@ ureq = { version = "3.0.10", default-features = false, optional = true, features
 [features]
 default = ["std"]
 std = ["serde", "serde_derive", "web-time", "snafu/std", "snafu/backtrace"]
-python = ["std", "pyo3", "ut1"]
+python = ["std", "pyo3/extension-module", "ut1"]
 ut1 = ["std", "ureq", "tabled", "openssl"]
 
 [dev-dependencies]
