@@ -793,6 +793,39 @@ impl Epoch {
         Self::maybe_from_gregorian_utc(year, month, day, hour, minute, second, nanos)
     }
 
+    /// Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) duration since TAI midnight 1970 January 01.
+    /// PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems.
+    ///
+    /// :type duration: Duration
+    /// :rtype: Epoch
+    #[classmethod]
+    #[pyo3(name = "from_ptp_duration")]
+    fn py_from_ptp_duration(_cls: &Bound<'_, PyType>, duration: Duration) -> Self {
+        Self::from_ptp_duration(duration)
+    }
+
+    /// Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) second timestamp since TAI midnight 1970 January 01.
+    /// PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems.
+    ///
+    /// :type seconds: float
+    /// :rtype: Epoch
+    #[classmethod]
+    #[pyo3(name = "from_ptp_seconds")]
+    fn py_from_ptp_seconds(_cls: &Bound<'_, PyType>, seconds: f64) -> Self {
+        Self::from_ptp_seconds(seconds)
+    }
+
+    /// Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) nanoseconds timestamp since TAI midnight 1970 January 01.
+    /// PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems.
+    ///
+    /// :type nanoseconds: int
+    /// :rtype: Epoch
+    #[classmethod]
+    #[pyo3(name = "from_ptp_nanoseconds")]
+    fn py_from_ptp_nanoseconds(_cls: &Bound<'_, PyType>, nanoseconds: u64) -> Self {
+        Self::from_ptp_nanoseconds(nanoseconds)
+    }
+
     #[classmethod]
     /// WARNING: Deprecated since 4.1.1; Use `from_gregorian_utc` instead
     /// Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.

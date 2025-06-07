@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [tool.maturin]
 profile = "release"
-features = ["python"]
+features = ["python", "pyo3/extension-module"]
 
 [project]
 name = "hifitime"
@@ -15,6 +15,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
     "Intended Audience :: Science/Research",
 ]
+license = "MPL-2.0"
 
 [tool.yapf]
 based_on_style = "google"
