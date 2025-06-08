@@ -28,4 +28,4 @@ jobs:
           mv Cargo.toml.new Cargo.toml
 
       - name: Kani Rust Verifier
-        uses: model-checking/kani-github-action@latest
+        uses: model-checking/kani-github-action@v1.1
