@@ -25,7 +25,6 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 #[cfg(feature = "serde")]
 use core::str::FromStr;
 
-#[cfg(not(kani))]
 pub mod parse;
 
 #[cfg(feature = "python")]
@@ -110,7 +109,6 @@ impl Default for Duration {
     }
 }
 
-#[cfg(not(kani))]
 #[cfg(feature = "serde")]
 impl Serialize for Duration {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -122,7 +120,6 @@ impl Serialize for Duration {
     }
 }
 
-#[cfg(not(kani))]
 #[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for Duration {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>

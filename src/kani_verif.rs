@@ -41,7 +41,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
-    fn kani_harness_TimeSeries_exclusive() {
+    fn kani_harness_time_series_exclusive() {
         let start: Epoch = kani::any();
         let end: Epoch = kani::any();
         let step: Duration = kani::any();
@@ -49,7 +49,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
-    fn kani_harness_TimeSeries_inclusive() {
+    fn kani_harness_time_series_inclusive() {
         let start: Epoch = kani::any();
         let end: Epoch = kani::any();
         let step: Duration = kani::any();
