@@ -27,5 +27,5 @@ jobs:
           sed '17d' Cargo.toml > Cargo.toml.new
           mv Cargo.toml.new Cargo.toml
 
-      # - name: Kani Rust Verifier
-      #   uses: model-checking/kani-github-action@0.23
+      - name: Kani Rust Verifier
+        uses: model-checking/kani-github-action@latest
