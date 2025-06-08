@@ -1,0 +1,24 @@
+name: Daily Workflow
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 0 * * 0"
+
+jobs:
+  kani-formal-model-checker:
+    name: Formal Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Clean Cargo.toml for Kani
+        run: |
+          # Remove `cdylib` from targets in Cargo.toml because it confuses Kani
+          sed '17d' Cargo.toml > Cargo.toml.new
+          mv Cargo.toml.new Cargo.toml
+
+      - name: Kani Rust Verifier
+        uses: model-checking/kani-github-action@v1.1
+        args: --fail-fast -j 8

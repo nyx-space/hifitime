@@ -13,10 +13,9 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  formal-verif:
+  formal-verif-build:
     name: Formal Verification
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -27,5 +26,7 @@ jobs:
           sed '17d' Cargo.toml > Cargo.toml.new
           mv Cargo.toml.new Cargo.toml
 
+      # Only ensure that Kani can build successfully
       - name: Kani Rust Verifier
         uses: model-checking/kani-github-action@v1.1
+        args: --only-codegen
