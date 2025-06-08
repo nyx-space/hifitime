@@ -1,4 +1,4 @@
-name: Daily Workflow
+name: Weekly Kani formal verifier Workflow
 
 on:
   workflow_dispatch:

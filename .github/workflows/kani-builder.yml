@@ -1,4 +1,4 @@
-name: Formal Verification Workflow
+name: Kani Formal Verification Build
 
 on:
   push:
