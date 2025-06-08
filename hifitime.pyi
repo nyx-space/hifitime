@@ -426,6 +426,21 @@ starting on August 21st 1999 Midnight UT,
         """Initialize an Epoch from given MJD in UTC time scale"""
 
     @staticmethod
+    def from_ptp_duration(duration: Duration) -> Epoch:
+        """Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) duration since TAI midnight 1970 January 01.
+PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems."""
+
+    @staticmethod
+    def from_ptp_nanoseconds(nanoseconds: int) -> Epoch:
+        """Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) nanoseconds timestamp since TAI midnight 1970 January 01.
+PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems."""
+
+    @staticmethod
+    def from_ptp_seconds(seconds: float) -> Epoch:
+        """Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) second timestamp since TAI midnight 1970 January 01.
+PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems."""
+
+    @staticmethod
     def from_qzsst_days(days: float) -> Epoch:
         """Initialize an Epoch from the number of days since the QZSS Time Epoch,
 defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""

@@ -342,7 +342,8 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Initialize an Epoch from the provided duration since UTC midnight 1970 January 01.
+    /// Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) duration since TAI midnight 1970 January 01.
+    /// PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems.
     pub fn from_ptp_duration(duration: Duration) -> Self {
         Self::from_duration(UNIX_REF_EPOCH.to_utc_duration() + duration, TimeScale::TAI)
     }
