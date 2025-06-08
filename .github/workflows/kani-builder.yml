@@ -29,4 +29,5 @@ jobs:
       # Only ensure that Kani can build successfully
       - name: Kani Rust Verifier
         uses: model-checking/kani-github-action@v1.1
-        args: --only-codegen
+        with:
+          args: --only-codegen

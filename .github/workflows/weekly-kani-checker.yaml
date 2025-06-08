@@ -21,4 +21,5 @@ jobs:
 
       - name: Kani Rust Verifier
         uses: model-checking/kani-github-action@v1.1
-        args: --fail-fast -j 8
+        with:
+          args: --fail-fast -j 8
