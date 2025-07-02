@@ -145,6 +145,48 @@ def test_polynomial():
     reversed = t_utc.to_time_scale(TimeScale.GPST) + Unit.Nanosecond * 1.0
     assert reversed == t_gpst
 
+
+def test_with_functions():
+    epoch = Epoch("2023-04-13 23:31:17 UTC")
+    epoch_other = Epoch("2024-05-14 10:20:30 UTC")
+
+    # Test with_hms
+    modified_epoch = epoch.with_hms(1, 2, 3)
+    assert modified_epoch.hours() == 1
+    assert modified_epoch.minutes() == 2
+    assert modified_epoch.seconds() == 3
+    # Check that subseconds are preserved
+    assert modified_epoch.subsecond_nanos() == epoch.subsecond_nanos()
+
+    # Test with_hms_from
+    modified_epoch = epoch.with_hms_from(epoch_other)
+    assert modified_epoch.hours() == epoch_other.hours()
+    assert modified_epoch.minutes() == epoch_other.minutes()
+    assert modified_epoch.seconds() == epoch_other.seconds()
+    # Check that subseconds are preserved
+    assert modified_epoch.subsecond_nanos() == epoch.subsecond_nanos()
+
+    # Test with_time_from
+    modified_epoch = epoch.with_time_from(epoch_other)
+    assert modified_epoch.hours() == epoch_other.hours()
+    assert modified_epoch.minutes() == epoch_other.minutes()
+    assert modified_epoch.seconds() == epoch_other.seconds()
+    assert modified_epoch.subsecond_nanos() == epoch_other.subsecond_nanos()
+
+    # Test with_hms_strict
+    modified_epoch = epoch.with_hms_strict(4, 5, 6)
+    assert modified_epoch.hours() == 4
+    assert modified_epoch.minutes() == 5
+    assert modified_epoch.seconds() == 6
+    assert modified_epoch.subsecond_nanos() == 0
+
+    # Test with_hms_strict_from
+    modified_epoch = epoch.with_hms_strict_from(epoch_other)
+    assert modified_epoch.hours() == epoch_other.hours()
+    assert modified_epoch.minutes() == epoch_other.minutes()
+    assert modified_epoch.seconds() == epoch_other.seconds()
+    assert modified_epoch.subsecond_nanos() == 0
+
     backwards = t_utc.precise_timescale_conversion(False, gpst_reference, gpst_utc_polynomials, TimeScale.GPST)
     assert backwards == t_gpst
 
