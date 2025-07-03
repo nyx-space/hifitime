@@ -16,7 +16,7 @@ As such, the largest negative duration that can be represented sets the centurie
 
 (Python documentation hints)"""
 
-    def __init__(self, string_repr: str) -> Duration:
+    def __init__(self, string_repr: str) -> None:
         """Defines generally usable durations for nanosecond precision valid for 32,768 centuries in either direction, and only on 80 bits / 10 octets.
 
 **Important conventions:**
@@ -271,7 +271,7 @@ Refer to the appropriate functions for initializing this Epoch from different ti
     duration: Duration
     time_scale: TimeScale
 
-    def __init__(self, string_repr: str) -> Epoch:
+    def __init__(self, string_repr: str) -> None:
         """Defines a nanosecond-precision Epoch.
 
 Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
@@ -297,6 +297,16 @@ assert_eq!(
 e.ceil(3.minutes()),
 Epoch::from_gregorian_tai_hms(2022, 10, 3, 17, 45, 0)
 );
+```"""
+
+    def day_of_month(self) -> int:
+        """Returns the number of days since the start of the Gregorian month in the current time scale.
+
+# Example
+```
+use hifitime::Epoch;
+let dt = Epoch::from_gregorian_tai_at_midnight(2025, 7, 3);
+assert_eq!(dt.day_of_month(), 3);
 ```"""
 
     def day_of_year(self) -> float:
@@ -968,6 +978,9 @@ NOTE: This function will return an error if the centuries past GPST time are not
     def to_gpst_seconds(self) -> float:
         """Returns seconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
+    def to_gregorian(self, time_scale: TimeScale=None) -> tuple:
+        """Converts the Epoch to the Gregorian parts in the (optionally) provided time scale as (year, month, day, hour, minute, second)."""
+
     def to_gst_days(self) -> float:
         """Returns days past GST (Galileo) Time Epoch,
 starting on August 21st 1999 Midnight UT
@@ -1330,14 +1343,10 @@ The unannoucned leap seconds come from dat.c in the SOFA library."""
 
 @typing.final
 class LeapSecondsFile:
-    """A leap second provider that uses an IERS formatted leap seconds file.
+    """A leap second provider that uses an IERS formatted leap seconds file."""
 
-(Python documentation hints)"""
-
-    def __init__(self, path: str) -> LeapSecondsFile:
-        """A leap second provider that uses an IERS formatted leap seconds file.
-
-(Python documentation hints)"""
+    def __init__(self, path: str) -> None:
+        """A leap second provider that uses an IERS formatted leap seconds file."""
 
     def __repr__(self) -> str:
         """Return repr(self)."""
@@ -1509,7 +1518,7 @@ class TimeSeries:
 
 (Python documentation hints)"""
 
-    def __init__(self, start: Epoch, end: Epoch, step: Duration, inclusive: bool) -> TimeSeries:
+    def __init__(self, start: Epoch, end: Epoch, step: Duration, inclusive: bool) -> None:
         """An iterator of a sequence of evenly spaced Epochs.
 
 (Python documentation hints)"""

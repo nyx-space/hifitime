@@ -32,7 +32,6 @@ NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/iter
 /// :type end: Epoch
 /// :type step: Duration
 /// :type inclusive: bool
-/// :rtype: TimeSeries
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "python", pyclass)]

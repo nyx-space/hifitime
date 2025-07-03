@@ -1006,4 +1006,14 @@ impl Epoch {
             dt.get_microsecond() * 1_000,
         )
     }
+
+    /// Converts the Epoch to the Gregorian parts in the (optionally) provided time scale as (year, month, day, hour, minute, second).
+    ///
+    /// :type time_scale: TimeScale, optional
+    ///
+    /// :rtype: tuple
+    #[pyo3(name = "to_gregorian", signature=(time_scale=None))]
+    pub fn py_to_gregorian(&self, time_scale: Option<TimeScale>) -> (i32, u8, u8, u8, u8, u8, u32) {
+        self.to_gregorian(time_scale.unwrap_or(self.time_scale))
+    }
 }

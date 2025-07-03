@@ -65,7 +65,6 @@ pub mod ops;
 ///
 /// (Python documentation hints)
 /// :type string_repr: str
-/// :rtype: Duration
 #[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
