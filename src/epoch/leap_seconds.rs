@@ -11,6 +11,9 @@
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
 
+#[cfg(feature = "lts")]
+use crate::HifitimeError;
+
 #[cfg(feature = "std")]
 pub use super::leap_seconds_file::LeapSecondsFile;
 
@@ -87,7 +90,7 @@ const LATEST_LEAP_SECONDS: [LeapSecond; 42] = [
     LeapSecond::new(3_692_217_600.0, 37.0, true),      // IERS: 01 Jan 2017
 ];
 
-/// List of leap seconds from <https://www.ietf.org/timezones/data/leap-seconds.list>.
+/// List of leap seconds from <https://data.iana.org/time-zones/data/leap-seconds.list>.
 /// This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
 /// The unannoucned leap seconds come from dat.c in the SOFA library.
 #[cfg_attr(feature = "python", pyclass)]
@@ -108,6 +111,41 @@ impl LatestLeapSeconds {
 
     fn __repr__(&self) -> String {
         format!("{self:?} @ {self:p}")
+    }
+}
+
+#[cfg(feature = "lts")]
+#[cfg_attr(feature = "python", pymethods)]
+impl LatestLeapSeconds {
+    /// Downloads the latest leap second list from IANA, and returns whether the embedded leap seconds are still up to date
+    ///
+    /// ```
+    /// use hifitime::leap_seconds::LatestLeapSeconds;
+    ///
+    /// assert!(LatestLeapSeconds::default().is_up_to_date().unwrap(), "Hifitime needs to update its leap seconds list!");
+    /// ```
+    ///
+    /// :rtype: bool
+    pub fn is_up_to_date(&self) -> Result<bool, HifitimeError> {
+        let latest_iana = LeapSecondsFile::from_iana()?;
+
+        let ls_diff = self
+            .data
+            .iter()
+            .filter(|leap| leap.announced_by_iers) // Keep only the announced leap seconds
+            .zip(&latest_iana.data)
+            .filter_map(
+                |(known, announced)| {
+                    if known != announced {
+                        Some(())
+                    } else {
+                        None
+                    }
+                },
+            )
+            .collect::<Vec<()>>();
+
+        Ok(ls_diff.len() == 0)
     }
 }
 

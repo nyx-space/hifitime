@@ -2,6 +2,7 @@ from hifitime import (
     Duration,
     Epoch,
     HifitimeError,
+    LatestLeapSeconds,
     MonthName,
     ParsingError,
     Polynomial,
@@ -221,3 +222,7 @@ def test_with_functions():
     assert modified_epoch.minutes() == epoch_other.minutes()
     assert modified_epoch.seconds() == epoch_other.seconds()
     assert modified_epoch.nanoseconds() == 0
+
+
+def test_latest_leap():
+    assert LatestLeapSeconds().is_up_to_date(), "hifitime needs updating!"

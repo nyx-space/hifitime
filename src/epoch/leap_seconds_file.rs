@@ -27,12 +27,12 @@ use crate::{
 ///
 /// :type path: str
 pub struct LeapSecondsFile {
-    data: Vec<LeapSecond>,
+    pub data: Vec<LeapSecond>,
     iter_pos: usize,
 }
 
 impl LeapSecondsFile {
-    /// Builds a leap second provider from the provided Leap Seconds file in IERS format as found on <https://www.ietf.org/timezones/data/leap-seconds.list> .
+    /// Builds a leap second provider from the provided Leap Seconds file in IERS format as found on <https://data.iana.org/time-zones/data/leap-seconds.list> .
     pub fn from_path<P: AsRef<Path>>(path: P) -> Result<Self, HifitimeError> {
         let mut f = match File::open(path) {
             Ok(f) => f,
@@ -52,6 +52,11 @@ impl LeapSecondsFile {
             });
         }
 
+        Self::from_content(contents)
+    }
+
+    /// Builds the leap seconds from the provided leap second list as string.
+    pub fn from_content(contents: String) -> Result<Self, HifitimeError> {
         let mut me = Self::default();
 
         for line in contents.lines() {
@@ -98,6 +103,39 @@ impl LeapSecondsFile {
         }
 
         Ok(me)
+    }
+
+    #[cfg(feature = "lts")]
+    /// Build the leap seconds structure from the provided URL
+    pub fn from_url(url: &str) -> Result<Self, HifitimeError> {
+        use ureq::get;
+        use ureq::Error;
+
+        match get(url).call() {
+            Ok(resp) => {
+                let Ok(response) = resp.into_body().read_to_string() else {
+                    return Err(HifitimeError::Parse {
+                        source: ParsingError::UnknownFormat,
+                        details: "when reading contents",
+                    });
+                };
+                Self::from_content(response)
+            }
+            Err(Error::StatusCode(code)) => Err(HifitimeError::Parse {
+                source: ParsingError::DownloadError { code: code },
+                details: "server returned an error",
+            }),
+            Err(_) => Err(HifitimeError::Parse {
+                source: ParsingError::UnknownFormat,
+                details: "could not parse response as leap second list",
+            }),
+        }
+    }
+
+    #[cfg(feature = "lts")]
+    /// Build the leap seconds structure from the latest leap seconds list from https://data.iana.org/time-zones/data/leap-seconds.list
+    pub fn from_iana() -> Result<Self, HifitimeError> {
+        Self::from_url("https://data.iana.org/time-zones/data/leap-seconds.list")
     }
 }
 

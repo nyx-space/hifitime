@@ -89,7 +89,7 @@ assert_eq!(two_hours_three_min.ceil(1.seconds()), two_hours_three_min + 1.second
 assert_eq!(two_hours_three_min.ceil(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
 ```"""
 
-    def decompose(self) -> typing.Tuple:
+    def decompose(self) -> tuple:
         """Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns"""
 
     def floor(self, duration: Duration) -> Duration:
@@ -172,7 +172,7 @@ assert_eq!(two_hours_three_min.round(1.hours() + 5.minutes()), 2.hours() + 10.mi
 + 1 if the number is positive
 + -1 if the number is negative"""
 
-    def to_parts(self) -> typing.Tuple:
+    def to_parts(self) -> tuple:
         """Returns the centuries and nanoseconds of this duration
 NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly."""
 
@@ -1095,7 +1095,7 @@ NOTE: This function will return an error if the centuries past QZSST time are no
     def to_tai_duration(self) -> Duration:
         """Returns this time in a Duration past J1900 counted in TAI"""
 
-    def to_tai_parts(self) -> typing.Tuple:
+    def to_tai_parts(self) -> tuple:
         """Returns the TAI parts of this duration"""
 
     def to_tai_seconds(self) -> float:
@@ -1126,7 +1126,7 @@ past J2000, one cannot solve the revert the operation analytically. Instead, we 
     def to_tdb_seconds(self) -> float:
         """Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. <https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB>)"""
 
-    def to_time_of_week(self) -> typing.Tuple[int]:
+    def to_time_of_week(self) -> tuple:
         """Converts this epoch into the time of week, represented as a rolling week counter into that time scale
 and the number of nanoseconds elapsed in current week (since closest Sunday midnight).
 This is usually how GNSS receivers describe a timestamp."""
@@ -1256,7 +1256,7 @@ Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 23)
     def year(self) -> int:
         """Returns the number of Gregorian years of this epoch in the current time scale."""
 
-    def year_days_of_year(self) -> typing.Tuple:
+    def year_days_of_year(self) -> tuple:
         """Returns the year and the days in the year so far (days of year)."""
 
     def __add__():
@@ -1329,14 +1329,23 @@ set self.__traceback__ to tb and return self."""
 
 @typing.final
 class LatestLeapSeconds:
-    """List of leap seconds from <https://www.ietf.org/timezones/data/leap-seconds.list>.
+    """List of leap seconds from <https://data.iana.org/time-zones/data/leap-seconds.list>.
 This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
 The unannoucned leap seconds come from dat.c in the SOFA library."""
 
     def __init__(self) -> None:
-        """List of leap seconds from <https://www.ietf.org/timezones/data/leap-seconds.list>.
+        """List of leap seconds from <https://data.iana.org/time-zones/data/leap-seconds.list>.
 This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
 The unannoucned leap seconds come from dat.c in the SOFA library."""
+
+    def is_up_to_date(self) -> bool:
+        """Downloads the latest leap second list from IANA, and returns whether the embedded leap seconds are still up to date
+
+```
+use hifitime::leap_seconds::LatestLeapSeconds;
+
+assert!(LatestLeapSeconds::default().is_up_to_date().unwrap(), "Hifitime needs to update its leap seconds list!");
+```"""
 
     def __repr__(self) -> str:
         """Return repr(self)."""
