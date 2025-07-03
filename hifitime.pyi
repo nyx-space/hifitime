@@ -1180,6 +1180,66 @@ Several time scales do _not_ have a reference day that's on a Monday, e.g. BDT."
     def weekday_utc(self) -> Weekday:
         """Returns weekday in UTC timescale"""
 
+    def with_hms(self, hours: int, minutes: int, seconds: int) -> Epoch:
+        """Returns a copy of self where the time is set to the provided hours, minutes, seconds
+Invalid number of hours, minutes, and seconds will overflow into their higher unit.
+Warning: this does _not_ set the subdivisions of second to zero."""
+
+    def with_hms_from(self, other: Epoch) -> Epoch:
+        """Returns a copy of self where the hours, minutes, seconds is set to the time of the provided epoch but the
+sub-second parts are kept from the current epoch.
+
+```
+use hifitime::prelude::*;
+
+let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
+let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
+let other = other_utc.to_time_scale(TimeScale::TDB);
+
+assert_eq!(
+epoch.with_hms_from(other),
+Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 13)
+);
+```"""
+
+    def with_hms_strict(self, hours: int, minutes: int, seconds: int) -> Epoch:
+        """Returns a copy of self where the time is set to the provided hours, minutes, seconds
+Invalid number of hours, minutes, and seconds will overflow into their higher unit.
+Warning: this will set the subdivisions of seconds to zero."""
+
+    def with_hms_strict_from(self, other: Epoch) -> Epoch:
+        """Returns a copy of self where the time is set to the time of the other epoch but the subseconds are set to zero.
+
+```
+use hifitime::prelude::*;
+
+let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
+let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
+let other = other_utc.to_time_scale(TimeScale::TDB);
+
+assert_eq!(
+epoch.with_hms_strict_from(other),
+Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 0)
+);
+```"""
+
+    def with_time_from(self, other: Epoch) -> Epoch:
+        """Returns a copy of self where all of the time components (hours, minutes, seconds, and sub-seconds) are set to the time of the provided epoch.
+
+```
+use hifitime::prelude::*;
+
+let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
+let other_utc = Epoch::from_gregorian_utc(2024, 12, 01, 20, 21, 22, 23);
+// If the other Epoch is in another time scale, it does not matter, it will be converted to the correct time scale.
+let other = other_utc.to_time_scale(TimeScale::TDB);
+
+assert_eq!(
+epoch.with_time_from(other),
+Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 23)
+);
+```"""
+
     def year(self) -> int:
         """Returns the number of Gregorian years of this epoch in the current time scale."""
 
@@ -1284,6 +1344,10 @@ class LeapSecondsFile:
 
 @typing.final
 class MonthName:
+    """Defines Month names, can be initialized either from its variant or its integer (1 for January)."""
+
+    def __init__(self, month: int) -> None:
+        """Defines Month names, can be initialized either from its variant or its integer (1 for January)."""
 
     def __eq__(self, value: typing.Any) -> bool:
         """Return self==value."""

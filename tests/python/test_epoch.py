@@ -2,6 +2,7 @@ from hifitime import (
     Duration,
     Epoch,
     HifitimeError,
+    MonthName,
     ParsingError,
     Polynomial,
     TimeScale,
@@ -41,6 +42,9 @@ def test_strtime():
     assert epoch_tdb.time_scale == TimeScale.TDB
 
     assert epoch.next(Weekday.Monday) == Epoch("2023-04-17T23:31:17 UTC")
+    assert epoch.month_name() == MonthName.April
+    assert MonthName(3) == MonthName.March
+    assert int(MonthName.August) == 8
 
 
 def test_utcnow():
