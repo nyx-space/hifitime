@@ -148,7 +148,7 @@ impl Epoch {
     /// Converts this epoch into the time of week, represented as a rolling week counter into that time scale
     /// and the number of nanoseconds elapsed in current week (since closest Sunday midnight).
     /// This is usually how GNSS receivers describe a timestamp.
-    /// :rtype: typing.Tuple[int]
+    /// :rtype: tuple
     pub fn to_time_of_week(&self) -> (u32, u64) {
         let total_nanoseconds = self.duration.total_nanoseconds();
         let weeks = total_nanoseconds / NANOSECONDS_PER_DAY as i128 / Weekday::DAYS_PER_WEEK_I128;

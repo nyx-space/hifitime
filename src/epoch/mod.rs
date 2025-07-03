@@ -378,7 +378,7 @@ impl Epoch {
 
     #[must_use]
     /// Returns the TAI parts of this duration
-    /// :rtype: typing.Tuple
+    /// :rtype: tuple
     pub fn to_tai_parts(&self) -> (i16, u64) {
         self.to_tai_duration().to_parts()
     }
@@ -869,7 +869,7 @@ impl Epoch {
 
     #[must_use]
     /// Returns the year and the days in the year so far (days of year).
-    /// :rtype: typing.Tuple
+    /// :rtype: tuple
     pub fn year_days_of_year(&self) -> (i32, f64) {
         (self.year(), self.day_of_year())
     }
