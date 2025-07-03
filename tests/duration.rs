@@ -114,7 +114,7 @@ fn duration_format() {
 
     // Check that we support nanoseconds pas GPS time
     let now = Unit::Nanosecond * 1286495254000000123;
-    assert_eq!(format!("{}", now), "14889 days 23 h 47 min 34 s 123 ns");
+    assert_eq!(format!("{now}"), "14889 days 23 h 47 min 34 s 123 ns");
 
     let arbitrary = 14889.days()
         + 23.hours()
@@ -122,10 +122,7 @@ fn duration_format() {
         + 34.seconds()
         + 0.milliseconds()
         + 123.nanoseconds();
-    assert_eq!(
-        format!("{}", arbitrary),
-        "14889 days 23 h 47 min 34 s 123 ns"
-    );
+    assert_eq!(format!("{arbitrary}"), "14889 days 23 h 47 min 34 s 123 ns");
 
     assert_eq!(
         arbitrary,
@@ -142,14 +139,14 @@ fn duration_format() {
         sum.to_unit(Unit::Minute),
         (1.0 / 4.0 + 1.0 / 3.0) * 60.0
     );
-    assert_eq!(format!("{}", sum), "35 min");
+    assert_eq!(format!("{sum}"), "35 min");
 
     let quarter_hour = -0.25 * Unit::Hour;
     let third_hour: Duration = -1 * Unit::Hour / 3;
     let sum: Duration = quarter_hour + third_hour;
     let delta = sum.to_unit(Unit::Millisecond).floor() - sum.to_unit(Unit::Second).floor() * 1000.0;
-    assert_eq!(delta * -1.0, 0.0);
-    assert_eq!(format!("{}", sum), "-35 min");
+    assert_eq!(-delta, 0.0);
+    assert_eq!(format!("{sum}"), "-35 min");
 
     assert_eq!(format!("{}", Duration::MAX), "1196851200 days");
     assert_eq!(format!("{}", Duration::MIN), "-1196851200 days");
@@ -160,7 +157,7 @@ fn duration_format() {
     sum2 -= 1 * Unit::Nanosecond;
     assert_eq!(sum2, sum - 1 * Unit::Nanosecond);
     assert_eq!(sum2, sum - Unit::Nanosecond);
-    assert_eq!(format!("{:e}", sum2), "-35.00000000001667 min");
+    assert_eq!(format!("{sum2:e}"), "-35.00000000001667 min");
 }
 
 #[test]
@@ -197,12 +194,12 @@ fn test_ops() {
     let quarter_hour = 0.5 * half_hour;
     assert_eq!(quarter_hour, 15.minutes());
     #[cfg(feature = "std")]
-    println!("{}", quarter_hour);
+    println!("{quarter_hour}");
 
     let min_quarter_hour = -0.5 * half_hour;
     assert_eq!(min_quarter_hour, -15.minutes());
     #[cfg(feature = "std")]
-    println!("{}", min_quarter_hour);
+    println!("{min_quarter_hour}");
 }
 
 #[test]
@@ -284,7 +281,7 @@ fn test_extremes() {
     // Add i64 tests
     let d = Duration::from_truncated_nanoseconds(i64::MAX);
     #[cfg(feature = "std")]
-    println!("{}", d);
+    println!("{d}");
     assert_eq!(
         Duration::from_truncated_nanoseconds(d.truncated_nanoseconds()),
         d

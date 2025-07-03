@@ -186,8 +186,7 @@ fn test_wrapping() {
         let expected: Weekday = i.rem_euclid(Weekday::MAX).into();
         assert_eq!(
             add, expected,
-            "expecting {:?} got {:?} for {:02} conversion",
-            expected, add, i
+            "expecting {expected:?} got {add:?} for {i:02} conversion"
         );
         // Test FromStr
     }

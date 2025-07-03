@@ -12,37 +12,37 @@ fn test_timeseries() {
     let time_series = TimeSeries::exclusive(start, end, step);
 
     assert_eq!(
-        format!("{}", time_series),
+        format!("{time_series}"),
         "TimeSeries [2017-01-14T00:00:00 UTC : 2017-01-14T10:00:00 UTC : 2 h]"
     );
 
     assert_eq!(
-        format!("{:x}", time_series),
+        format!("{time_series:x}"),
         "TimeSeries [2017-01-14T00:00:37 TAI : 2017-01-14T10:00:37 TAI : 2 h]"
     );
 
     assert_eq!(
-        format!("{:X}", time_series),
+        format!("{time_series:X}"),
         "TimeSeries [2017-01-14T00:01:09.184000000 TT : 2017-01-14T10:01:09.184000000 TT : 2 h]"
     );
 
     assert_eq!(
-        format!("{:e}", time_series),
+        format!("{time_series:e}"),
         "TimeSeries [2017-01-14T00:01:09.184299750 TDB : 2017-01-14T10:01:09.184311622 TDB : 2 h]"
     );
 
     assert_eq!(
-        format!("{:E}", time_series),
+        format!("{time_series:E}"),
         "TimeSeries [2017-01-14T00:01:09.184304724 ET : 2017-01-14T10:01:09.184316581 ET : 2 h]"
     );
 
     assert_eq!(
-        format!("{:o}", time_series),
+        format!("{time_series:o}"),
         "TimeSeries [1168387218000000000 : 1168423218000000000 : 2 h]"
     );
 
     assert_eq!(
-        format!("{:p}", time_series),
+        format!("{time_series:p}"),
         "TimeSeries [1484352000 : 1484388000 : 2 h]"
     );
 
@@ -56,7 +56,7 @@ fn test_timeseries() {
             assert_ne!(epoch, end, "Ending epoch of exclusive time series is wrong");
         }
         #[cfg(feature = "std")]
-        println!("{}", epoch);
+        println!("{epoch}");
         count += 1;
     }
 
@@ -66,7 +66,7 @@ fn test_timeseries() {
     let time_series = TimeSeries::inclusive(start, end, step);
 
     assert_eq!(
-        format!("{}", time_series),
+        format!("{time_series}"),
         "TimeSeries [2017-01-14T00:00:00 UTC : 2017-01-14T12:00:00 UTC : 2 h]"
     );
 
@@ -80,7 +80,7 @@ fn test_timeseries() {
             assert_eq!(epoch, end, "Ending epoch of inclusive time series is wrong");
         }
         #[cfg(feature = "std")]
-        println!("{}", epoch);
+        println!("{epoch}");
         count += 1;
     }
 

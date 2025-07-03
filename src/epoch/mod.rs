@@ -924,15 +924,9 @@ impl Epoch {
         let (y, mm, dd, hh, min, s, nanos) =
             Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
-            format!(
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}+00:00",
-                y, mm, dd, hh, min, s
-            )
+            format!("{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02}+00:00")
         } else {
-            format!(
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09}+00:00",
-                y, mm, dd, hh, min, s, nanos
-            )
+            format!("{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02}.{nanos:09}+00:00")
         }
     }
 }

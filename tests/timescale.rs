@@ -21,7 +21,7 @@ fn test_from_str() {
         let ts = ts.unwrap();
         assert_eq!(ts, expected);
         // test to_str()/format()
-        assert_eq!(format!("{}", ts), descriptor);
+        assert_eq!(format!("{ts}"), descriptor);
         // test format(0x)
         let expected: &str = match ts {
             TimeScale::GPST => "GPS",
@@ -30,7 +30,7 @@ fn test_from_str() {
             TimeScale::QZSST => "QZSS",
             _ => descriptor, // untouched
         };
-        assert_eq!(format!("{:x}", ts), expected);
+        assert_eq!(format!("{ts:x}"), expected);
     }
 }
 

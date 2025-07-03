@@ -194,7 +194,7 @@ impl fmt::Display for Formatter {
                         )?;
 
                         if seconds > 0 {
-                            write!(f, "{:02}", seconds)?;
+                            write!(f, "{seconds:02}")?;
                         }
                     }
                     Token::OffsetMinutes => {
@@ -265,7 +265,7 @@ impl fmt::Display for Formatter {
                         )?;
 
                         if seconds > 0 {
-                            write!(f, "{:02}", seconds)?;
+                            write!(f, "{seconds:02}")?;
                         }
                     }
                     Token::OffsetMinutes => {

@@ -709,7 +709,7 @@ impl fmt::Display for Duration {
                     if insert_space {
                         write!(f, " ")?;
                     }
-                    write!(f, "{} {}", val, unit)?;
+                    write!(f, "{val} {unit}")?;
                     insert_space = true;
                 }
             }
