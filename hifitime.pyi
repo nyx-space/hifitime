@@ -1284,6 +1284,10 @@ class LeapSecondsFile:
 
 @typing.final
 class MonthName:
+    """Defines Month names, can be initialized either from its variant or its integer (1 for January)."""
+
+    def __init__(self, month: int) -> None:
+        """Defines Month names, can be initialized either from its variant or its integer (1 for January)."""
 
     def __eq__(self, value: typing.Any) -> bool:
         """Return self==value."""

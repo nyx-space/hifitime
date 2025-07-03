@@ -13,11 +13,14 @@ use core::fmt;
 use core::str::FromStr;
 
 #[cfg(feature = "python")]
-use pyo3::{exceptions::PyValueError, prelude::*, types::PyType};
+use pyo3::prelude::*;
 
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
 
+/// Defines Month names, can be initialized either from its variant or its integer (1 for January).
+///
+/// :type month: int
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(u8)]
@@ -47,6 +50,9 @@ impl Default for MonthName {
 #[cfg(feature = "python")]
 #[pymethods]
 impl MonthName {
+    /// Convert the MonthName to integer
+    ///
+    /// :rtype: int
     fn __int__(&self) -> u8 {
         *self as u8 + 1
     }
