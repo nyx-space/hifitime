@@ -51,15 +51,9 @@ impl MonthName {
         *self as u8 + 1
     }
 
-    #[classmethod]
-    fn from_int(_cls: &PyType, value: u8) -> PyResult<Self> {
-        if (1..=12).contains(&value) {
-            Ok(Self::from(value))
-        } else {
-            Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
-                "Month value must be between 1 and 12",
-            ))
-        }
+    #[new]
+    fn py_new(month: u8) -> Self {
+        month.into()
     }
 }
 

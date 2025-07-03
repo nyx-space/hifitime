@@ -16,6 +16,7 @@ classifiers = [
     "Intended Audience :: Science/Research",
 ]
 license = "MPL-2.0"
+dynamic = ["version"]
 
 [tool.yapf]
 based_on_style = "google"
