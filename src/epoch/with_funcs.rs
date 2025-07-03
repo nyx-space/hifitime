@@ -8,12 +8,20 @@
 * Documentation: https://nyxspace.com/
 */
 
+#[cfg(feature = "python")]
+use pyo3::prelude::*;
+
 use crate::{Duration, Epoch};
 
+#[cfg_attr(feature = "python", pymethods)]
 impl Epoch {
     /// Returns a copy of self where the time is set to the provided hours, minutes, seconds
     /// Invalid number of hours, minutes, and seconds will overflow into their higher unit.
     /// Warning: this does _not_ set the subdivisions of second to zero.
+    /// :type hours: int
+    /// :type minutes: int
+    /// :type seconds: int
+    /// :rtype: Epoch
     pub fn with_hms(&self, hours: u64, minutes: u64, seconds: u64) -> Self {
         let (sign, days, _, _, _, milliseconds, microseconds, nanoseconds) =
             self.duration.decompose();
@@ -35,6 +43,8 @@ impl Epoch {
     /// Returns a copy of self where the hours, minutes, seconds is set to the time of the provided epoch but the
     /// sub-second parts are kept from the current epoch.
     ///
+    /// :type other: Epoch
+    /// :rtype: Epoch
     /// ```
     /// use hifitime::prelude::*;
     ///
@@ -69,6 +79,8 @@ impl Epoch {
 
     /// Returns a copy of self where all of the time components (hours, minutes, seconds, and sub-seconds) are set to the time of the provided epoch.
     ///
+    /// :type other: Epoch
+    /// :rtype: Epoch
     /// ```
     /// use hifitime::prelude::*;
     ///
@@ -108,6 +120,10 @@ impl Epoch {
     /// Returns a copy of self where the time is set to the provided hours, minutes, seconds
     /// Invalid number of hours, minutes, and seconds will overflow into their higher unit.
     /// Warning: this will set the subdivisions of seconds to zero.
+    /// :type hours: int
+    /// :type minutes: int
+    /// :type seconds: int
+    /// :rtype: Epoch
     pub fn with_hms_strict(&self, hours: u64, minutes: u64, seconds: u64) -> Self {
         let (sign, days, _, _, _, _, _, _) = self.duration.decompose();
         Self::from_duration(
@@ -118,6 +134,8 @@ impl Epoch {
 
     /// Returns a copy of self where the time is set to the time of the other epoch but the subseconds are set to zero.
     ///
+    /// :type other: Epoch
+    /// :rtype: Epoch
     /// ```
     /// use hifitime::prelude::*;
     ///

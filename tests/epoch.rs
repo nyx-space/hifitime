@@ -399,8 +399,8 @@ fn gpst() {
     );
 
     assert_eq!(format!("{GPST_REF_EPOCH:?}"), "1980-01-06T00:00:00 UTC");
-    assert_eq!(format!("{:x}", GPST_REF_EPOCH), "1980-01-06T00:00:19 TAI");
-    assert_eq!(format!("{:o}", GPST_REF_EPOCH), "0");
+    assert_eq!(format!("{GPST_REF_EPOCH:x}"), "1980-01-06T00:00:19 TAI");
+    assert_eq!(format!("{GPST_REF_EPOCH:o}"), "0");
 
     assert_eq!(
         format!("{:?}", TimeScale::GPST.reference_epoch()),
@@ -494,7 +494,7 @@ fn galileo_time_scale() {
     assert_eq!(gst_epoch, Epoch::from_gst_nanoseconds(0));
     assert_eq!(gst_epoch, GST_REF_EPOCH);
     assert_eq!(format!("{GST_REF_EPOCH:?}"), "1999-08-21T23:59:47 UTC");
-    assert_eq!(format!("{:x}", GST_REF_EPOCH), "1999-08-22T00:00:19 TAI");
+    assert_eq!(format!("{GST_REF_EPOCH:x}"), "1999-08-22T00:00:19 TAI");
     assert_eq!(
         Epoch::from_gst_days(0.0).to_duration_since_j1900(),
         gst_epoch.duration
@@ -637,7 +637,7 @@ fn unix() {
         "1970-01-01T00:00:00 TAI"
     );
     // Print as UNIX seconds
-    assert_eq!(format!("{:p}", unix_epoch), "0");
+    assert_eq!(format!("{unix_epoch:p}"), "0");
 
     assert_eq!(
         unix_epoch.to_tai_seconds(),
@@ -705,16 +705,14 @@ fn naif_spice_et_tdb_verification() {
         };
         assert!(
             (epoch.to_et_seconds() - et_s + extra_seconds).abs() < f64::EPSILON,
-            "{} failed ET test",
-            epoch
+            "{epoch} failed ET test"
         );
 
         // Test TDB computation
         assert!(
             (epoch.to_tdb_duration() - et_s * Unit::Second + extra_seconds * Unit::Second).abs()
                 <= max_tdb_et_err,
-            "{} failed TDB test",
-            epoch
+            "{epoch} failed TDB test"
         );
 
         // TEST JDE computation
@@ -2127,14 +2125,14 @@ fn regression_test_gh_288() {
         "2021-03-06T11:14:22.996000000 UTC",
         format!("{}", epoch.to_gregorian_str(TimeScale::UTC))
     );
-    assert_eq!("2021-03-06T11:14:22.996000000 UTC", format!("{:?}", epoch));
+    assert_eq!("2021-03-06T11:14:22.996000000 UTC", format!("{epoch:?}"));
 
     let epoch = Epoch::from_str("2021-03-06 11:14:40.9960 UTC").unwrap();
     assert_eq!(
         "2021-03-06T11:14:58.996000000 GPST",
         format!("{}", epoch.to_gregorian_str(TimeScale::GPST))
     );
-    assert_eq!("2021-03-06T11:14:40.996000000 UTC", format!("{:?}", epoch));
+    assert_eq!("2021-03-06T11:14:40.996000000 UTC", format!("{epoch:?}"));
     assert_eq!(
         "2021-03-06T11:14:40.996000000 UTC",
         format!("{}", epoch.to_gregorian_str(TimeScale::UTC))

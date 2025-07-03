@@ -148,15 +148,9 @@ impl Epoch {
             Self::compute_gregorian(self.to_duration_in_time_scale(time_scale), time_scale);
 
         if nanos == 0 {
-            format!(
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {}",
-                y, mm, dd, hh, min, s, time_scale
-            )
+            format!("{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02} {time_scale}")
         } else {
-            format!(
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {}",
-                y, mm, dd, hh, min, s, nanos, time_scale
-            )
+            format!("{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02}.{nanos:09} {time_scale}")
         }
     }
 
@@ -585,7 +579,7 @@ impl Epoch {
 
         let s = s_in.trim();
 
-        for (idx, char) in s.chars().enumerate() {
+        for (idx, char) in s.char_indices() {
             if !char.is_numeric() || idx == s.len() - 1 {
                 if cur_token == Token::Timescale {
                     // Then we match the timescale directly.

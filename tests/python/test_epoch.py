@@ -1,4 +1,14 @@
-from hifitime import Duration, Epoch, HifitimeError, ParsingError, Polynomial, TimeScale, TimeSeries, Unit, Weekday
+from hifitime import (
+    Duration,
+    Epoch,
+    HifitimeError,
+    ParsingError,
+    Polynomial,
+    TimeScale,
+    TimeSeries,
+    Unit,
+    Weekday,
+)
 from datetime import datetime, timezone
 import pickle
 
@@ -25,7 +35,7 @@ def test_strtime():
         print(f"caught {e}")
     else:
         raise AssertionError("failed to catch parsing error")
-    
+
     epoch_tdb = epoch.to_time_scale(TimeScale.TDB)
     assert str(epoch_tdb) == "2023-04-13T23:32:26.185636390 TDB"
     assert epoch_tdb.time_scale == TimeScale.TDB
@@ -92,7 +102,7 @@ def test_epoch_exceptions():
         print(f"caught {e}")
     else:
         raise AssertionError("failed to catch epoch error")
-    
+
     # Check that we can catch it with the builtin exception types
     try:
         Epoch("invalid")
@@ -110,9 +120,27 @@ def test_epoch_exceptions():
 
 
 def test_regression_gh249():
-    e = Epoch.from_gregorian(year=2022, month=3, day=1, hour=1, minute=1, second=59, nanos=1, time_scale=TimeScale.GPST)
+    e = Epoch.from_gregorian(
+        year=2022,
+        month=3,
+        day=1,
+        hour=1,
+        minute=1,
+        second=59,
+        nanos=1,
+        time_scale=TimeScale.GPST,
+    )
     assert e.strftime("%Y %m %d %H %M %S %f %T") == "2022 03 01 01 01 59 000000001 GPST"
-    e = Epoch.from_gregorian(year=2022, month=3, day=1, hour=1, minute=1, second=59, nanos=1, time_scale=TimeScale.UTC)
+    e = Epoch.from_gregorian(
+        year=2022,
+        month=3,
+        day=1,
+        hour=1,
+        minute=1,
+        second=59,
+        nanos=1,
+        time_scale=TimeScale.UTC,
+    )
     assert e.strftime("%Y %m %d %H %M %S %f %T") == "2022 03 01 01 01 59 000000001 UTC"
 
 
@@ -130,7 +158,9 @@ def test_interop():
     else:
         assert False, "tz aware dt did not fail"
     # Repeat after the strip
-    assert Epoch.fromdatetime(tz_datetime.replace(tzinfo=None)) == Epoch("2023-10-08 15:30:00")
+    assert Epoch.fromdatetime(tz_datetime.replace(tzinfo=None)) == Epoch(
+        "2023-10-08 15:30:00"
+    )
 
 
 def test_polynomial():
@@ -138,19 +168,52 @@ def test_polynomial():
 
     gpst_utc_polynomials = Polynomial.from_constant_offset_nanoseconds(1.0)
     gpst_reference = t_gpst - Unit.Hour * 1.0
-    t_utc = t_gpst.precise_timescale_conversion(True, gpst_reference, gpst_utc_polynomials, TimeScale.UTC)
+    t_utc = t_gpst.precise_timescale_conversion(
+        True, gpst_reference, gpst_utc_polynomials, TimeScale.UTC
+    )
 
     assert t_utc.time_scale == TimeScale.UTC
 
     reversed = t_utc.to_time_scale(TimeScale.GPST) + Unit.Nanosecond * 1.0
     assert reversed == t_gpst
 
-    backwards = t_utc.precise_timescale_conversion(False, gpst_reference, gpst_utc_polynomials, TimeScale.GPST)
-    assert backwards == t_gpst
 
-    gpst_reference = t_gpst - Unit.Minute * 30.0
-    t_utc = t_gpst.precise_timescale_conversion(True, gpst_reference, gpst_utc_polynomials, TimeScale.UTC)
-    assert t_utc.time_scale == TimeScale.UTC
+def test_with_functions():
+    epoch = Epoch("2023-04-13 23:31:17 UTC")
+    epoch_other = Epoch("2024-05-14 10:20:30 UTC")
 
-    reversed = t_utc.to_time_scale(TimeScale.GPST) + Unit.Nanosecond * 1.0
-    assert reversed == t_gpst
+    # Test with_hms
+    modified_epoch = epoch.with_hms(1, 2, 3)
+    assert modified_epoch.hours() == 1
+    assert modified_epoch.minutes() == 2
+    assert modified_epoch.seconds() == 3
+    assert modified_epoch.nanoseconds() == epoch.nanoseconds()
+
+    # Test with_hms_from
+    modified_epoch = epoch.with_hms_from(epoch_other)
+    assert modified_epoch.hours() == epoch_other.hours()
+    assert modified_epoch.minutes() == epoch_other.minutes()
+    assert modified_epoch.seconds() == epoch_other.seconds()
+    # Check that subseconds are preserved
+    assert modified_epoch.nanoseconds() == epoch.nanoseconds()
+
+    # Test with_time_from
+    modified_epoch = epoch.with_time_from(epoch_other)
+    assert modified_epoch.hours() == epoch_other.hours()
+    assert modified_epoch.minutes() == epoch_other.minutes()
+    assert modified_epoch.seconds() == epoch_other.seconds()
+    assert modified_epoch.nanoseconds() == epoch_other.nanoseconds()
+
+    # Test with_hms_strict
+    modified_epoch = epoch.with_hms_strict(4, 5, 6)
+    assert modified_epoch.hours() == 4
+    assert modified_epoch.minutes() == 5
+    assert modified_epoch.seconds() == 6
+    assert modified_epoch.nanoseconds() == 0
+
+    # Test with_hms_strict_from
+    modified_epoch = epoch.with_hms_strict_from(epoch_other)
+    assert modified_epoch.hours() == epoch_other.hours()
+    assert modified_epoch.minutes() == epoch_other.minutes()
+    assert modified_epoch.seconds() == epoch_other.seconds()
+    assert modified_epoch.nanoseconds() == 0

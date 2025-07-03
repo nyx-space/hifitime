@@ -40,16 +40,11 @@ impl fmt::Debug for Epoch {
         let (y, mm, dd, hh, min, s, nanos) =
             Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
-            write!(
-                f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {}",
-                y, mm, dd, hh, min, s, ts
-            )
+            write!(f, "{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02} {ts}")
         } else {
             write!(
                 f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {}",
-                y, mm, dd, hh, min, s, nanos, ts
+                "{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02}.{nanos:09} {ts}"
             )
         }
     }
@@ -62,16 +57,11 @@ impl fmt::LowerHex for Epoch {
         let (y, mm, dd, hh, min, s, nanos) =
             Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
-            write!(
-                f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {}",
-                y, mm, dd, hh, min, s, ts
-            )
+            write!(f, "{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02} {ts}")
         } else {
             write!(
                 f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {}",
-                y, mm, dd, hh, min, s, nanos, ts
+                "{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02}.{nanos:09} {ts}"
             )
         }
     }
@@ -84,16 +74,11 @@ impl fmt::UpperHex for Epoch {
         let (y, mm, dd, hh, min, s, nanos) =
             Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
-            write!(
-                f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {}",
-                y, mm, dd, hh, min, s, ts
-            )
+            write!(f, "{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02} {ts}")
         } else {
             write!(
                 f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {}",
-                y, mm, dd, hh, min, s, nanos, ts
+                "{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02}.{nanos:09} {ts}"
             )
         }
     }
@@ -106,16 +91,11 @@ impl fmt::LowerExp for Epoch {
         let (y, mm, dd, hh, min, s, nanos) =
             Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
-            write!(
-                f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {}",
-                y, mm, dd, hh, min, s, ts
-            )
+            write!(f, "{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02} {ts}")
         } else {
             write!(
                 f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {}",
-                y, mm, dd, hh, min, s, nanos, ts
+                "{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02}.{nanos:09} {ts}"
             )
         }
     }
@@ -128,16 +108,11 @@ impl fmt::UpperExp for Epoch {
         let (y, mm, dd, hh, min, s, nanos) =
             Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts);
         if nanos == 0 {
-            write!(
-                f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {}",
-                y, mm, dd, hh, min, s, ts
-            )
+            write!(f, "{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02} {ts}")
         } else {
             write!(
                 f,
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {}",
-                y, mm, dd, hh, min, s, nanos, ts
+                "{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02}.{nanos:09} {ts}"
             )
         }
     }
