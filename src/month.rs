@@ -13,7 +13,7 @@ use core::fmt;
 use core::str::FromStr;
 
 #[cfg(feature = "python")]
-use pyo3::prelude::*;
+use pyo3::{exceptions::PyValueError, prelude::*, types::PyType};
 
 #[cfg(feature = "serde")]
 use serde_derive::{Deserialize, Serialize};
@@ -41,6 +41,25 @@ pub enum MonthName {
 impl Default for MonthName {
     fn default() -> Self {
         Self::January
+    }
+}
+
+#[cfg(feature = "python")]
+#[pymethods]
+impl MonthName {
+    fn __int__(&self) -> u8 {
+        *self as u8 + 1
+    }
+
+    #[classmethod]
+    fn from_int(_cls: &PyType, value: u8) -> PyResult<Self> {
+        if (1..=12).contains(&value) {
+            Ok(Self::from(value))
+        } else {
+            Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "Month value must be between 1 and 12",
+            ))
+        }
     }
 }
 
