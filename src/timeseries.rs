@@ -339,7 +339,7 @@ mod tests {
                 assert_ne!(epoch, end, "Ending epoch of exclusive time series is wrong");
             }
             #[cfg(feature = "std")]
-            println!("tests::exclusive_timeseries::{}", epoch);
+            println!("tests::exclusive_timeseries::{epoch}");
             count += 1;
         }
 
@@ -364,7 +364,7 @@ mod tests {
                 assert_eq!(epoch, end, "Ending epoch of inclusive time series is wrong");
             }
             #[cfg(feature = "std")]
-            println!("tests::inclusive_timeseries::{}", epoch);
+            println!("tests::inclusive_timeseries::{epoch}");
             count += 1;
         }
 

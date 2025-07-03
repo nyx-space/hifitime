@@ -149,13 +149,11 @@ impl Epoch {
 
         if nanos == 0 {
             format!(
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02} {}",
-                y, mm, dd, hh, min, s, time_scale
+                "{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02} {time_scale}"
             )
         } else {
             format!(
-                "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}.{:09} {}",
-                y, mm, dd, hh, min, s, nanos, time_scale
+                "{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02}.{nanos:09} {time_scale}"
             )
         }
     }
@@ -585,7 +583,7 @@ impl Epoch {
 
         let s = s_in.trim();
 
-        for (idx, char) in s.chars().enumerate() {
+        for (idx, char) in s.char_indices() {
             if !char.is_numeric() || idx == s.len() - 1 {
                 if cur_token == Token::Timescale {
                     // Then we match the timescale directly.

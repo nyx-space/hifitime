@@ -175,7 +175,7 @@ impl Format {
 
         let s = s_in.trim();
 
-        for (idx, char) in s.chars().enumerate() {
+        for (idx, char) in s.char_indices() {
             // We should parse if:
             // 1. we're at the end of the string
             // 2. Or we've hit a non-numeric char and the token is fully numeric
@@ -397,10 +397,10 @@ impl fmt::Debug for Format {
             let item = maybe_item.as_ref().unwrap();
             write!(f, "{:?}", item.token)?;
             if let Some(char) = item.sep_char {
-                write!(f, "{}", char)?;
+                write!(f, "{char}")?;
             }
             if let Some(char) = item.second_sep_char {
-                write!(f, "{}", char)?;
+                write!(f, "{char}")?;
             }
             if item.optional {
                 write!(f, "?")?;
