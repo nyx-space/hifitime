@@ -122,10 +122,7 @@ fn duration_format() {
         + 34.seconds()
         + 0.milliseconds()
         + 123.nanoseconds();
-    assert_eq!(
-        format!("{arbitrary}"),
-        "14889 days 23 h 47 min 34 s 123 ns"
-    );
+    assert_eq!(format!("{arbitrary}"), "14889 days 23 h 47 min 34 s 123 ns");
 
     assert_eq!(
         arbitrary,
