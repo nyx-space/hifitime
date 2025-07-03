@@ -1338,6 +1338,15 @@ The unannoucned leap seconds come from dat.c in the SOFA library."""
 This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
 The unannoucned leap seconds come from dat.c in the SOFA library."""
 
+    def is_up_to_date(self) -> bool:
+        """Downloads the latest leap second list from IANA, and returns whether the embedded leap seconds are still up to date
+
+```
+use hifitime::leap_seconds::LatestLeapSeconds;
+
+assert!(LatestLeapSeconds::default().is_up_to_date().unwrap(), "Hifitime needs to update its leap seconds list!");
+```"""
+
     def __repr__(self) -> str:
         """Return repr(self)."""
 
