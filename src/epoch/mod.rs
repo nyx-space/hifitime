@@ -78,7 +78,6 @@ pub const NAIF_K: f64 = 1.657e-3;
 ///
 /// (Python documentation hints)
 /// :type string_repr: str
-/// :rtype: Epoch
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Default, Eq)]
 #[repr(C)]
@@ -858,6 +857,20 @@ impl Epoch {
     /// :rtype: float
     pub fn day_of_year(&self) -> f64 {
         self.duration_in_year().to_unit(Unit::Day) + 1.0
+    }
+
+    #[must_use]
+    /// Returns the number of days since the start of the Gregorian month in the current time scale.
+    ///
+    /// # Example
+    /// ```
+    /// use hifitime::Epoch;
+    /// let dt = Epoch::from_gregorian_tai_at_midnight(2025, 7, 3);
+    /// assert_eq!(dt.day_of_month(), 3);
+    /// ```
+    /// :rtype: int
+    pub fn day_of_month(&self) -> u8 {
+        self.to_gregorian(self.time_scale).2
     }
 
     #[must_use]

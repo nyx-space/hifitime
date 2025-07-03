@@ -25,9 +25,7 @@ use crate::{
 #[derive(Clone, Debug, Default)]
 /// A leap second provider that uses an IERS formatted leap seconds file.
 ///
-/// (Python documentation hints)
 /// :type path: str
-/// :rtype: LeapSecondsFile
 pub struct LeapSecondsFile {
     data: Vec<LeapSecond>,
     iter_pos: usize,
