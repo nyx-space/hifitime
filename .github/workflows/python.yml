@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        target: [x86_64, x86, armv7, ppc64le]
+        target: [x86_64, x86, armv7, aarch64, ppc64le]
 
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter -F python
-          manylinux: auto
+          manylinux: ${{ matrix.platform.target == 'aarch64' && '2_28' || 'auto' }}
           before-script-linux: |
             # If we're running on rhel centos, install needed packages.
             if command -v yum &> /dev/null; then
@@ -57,8 +57,8 @@ jobs:
         with:
           name: wheels-linux-${{ matrix.target }}
           path: dist
-      - name: pytest (native x86)
-        if: ${{ startsWith(matrix.target, 'x86') }}
+      - name: pytest (x86_64)
+        if: ${{ startsWith(matrix.target, 'x86_64') }}
         shell: bash
         run: |
           set -e
