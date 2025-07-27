@@ -17,6 +17,8 @@ edition = "2021"
 crate-type = ["rlib"]
 name = "hifitime"
 
+# `cdylib` is useful only when the `std` feature is on.  
+# In `no_std`, dynamic‑link targets face “unwinding panics not supported”  https://github.com/nyx-space/hifitime/issues/343
 [target.'cfg(feature = "std")'.lib]
 crate-type = ["cdylib", "rlib"]
 
