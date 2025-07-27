@@ -23,7 +23,7 @@ jobs:
     runs-on: ubuntu-22.04
     strategy:
       matrix:
-        target: [x86_64, x86, armv7, ppc64le]
+        target: [x86_64, x86, armv7, aarch64, ppc64le]
 
     steps:
       - uses: actions/checkout@v4
@@ -37,7 +37,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter -F python
-          manylinux: auto
+          manylinux: ${{ matrix.target == 'aarch64' && 'manylinux_2_28' || 'auto' }}
           before-script-linux: |
             # If we're running on rhel centos, install needed packages.
             if command -v yum &> /dev/null; then
@@ -57,7 +57,7 @@ jobs:
         with:
           name: wheels-linux-${{ matrix.target }}
           path: dist
-      - name: pytest
+      - name: pytest (x86_64)
         if: ${{ startsWith(matrix.target, 'x86_64') }}
         shell: bash
         run: |
@@ -66,6 +66,23 @@ jobs:
           pip install hifitime --find-links dist --force-reinstall --no-index -vv
           pip install pytest
           pytest
+      - name: pytest (non-x86)
+        if: ${{ !startsWith(matrix.target, 'x86') }}
+        uses: uraimo/run-on-arch-action@v3
+        with:
+          arch: ${{ matrix.target }}
+          distro: ubuntu22.04
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update
+            apt-get install -y --no-install-recommends python3 python3-pip
+            pip3 install -U pip pytest
+          run: |
+            set -e
+            ls dist
+            pip3 install hifitime --find-links dist --force-reinstall --no-index -vv
+            pytest
+
 
   windows:
     runs-on: windows-latest
