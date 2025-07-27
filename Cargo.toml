@@ -14,8 +14,11 @@ exclude = ["*.tar.gz", "data/"]
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib", "rlib"]
+crate-type = ["rlib"]
 name = "hifitime"
+
+[target.'cfg(feature = "std")'.lib]
+crate-type = ["cdylib", "rlib"]
 
 [package.metadata.docs.rs]
 all-features = true
