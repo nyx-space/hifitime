@@ -37,7 +37,7 @@ jobs:
         with:
           target: ${{ matrix.target }}
           args: --release --out dist --find-interpreter -F python
-          manylinux: ${{ matrix.platform.target == 'aarch64' && '2_28' || 'auto' }}
+          manylinux: ${{ matrix.target == 'aarch64' && 'manylinux_2_28' || 'auto' }}
           before-script-linux: |
             # If we're running on rhel centos, install needed packages.
             if command -v yum &> /dev/null; then
