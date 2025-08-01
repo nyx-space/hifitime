@@ -707,7 +707,6 @@ pub const fn is_gregorian_valid(
         usual_days_per_month(month)
     };
     if day > days_per_month {
-        // Not in February or not a leap year
         return false;
     }
     true
