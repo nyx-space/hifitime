@@ -699,8 +699,12 @@ pub const fn is_gregorian_valid(
     {
         return false;
     }
-    if day > usual_days_per_month(month) && (month != 2 || !is_leap_year(year)) {
-        // Not in February or not a leap year
+    let days_per_month = if month == 2 && is_leap_year(year) {
+        29
+    } else {
+        usual_days_per_month(month)
+    };
+    if day > days_per_month {
         return false;
     }
     true

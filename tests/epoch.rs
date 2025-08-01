@@ -1113,7 +1113,7 @@ fn ops() {
 #[test]
 fn test_range() {
     let start = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33);
-    let middle = Epoch::from_gregorian_utc_hms(2012, 2, 30, 0, 11, 22);
+    let middle = Epoch::from_gregorian_utc_hms(2012, 2, 29, 0, 11, 22);
     let end = Epoch::from_gregorian_utc_hms(2012, 3, 7, 11, 22, 33);
     let rng = start..end;
     assert_eq!(rng, core::ops::Range { start, end });
@@ -2373,4 +2373,10 @@ fn test_et_continuity_around_j2000() {
         round_trip_after,
         epoch_after_j2000_et - round_trip_after
     );
+}
+
+#[test]
+#[should_panic]
+fn test_regression_gh_440_february_epoch() {
+    let _ = Epoch::from_gregorian_tai(2024, 2, 31, 00, 00, 0, 0);
 }
