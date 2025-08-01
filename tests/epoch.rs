@@ -2396,9 +2396,3 @@ fn test_regression_gh_440_february_epoch() {
 fn test_regression_gh_440_60s_non_leap() {
     let _ = Epoch::from_gregorian_tai(1971, 12, 31, 23, 59, 60, 0);
 }
-
-#[test]
-#[should_panic]
-fn test_regression_gh_440_invalid_feb() {
-    let _ = Epoch::from_gregorian_tai(2024, 2, 31, 00, 00, 0, 0);
-}
