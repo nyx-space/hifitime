@@ -2374,3 +2374,10 @@ fn test_et_continuity_around_j2000() {
         epoch_after_j2000_et - round_trip_after
     );
 }
+
+#[test]
+#[should_panic]
+fn test_regression_gh_440_february_epoch() {
+    let _ = Epoch::from_gregorian_tai(2024, 2, 31, 00, 00, 0, 0);
+}   
+
