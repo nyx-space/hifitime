@@ -274,7 +274,9 @@ impl Epoch {
         nanos: u32,
         time_scale: TimeScale,
     ) -> Result<Self, HifitimeError> {
-        if !is_gregorian_valid(year, month, day, hour, minute, second, nanos) {
+        if !is_gregorian_valid(year, month, day, hour, minute, second, nanos)
+            || (second == 60 && !time_scale.uses_leap_seconds())
+        {
             return Err(HifitimeError::InvalidGregorianDate);
         }
 
@@ -699,7 +701,12 @@ pub const fn is_gregorian_valid(
     {
         return false;
     }
-    if day > usual_days_per_month(month) && (month != 2 || !is_leap_year(year)) {
+    let days_per_month = if month == 2 && is_leap_year(year) {
+        29
+    } else {
+        usual_days_per_month(month)
+    };
+    if day > days_per_month {
         // Not in February or not a leap year
         return false;
     }
