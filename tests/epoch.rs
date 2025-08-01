@@ -1113,7 +1113,7 @@ fn ops() {
 #[test]
 fn test_range() {
     let start = Epoch::from_gregorian_utc_hms(2012, 2, 7, 11, 22, 33);
-    let middle = Epoch::from_gregorian_utc_hms(2012, 2, 30, 0, 11, 22);
+    let middle = Epoch::from_gregorian_utc_hms(2012, 2, 29, 0, 11, 22);
     let end = Epoch::from_gregorian_utc_hms(2012, 3, 7, 11, 22, 33);
     let rng = start..end;
     assert_eq!(rng, core::ops::Range { start, end });
