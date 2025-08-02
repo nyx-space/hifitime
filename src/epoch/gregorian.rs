@@ -274,7 +274,9 @@ impl Epoch {
         nanos: u32,
         time_scale: TimeScale,
     ) -> Result<Self, HifitimeError> {
-        if !is_gregorian_valid(year, month, day, hour, minute, second, nanos) {
+        if !is_gregorian_valid(year, month, day, hour, minute, second, nanos)
+            || (second == 60 && !time_scale.uses_leap_seconds())
+        {
             return Err(HifitimeError::InvalidGregorianDate);
         }
 

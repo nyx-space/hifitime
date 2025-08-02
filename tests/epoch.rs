@@ -305,7 +305,7 @@ fn julian_epoch() {
     // HEASARC reports 57203.99998843 but hifitime computes 57203.99998842592 (three additional)
     // significant digits.
     assert!(
-        (Epoch::from_gregorian_tai_hms(2015, 6, 30, 23, 59, 59).to_mjd_tai_days()
+        (Epoch::from_gregorian_utc_hms(2015, 6, 30, 23, 59, 59).to_mjd_utc_days()
             - 57_203.999_988_425_92)
             .abs()
             < f64::EPSILON,
@@ -313,10 +313,20 @@ fn julian_epoch() {
     );
 
     // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-06-30+23%3A59%3A60&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
+    // IMPORTANT: HEASARC leaps forward; hifitime leaps backward. Hence, on the 60th second, hifitime "cancels" this second
+    // in non-leap-second time scales. Handling of leap seconds is implementation specific.
+    // This is why the expected MJD at the 60th second equals that of the 59th seconds.
+
     assert!(
-        (Epoch::from_gregorian_tai_hms(2015, 6, 30, 23, 59, 60).to_mjd_tai_days()
+        (Epoch::from_gregorian_utc_hms(2015, 6, 30, 23, 59, 60).to_mjd_utc_days()
             - 57_203.999_988_425_92)
             .abs()
+            < f64::EPSILON,
+        "Incorrect July 2015 leap second MJD computed, with backward leap second"
+    );
+    // X-Val: https://heasarc.gsfc.nasa.gov/cgi-bin/Tools/xTime/xTime.pl?time_in_i=2015-07-01+00%3A00%3A00&time_in_c=&time_in_d=&time_in_j=&time_in_m=&time_in_sf=&time_in_wf=&time_in_sl=&time_in_snu=&time_in_s=&time_in_h=&time_in_n=&time_in_f=&time_in_sz=&time_in_ss=&time_in_sn=&timesys_in=u&timesys_out=u&apply_clock_offset=yes
+    assert!(
+        (Epoch::from_gregorian_utc_at_midnight(2015, 7, 1).to_mjd_utc_days() - 57_204.0).abs()
             < f64::EPSILON,
         "Incorrect July 2015 leap second MJD computed"
     );
@@ -2379,4 +2389,10 @@ fn test_et_continuity_around_j2000() {
 #[should_panic]
 fn test_regression_gh_440_february_epoch() {
     let _ = Epoch::from_gregorian_tai(2024, 2, 31, 00, 00, 0, 0);
+}
+
+#[test]
+#[should_panic]
+fn test_regression_gh_440_60s_non_leap() {
+    let _ = Epoch::from_gregorian_tai(1971, 12, 31, 23, 59, 60, 0);
 }
