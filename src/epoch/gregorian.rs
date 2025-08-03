@@ -155,7 +155,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Converts the Epoch to the Gregorian UTC equivalent as (year, month, day, hour, minute, second).
+    /// Converts the Epoch to the Gregorian UTC equivalent as (year, month, day, hour, minute, second, nanoseconds).
     ///
     /// # Example
     /// ```
@@ -188,7 +188,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Converts the Epoch to the Gregorian TAI equivalent as (year, month, day, hour, minute, second).
+    /// Converts the Epoch to the Gregorian TAI equivalent as (year, month, day, hour, minute, second, nanoseconds).
     ///
     /// # Example
     /// ```
@@ -208,7 +208,7 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Converts the Epoch to the Gregorian in the provided time scale as (year, month, day, hour, minute, second).
+    /// Converts the Epoch to the Gregorian in the provided time scale as (year, month, day, hour, minute, second, nanoseconds).
     ///
     /// # Example
     /// ```
