@@ -716,7 +716,7 @@ pub const fn is_gregorian_valid(
 const fn january_years(year: i32) -> bool {
     matches!(
         year,
-        1972 | 1973
+              1973
             | 1974
             | 1975
             | 1976
