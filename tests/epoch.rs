@@ -2396,3 +2396,31 @@ fn test_regression_gh_440_february_epoch() {
 fn test_regression_gh_440_60s_non_leap() {
     let _ = Epoch::from_gregorian_tai(1971, 12, 31, 23, 59, 60, 0);
 }
+
+#[cfg(feature = "std")]
+#[test]
+fn test_regression_gh_417_leap_utc() {
+    let utc0 = Epoch::from_gregorian_utc_hms(2016, 12, 31, 23, 59, 0);
+    let tai0 = utc0.to_time_scale(hifitime::TimeScale::TAI);
+
+    for seconds in 1..62 {
+        let tai_tick = tai0 + Unit::Second * seconds;
+        let utc_tick = tai_tick.to_time_scale(TimeScale::UTC);
+        println!("+{seconds} s => TAI = {tai_tick}\tUTC = {utc_tick}");
+        let utc_tai_dt = tai_tick - utc_tick;
+        if seconds < 60 {
+            // The leap second has not happened in UTC yet.
+            assert_eq!(
+                utc_tai_dt,
+                Unit::Second * 0,
+                "+{seconds} s: {utc_tai_dt} but should be 0"
+            );
+        } else {
+            assert_eq!(
+                utc_tai_dt,
+                Unit::Second * 1,
+                "+{seconds} s: {utc_tai_dt} but should be 1"
+            );
+        }
+    }
+}
