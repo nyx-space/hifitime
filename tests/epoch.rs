@@ -163,17 +163,16 @@ fn utc_tai() {
     // than there are seconds for that UTC epoch: the same TAI time happens _before_ that UTC time.
 
     // flp = first leap second
-    let flp_from_secs_tai = Epoch::from_tai_seconds(2_272_060_800.0);
-    let flp_from_greg_tai = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
-    assert_eq!(flp_from_secs_tai, flp_from_greg_tai);
+    let flp_from_secs_utc = Epoch::from_utc_seconds(2_272_060_800.0);
+    let flp_from_greg_utc = Epoch::from_gregorian_utc_at_midnight(1972, 1, 1);
+    assert_eq!(flp_from_secs_utc, flp_from_greg_utc);
     // Right after the discontinuity, UTC time should be ten seconds behind TAI, i.e. TAI is ten seconds ahead of UTC
     // In other words, the following date times are equal:
     let in_tai = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 10);
     let in_utc = Epoch::from_gregorian_utc_at_midnight(1972, 1, 1);
     assert_eq!(
         in_tai, in_utc,
-        "UTC discontinuity failed:\n{:?}\t{:?}",
-        in_tai.duration, in_utc.duration
+        "UTC discontinuity failed:\n{in_tai}\t{in_utc}",
     );
     // Noon UTC after the first leap second is in fact ten seconds _after_ noon TAI.
     // Hence, there are as many TAI seconds since Epoch between UTC Noon and TAI Noon + 10s.
@@ -196,11 +195,11 @@ fn utc_tai() {
     );
 
     assert!(
-        flp_from_secs_tai.to_tai_seconds() > flp_from_secs_tai.to_utc_seconds(),
+        flp_from_secs_utc.to_tai_seconds() > flp_from_secs_utc.to_utc_seconds(),
         "TAI is not ahead of UTC (via function call)"
     );
     assert!(
-        (flp_from_secs_tai.to_tai_seconds() - flp_from_secs_tai.to_utc_seconds() - 10.0)
+        (flp_from_secs_utc.to_tai_seconds() - flp_from_secs_utc.to_utc_seconds() - 10.0)
             < f64::EPSILON,
         "TAI is not ahead of UTC"
     );
@@ -2408,7 +2407,7 @@ fn test_regression_gh_417_leap_utc() {
         let utc_tick = tai_tick.to_time_scale(TimeScale::UTC);
         println!("+{seconds} s => TAI = {tai_tick}\tUTC = {utc_tick}");
         let utc_tai_dt = tai_tick - utc_tick;
-        if seconds < 60 {
+        if seconds <= 60 {
             // The leap second has not happened in UTC yet.
             assert_eq!(
                 utc_tai_dt,

@@ -95,7 +95,7 @@ impl LeapSecondsFile {
 
                     me.data.push(LeapSecond {
                         timestamp_utc_s: (timestamp_utc_s as f64),
-                        delta_at: (delta_at as f64),
+                        delta_at_s: (delta_at as f64),
                         announced_by_iers: true,
                     });
                 }
@@ -122,7 +122,7 @@ impl LeapSecondsFile {
                 Self::from_content(response)
             }
             Err(Error::StatusCode(code)) => Err(HifitimeError::Parse {
-                source: ParsingError::DownloadError { code: code },
+                source: ParsingError::DownloadError { code },
                 details: "server returned an error",
             }),
             Err(_) => Err(HifitimeError::Parse {
