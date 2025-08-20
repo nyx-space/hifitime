@@ -127,8 +127,8 @@ impl Epoch {
         provider: L,
     ) -> Option<f64> {
         for leap_second in provider.rev() {
-            if self.to_tai_duration().to_seconds() - leap_second.delta_at_s
-                >= leap_second.timestamp_utc_s
+            if self.to_tai_duration().to_seconds()
+                >= leap_second.timestamp_utc_s + leap_second.delta_at_s
                 && (!iers_only || leap_second.announced_by_iers)
             {
                 return Some(leap_second.delta_at_s);
