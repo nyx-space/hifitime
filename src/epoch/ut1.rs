@@ -31,7 +31,7 @@ impl Epoch {
     /// # Warning
     /// The time scale of this Epoch will be set to TAI! This is to ensure that no additional computations will change the duration since it's stored in TAI.
     /// However, this also means that calling `to_duration()` on this Epoch will return the TAI duration and not the UT1 duration!
-    pub fn from_ut1_duration(duration: Duration, provider: Ut1Provider) -> Self {
+    pub fn from_ut1_duration(duration: Duration, provider: &Ut1Provider) -> Self {
         let mut e = Self::from_tai_duration(duration);
         // Compute the TAI to UT1 offset at this time.
         // We have the time in TAI. But we were given UT1.
@@ -41,26 +41,44 @@ impl Epoch {
         e
     }
 
-    /// Get the accumulated offset between this epoch and UT1, assuming that the provider includes all data.
-    pub fn ut1_offset(&self, provider: Ut1Provider) -> Option<Duration> {
-        for delta_tai_ut1 in provider.rev() {
-            if self > &delta_tai_ut1.epoch {
-                return Some(delta_tai_ut1.delta_tai_minus_ut1);
+    /// Get the accumulated offset between this epoch and UT1.
+    /// Assumes the provider's records are sorted by ascending epoch (enforced in `from_eop_data`).
+    ///
+    /// Arguments
+    /// -----------------
+    /// * `provider`: Borrowed UT1 data source.
+    ///
+    /// Return
+    /// ----------
+    /// * `Some(Duration)` for the last record with `record.epoch <= self`, otherwise `None`.
+    pub fn ut1_offset(&self, provider: &Ut1Provider) -> Option<Duration> {
+        let s = provider.as_slice();
+
+        // Fast-path: very common case — query is after the latest record.
+        if let Some(last) = s.last() {
+            if *self >= last.epoch {
+                return Some(last.delta_tai_minus_ut1);
             }
         }
-        None
+
+        // Find the index of the first element with epoch > self (monotonic predicate)
+        let idx = s.partition_point(|r| r.epoch <= *self);
+
+        // Candidate is the previous element if any exists
+        let rec = s.get(idx.checked_sub(1)?)?;
+        Some(rec.delta_tai_minus_ut1)
     }
 
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in UT1
-    pub fn to_ut1_duration(&self, provider: Ut1Provider) -> Duration {
+    pub fn to_ut1_duration(&self, provider: &Ut1Provider) -> Duration {
         // TAI = UT1 + offset <=> UTC = TAI - offset
         self.to_tai_duration() - self.ut1_offset(provider).unwrap_or(Duration::ZERO)
     }
 
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in UT1
-    pub fn to_ut1(&self, provider: Ut1Provider) -> Self {
+    pub fn to_ut1(&self, provider: &Ut1Provider) -> Self {
         Self::from_tai_duration(self.to_ut1_duration(provider))
     }
 }
@@ -82,6 +100,40 @@ pub struct Ut1Provider {
 }
 
 impl Ut1Provider {
+    /// Borrowing iterator over UT1 records (double-ended).
+    ///
+    /// Arguments
+    /// -----------------
+    /// * None.
+    ///
+    /// Return
+    /// ----------
+    /// * A `std::slice::Iter<'_, DeltaTaiUt1>` that supports `.rev()`.
+    ///
+    /// See also
+    /// ------------
+    /// * [`as_slice`] – Direct slice access to underlying data.
+    pub fn iter(&self) -> std::slice::Iter<'_, DeltaTaiUt1> {
+        self.data.iter()
+    }
+
+    /// Read-only view of the underlying UT1 records.
+    ///
+    /// Arguments
+    /// -----------------
+    /// * None.
+    ///
+    /// Return
+    /// ----------
+    /// * A slice `&[DeltaTaiUt1]` over all records.
+    ///
+    /// See also
+    /// ------------
+    /// * [`iter`] – Borrowing iterator over the same data.
+    pub fn as_slice(&self) -> &[DeltaTaiUt1] {
+        &self.data
+    }
+
     /// Builds a UT1 provided by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.short> (short time scale UT1 data) and parsing it.
     pub fn download_short_from_jpl() -> Result<Self, HifitimeError> {
         Self::download_from_jpl("latest_eop2.short")
@@ -190,6 +242,14 @@ impl Ut1Provider {
             });
         }
 
+        // Ensure records are sorted by epoch (ascending) for O(log n) lookups.
+        me.data.sort_unstable_by(|a, b| {
+            // Epoch should have a total order; if it’s only PartialOrd, partial_cmp is fine.
+            a.epoch
+                .partial_cmp(&b.epoch)
+                .expect("Epoch must be orderable")
+        });
+
         Ok(me)
     }
 }
@@ -240,6 +300,15 @@ impl Index<usize> for Ut1Provider {
 
     fn index(&self, index: usize) -> &Self::Output {
         self.data.index(index)
+    }
+}
+
+impl<'a> IntoIterator for &'a Ut1Provider {
+    type Item = &'a DeltaTaiUt1;
+    type IntoIter = std::slice::Iter<'a, DeltaTaiUt1>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.data.iter()
     }
 }
 
