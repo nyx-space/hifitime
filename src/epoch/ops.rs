@@ -495,10 +495,9 @@ impl PartialEq for Epoch {
 
 impl PartialOrd for Epoch {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(
-            self.duration
-                .cmp(&other.to_time_scale(self.time_scale).duration),
-        )
+        {
+            Some(self.cmp(other))
+        }
     }
 }
 
