@@ -18,7 +18,7 @@ fn test_ut1_from_file() {
     //
     let epoch = Epoch::from_str("2022-01-03 03:05:06.7891").unwrap();
     assert_eq!(
-        format!("{:x}", epoch.to_ut1(provider)),
+        format!("{:x}", epoch.to_ut1(&provider)),
         "2022-01-03T03:05:06.679020600 TAI"
     );
 }
@@ -43,7 +43,7 @@ fn test_ut1_from_jpl() {
     // >>>
     //
     let epoch = Epoch::from_str("2022-01-03 03:05:06.7891 UTC").unwrap();
-    let ut1_epoch = epoch.to_ut1(provider);
+    let ut1_epoch = epoch.to_ut1(&provider);
     assert_eq!(
         format!("{:x}", ut1_epoch),
         "2022-01-03T03:05:06.679020600 TAI",

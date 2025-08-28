@@ -188,67 +188,99 @@ impl Ut1Provider {
         Self::from_eop_data(contents)
     }
 
-    /// Builds a UT1 provider from the provided EOP data
+    /// Builds a UT1 provider from the provided EOP data.
+    /// Single-pass, no per-line allocation:
+    /// - Use `split(',')` and take exactly columns 0 and 3 (no `collect()`).
+    /// - Track sortedness and only sort at the end if needed.
+    /// - Trim CR/LF and ignore empty lines.
+    ///
+    /// Arguments
+    /// -----------------
+    /// * `contents`: The full EOP2 text payload from JPL.
+    ///
+    /// Return
+    /// ----------
+    /// * `Ok(Self)` with records sorted by ascending epoch.
+    /// * `Err(HifitimeError)` on malformed lines.
+    ///
+    /// See also
+    /// ------------
+    /// * [`Ut1Provider::from_eop_file`] – File-based variant calling this parser.
     pub fn from_eop_data(contents: String) -> Result<Self, HifitimeError> {
         let mut me = Self::default();
+        // Heuristic to reduce Vec reallocations
+        me.data.reserve(contents.len() / 48);
 
-        let mut ignore = true;
-        for line in contents.lines() {
-            if line == " EOP2=" {
-                // Data will start after this line
-                ignore = false;
+        let mut in_data = false;
+        let mut prev_epoch: Option<Epoch> = None;
+        let mut already_sorted = true;
+
+        for raw in contents.lines() {
+            // Header section control
+            if !in_data {
+                if raw == " EOP2=" || raw == "EOP2=" {
+                    in_data = true;
+                }
                 continue;
-            } else if line == " $END" {
-                // We've reached the end of the EOP data file.
+            }
+            if raw == " $END" || raw == "$END" {
                 break;
             }
-            if ignore {
+            if raw.is_empty() {
                 continue;
             }
 
-            // We have data of interest!
-            let data: Vec<&str> = line.split(',').collect();
-            if data.len() < 4 {
-                return Err(HifitimeError::Parse {
-                    source: ParsingError::UnknownFormat,
-                    details: "expected EOP line to contain 4 comma-separated columns",
-                });
-            }
+            // Extract exactly columns 0 and 3 (others ignored)
+            let mut cols = raw.split(',');
+            let mjd_col = cols.next().ok_or_else(|| HifitimeError::Parse {
+                source: ParsingError::UnknownFormat,
+                details: "missing MJD column (0)",
+            })?;
+            let _ = cols.next(); // col 1 unused
+            let _ = cols.next(); // col 2 unused
+            let delta_col = cols.next().ok_or_else(|| HifitimeError::Parse {
+                source: ParsingError::UnknownFormat,
+                details: "missing ΔUT1 column (3)",
+            })?;
 
-            let mjd_tai_days: f64 = match lexical_core::parse(data[0].trim().as_bytes()) {
-                Ok(val) => val,
-                Err(err) => {
-                    return Err(HifitimeError::Parse {
+            // Parse numeric fields
+            let mjd_tai_days: f64 =
+                lexical_core::parse(mjd_col.trim().as_bytes()).map_err(|err| {
+                    HifitimeError::Parse {
                         source: ParsingError::Lexical { err },
-                        details: "when parsing MJD TAI days (zeroth column)",
-                    })
-                }
-            };
+                        details: "when parsing MJD TAI days (column 0)",
+                    }
+                })?;
 
-            let delta_ut1_ms: f64;
-            match lexical_core::parse(data[3].trim().as_bytes()) {
-                Ok(val) => delta_ut1_ms = val,
-                Err(err) => {
-                    return Err(HifitimeError::Parse {
+            let delta_ut1_ms: f64 =
+                lexical_core::parse(delta_col.trim().as_bytes()).map_err(|err| {
+                    HifitimeError::Parse {
                         source: ParsingError::Lexical { err },
-                        details: "when parsing ΔUT1 in ms (last column)",
-                    })
+                        details: "when parsing ΔUT1 in ms (column 3)",
+                    }
+                })?;
+
+            let epoch = Epoch::from_mjd_tai(mjd_tai_days);
+            if let Some(prev) = prev_epoch {
+                if epoch < prev {
+                    already_sorted = false;
                 }
             }
+            prev_epoch = Some(epoch);
 
             me.data.push(DeltaTaiUt1 {
-                epoch: Epoch::from_mjd_tai(mjd_tai_days),
+                epoch,
                 delta_tai_minus_ut1: delta_ut1_ms * Unit::Millisecond,
             });
         }
 
-        // Ensure records are sorted by epoch (ascending) for O(log n) lookups.
-        me.data.sort_unstable_by(|a, b| {
-            // Epoch should have a total order; if it’s only PartialOrd, partial_cmp is fine.
-            a.epoch
-                .partial_cmp(&b.epoch)
-                .expect("Epoch must be orderable")
-        });
+        if !already_sorted {
+            me.data.sort_unstable_by(|a, b| {
+                a.epoch
+                    .partial_cmp(&b.epoch)
+                    .expect("Epoch must be orderable (no NaN)")
+            });
+        }
 
         Ok(me)
     }
