@@ -100,23 +100,6 @@ pub struct Ut1Provider {
 }
 
 impl Ut1Provider {
-    /// Borrowing iterator over UT1 records (double-ended).
-    ///
-    /// Arguments
-    /// -----------------
-    /// * None.
-    ///
-    /// Return
-    /// ----------
-    /// * A `std::slice::Iter<'_, DeltaTaiUt1>` that supports `.rev()`.
-    ///
-    /// See also
-    /// ------------
-    /// * [`as_slice`] – Direct slice access to underlying data.
-    pub fn iter(&self) -> std::slice::Iter<'_, DeltaTaiUt1> {
-        self.data.iter()
-    }
-
     /// Read-only view of the underlying UT1 records.
     ///
     /// Arguments
@@ -126,10 +109,6 @@ impl Ut1Provider {
     /// Return
     /// ----------
     /// * A slice `&[DeltaTaiUt1]` over all records.
-    ///
-    /// See also
-    /// ------------
-    /// * [`iter`] – Borrowing iterator over the same data.
     pub fn as_slice(&self) -> &[DeltaTaiUt1] {
         &self.data
     }
@@ -236,9 +215,7 @@ impl Ut1Provider {
                 source: ParsingError::UnknownFormat,
                 details: "missing MJD column (0)",
             })?;
-            let _ = cols.next(); // col 1 unused
-            let _ = cols.next(); // col 2 unused
-            let delta_col = cols.next().ok_or_else(|| HifitimeError::Parse {
+            let delta_col = cols.nth(2).ok_or_else(|| HifitimeError::Parse {
                 source: ParsingError::UnknownFormat,
                 details: "missing ΔUT1 column (3)",
             })?;
