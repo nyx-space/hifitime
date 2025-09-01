@@ -1,6 +1,6 @@
 [package]
 name = "hifitime"
-version = "4.1.3"
+version = "4.2.0"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
 description = "Ultra-precise date and time handling in Rust for scientific applications with leap second support"
 homepage = "https://nyxspace.com/"
