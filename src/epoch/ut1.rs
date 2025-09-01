@@ -31,7 +31,7 @@ impl Epoch {
     /// # Warning
     /// The time scale of this Epoch will be set to TAI! This is to ensure that no additional computations will change the duration since it's stored in TAI.
     /// However, this also means that calling `to_duration()` on this Epoch will return the TAI duration and not the UT1 duration!
-    pub fn from_ut1_duration(duration: Duration, provider: Ut1Provider) -> Self {
+    pub fn from_ut1_duration(duration: Duration, provider: &Ut1Provider) -> Self {
         let mut e = Self::from_tai_duration(duration);
         // Compute the TAI to UT1 offset at this time.
         // We have the time in TAI. But we were given UT1.
@@ -41,26 +41,44 @@ impl Epoch {
         e
     }
 
-    /// Get the accumulated offset between this epoch and UT1, assuming that the provider includes all data.
-    pub fn ut1_offset(&self, provider: Ut1Provider) -> Option<Duration> {
-        for delta_tai_ut1 in provider.rev() {
-            if self > &delta_tai_ut1.epoch {
-                return Some(delta_tai_ut1.delta_tai_minus_ut1);
+    /// Get the accumulated offset between this epoch and UT1.
+    /// Assumes the provider's records are sorted by ascending epoch (enforced in `from_eop_data`).
+    ///
+    /// Arguments
+    /// -----------------
+    /// * `provider`: Borrowed UT1 data source.
+    ///
+    /// Return
+    /// ----------
+    /// * `Some(Duration)` for the last record with `record.epoch <= self`, otherwise `None`.
+    pub fn ut1_offset(&self, provider: &Ut1Provider) -> Option<Duration> {
+        let s = provider.as_slice();
+
+        // Fast-path: very common case — query is after the latest record.
+        if let Some(last) = s.last() {
+            if *self >= last.epoch {
+                return Some(last.delta_tai_minus_ut1);
             }
         }
-        None
+
+        // Find the index of the first element with epoch > self (monotonic predicate)
+        let idx = s.partition_point(|r| r.epoch <= *self);
+
+        // Candidate is the previous element if any exists
+        let rec = s.get(idx.checked_sub(1)?)?;
+        Some(rec.delta_tai_minus_ut1)
     }
 
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in UT1
-    pub fn to_ut1_duration(&self, provider: Ut1Provider) -> Duration {
+    pub fn to_ut1_duration(&self, provider: &Ut1Provider) -> Duration {
         // TAI = UT1 + offset <=> UTC = TAI - offset
         self.to_tai_duration() - self.ut1_offset(provider).unwrap_or(Duration::ZERO)
     }
 
     #[must_use]
     /// Returns this time in a Duration past J1900 counted in UT1
-    pub fn to_ut1(&self, provider: Ut1Provider) -> Self {
+    pub fn to_ut1(&self, provider: &Ut1Provider) -> Self {
         Self::from_tai_duration(self.to_ut1_duration(provider))
     }
 }
@@ -82,6 +100,19 @@ pub struct Ut1Provider {
 }
 
 impl Ut1Provider {
+    /// Read-only view of the underlying UT1 records.
+    ///
+    /// Arguments
+    /// -----------------
+    /// * None.
+    ///
+    /// Return
+    /// ----------
+    /// * A slice `&[DeltaTaiUt1]` over all records.
+    pub fn as_slice(&self) -> &[DeltaTaiUt1] {
+        &self.data
+    }
+
     /// Builds a UT1 provided by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.short> (short time scale UT1 data) and parsing it.
     pub fn download_short_from_jpl() -> Result<Self, HifitimeError> {
         Self::download_from_jpl("latest_eop2.short")
@@ -136,57 +167,95 @@ impl Ut1Provider {
         Self::from_eop_data(contents)
     }
 
-    /// Builds a UT1 provider from the provided EOP data
+    /// Builds a UT1 provider from the provided EOP data.
+    /// Single-pass, no per-line allocation:
+    /// - Use `split(',')` and take exactly columns 0 and 3 (no `collect()`).
+    /// - Track sortedness and only sort at the end if needed.
+    /// - Trim CR/LF and ignore empty lines.
+    ///
+    /// Arguments
+    /// -----------------
+    /// * `contents`: The full EOP2 text payload from JPL.
+    ///
+    /// Return
+    /// ----------
+    /// * `Ok(Self)` with records sorted by ascending epoch.
+    /// * `Err(HifitimeError)` on malformed lines.
+    ///
+    /// See also
+    /// ------------
+    /// * [`Ut1Provider::from_eop_file`] – File-based variant calling this parser.
     pub fn from_eop_data(contents: String) -> Result<Self, HifitimeError> {
         let mut me = Self::default();
+        // Heuristic to reduce Vec reallocations
+        me.data.reserve(contents.len() / 48);
 
-        let mut ignore = true;
-        for line in contents.lines() {
-            if line == " EOP2=" {
-                // Data will start after this line
-                ignore = false;
+        let mut in_data = false;
+        let mut prev_epoch: Option<Epoch> = None;
+        let mut already_sorted = true;
+
+        for raw in contents.lines() {
+            // Header section control
+            if !in_data {
+                if raw == " EOP2=" || raw == "EOP2=" {
+                    in_data = true;
+                }
                 continue;
-            } else if line == " $END" {
-                // We've reached the end of the EOP data file.
+            }
+            if raw == " $END" || raw == "$END" {
                 break;
             }
-            if ignore {
+            if raw.is_empty() {
                 continue;
             }
 
-            // We have data of interest!
-            let data: Vec<&str> = line.split(',').collect();
-            if data.len() < 4 {
-                return Err(HifitimeError::Parse {
-                    source: ParsingError::UnknownFormat,
-                    details: "expected EOP line to contain 4 comma-separated columns",
-                });
-            }
+            // Extract exactly columns 0 and 3 (others ignored)
+            let mut cols = raw.split(',');
+            let mjd_col = cols.next().ok_or_else(|| HifitimeError::Parse {
+                source: ParsingError::UnknownFormat,
+                details: "missing MJD column (0)",
+            })?;
+            let delta_col = cols.nth(2).ok_or_else(|| HifitimeError::Parse {
+                source: ParsingError::UnknownFormat,
+                details: "missing ΔUT1 column (3)",
+            })?;
 
-            let mjd_tai_days: f64 = match lexical_core::parse(data[0].trim().as_bytes()) {
-                Ok(val) => val,
-                Err(err) => {
-                    return Err(HifitimeError::Parse {
+            // Parse numeric fields
+            let mjd_tai_days: f64 =
+                lexical_core::parse(mjd_col.trim().as_bytes()).map_err(|err| {
+                    HifitimeError::Parse {
                         source: ParsingError::Lexical { err },
-                        details: "when parsing MJD TAI days (zeroth column)",
-                    })
-                }
-            };
+                        details: "when parsing MJD TAI days (column 0)",
+                    }
+                })?;
 
-            let delta_ut1_ms: f64;
-            match lexical_core::parse(data[3].trim().as_bytes()) {
-                Ok(val) => delta_ut1_ms = val,
-                Err(err) => {
-                    return Err(HifitimeError::Parse {
+            let delta_ut1_ms: f64 =
+                lexical_core::parse(delta_col.trim().as_bytes()).map_err(|err| {
+                    HifitimeError::Parse {
                         source: ParsingError::Lexical { err },
-                        details: "when parsing ΔUT1 in ms (last column)",
-                    })
+                        details: "when parsing ΔUT1 in ms (column 3)",
+                    }
+                })?;
+
+            let epoch = Epoch::from_mjd_tai(mjd_tai_days);
+            if let Some(prev) = prev_epoch {
+                if epoch < prev {
+                    already_sorted = false;
                 }
             }
+            prev_epoch = Some(epoch);
 
             me.data.push(DeltaTaiUt1 {
-                epoch: Epoch::from_mjd_tai(mjd_tai_days),
+                epoch,
                 delta_tai_minus_ut1: delta_ut1_ms * Unit::Millisecond,
+            });
+        }
+
+        if !already_sorted {
+            me.data.sort_unstable_by(|a, b| {
+                a.epoch
+                    .partial_cmp(&b.epoch)
+                    .expect("Epoch must be orderable (no NaN)")
             });
         }
 
@@ -240,6 +309,15 @@ impl Index<usize> for Ut1Provider {
 
     fn index(&self, index: usize) -> &Self::Output {
         self.data.index(index)
+    }
+}
+
+impl<'a> IntoIterator for &'a Ut1Provider {
+    type Item = &'a DeltaTaiUt1;
+    type IntoIter = std::slice::Iter<'a, DeltaTaiUt1>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.data.iter()
     }
 }
 
