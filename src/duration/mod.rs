@@ -167,7 +167,7 @@ impl Duration {
 
     #[must_use]
     /// Create a normalized duration from its parts
-    pub fn from_parts(centuries: i16, nanoseconds: u64) -> Self {
+    pub const fn from_parts(centuries: i16, nanoseconds: u64) -> Self {
         let mut me = Self {
             centuries,
             nanoseconds,
@@ -178,16 +178,16 @@ impl Duration {
 
     #[must_use]
     /// Converts the total nanoseconds as i128 into this Duration (saving 48 bits)
-    pub fn from_total_nanoseconds(nanos: i128) -> Self {
+    pub const fn from_total_nanoseconds(nanos: i128) -> Self {
         // In this function, we simply check that the input data can be casted. The `normalize` function will check whether more work needs to be done.
         if nanos == 0 {
             Self::ZERO
         } else {
-            let centuries_i128 = nanos.div_euclid(NANOSECONDS_PER_CENTURY.into());
-            let remaining_nanos_i128 = nanos.rem_euclid(NANOSECONDS_PER_CENTURY.into());
-            if centuries_i128 > i16::MAX.into() {
+            let centuries_i128 = nanos.div_euclid(NANOSECONDS_PER_CENTURY as i128);
+            let remaining_nanos_i128 = nanos.rem_euclid(NANOSECONDS_PER_CENTURY as i128);
+            if centuries_i128 > (i16::MAX as i128) {
                 Self::MAX
-            } else if centuries_i128 < i16::MIN.into() {
+            } else if centuries_i128 < (i16::MIN as i128) {
                 Self::MIN
             } else {
                 // We know that the centuries fit, and we know that the nanos are less than the number
@@ -200,7 +200,7 @@ impl Duration {
 
     #[must_use]
     /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
-    pub fn from_truncated_nanoseconds(nanos: i64) -> Self {
+    pub const fn from_truncated_nanoseconds(nanos: i64) -> Self {
         if nanos < 0 {
             let ns = nanos.unsigned_abs();
             // Note: i64::MIN corresponds to a duration just past -3 centuries, so we can't hit the Duration::MIN here.
@@ -217,38 +217,38 @@ impl Duration {
 
     /// Creates a new duration from the provided number of days
     #[must_use]
-    pub fn from_days(value: f64) -> Self {
-        value * Unit::Day
+    pub const fn from_days(value: f64) -> Self {
+        Unit::Day.const_multiply(value)
     }
 
     /// Creates a new duration from the provided number of hours
     #[must_use]
-    pub fn from_hours(value: f64) -> Self {
-        value * Unit::Hour
+    pub const fn from_hours(value: f64) -> Self {
+        Unit::Hour.const_multiply(value)
     }
 
     /// Creates a new duration from the provided number of seconds
     #[must_use]
-    pub fn from_seconds(value: f64) -> Self {
-        value * Unit::Second
+    pub const fn from_seconds(value: f64) -> Self {
+        Unit::Second.const_multiply(value)
     }
 
     /// Creates a new duration from the provided number of milliseconds
     #[must_use]
-    pub fn from_milliseconds(value: f64) -> Self {
-        value * Unit::Millisecond
+    pub const fn from_milliseconds(value: f64) -> Self {
+        Unit::Millisecond.const_multiply(value)
     }
 
     /// Creates a new duration from the provided number of microsecond
     #[must_use]
-    pub fn from_microseconds(value: f64) -> Self {
-        value * Unit::Microsecond
+    pub const fn from_microseconds(value: f64) -> Self {
+        Unit::Microsecond.const_multiply(value)
     }
 
     /// Creates a new duration from the provided number of nanoseconds
     #[must_use]
-    pub fn from_nanoseconds(value: f64) -> Self {
-        value * Unit::Nanosecond
+    pub const fn from_nanoseconds(value: f64) -> Self {
+        Unit::Nanosecond.const_multiply(value)
     }
 
     /// Creates a new duration from its parts. Set the sign to a negative number for the duration to be negative.

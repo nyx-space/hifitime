@@ -296,6 +296,13 @@ impl Mul<f64> for Unit {
     /// 1. If the input value times the unit does not fit on a Duration, then Duration::MAX or Duration::MIN will be returned depending on whether the value would have overflowed or underflowed (respectively).
     /// 2. Floating point operations may round differently on different processors. It's advised to use integer initialization of Durations whenever possible.
     fn mul(self, q: f64) -> Duration {
+        self.const_multiply(q)
+    }
+}
+
+impl Unit {
+    /// `const`-compatible copy of [Self::mul].
+    pub(crate) const fn const_multiply(self, q: f64) -> Duration {
         let factor = match self {
             Unit::Century => NANOSECONDS_PER_CENTURY as f64,
             Unit::Week => NANOSECONDS_PER_DAY as f64 * DAYS_PER_WEEK,
