@@ -316,11 +316,11 @@ impl Duration {
 }
 
 impl Duration {
-    fn normalize(&mut self) {
-        let extra_centuries = self.nanoseconds.div_euclid(NANOSECONDS_PER_CENTURY);
+    const fn normalize(&mut self) {
+        let extra_centuries = self.nanoseconds / NANOSECONDS_PER_CENTURY;
         // We can skip this whole step if the div_euclid shows that we didn't overflow the number of nanoseconds per century
         if extra_centuries > 0 {
-            let rem_nanos = self.nanoseconds.rem_euclid(NANOSECONDS_PER_CENTURY);
+            let rem_nanos = self.nanoseconds % NANOSECONDS_PER_CENTURY;
 
             if self.centuries == i16::MAX {
                 if self.nanoseconds.saturating_add(rem_nanos) > Self::MAX.nanoseconds {
@@ -328,7 +328,7 @@ impl Duration {
                     *self = Self::MAX;
                 }
                 // Else, we're near the MAX but we're within the MAX in nanoseconds, so let's not do anything here.
-            } else if *self != Self::MAX && *self != Self::MIN {
+            } else if !self.is_equal_to(Self::MAX) && !self.is_equal_to(Self::MIN) {
                 // The bounds are valid as is, no wrapping needed when rem_nanos is not zero.
                 match self.centuries.checked_add(extra_centuries as i16) {
                     Some(centuries) => {
@@ -347,6 +347,15 @@ impl Duration {
                 }
             }
         }
+    }
+
+    /// `const`-compatible equality check between `self` and `other`.
+    ///
+    /// Note that this only checks whether the fields of `self` and `other` are
+    /// the same, not whether they would (if [`Self::normalize`]d) represent
+    /// the same duration.
+    const fn is_equal_to(&self, other: Duration) -> bool {
+        self.centuries == other.centuries && self.nanoseconds == other.nanoseconds
     }
 
     #[must_use]
