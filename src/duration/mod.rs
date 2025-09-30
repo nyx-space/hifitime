@@ -336,7 +336,7 @@ impl Duration {
                     normalized_self = Self::MAX;
                 }
                 // Else, we're near the MAX but we're within the MAX in nanoseconds, so let's not do anything here.
-            } else if !self.parts_are_equal(Self::MAX) && !self.parts_are_equal(Self::MIN) {
+            } else if !self.parts_are_equal(Self::MIN) {
                 // The bounds are valid as is, no wrapping needed when rem_nanos is not zero.
                 match self.centuries.checked_add(extra_centuries as i16) {
                     Some(centuries) => {
