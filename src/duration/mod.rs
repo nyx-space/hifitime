@@ -168,12 +168,11 @@ impl Duration {
     #[must_use]
     /// Create a normalized duration from its parts
     pub const fn from_parts(centuries: i16, nanoseconds: u64) -> Self {
-        let mut me = Self {
+        Self {
             centuries,
             nanoseconds,
-        };
-        me.normalize();
-        me
+        }
+        .as_normalized()
     }
 
     #[must_use]
@@ -316,8 +315,17 @@ impl Duration {
 }
 
 impl Duration {
-    const fn normalize(&mut self) {
+    /// Change the value of a [Duration] to its normalized equivalent.
+    fn normalize(&mut self) {
+        *self = self.as_normalized();
+    }
+
+    /// Return the normalized equivalent of a [Duration].
+    const fn as_normalized(&self) -> Self {
+        let mut normalized_self = *self;
+
         let extra_centuries = self.nanoseconds / NANOSECONDS_PER_CENTURY;
+
         // We can skip this whole step if the div_euclid shows that we didn't overflow the number of nanoseconds per century
         if extra_centuries > 0 {
             let rem_nanos = self.nanoseconds % NANOSECONDS_PER_CENTURY;
@@ -325,28 +333,30 @@ impl Duration {
             if self.centuries == i16::MAX {
                 if self.nanoseconds.saturating_add(rem_nanos) > Self::MAX.nanoseconds {
                     // Saturated max
-                    *self = Self::MAX;
+                    normalized_self = Self::MAX;
                 }
                 // Else, we're near the MAX but we're within the MAX in nanoseconds, so let's not do anything here.
             } else if !self.is_equal_to(Self::MAX) && !self.is_equal_to(Self::MIN) {
                 // The bounds are valid as is, no wrapping needed when rem_nanos is not zero.
                 match self.centuries.checked_add(extra_centuries as i16) {
                     Some(centuries) => {
-                        self.centuries = centuries;
-                        self.nanoseconds = rem_nanos;
+                        normalized_self.centuries = centuries;
+                        normalized_self.nanoseconds = rem_nanos;
                     }
                     None => {
                         if self.centuries >= 0 {
                             // Saturated max again
-                            *self = Self::MAX;
+                            normalized_self = Self::MAX;
                         } else {
                             // Saturated min
-                            *self = Self::MIN;
+                            normalized_self = Self::MIN;
                         }
                     }
                 }
             }
         }
+
+        normalized_self
     }
 
     /// `const`-compatible equality check between `self` and `other`.
