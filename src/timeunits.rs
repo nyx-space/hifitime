@@ -322,7 +322,13 @@ impl Unit {
             Duration::MIN
         } else {
             let total_ns = q * factor;
-            if total_ns.abs() < (i64::MAX as f64) {
+
+            // The following manual `abs()` implementation was added because
+            // `f64::abs()` was not a `const` function in Rust 1.82, which is
+            // used for the MSRV workflow at the time of writing.
+            let absolute_nanoseconds = if total_ns >= 0.0 { total_ns } else { -total_ns };
+
+            if absolute_nanoseconds < (i64::MAX as f64) {
                 Duration::from_truncated_nanoseconds(total_ns as i64)
             } else {
                 Duration::from_total_nanoseconds(total_ns as i128)
