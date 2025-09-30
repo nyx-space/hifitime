@@ -326,7 +326,7 @@ impl Duration {
 
         let extra_centuries = self.nanoseconds / NANOSECONDS_PER_CENTURY;
 
-        // We can skip this whole step if the div_euclid shows that we didn't overflow the number of nanoseconds per century
+        // We can skip this whole step if the division shows that we didn't overflow the number of nanoseconds per century
         if extra_centuries > 0 {
             let rem_nanos = self.nanoseconds % NANOSECONDS_PER_CENTURY;
 
