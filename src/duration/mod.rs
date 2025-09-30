@@ -321,7 +321,7 @@ impl Duration {
     }
 
     /// Return the normalized equivalent of a [Duration].
-    const fn as_normalized(&self) -> Self {
+    const fn as_normalized(self) -> Self {
         let mut normalized_self = *self;
 
         let extra_centuries = self.nanoseconds / NANOSECONDS_PER_CENTURY;
