@@ -336,7 +336,7 @@ impl Duration {
                     normalized_self = Self::MAX;
                 }
                 // Else, we're near the MAX but we're within the MAX in nanoseconds, so let's not do anything here.
-            } else if !self.is_equal_to(Self::MAX) && !self.is_equal_to(Self::MIN) {
+            } else if !self.parts_are_equal(Self::MAX) && !self.parts_are_equal(Self::MIN) {
                 // The bounds are valid as is, no wrapping needed when rem_nanos is not zero.
                 match self.centuries.checked_add(extra_centuries as i16) {
                     Some(centuries) => {
@@ -364,7 +364,7 @@ impl Duration {
     /// Note that this only checks whether the fields of `self` and `other` are
     /// the same, not whether they would (if [`Self::normalize`]d) represent
     /// the same duration.
-    const fn is_equal_to(&self, other: Duration) -> bool {
+    const fn parts_are_equal(&self, other: Duration) -> bool {
         self.centuries == other.centuries && self.nanoseconds == other.nanoseconds
     }
 
