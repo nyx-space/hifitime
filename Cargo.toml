@@ -1,6 +1,6 @@
 [package]
 name = "hifitime"
-version = "4.2.0"
+version = "4.2.1"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
 description = "Ultra-precise date and time handling in Rust for scientific applications with leap second support"
 homepage = "https://nyxspace.com/"
@@ -17,7 +17,7 @@ edition = "2021"
 crate-type = ["rlib"]
 name = "hifitime"
 
-# `cdylib` is useful only when the `std` feature is on.  
+# `cdylib` is useful only when the `std` feature is on.
 # In `no_std`, dynamic‑link targets face “unwinding panics not supported”  https://github.com/nyx-space/hifitime/issues/343
 [target.'cfg(feature = "std")'.lib]
 crate-type = ["cdylib", "rlib"]
