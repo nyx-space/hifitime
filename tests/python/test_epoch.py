@@ -168,6 +168,21 @@ def test_interop():
     )
 
 
+def test_ephemeris_time_todatetime():
+    """
+    Test for the issue highlighted by [issue 421][issue-421].
+
+    [issue-421]: https://github.com/nyx-space/hifitime/issues/421
+    """
+    test_epoch = Epoch("2025-03-07T12:01:09.185475585 ET")
+
+    actual_datetime = test_epoch.todatetime()
+    expected_datetime = datetime(year=2025, month=3, day=7, hour=12, minute=0)
+
+    # Before fixing, `actual_datetime = (1925, 3, 8, 0, 1, 9, 185475)`.
+    assert actual_datetime == expected_datetime
+
+
 def test_polynomial():
     t_gpst = Epoch.from_gregorian(2020, 1, 1, 0, 0, 0, 0, TimeScale.GPST)
 

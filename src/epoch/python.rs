@@ -964,7 +964,7 @@ impl Epoch {
     /// :rtype: datetime.datetime
     fn todatetime<'py>(&self, py: Python<'py>) -> Result<Bound<'py, PyDateTime>, PyErr> {
         let (y, mm, dd, hh, min, s, nanos) =
-            Epoch::compute_gregorian(self.duration, TimeScale::UTC);
+            Epoch::compute_gregorian(self.to_utc_duration(), TimeScale::UTC);
 
         let datetime = PyDateTime::new(py, y, mm, dd, hh, min, s, nanos / 1_000, None)?;
 
