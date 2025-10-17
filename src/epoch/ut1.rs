@@ -141,28 +141,12 @@ impl Ut1Provider {
     pub fn as_slice(&self) -> &[DeltaTaiUt1] {
         &self.data
     }
-}
 
-#[cfg_attr(feature = "python", pymethods)]
-impl Ut1Provider {
-    // For Python, return a list of owned objects.
-    // Option A: return Python class instances
-    #[cfg(feature = "python")]
-    pub fn as_list(&self, py: Python<'_>) -> PyResult<Vec<Py<DeltaTaiUt1>>> {
-        self.data
-            .iter()
-            .cloned()                      // Clone each record (since not Copy)
-            .map(|rec| Py::new(py, rec))   // Allocate a Py<DeltaTaiUt1>
-            .collect()
-    }
-
-    #[staticmethod]
     /// Builds a UT1 provided by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.short> (short time scale UT1 data) and parsing it.
     pub fn download_short_from_jpl() -> Result<Self, HifitimeError> {
         Self::download_from_jpl("latest_eop2.short")
     }
 
-    #[staticmethod]
     /// Build a UT1 provider by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.long> (long time scale UT1 data) and parsing it.
     pub fn download_from_jpl(version: &str) -> Result<Self, HifitimeError> {
         let url = format!("https://eop2-external.jpl.nasa.gov/eop2/{}", version);
@@ -189,7 +173,6 @@ impl Ut1Provider {
         }
     }
 
-    #[staticmethod]
     /// Builds a UT1 provider from the provided path to an EOP file.
     pub fn from_eop_file(path: &str) -> Result<Self, HifitimeError> {
         let mut f = match File::open(path) {
@@ -213,7 +196,6 @@ impl Ut1Provider {
         Self::from_eop_data(contents)
     }
 
-    #[staticmethod]
     /// Builds a UT1 provider from the provided EOP data.
     /// Single-pass, no per-line allocation:
     /// - Use `split(',')` and take exactly columns 0 and 3 (no `collect()`).
@@ -307,6 +289,27 @@ impl Ut1Provider {
         }
 
         Ok(me)
+    }
+}
+
+
+#[cfg_attr(feature = "python", pymethods)]
+impl Ut1Provider {
+    // For Python, return a list of owned objects.
+    // Option A: return Python class instances
+    pub fn as_list(&self, py: Python<'_>) -> PyResult<Vec<Py<DeltaTaiUt1>>> {
+        self.data
+            .iter()
+            .cloned()                      // Clone each record (since not Copy)
+            .map(|rec| Py::new(py, rec))   // Allocate a Py<DeltaTaiUt1>
+            .collect()
+    }
+
+    #[staticmethod]
+    #[pyo3(name="from_eop_file")]
+    /// Builds a UT1 provider from the provided path to an EOP file.
+    pub fn py_from_eop_file(path: &str) -> Result<Self, HifitimeError> {
+        Ut1Provider::from_eop_file(path)
     }
 }
 
