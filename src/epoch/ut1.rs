@@ -10,6 +10,8 @@
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
+#[cfg(feature = "python")]
+use pyo3::types::PyType;
 
 use ureq::get;
 use ureq::Error;
@@ -85,10 +87,13 @@ impl Epoch {
 
 #[cfg_attr(feature = "python", pymethods)]
 impl Epoch {
-
-    #[staticmethod]
+    #[classmethod]
     #[pyo3(name = "from_ut1_duration")]
-    pub fn py_from_ut1_duration(duration: Duration, provider: PyRef<Ut1Provider>) -> PyResult<Self> {
+    pub fn py_from_ut1_duration(
+        _cls: &Bound<'_, PyType>,
+        duration: Duration,
+        provider: PyRef<Ut1Provider>,
+    ) -> PyResult<Self> {
         Ok(Epoch::from_ut1_duration(duration, &*provider))
     }
 
@@ -109,11 +114,12 @@ impl Epoch {
 }
 
 #[cfg_attr(kani, derive(kani::Arbitrary))]
-#[cfg_attr(feature = "python",
+#[cfg_attr(
+    feature = "python",
     pyo3::pyclass(module = "hifitime", name = "DeltaTaiUt1", get_all)
 )]
-#[cfg_attr(not(feature = "python"), derive(Copy))]  // Copy only when NOT exposing to Python
-#[derive(Clone, Debug, Default, Tabled)]
+// #[cfg_attr(not(feature = "python"), derive(Copy))] // Copy only when NOT exposing to Python
+#[derive(Copy, Clone, Debug, Default, Tabled)]
 pub struct DeltaTaiUt1 {
     pub epoch: Epoch,
     pub delta_tai_minus_ut1: Duration,
@@ -292,27 +298,6 @@ impl Ut1Provider {
     }
 }
 
-
-#[cfg_attr(feature = "python", pymethods)]
-impl Ut1Provider {
-    // For Python, return a list of owned objects.
-    // Option A: return Python class instances
-    pub fn as_list(&self, py: Python<'_>) -> PyResult<Vec<Py<DeltaTaiUt1>>> {
-        self.data
-            .iter()
-            .cloned()                      // Clone each record (since not Copy)
-            .map(|rec| Py::new(py, rec))   // Allocate a Py<DeltaTaiUt1>
-            .collect()
-    }
-
-    #[staticmethod]
-    #[pyo3(name="from_eop_file")]
-    /// Builds a UT1 provider from the provided path to an EOP file.
-    pub fn py_from_eop_file(path: &str) -> Result<Self, HifitimeError> {
-        Ut1Provider::from_eop_file(path)
-    }
-}
-
 #[cfg(feature = "python")]
 #[cfg_attr(feature = "python", pymethods)]
 impl Ut1Provider {
@@ -323,6 +308,23 @@ impl Ut1Provider {
 
     fn __repr__(&self) -> String {
         format!("{self:?} @ {self:p}")
+    }
+
+    // For Python, return a list of owned objects.
+    // Option A: return Python class instances
+    pub fn as_list(&self, py: Python<'_>) -> PyResult<Vec<Py<DeltaTaiUt1>>> {
+        self.data
+            .iter()
+            .cloned() // Clone each record (since not Copy)
+            .map(|rec| Py::new(py, rec)) // Allocate a Py<DeltaTaiUt1>
+            .collect()
+    }
+
+    #[classmethod]
+    #[pyo3(name = "from_eop_file")]
+    /// Builds a UT1 provider from the provided path to an EOP file.
+    pub fn py_from_eop_file(_cls: &Bound<'_, PyType>, path: &str) -> Result<Self, HifitimeError> {
+        Ut1Provider::from_eop_file(path)
     }
 }
 
@@ -339,7 +341,7 @@ impl Iterator for Ut1Provider {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter_pos += 1;
-        self.data.get(self.iter_pos - 1).cloned()
+        self.data.get(self.iter_pos - 1).copied()
     }
 }
 
@@ -349,7 +351,7 @@ impl DoubleEndedIterator for Ut1Provider {
             None
         } else {
             self.iter_pos += 1;
-            self.data.get(self.data.len() - self.iter_pos).cloned()
+            self.data.get(self.data.len() - self.iter_pos).copied()
         }
     }
 }
