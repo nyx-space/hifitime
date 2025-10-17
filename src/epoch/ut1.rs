@@ -85,6 +85,7 @@ impl Epoch {
     }
 }
 
+#[cfg(feature = "python")]
 #[cfg_attr(feature = "python", pymethods)]
 impl Epoch {
     #[classmethod]
