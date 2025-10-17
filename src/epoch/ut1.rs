@@ -83,8 +83,37 @@ impl Epoch {
     }
 }
 
+#[cfg_attr(feature = "python", pymethods)]
+impl Epoch {
+
+    #[staticmethod]
+    #[pyo3(name = "from_ut1_duration")]
+    pub fn py_from_ut1_duration(duration: Duration, provider: PyRef<Ut1Provider>) -> PyResult<Self> {
+        Ok(Epoch::from_ut1_duration(duration, &*provider))
+    }
+
+    #[pyo3(name = "ut1_offset")]
+    pub fn py_ut1_offset(&self, provider: PyRef<Ut1Provider>) -> Option<Duration> {
+        self.ut1_offset(&*provider)
+    }
+
+    #[pyo3(name = "to_ut1_duration")]
+    pub fn py_to_ut1_duration(&self, provider: PyRef<Ut1Provider>) -> Duration {
+        self.to_ut1_duration(&*provider)
+    }
+
+    #[pyo3(name = "to_ut1")]
+    pub fn py_to_ut1(&self, provider: PyRef<Ut1Provider>) -> Self {
+        self.to_ut1(&*provider)
+    }
+}
+
 #[cfg_attr(kani, derive(kani::Arbitrary))]
-#[derive(Copy, Clone, Debug, Default, Tabled)]
+#[cfg_attr(feature = "python",
+    pyo3::pyclass(module = "hifitime", name = "DeltaTaiUt1", get_all)
+)]
+#[cfg_attr(not(feature = "python"), derive(Copy))]  // Copy only when NOT exposing to Python
+#[derive(Clone, Debug, Default, Tabled)]
 pub struct DeltaTaiUt1 {
     pub epoch: Epoch,
     pub delta_tai_minus_ut1: Duration,
@@ -112,12 +141,28 @@ impl Ut1Provider {
     pub fn as_slice(&self) -> &[DeltaTaiUt1] {
         &self.data
     }
+}
 
+#[cfg_attr(feature = "python", pymethods)]
+impl Ut1Provider {
+    // For Python, return a list of owned objects.
+    // Option A: return Python class instances
+    #[cfg(feature = "python")]
+    pub fn as_list(&self, py: Python<'_>) -> PyResult<Vec<Py<DeltaTaiUt1>>> {
+        self.data
+            .iter()
+            .cloned()                      // Clone each record (since not Copy)
+            .map(|rec| Py::new(py, rec))   // Allocate a Py<DeltaTaiUt1>
+            .collect()
+    }
+
+    #[staticmethod]
     /// Builds a UT1 provided by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.short> (short time scale UT1 data) and parsing it.
     pub fn download_short_from_jpl() -> Result<Self, HifitimeError> {
         Self::download_from_jpl("latest_eop2.short")
     }
 
+    #[staticmethod]
     /// Build a UT1 provider by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.long> (long time scale UT1 data) and parsing it.
     pub fn download_from_jpl(version: &str) -> Result<Self, HifitimeError> {
         let url = format!("https://eop2-external.jpl.nasa.gov/eop2/{}", version);
@@ -144,6 +189,7 @@ impl Ut1Provider {
         }
     }
 
+    #[staticmethod]
     /// Builds a UT1 provider from the provided path to an EOP file.
     pub fn from_eop_file(path: &str) -> Result<Self, HifitimeError> {
         let mut f = match File::open(path) {
@@ -167,6 +213,7 @@ impl Ut1Provider {
         Self::from_eop_data(contents)
     }
 
+    #[staticmethod]
     /// Builds a UT1 provider from the provided EOP data.
     /// Single-pass, no per-line allocation:
     /// - Use `split(',')` and take exactly columns 0 and 3 (no `collect()`).
@@ -289,7 +336,7 @@ impl Iterator for Ut1Provider {
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter_pos += 1;
-        self.data.get(self.iter_pos - 1).copied()
+        self.data.get(self.iter_pos - 1).cloned()
     }
 }
 
@@ -299,7 +346,7 @@ impl DoubleEndedIterator for Ut1Provider {
             None
         } else {
             self.iter_pos += 1;
-            self.data.get(self.data.len() - self.iter_pos).copied()
+            self.data.get(self.data.len() - self.iter_pos).cloned()
         }
     }
 }

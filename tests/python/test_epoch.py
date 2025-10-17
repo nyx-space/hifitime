@@ -9,6 +9,7 @@ from hifitime import (
     TimeScale,
     TimeSeries,
     Unit,
+    Ut1Provider,
     Weekday,
 )
 from datetime import datetime, timezone
@@ -241,3 +242,12 @@ def test_with_functions():
 
 def test_latest_leap():
     assert LatestLeapSeconds().is_up_to_date(), "hifitime needs updating!"
+
+
+def test_ut1_provider():
+    epoch = Epoch("2023-04-13 23:31:17 UTC")
+    provider = Ut1Provider.from_eop_file("data/example_eop2.short")
+    
+    ut1_offset = epoch.ut1_offset(provider)
+    
+    print(f"UT1 offset at {epoch} is {ut1_offset} seconds")
