@@ -9,6 +9,7 @@ from hifitime import (
     TimeScale,
     TimeSeries,
     Unit,
+    Ut1Provider,
     Weekday,
 )
 from datetime import datetime, timezone
@@ -241,3 +242,40 @@ def test_with_functions():
 
 def test_latest_leap():
     assert LatestLeapSeconds().is_up_to_date(), "hifitime needs updating!"
+
+
+def test_ut1_provider():
+    provider = Ut1Provider.from_eop_file("data/example_eop2.short")
+
+    # 1. Test with an epoch before any data is available in the provider.
+    # The provider data starts on 2024-10-17.
+    epoch_before = Epoch("2023-04-13 23:31:17 UTC")
+    ut1_offset_before = epoch_before.ut1_offset(provider)
+    assert ut1_offset_before is None, (
+        "Expected no offset for an epoch before the provider's data range"
+    )
+
+    # 2. Test with an epoch that falls within the provider's data range.
+    # The first data point is for MJD 60600.0 (2024-10-17), with TAI-UT1 = 36943.3633 ms.
+    epoch_in_range = Epoch("2024-10-17 12:00:00 UTC")
+    ut1_offset_in_range = epoch_in_range.ut1_offset(provider)
+
+    assert ut1_offset_in_range is not None
+    expected_offset_seconds = 36.9433633
+    assert abs(ut1_offset_in_range.to_seconds() - expected_offset_seconds) < 1e-9, (
+        "UT1 offset does not match expected value"
+    )
+
+    # 3. Test `to_ut1` and `to_ut1_duration`
+    ut1_epoch = epoch_in_range.to_ut1(provider)
+    # TAI = UT1 + offset  <=> UT1 = TAI - offset
+    # So ut1_epoch should be epoch_in_range - ut1_offset
+    assert epoch_in_range.timedelta(ut1_epoch).abs() == ut1_offset_in_range.abs()
+
+    ut1_duration = epoch_in_range.to_ut1_duration(provider)
+    assert ut1_duration == epoch_in_range.to_tai_duration() - ut1_offset_in_range
+
+    # 4. Test round-trip with `from_ut1_duration`
+    epoch_from_ut1 = Epoch.from_ut1_duration(ut1_duration, provider)
+    # This should round trip to epoch_in_range, allowing for small precision errors.
+    assert epoch_from_ut1.timedelta(epoch_in_range).abs() == Duration.ZERO()
