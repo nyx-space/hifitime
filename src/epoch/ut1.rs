@@ -117,9 +117,8 @@ impl Epoch {
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[cfg_attr(
     feature = "python",
-    pyo3::pyclass(module = "hifitime", name = "DeltaTaiUt1", get_all)
+    pyo3::pyclass(module = "hifitime", name = "DeltaTaiUt1", get_all, set_all)
 )]
-// #[cfg_attr(not(feature = "python"), derive(Copy))] // Copy only when NOT exposing to Python
 #[derive(Copy, Clone, Debug, Default, Tabled)]
 pub struct DeltaTaiUt1 {
     pub epoch: Epoch,
@@ -170,7 +169,7 @@ impl Ut1Provider {
                 Self::from_eop_data(jpl_response)
             }
             Err(Error::StatusCode(code)) => Err(HifitimeError::Parse {
-                source: ParsingError::DownloadError { code: code },
+                source: ParsingError::DownloadError { code },
                 details: "when downloading EOP2 file from JPL",
             }),
             Err(_) => Err(HifitimeError::Parse {
@@ -247,11 +246,11 @@ impl Ut1Provider {
 
             // Extract exactly columns 0 and 3 (others ignored)
             let mut cols = raw.split(',');
-            let mjd_col = cols.next().ok_or_else(|| HifitimeError::Parse {
+            let mjd_col = cols.next().ok_or(HifitimeError::Parse {
                 source: ParsingError::UnknownFormat,
                 details: "missing MJD column (0)",
             })?;
-            let delta_col = cols.nth(2).ok_or_else(|| HifitimeError::Parse {
+            let delta_col = cols.nth(2).ok_or(HifitimeError::Parse {
                 source: ParsingError::UnknownFormat,
                 details: "missing ΔUT1 column (3)",
             })?;
@@ -314,11 +313,7 @@ impl Ut1Provider {
     // For Python, return a list of owned objects.
     // Option A: return Python class instances
     pub fn as_list(&self, py: Python<'_>) -> PyResult<Vec<Py<DeltaTaiUt1>>> {
-        self.data
-            .iter()
-            .cloned() // Clone each record (since not Copy)
-            .map(|rec| Py::new(py, rec)) // Allocate a Py<DeltaTaiUt1>
-            .collect()
+        self.data.iter().map(|rec| Py::new(py, *rec)).collect()
     }
 
     #[classmethod]
