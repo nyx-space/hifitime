@@ -42,6 +42,15 @@ pub enum HifitimeError {
     },
 }
 
+#[cfg(feature = "python")]
+impl From<pyo3::PyErr> for HifitimeError {
+    fn from(err: pyo3::PyErr) -> Self {
+        HifitimeError::PythonError {
+            reason: err.to_string(),
+        }
+    }
+}
+
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[non_exhaustive]
 #[derive(Debug, Snafu, PartialEq)]
