@@ -90,27 +90,44 @@ impl Epoch {
 impl Epoch {
     #[classmethod]
     #[pyo3(name = "from_ut1_duration")]
+    /// Initialize a new Epoch from a duration in UT1
+    ///
+    /// :type duration: Duration
+    /// :type provider: Ut1Provider
+    /// :rtype: Epoch
     pub fn py_from_ut1_duration(
         _cls: &Bound<'_, PyType>,
         duration: Duration,
         provider: PyRef<Ut1Provider>,
     ) -> PyResult<Self> {
-        Ok(Epoch::from_ut1_duration(duration, &*provider))
+        Ok(Epoch::from_ut1_duration(duration, &provider))
     }
 
+    /// Get the accumulated offset between this epoch and UT1.
+    ///
+    /// :type provider: Ut1Provider
+    /// :rtype: Duration
     #[pyo3(name = "ut1_offset")]
     pub fn py_ut1_offset(&self, provider: PyRef<Ut1Provider>) -> Option<Duration> {
-        self.ut1_offset(&*provider)
+        self.ut1_offset(&provider)
     }
 
+    /// Returns this time in a Duration past J1900 counted in UT1
+    ///
+    /// :type provider: Ut1Provider
+    /// :rtype: Duration
     #[pyo3(name = "to_ut1_duration")]
     pub fn py_to_ut1_duration(&self, provider: PyRef<Ut1Provider>) -> Duration {
-        self.to_ut1_duration(&*provider)
+        self.to_ut1_duration(&provider)
     }
 
+    /// Convert this epoch to Ut1
+    ///
+    /// :type provider: Ut1Provider
+    /// :rtype: Epoch
     #[pyo3(name = "to_ut1")]
     pub fn py_to_ut1(&self, provider: PyRef<Ut1Provider>) -> Self {
-        self.to_ut1(&*provider)
+        self.to_ut1(&provider)
     }
 }
 
@@ -127,10 +144,15 @@ pub struct DeltaTaiUt1 {
 
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "python", pyo3(get_all))]
 #[derive(Clone, Debug, Default)]
 /// A structure storing all of the TAI-UT1 data
 pub struct Ut1Provider {
+    /// vector of Delta TAI-UT1 values
+    /// :rtype: list
     data: Vec<DeltaTaiUt1>,
+    /// current position of the iterator
+    /// :rtype: int
     iter_pos: usize,
 }
 
@@ -310,8 +332,8 @@ impl Ut1Provider {
         format!("{self:?} @ {self:p}")
     }
 
-    // For Python, return a list of owned objects.
-    // Option A: return Python class instances
+    /// Returns the list of Delta TAI-UT1 values
+    /// :rtype: list
     pub fn as_list(&self, py: Python<'_>) -> PyResult<Vec<Py<DeltaTaiUt1>>> {
         self.data.iter().map(|rec| Py::new(py, *rec)).collect()
     }
@@ -319,6 +341,8 @@ impl Ut1Provider {
     #[classmethod]
     #[pyo3(name = "from_eop_file")]
     /// Builds a UT1 provider from the provided path to an EOP file.
+    /// :type path: str
+    /// :rtype: Ut1Provider
     pub fn py_from_eop_file(_cls: &Bound<'_, PyType>, path: &str) -> Result<Self, HifitimeError> {
         Ut1Provider::from_eop_file(path)
     }

@@ -123,7 +123,7 @@ def class_stubs(
             except ValueError as e:
                 if "no signature found" not in str(e):
                     raise ValueError(
-                        f"Error while parsing signature of {cls_name}.__init_"
+                        f"Error while parsing signature of {cls_name}.__init__"
                     ) from e
         elif (
             member_value == OBJECT_MEMBERS.get(member_name)

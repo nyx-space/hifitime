@@ -19,12 +19,6 @@ use pyo3::types::PyType;
 
 /// Interpolation [Polynomial] used for example in [TimeScale]
 /// maintenance, precise monitoring or conversions.
-///
-/// (Python documentation hints)
-/// :type constant: Duration
-/// :type rate: Duration
-/// :type accel: Duration
-/// :rtype: Polynomial
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord, Hash)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]

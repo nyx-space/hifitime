@@ -17,7 +17,10 @@ use core::str::FromStr;
 use crate::epoch::leap_seconds_file::LeapSecondsFile;
 use pyo3::prelude::*;
 use pyo3::pyclass::CompareOp;
-use pyo3::types::{PyDateAccess, PyDateTime, PyTimeAccess, PyType, PyTzInfoAccess};
+use pyo3::types::{
+    PyDateAccess, PyDateTime, PyDelta, PyDeltaAccess, PyTimeAccess, PyType, PyTzInfo,
+    PyTzInfoAccess,
+};
 
 #[pymethods]
 impl Epoch {
@@ -858,7 +861,7 @@ impl Epoch {
     /// :type format_str: str
     /// :rtype: Epoch
     fn strptime(_cls: &Bound<'_, PyType>, epoch_str: String, format_str: String) -> PyResult<Self> {
-        Self::from_format_str(&epoch_str, &format_str).map_err(|e| PyErr::from(e))
+        Self::from_format_str(&epoch_str, &format_str).map_err(PyErr::from)
     }
 
     /// Formats the epoch according to the given format string. Supports a subset of C89 and hifitime-specific format codes. Refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for available format options.
@@ -960,18 +963,49 @@ impl Epoch {
         }
     }
 
-    /// Returns a Python datetime object from this Epoch (truncating the nanoseconds away)
+    /// Returns a Python datetime object from this Epoch (truncating the nanoseconds away).
+    /// If set_tz is True, then this will return a time zone aware datetime object
+    /// :type set_tz: bool, optional
     /// :rtype: datetime.datetime
-    fn todatetime<'py>(&self, py: Python<'py>) -> Result<Bound<'py, PyDateTime>, PyErr> {
+    #[pyo3(signature=(set_tz=None))]
+    fn todatetime<'py>(
+        &self,
+        py: Python<'py>,
+        set_tz: Option<bool>,
+    ) -> Result<Bound<'py, PyDateTime>, PyErr> {
         let (y, mm, dd, hh, min, s, nanos) =
             Epoch::compute_gregorian(self.to_utc_duration(), TimeScale::UTC);
 
-        let datetime = PyDateTime::new(py, y, mm, dd, hh, min, s, nanos / 1_000, None)?;
+        let tz_opt = if let Some(tz) = set_tz {
+            if tz {
+                Some(PyTzInfo::utc(py)?)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
+        let datetime =
+            PyDateTime::new(py, y, mm, dd, hh, min, s, nanos / 1_000, tz_opt.as_deref())?;
 
         Ok(datetime)
     }
 
-    /// Builds an Epoch in UTC from the provided datetime after timezone correction if any is present.
+    /// Returns a Python datetime object from this Epoch (truncating the nanoseconds away)
+    /// If set_tz is True, then this will return a time zone aware datetime object
+    /// :type set_tz: bool, optional
+    /// :rtype: datetime.datetime
+    #[pyo3(signature=(set_tz=None))]
+    fn to_datetime<'py>(
+        &self,
+        py: Python<'py>,
+        set_tz: Option<bool>,
+    ) -> Result<Bound<'py, PyDateTime>, PyErr> {
+        self.todatetime(py, set_tz)
+    }
+
+    /// Builds an Epoch in UTC from the provided datetime. Datetime must either NOT have any timezone, or timezone MUST be UTC.
     /// :type dt: datetime.datetime
     /// :rtype: Epoch
     #[classmethod]
@@ -985,26 +1019,54 @@ impl Epoch {
                 reason: e.to_string(),
             })?;
 
-        // If the user tries to convert a timezone aware datetime into a naive one,
-        // we return a hard error. We could silently remove tzinfo, or assume local timezone
-        // and do a conversion, but better leave this decision to the user of the library.
-        let has_tzinfo = dt.get_tzinfo().is_some();
-        if has_tzinfo {
-            return Err(HifitimeError::PythonError {
-                reason: "expected a datetime without tzinfo, call my_datetime.replace(tzinfo=None)"
-                    .to_string(),
-            });
+        if let Some(tzinfo) = dt.get_tzinfo() {
+            // Timezone is present, let's check if it's UTC.
+            // `utcoffset` returns the offset from UTC. For a UTC datetime, this must be zero.
+            let offset_any = tzinfo.call_method1("utcoffset", (dt,))?;
+
+            if offset_any.is_none() {
+                // This case should not happen for a timezone-aware object that returns a tzinfo, but we'll handle it.
+                return Err(HifitimeError::PythonError {
+                    reason: "datetime has tzinfo but utcoffset() returned None".to_string(),
+                });
+            }
+
+            // The result should be a timedelta.
+            let offset_delta =
+                offset_any
+                    .downcast::<PyDelta>()
+                    .map_err(|e| HifitimeError::PythonError {
+                        reason: format!("utcoffset did not return a timedelta: {e}"),
+                    })?;
+
+            if offset_delta.get_seconds().abs() > 0 {
+                return Err(HifitimeError::PythonError {
+                    reason: "only UTC timezone is supported for datetime conversion".to_string(),
+                });
+            }
+            // If we are here, offset is zero, so we can proceed.
         }
 
         Epoch::maybe_from_gregorian_utc(
             dt.get_year(),
-            dt.get_month().into(),
-            dt.get_day().into(),
-            dt.get_hour().into(),
-            dt.get_minute().into(),
-            dt.get_second().into(),
+            dt.get_month(),
+            dt.get_day(),
+            dt.get_hour(),
+            dt.get_minute(),
+            dt.get_second(),
             dt.get_microsecond() * 1_000,
         )
+    }
+
+    /// Builds an Epoch in UTC from the provided datetime after timezone correction if any is present.
+    /// :type dt: datetime.datetime
+    /// :rtype: Epoch
+    #[classmethod]
+    fn from_datetime(
+        cls: &Bound<'_, PyType>,
+        dt: &Bound<'_, PyAny>,
+    ) -> Result<Self, HifitimeError> {
+        Self::fromdatetime(cls, dt)
     }
 
     /// Converts the Epoch to the Gregorian parts in the (optionally) provided time scale as (year, month, day, hour, minute, second).

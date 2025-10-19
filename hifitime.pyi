@@ -352,6 +352,10 @@ This may be useful for time keeping devices that use BDT as a time source."""
 defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
 
     @staticmethod
+    def from_datetime(dt: datetime.datetime) -> Epoch:
+        """Builds an Epoch in UTC from the provided datetime after timezone correction if any is present."""
+
+    @staticmethod
     def from_et_duration(duration_since_j2000: Duration) -> Epoch:
         """Initialize an Epoch from the Ephemeris Time duration past 2000 JAN 01 (J2000 reference)"""
 
@@ -509,6 +513,10 @@ In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ES
         """Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01."""
 
     @staticmethod
+    def from_ut1_duration(duration: Duration, provider: Ut1Provider) -> Epoch:
+        """Initialize a new Epoch from a duration in UT1"""
+
+    @staticmethod
     def from_utc_days(days: float) -> Epoch:
         """Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight"""
 
@@ -518,7 +526,7 @@ In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ES
 
     @staticmethod
     def fromdatetime(dt: datetime.datetime) -> Epoch:
-        """Builds an Epoch in UTC from the provided datetime after timezone correction if any is present."""
+        """Builds an Epoch in UTC from the provided datetime. Datetime must either NOT have any timezone, or timezone MUST be UTC."""
 
     def hours(self) -> int:
         """Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in."""
@@ -942,6 +950,10 @@ NOTE: This function will return an error if the centuries past GST time are not 
     def to_bdt_seconds(self) -> float:
         """Returns seconds past BDT (BeiDou) Time Epoch"""
 
+    def to_datetime(self, set_tz: bool=None) -> datetime.datetime:
+        """Returns a Python datetime object from this Epoch (truncating the nanoseconds away)
+If set_tz is True, then this will return a time zone aware datetime object"""
+
     def to_duration_in_time_scale(self, ts: TimeScale) -> Duration:
         """Returns this epoch with respect to the provided time scale.
 This is needed to correctly perform duration conversions in dynamical time scales (e.g. TDB)."""
@@ -1167,6 +1179,12 @@ this borrows an Epoch and returns an owned Epoch."""
     def to_unix_seconds(self) -> float:
         """Returns the number seconds since the UNIX epoch defined 01 Jan 1970 midnight UTC."""
 
+    def to_ut1(self, provider: Ut1Provider) -> Epoch:
+        """Convert this epoch to Ut1"""
+
+    def to_ut1_duration(self, provider: Ut1Provider) -> Duration:
+        """Returns this time in a Duration past J1900 counted in UT1"""
+
     def to_utc(self, unit: Unit) -> float:
         """Returns the number of UTC seconds since the TAI epoch"""
 
@@ -1179,8 +1197,12 @@ this borrows an Epoch and returns an owned Epoch."""
     def to_utc_seconds(self) -> float:
         """Returns the number of UTC seconds since the TAI epoch"""
 
-    def todatetime(self) -> datetime.datetime:
-        """Returns a Python datetime object from this Epoch (truncating the nanoseconds away)"""
+    def todatetime(self, set_tz: bool=None) -> datetime.datetime:
+        """Returns a Python datetime object from this Epoch (truncating the nanoseconds away).
+If set_tz is True, then this will return a time zone aware datetime object"""
+
+    def ut1_offset(self, provider: Ut1Provider) -> Duration:
+        """Get the accumulated offset between this epoch and UT1."""
 
     def weekday(self) -> Weekday:
         """Returns weekday (uses the TAI representation for this calculation)."""
@@ -1436,9 +1458,11 @@ set self.__traceback__ to tb and return self."""
 @typing.final
 class Polynomial:
     """Interpolation [Polynomial] used for example in [TimeScale]
-maintenance, precise monitoring or conversions.
+maintenance, precise monitoring or conversions."""
 
-(Python documentation hints)"""
+    def __init__(self) -> None:
+        """Interpolation [Polynomial] used for example in [TimeScale]
+maintenance, precise monitoring or conversions."""
 
     def correction_duration(self, time_interval: Duration) -> Duration:
         """Calculate the correction (as [Duration] once again) from [Self] and given
@@ -1484,6 +1508,9 @@ the interpolation time interval"""
 @typing.final
 class TimeScale:
     """Enum of the different time systems available"""
+
+    def __init__(self) -> None:
+        """Enum of the different time systems available"""
 
     def uses_leap_seconds(self) -> bool:
         """Returns true if self takes leap seconds into account"""
@@ -1568,6 +1595,9 @@ class TimeSeries:
 class Unit:
     """An Enum to perform time unit conversions."""
 
+    def __init__(self) -> None:
+        """An Enum to perform time unit conversions."""
+
     def from_seconds(self):...
 
     def in_seconds(self):...
@@ -1626,15 +1656,26 @@ class Unit:
 @typing.final
 class Ut1Provider:
     """A structure storing all of the TAI-UT1 data"""
+    data: list
+    iter_pos: int
 
     def __init__(self) -> None:
         """A structure storing all of the TAI-UT1 data"""
+
+    def as_list(self) -> list:
+        """Returns the list of Delta TAI-UT1 values"""
+
+    @staticmethod
+    def from_eop_file(path: str) -> Ut1Provider:
+        """Builds a UT1 provider from the provided path to an EOP file."""
 
     def __repr__(self) -> str:
         """Return repr(self)."""
 
 @typing.final
 class Weekday:
+
+    def __init__(self):...
 
     def __eq__(self, value: typing.Any) -> bool:
         """Return self==value."""
