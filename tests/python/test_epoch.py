@@ -12,7 +12,7 @@ from hifitime import (
     Ut1Provider,
     Weekday,
 )
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import pickle
 
 
@@ -166,12 +166,7 @@ def test_interop():
     epoch_from_utc = Epoch.fromdatetime(utc_dt)
     assert epoch_from_utc == Epoch("2023-10-08 15:30:00 UTC")
 
-    # Test with a non-UTC timezone, expect an error
-    class NonUtcTz(timezone):
-        def utcoffset(self, dt):
-            return super().utcoffset(dt) + Unit.Hour * 1
-
-    non_utc_tz = NonUtcTz(Unit.Hour * 1)
+    non_utc_tz = timezone(timedelta(hours=1))
     non_utc_dt = datetime(2023, 10, 8, 15, 30, tzinfo=non_utc_tz)
     try:
         Epoch.fromdatetime(non_utc_dt)

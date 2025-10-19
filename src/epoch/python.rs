@@ -17,7 +17,9 @@ use core::str::FromStr;
 use crate::epoch::leap_seconds_file::LeapSecondsFile;
 use pyo3::prelude::*;
 use pyo3::pyclass::CompareOp;
-use pyo3::types::{PyDateAccess, PyDateTime, PyDelta, PyTimeAccess, PyType, PyTzInfoAccess};
+use pyo3::types::{
+    PyDateAccess, PyDateTime, PyDelta, PyDeltaAccess, PyTimeAccess, PyType, PyTzInfoAccess,
+};
 
 #[pymethods]
 impl Epoch {
@@ -988,45 +990,29 @@ impl Epoch {
         if let Some(tzinfo) = dt.get_tzinfo() {
             // Timezone is present, let's check if it's UTC.
             // `utcoffset` returns the offset from UTC. For a UTC datetime, this must be zero.
-            match tzinfo.call_method1("utcoffset", (dt,)) {
-                Ok(offset_any) => {
-                    if offset_any.is_none() {
-                        // This case should not happen for a timezone-aware object that returns a tzinfo, but we'll handle it.
-                        return Err(HifitimeError::PythonError {
-                            reason: "datetime has tzinfo but utcoffset() returned None".to_string(),
-                        });
-                    }
-                    // The result should be a timedelta.
-                    match offset_any.downcast::<PyDelta>() {
-                        Ok(offset_delta) => {
-                            let zero_delta = PyDelta::new(
-                                dt.py(),
-                                0,
-                                0,
-                                0,
-                                false,
-                            )?;
-                            if offset_delta.compare(&zero_delta)? != std::cmp::Ordering::Equal {
-                                return Err(HifitimeError::PythonError {
-                                    reason: "only UTC timezone is supported for datetime conversion"
-                                        .to_string(),
-                                });
-                            }
-                            // If we are here, offset is zero, so we can proceed.
-                        }
-                        Err(e) => {
-                            return Err(HifitimeError::PythonError {
-                                reason: format!("utcoffset did not return a timedelta: {e}"),
-                            });
-                        }
-                    }
-                }
-                Err(e) => {
-                    return Err(HifitimeError::PythonError {
-                        reason: format!("failed to get utcoffset: {e}"),
-                    });
-                }
+            let offset_any = tzinfo.call_method1("utcoffset", (dt,))?;
+
+            if offset_any.is_none() {
+                // This case should not happen for a timezone-aware object that returns a tzinfo, but we'll handle it.
+                return Err(HifitimeError::PythonError {
+                    reason: "datetime has tzinfo but utcoffset() returned None".to_string(),
+                });
             }
+
+            // The result should be a timedelta.
+            let offset_delta =
+                offset_any
+                    .downcast::<PyDelta>()
+                    .map_err(|e| HifitimeError::PythonError {
+                        reason: format!("utcoffset did not return a timedelta: {e}"),
+                    })?;
+
+            if offset_delta.get_seconds().abs() > 0 {
+                return Err(HifitimeError::PythonError {
+                    reason: "only UTC timezone is supported for datetime conversion".to_string(),
+                });
+            }
+            // If we are here, offset is zero, so we can proceed.
         }
 
         Epoch::maybe_from_gregorian_utc(
