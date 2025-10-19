@@ -145,7 +145,7 @@ impl LatestLeapSeconds {
             )
             .collect::<Vec<()>>();
 
-        Ok(ls_diff.len() == 0)
+        Ok(ls_diff.is_empty())
     }
 }
 

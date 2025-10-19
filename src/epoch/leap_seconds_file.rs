@@ -122,7 +122,7 @@ impl LeapSecondsFile {
                 Self::from_content(response)
             }
             Err(Error::StatusCode(code)) => Err(HifitimeError::Parse {
-                source: ParsingError::DownloadError { code: code },
+                source: ParsingError::DownloadError { code },
                 details: "server returned an error",
             }),
             Err(_) => Err(HifitimeError::Parse {
