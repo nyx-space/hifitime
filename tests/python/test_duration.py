@@ -26,6 +26,18 @@ def test_exceptions():
     else:
         raise AssertionError("failed to catch as exception")
 
+
+def test_constructors():
+    from hifitime import Unit
+
+    assert Duration.from_seconds(1234.5) == Unit.Second * 1234.5
+    assert Duration.from_minutes(1234.5) == Unit.Minute * 1234.5
+    assert Duration.from_hours(1234.5) == Unit.Hour * 1234.5
+    assert Duration.from_days(1234.5) == Unit.Day * 1234.5
+    assert Duration.from_milliseconds(1234.5) == Unit.Millisecond * 1234.5
+    assert Duration.from_microseconds(1234.5) == Unit.Microsecond * 1234.5
+    assert Duration.from_nanoseconds(1234.5) == Unit.Nanosecond * 1234.5
+
     try:
         Duration("invalid")
     except BaseException as e:
