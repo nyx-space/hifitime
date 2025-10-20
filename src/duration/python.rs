@@ -412,4 +412,60 @@ impl Duration {
     fn py_from_total_nanoseconds(_cls: &Bound<'_, PyType>, nanos: i128) -> Self {
         Self::from_total_nanoseconds(nanos)
     }
+
+    /// Creates a new duration from the provided number of days
+    /// :rtype: Duration
+    #[classmethod]
+    #[pyo3(name = "from_days")]
+    fn py_from_days(_cls: &Bound<'_, PyType>, value: f64) -> Self {
+        Self::from_days(value)
+    }
+
+    /// Creates a new duration from the provided number of hours
+    /// :rtype: Duration
+    #[classmethod]
+    #[pyo3(name = "from_hours")]
+    fn py_from_hours(_cls: &Bound<'_, PyType>, value: f64) -> Self {
+        Self::from_hours(value)
+    }
+
+    /// Creates a new duration from the provided number of minutes
+    /// :rtype: Duration
+    #[classmethod]
+    #[pyo3(name = "from_minutes")]
+    fn py_from_minutes(_cls: &Bound<'_, PyType>, value: f64) -> Self {
+        Unit::Minute.const_multiply(value)
+    }
+
+    /// Creates a new duration from the provided number of seconds
+    /// :rtype: Duration
+    #[classmethod]
+    #[pyo3(name = "from_seconds")]
+    fn py_from_seconds(_cls: &Bound<'_, PyType>, value: f64) -> Self {
+        Self::from_seconds(value)
+    }
+
+    /// Creates a new duration from the provided number of milliseconds
+    /// :rtype: Duration
+    #[classmethod]
+    #[pyo3(name = "from_milliseconds")]
+    fn py_from_milliseconds(_cls: &Bound<'_, PyType>, value: f64) -> Self {
+        Self::from_milliseconds(value)
+    }
+
+    /// Creates a new duration from the provided number of microseconds
+    /// :rtype: Duration
+    #[classmethod]
+    #[pyo3(name = "from_microseconds")]
+    fn py_from_microseconds(_cls: &Bound<'_, PyType>, value: f64) -> Self {
+        Self::from_microseconds(value)
+    }
+
+    /// Creates a new duration from the provided number of nanoseconds
+    /// :rtype: Duration
+    #[classmethod]
+    #[pyo3(name = "from_nanoseconds")]
+    fn py_from_nanoseconds(_cls: &Bound<'_, PyType>, value: f64) -> Self {
+        Self::from_nanoseconds(value)
+    }
 }
