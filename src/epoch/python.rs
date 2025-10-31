@@ -15,10 +15,11 @@ use crate::{prelude::Format, Duration, Epoch, HifitimeError, TimeScale};
 use core::str::FromStr;
 
 use crate::epoch::leap_seconds_file::LeapSecondsFile;
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::pyclass::CompareOp;
 use pyo3::types::{
-    PyDateAccess, PyDateTime, PyDelta, PyDeltaAccess, PyTimeAccess, PyType, PyTzInfo,
+    PyAny, PyDateAccess, PyDateTime, PyDelta, PyDeltaAccess, PyTimeAccess, PyType, PyTzInfo,
     PyTzInfoAccess,
 };
 
@@ -941,8 +942,24 @@ impl Epoch {
         *self + duration
     }
 
-    fn __sub__(&self, duration: Duration) -> Self {
-        *self - duration
+    fn __sub__(&self, other: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
+        let py = other.py();
+        if let Ok(d) = other.extract::<Duration>() {
+            let rs = *self - d;
+            let p = Py::new(py, rs)?;
+            return Ok(p.into());
+        }
+
+        if let Ok(e) = other.extract::<Epoch>() {
+            let rs = *self - e;
+            let p = Py::new(py, rs)?;
+            return Ok(p.into());
+        }
+
+        Err(PyTypeError::new_err(format!(
+            "unsupported operand type(s) for -: 'Epoch' and '{}'",
+            other.get_type().name()?
+        )))
     }
 
     /// Differences between two epochs
