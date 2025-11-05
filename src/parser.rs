@@ -12,7 +12,9 @@ use crate::{HifitimeError, ParsingError};
 
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Default)]
 pub(crate) enum Token {
+    #[default]
     Year,
     YearShort,
     Month,
@@ -33,11 +35,6 @@ pub(crate) enum Token {
     MonthNameShort,
 }
 
-impl Default for Token {
-    fn default() -> Self {
-        Self::Year
-    }
-}
 
 impl Token {
     // Check that the _integer_ value is valid at first sight.

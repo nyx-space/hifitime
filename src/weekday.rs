@@ -24,7 +24,9 @@ use serde_derive::{Deserialize, Serialize};
 #[repr(u8)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Default)]
 pub enum Weekday {
+    #[default]
     Monday = 0,
     Tuesday = 1,
     Wednesday = 2,
@@ -34,11 +36,6 @@ pub enum Weekday {
     Sunday = 6,
 }
 
-impl Default for Weekday {
-    fn default() -> Self {
-        Self::Monday
-    }
-}
 
 impl Weekday {
     /// Max: last weekday <=> `Sunday`, used only for conversion to/from u8.

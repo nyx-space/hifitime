@@ -26,7 +26,9 @@ use serde_derive::{Deserialize, Serialize};
 #[repr(u8)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Default)]
 pub enum MonthName {
+    #[default]
     January,
     February,
     March,
@@ -41,11 +43,6 @@ pub enum MonthName {
     December,
 }
 
-impl Default for MonthName {
-    fn default() -> Self {
-        Self::January
-    }
-}
 
 #[cfg(feature = "python")]
 #[pymethods]
