@@ -51,7 +51,7 @@ impl Duration {
     }
 
     /// Returns the absolute value of this duration
-    /// :rtype: Self
+    /// :rtype: Duration
     #[pyo3(name = "abs")]
     pub fn py_abs(&self) -> Self {
         self.abs()
@@ -91,8 +91,8 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.floor(1.hours() + 5.minutes()), 1.hours() + 5.minutes());
     /// ```
     ///
-    /// :type duration: Self
-    /// :rtype: Self
+    /// :type duration: Duration
+    /// :rtype: Duration
     #[pyo3(name = "floor")]
     pub fn py_floor(&self, duration: Self) -> Self {
         self.floor(duration)
@@ -114,8 +114,8 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.ceil(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
     /// ```
     ///
-    /// :type duration: Self
-    /// :rtype: Self
+    /// :type duration: Duration
+    /// :rtype: Duration
     #[pyo3(name = "ceil")]
     pub fn py_ceil(&self, duration: Self) -> Self {
         self.ceil(duration)
@@ -137,7 +137,7 @@ impl Duration {
     /// ```
     ///
     /// :type duration: Duration
-    /// :rtype: Self
+    /// :rtype: Duration
     #[pyo3(name = "round")]
     pub fn py_round(&self, duration: Self) -> Self {
         self.round(duration)
@@ -163,7 +163,7 @@ impl Duration {
     /// assert_eq!((49.hours() + 3.minutes()).approx(), 2.days());
     /// ```
     ///
-    /// :rtype: Self
+    /// :rtype: Duration
     #[pyo3(name = "approx")]
     pub fn py_approx(&self) -> Self {
         self.approx()
@@ -182,7 +182,7 @@ impl Duration {
     /// ```
     ///
     /// :type other: Duration
-    /// :rtype: Self
+    /// :rtype: Duration
     #[pyo3(name = "min")]
     pub fn py_min(&self, other: Self) -> Self {
         *(self.min(&other))
@@ -201,7 +201,7 @@ impl Duration {
     /// ```
     ///
     /// :type other: Duration
-    /// :rtype: Self
+    /// :rtype: Duration
     #[pyo3(name = "max")]
     pub fn py_max(&self, other: Self) -> Self {
         *(self.max(&other))
@@ -240,7 +240,7 @@ impl Duration {
     ///
     ///
     /// :type other: hifitime.Duration
-    /// :rtype: Self
+    /// :rtype: Duration
     fn __add__(&self, other: Self) -> Duration {
         *self + other
     }
@@ -290,19 +290,19 @@ impl Duration {
     /// ```
     ///
     /// :type other: float
-    /// :rtype: Self
+    /// :rtype: Duration
     fn __sub__(&self, other: Self) -> Duration {
         *self - other
     }
 
     /// :type other: float
-    /// :rtype: Self
+    /// :rtype: Duration
     fn __mul__(&self, other: f64) -> Duration {
         *self * other
     }
 
     /// :type other: float
-    /// :rtype: Self
+    /// :rtype: Duration
     fn __div__(&self, other: f64) -> Duration {
         *self / other
     }
@@ -366,7 +366,7 @@ impl Duration {
     /// Create a normalized duration from its parts
     /// :type centuries: int
     /// :type nanoseconds: int
-    /// :rtype: Self
+    /// :rtype: Duration
     fn py_from_parts(_cls: &Bound<'_, PyType>, centuries: i16, nanoseconds: u64) -> Self {
         Self::from_parts(centuries, nanoseconds)
     }
@@ -380,7 +380,7 @@ impl Duration {
     /// :type milliseconds: int
     /// :type microseconds: int
     /// :type nanoseconds: int
-    /// :rtype: Self
+    /// :rtype: Duration
     #[allow(clippy::too_many_arguments)]
     #[classmethod]
     #[pyo3(name = "from_all_parts")]
@@ -409,7 +409,7 @@ impl Duration {
 
     /// Creates a new Duration from its full nanoseconds
     /// :type nanos: int
-    /// :rtype: Self
+    /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_total_nanoseconds")]
     fn py_from_total_nanoseconds(_cls: &Bound<'_, PyType>, nanos: i128) -> Self {
@@ -418,7 +418,7 @@ impl Duration {
 
     /// Creates a new duration from the provided number of days
     /// :type value: float
-    /// :rtype: Self
+    /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_days")]
     fn py_from_days(_cls: &Bound<'_, PyType>, value: f64) -> Self {
@@ -427,7 +427,7 @@ impl Duration {
 
     /// Creates a new duration from the provided number of hours
     /// :type value: float
-    /// :rtype: Self
+    /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_hours")]
     fn py_from_hours(_cls: &Bound<'_, PyType>, value: f64) -> Self {
@@ -436,7 +436,7 @@ impl Duration {
 
     /// Creates a new duration from the provided number of minutes
     /// :type value: float
-    /// :rtype: Self
+    /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_minutes")]
     fn py_from_minutes(_cls: &Bound<'_, PyType>, value: f64) -> Self {
@@ -445,7 +445,7 @@ impl Duration {
 
     /// Creates a new duration from the provided number of seconds
     /// :type value: float
-    /// :rtype: Self
+    /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_seconds")]
     fn py_from_seconds(_cls: &Bound<'_, PyType>, value: f64) -> Self {
@@ -454,7 +454,7 @@ impl Duration {
 
     /// Creates a new duration from the provided number of milliseconds
     /// :type value: float
-    /// :rtype: Self
+    /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_milliseconds")]
     fn py_from_milliseconds(_cls: &Bound<'_, PyType>, value: f64) -> Self {
@@ -463,7 +463,7 @@ impl Duration {
 
     /// Creates a new duration from the provided number of microseconds
     /// :type value: float
-    /// :rtype: Self
+    /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_microseconds")]
     fn py_from_microseconds(_cls: &Bound<'_, PyType>, value: f64) -> Self {
@@ -472,7 +472,7 @@ impl Duration {
 
     /// Creates a new duration from the provided number of nanoseconds
     /// :type value: float
-    /// :rtype: Self
+    /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_nanoseconds")]
     fn py_from_nanoseconds(_cls: &Bound<'_, PyType>, value: f64) -> Self {
