@@ -15,10 +15,11 @@ use crate::{prelude::Format, Duration, Epoch, HifitimeError, TimeScale};
 use core::str::FromStr;
 
 use crate::epoch::leap_seconds_file::LeapSecondsFile;
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 use pyo3::pyclass::CompareOp;
 use pyo3::types::{
-    PyDateAccess, PyDateTime, PyDelta, PyDeltaAccess, PyTimeAccess, PyType, PyTzInfo,
+    PyAny, PyDateAccess, PyDateTime, PyDelta, PyDeltaAccess, PyTimeAccess, PyType, PyTzInfo,
     PyTzInfoAccess,
 };
 
@@ -941,8 +942,24 @@ impl Epoch {
         *self + duration
     }
 
-    fn __sub__(&self, duration: Duration) -> Self {
-        *self - duration
+    fn __sub__(&self, other: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
+        let py = other.py();
+        if let Ok(d) = other.extract::<Duration>() {
+            let rs = *self - d;
+            let p = Py::new(py, rs)?;
+            return Ok(p.into());
+        }
+
+        if let Ok(e) = other.extract::<Epoch>() {
+            let rs = *self - e;
+            let p = Py::new(py, rs)?;
+            return Ok(p.into());
+        }
+
+        Err(PyTypeError::new_err(format!(
+            "unsupported operand type(s) for -: 'Epoch' and '{}'",
+            other.get_type().name()?
+        )))
     }
 
     /// Differences between two epochs
@@ -1014,7 +1031,7 @@ impl Epoch {
         dt: &Bound<'_, PyAny>,
     ) -> Result<Self, HifitimeError> {
         let dt = dt
-            .downcast::<PyDateTime>()
+            .cast::<PyDateTime>()
             .map_err(|e| HifitimeError::PythonError {
                 reason: e.to_string(),
             })?;
@@ -1034,7 +1051,7 @@ impl Epoch {
             // The result should be a timedelta.
             let offset_delta =
                 offset_any
-                    .downcast::<PyDelta>()
+                    .cast::<PyDelta>()
                     .map_err(|e| HifitimeError::PythonError {
                         reason: format!("utcoffset did not return a timedelta: {e}"),
                     })?;
@@ -1073,7 +1090,7 @@ impl Epoch {
     ///
     /// :type time_scale: TimeScale, optional
     ///
-    /// :rtype: tuple
+    /// :rtype: tuple[int, int, int, int, int, int, int]
     #[pyo3(name = "to_gregorian", signature=(time_scale=None))]
     pub fn py_to_gregorian(&self, time_scale: Option<TimeScale>) -> (i32, u8, u8, u8, u8, u8, u32) {
         self.to_gregorian(time_scale.unwrap_or(self.time_scale))

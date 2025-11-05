@@ -28,10 +28,12 @@ use crate::{
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
+#[derive(Default)]
 pub enum Unit {
     Nanosecond,
     Microsecond,
     Millisecond,
+    #[default]
     Second,
     Minute,
     Hour,
@@ -45,10 +47,12 @@ pub enum Unit {
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Copy, Clone, Debug, PartialEq, PartialOrd, Eq, Ord)]
 #[cfg_attr(feature = "python", pyclass(eq, eq_int))]
+#[derive(Default)]
 pub enum Freq {
     GigaHertz,
     MegaHertz,
     KiloHertz,
+    #[default]
     Hertz,
 }
 
@@ -131,18 +135,6 @@ pub trait Frequencies: Copy + Mul<Freq, Output = Duration> {
     }
     fn Hz(self) -> Duration {
         self * Freq::Hertz
-    }
-}
-
-impl Default for Unit {
-    fn default() -> Self {
-        Self::Second
-    }
-}
-
-impl Default for Freq {
-    fn default() -> Self {
-        Self::Hertz
     }
 }
 

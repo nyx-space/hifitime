@@ -36,6 +36,9 @@ fn hifitime(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyParsingError>()?;
     m.add_class::<Polynomial>()?;
     m.add_class::<Weekday>()?;
+    m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+    m.add("__doc__", env!("CARGO_PKG_DESCRIPTION"))?;
+    m.add("__author__", env!("CARGO_PKG_AUTHORS"))?;
     Ok(())
 }
 

@@ -89,7 +89,7 @@ assert_eq!(two_hours_three_min.ceil(1.seconds()), two_hours_three_min + 1.second
 assert_eq!(two_hours_three_min.ceil(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
 ```"""
 
-    def decompose(self) -> tuple:
+    def decompose(self) -> tuple[int,int,int,int,int,int,int,int]:
         """Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns"""
 
     def floor(self, duration: Duration) -> Duration:
@@ -114,8 +114,36 @@ assert_eq!(two_hours_three_min.floor(1.hours() + 5.minutes()), 1.hours() + 5.min
         """Creates a new duration from its parts"""
 
     @staticmethod
+    def from_days(value: float) -> Duration:
+        """Creates a new duration from the provided number of days"""
+
+    @staticmethod
+    def from_hours(value: float) -> Duration:
+        """Creates a new duration from the provided number of hours"""
+
+    @staticmethod
+    def from_microseconds(value: float) -> Duration:
+        """Creates a new duration from the provided number of microseconds"""
+
+    @staticmethod
+    def from_milliseconds(value: float) -> Duration:
+        """Creates a new duration from the provided number of milliseconds"""
+
+    @staticmethod
+    def from_minutes(value: float) -> Duration:
+        """Creates a new duration from the provided number of minutes"""
+
+    @staticmethod
+    def from_nanoseconds(value: float) -> Duration:
+        """Creates a new duration from the provided number of nanoseconds"""
+
+    @staticmethod
     def from_parts(centuries: int, nanoseconds: int) -> Duration:
         """Create a normalized duration from its parts"""
+
+    @staticmethod
+    def from_seconds(value: float) -> Duration:
+        """Creates a new duration from the provided number of seconds"""
 
     @staticmethod
     def from_total_nanoseconds(nanos: int) -> Duration:
@@ -172,7 +200,7 @@ assert_eq!(two_hours_three_min.round(1.hours() + 5.minutes()), 2.hours() + 10.mi
 + 1 if the number is positive
 + -1 if the number is negative"""
 
-    def to_parts(self) -> tuple:
+    def to_parts(self) -> tuple[int,int]:
         """Returns the centuries and nanoseconds of this duration
 NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly."""
 
@@ -990,7 +1018,7 @@ NOTE: This function will return an error if the centuries past GPST time are not
     def to_gpst_seconds(self) -> float:
         """Returns seconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
-    def to_gregorian(self, time_scale: TimeScale=None) -> tuple:
+    def to_gregorian(self, time_scale: TimeScale=None) -> tuple[int,int,int,int,int,int,int]:
         """Converts the Epoch to the Gregorian parts in the (optionally) provided time scale as (year, month, day, hour, minute, second)."""
 
     def to_gst_days(self) -> float:

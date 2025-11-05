@@ -22,7 +22,7 @@ impl Duration {
     #[must_use]
     /// Returns the centuries and nanoseconds of this duration
     /// NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly.
-    /// :rtype: tuple
+    /// :rtype: tuple[int, int]
     #[pyo3(name = "to_parts")]
     pub const fn py_to_parts(&self) -> (i16, u64) {
         (self.centuries, self.nanoseconds)
@@ -69,7 +69,7 @@ impl Duration {
 
     /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns
     ///
-    /// :rtype: tuple
+    /// :rtype: tuple[int, int, int, int, int, int, int, int]
     #[pyo3(name = "decompose")]
     pub fn py_decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
         self.decompose()
@@ -289,16 +289,19 @@ impl Duration {
     /// assert Duration.MIN() - one_ns == Duration.MIN()
     /// ```
     ///
+    /// :type other: float
     /// :rtype: Duration
     fn __sub__(&self, other: Self) -> Duration {
         *self - other
     }
 
+    /// :type other: float
     /// :rtype: Duration
     fn __mul__(&self, other: f64) -> Duration {
         *self * other
     }
 
+    /// :type other: float
     /// :rtype: Duration
     fn __div__(&self, other: f64) -> Duration {
         *self / other
@@ -414,6 +417,7 @@ impl Duration {
     }
 
     /// Creates a new duration from the provided number of days
+    /// :type value: float
     /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_days")]
@@ -422,6 +426,7 @@ impl Duration {
     }
 
     /// Creates a new duration from the provided number of hours
+    /// :type value: float
     /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_hours")]
@@ -430,6 +435,7 @@ impl Duration {
     }
 
     /// Creates a new duration from the provided number of minutes
+    /// :type value: float
     /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_minutes")]
@@ -438,6 +444,7 @@ impl Duration {
     }
 
     /// Creates a new duration from the provided number of seconds
+    /// :type value: float
     /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_seconds")]
@@ -446,6 +453,7 @@ impl Duration {
     }
 
     /// Creates a new duration from the provided number of milliseconds
+    /// :type value: float
     /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_milliseconds")]
@@ -454,6 +462,7 @@ impl Duration {
     }
 
     /// Creates a new duration from the provided number of microseconds
+    /// :type value: float
     /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_microseconds")]
@@ -462,6 +471,7 @@ impl Duration {
     }
 
     /// Creates a new duration from the provided number of nanoseconds
+    /// :type value: float
     /// :rtype: Duration
     #[classmethod]
     #[pyo3(name = "from_nanoseconds")]
