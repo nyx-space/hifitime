@@ -43,7 +43,6 @@ pub enum MonthName {
     December,
 }
 
-
 #[cfg(feature = "python")]
 #[pymethods]
 impl MonthName {

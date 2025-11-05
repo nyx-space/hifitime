@@ -36,7 +36,6 @@ pub enum Weekday {
     Sunday = 6,
 }
 
-
 impl Weekday {
     /// Max: last weekday <=> `Sunday`, used only for conversion to/from u8.
     const MAX: u8 = 7;

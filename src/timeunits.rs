@@ -138,8 +138,6 @@ pub trait Frequencies: Copy + Mul<Freq, Output = Duration> {
     }
 }
 
-
-
 impl Add for Unit {
     type Output = Duration;
 
