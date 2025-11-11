@@ -13,8 +13,6 @@ use crate::{SECONDS_PER_CENTURY, SECONDS_PER_DAY, SECONDS_PER_HOUR, SECONDS_PER_
 
 pub use crate::{Freq, Frequencies, TimeUnits, Unit};
 
-#[cfg(feature = "std")]
-mod std;
 use core::cmp::Ordering;
 use core::fmt;
 use core::hash::{Hash, Hasher};
@@ -785,6 +783,38 @@ impl PartialOrd<Unit> for Duration {
     }
 }
 
+impl From<Duration> for core::time::Duration {
+    /// Converts a [`Duration`] into a [`core::time::Duration`]
+    ///
+    /// # Limitations
+    /// 1. If the [`Duration`] is negative, this will return a [`core::time::Duration::ZERO`].
+    /// 2. If the [`Duration`] is [`Duration::MAX`], this will return the equivalent of [`core::time::Duration::from_secs(103407943680000)`]
+    fn from(hf_duration: Duration) -> Self {
+        use crate::NANOSECONDS_PER_SECOND;
+        if hf_duration.signum().is_negative() {
+            core::time::Duration::ZERO
+        } else {
+            let unsigned_nanos = hf_duration.total_nanoseconds() as u128;
+            let secs: u64 = (unsigned_nanos / NANOSECONDS_PER_SECOND as u128)
+                .try_into()
+                .unwrap_or(u64::MAX);
+            let subsec_nanos = (unsigned_nanos % NANOSECONDS_PER_SECOND as u128) as u32;
+
+            core::time::Duration::new(secs, subsec_nanos)
+        }
+    }
+}
+
+impl From<core::time::Duration> for Duration {
+    /// Converts a [`core::time::Duration`] into a [`Duration`]
+    ///
+    /// # Limitations
+    /// 1. If the [`core::time::Duration`] is larger than [`Duration::MAX`], this will return [`Duration::MAX`]
+    fn from(core_duration: core::time::Duration) -> Self {
+        Duration::from_total_nanoseconds(core_duration.as_nanos() as i128)
+    }
+}
+
 #[cfg(test)]
 mod ut_duration {
     use super::{Duration, TimeUnits, Unit, NANOSECONDS_PER_CENTURY};
@@ -847,5 +877,16 @@ mod ut_duration {
         assert_eq!(milliseconds, 0);
         assert_eq!(microseconds, 0);
         assert_eq!(nanoseconds, 0);
+    }
+
+    #[test]
+    fn test_conversion() {
+        let d = Duration::MIN;
+        let core_d: core::time::Duration = d.into();
+        assert_eq!(core_d, core::time::Duration::ZERO);
+
+        let d = Duration::MAX;
+        let core_d: core::time::Duration = d.into();
+        assert_eq!(core_d, core::time::Duration::from_secs(103407943680000));
     }
 }
