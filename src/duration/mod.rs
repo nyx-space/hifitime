@@ -791,12 +791,10 @@ impl From<Duration> for core::time::Duration {
     /// 2. If the [`Duration`] is [`Duration::MAX`], this will return the equivalent of [`core::time::Duration::from_secs(103407943680000)`]
     fn from(hf_duration: Duration) -> Self {
         use crate::NANOSECONDS_PER_SECOND;
-        if hf_duration.signum() == -1 {
+        if hf_duration.signum().is_negative() {
             core::time::Duration::ZERO
         } else {
-            let nanos = hf_duration.total_nanoseconds();
-            let unsigned_nanos = u128::try_from(nanos).unwrap_or(0);
-
+            let unsigned_nanos = hf_duration.total_nanoseconds() as u128;
             let secs: u64 = (unsigned_nanos / NANOSECONDS_PER_SECOND as u128)
                 .try_into()
                 .unwrap_or(u64::MAX);
@@ -813,7 +811,7 @@ impl From<core::time::Duration> for Duration {
     /// # Limitations
     /// 1. If the [`core::time::Duration`] is larger than [`Duration::MAX`], this will return [`Duration::MAX`]
     fn from(core_duration: core::time::Duration) -> Self {
-        Duration::from_total_nanoseconds(core_duration.as_nanos().try_into().unwrap_or(i128::MAX))
+        Duration::from_total_nanoseconds(core_duration.as_nanos() as i128)
     }
 }
 
