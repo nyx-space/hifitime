@@ -14,6 +14,7 @@ use serde_derive::{Deserialize, Serialize};
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
+
 #[cfg(feature = "python")]
 use pyo3::types::PyType;
 
@@ -124,7 +125,9 @@ impl fmt::Display for Polynomial {
     }
 }
 
-#[cfg_attr(feature = "python", pymethods)]
+#[cfg(feature = "python")]
+#[pymethods]
+#[cfg(feature = "python")]
 impl Polynomial {
     /// Create a [Polynomial] structure that is only made of a static offset
     /// :type constant: Duration
