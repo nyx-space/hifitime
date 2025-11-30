@@ -125,9 +125,7 @@ impl fmt::Display for Polynomial {
     }
 }
 
-#[cfg(feature = "python")]
-#[pymethods]
-#[cfg(feature = "python")]
+#[cfg_attr(feature = "python", pymethods)]
 impl Polynomial {
     /// Create a [Polynomial] structure that is only made of a static offset
     /// :type constant: Duration
