@@ -76,7 +76,6 @@ impl Polynomial {
     }
 }
 
-#[cfg(not(feature = "python"))]
 impl Polynomial {
     /// Create a [Polynomial] structure that is only made of a static offset
     pub fn from_constant_offset(constant: Duration) -> Self {
@@ -132,8 +131,9 @@ impl Polynomial {
     /// Create a [Polynomial] structure that is only made of a static offset
     /// :type constant: Duration
     /// :rtype: Polynomial
+    #[pyo3(name = "from_constant_offset")]
     #[classmethod]
-    pub fn from_constant_offset(_cls: &Bound<'_, PyType>, constant: Duration) -> Self {
+    pub fn py_from_constant_offset(_cls: &Bound<'_, PyType>, constant: Duration) -> Self {
         Self {
             constant,
             rate: Default::default(),
@@ -144,8 +144,9 @@ impl Polynomial {
     /// Create a [Polynomial] structure from a static offset expressed in nanoseconds
     /// :type nanos: float
     /// :rtype: Polynomial
+    #[pyo3(name = "from_constant_offset_nanoseconds")]
     #[classmethod]
-    pub fn from_constant_offset_nanoseconds(_cls: &Bound<'_, PyType>, nanos: f64) -> Self {
+    pub fn py_from_constant_offset_nanoseconds(_cls: &Bound<'_, PyType>, nanos: f64) -> Self {
         Self {
             constant: Duration::from_nanoseconds(nanos),
             rate: Default::default(),
@@ -157,8 +158,9 @@ impl Polynomial {
     /// :type constant: Duration
     /// :type rate: Duration
     /// :rtype: Polynomial
+    #[pyo3(name = "from_offset_and_rate")]
     #[classmethod]
-    pub fn from_offset_and_rate(
+    pub fn py_from_offset_and_rate(
         _cls: &Bound<'_, PyType>,
         constant: Duration,
         rate: Duration,
@@ -174,8 +176,9 @@ impl Polynomial {
     /// :type offset_ns: float
     /// :type drift_ns_s: float
     /// :rtype: Polynomial
+    #[pyo3(name = "from_offset_rate_nanoseconds")]
     #[classmethod]
-    pub fn from_offset_rate_nanoseconds(
+    pub fn py_from_offset_rate_nanoseconds(
         _cls: &Bound<'_, PyType>,
         offset_ns: f64,
         drift_ns_s: f64,
