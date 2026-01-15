@@ -2396,3 +2396,17 @@ fn test_regression_gh_440_february_epoch() {
 fn test_regression_gh_440_60s_non_leap() {
     let _ = Epoch::from_gregorian_tai(1971, 12, 31, 23, 59, 60, 0);
 }
+
+#[test]
+fn regression_test_gh_441() {
+    use core::str::FromStr;
+    let e = Epoch::from_str("2024-01-01T00:01:09.183906049 ET").unwrap();
+    let (y, m, d, h, min, s, ns) = e.to_gregorian_utc();
+    assert_eq!(y, 2023);
+    assert_eq!(m, 12);
+    assert_eq!(d, 31);
+    assert_eq!(h, 23);
+    assert_eq!(min, 59);
+    assert_eq!(s, 59);
+    assert_eq!(ns, 999999944);
+}

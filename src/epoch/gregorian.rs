@@ -80,36 +80,33 @@ impl Epoch {
         let (mut year, mut days_in_year) = div_rem_f64(days, DAYS_PER_YEAR_NLD);
         year += HIFITIME_REF_YEAR;
 
-        // Base calculation was on 365 days, so we need to remove one day per leap year
-        if year >= HIFITIME_REF_YEAR {
-            for y in HIFITIME_REF_YEAR..year {
-                if is_leap_year(y) {
-                    days_in_year -= 1.0;
-                }
-            }
-            if days_in_year < 0.0 {
-                // We've underflowed the number of days in a year because of the leap years
-                year -= 1;
-                days_in_year += DAYS_PER_YEAR_NLD;
-                // If we had incorrectly removed one day of the year in the previous loop, fix it here.
-                if is_leap_year(year) {
-                    days_in_year += 1.0;
-                }
-            }
+        // Base calculation was on 365 days, so we need to add/remove one day per leap year.
+        let (start_yr, end_yr) = if year > HIFITIME_REF_YEAR {
+            (HIFITIME_REF_YEAR, year)
         } else {
-            for y in year..HIFITIME_REF_YEAR {
-                if is_leap_year(y) {
-                    days_in_year += 1.0;
-                }
+            (year, HIFITIME_REF_YEAR)
+        };
+        let mut leap_years = 0;
+        for y in start_yr..end_yr {
+            if is_leap_year(y) {
+                leap_years += 1;
             }
-            // Check for greater than or equal because the days are still zero indexed here.
-            if (days_in_year >= DAYS_PER_YEAR_NLD && !is_leap_year(year))
-                || (days_in_year >= DAYS_PER_YEAR_NLD + 1.0 && is_leap_year(year))
-            {
-                // We've overflowed the number of days in a year because of the leap years
-                year += 1;
-                days_in_year -= DAYS_PER_YEAR_NLD;
-            }
+        }
+
+        if year < HIFITIME_REF_YEAR {
+            days_in_year += leap_years as f64;
+        } else {
+            days_in_year -= leap_years as f64;
+        }
+
+        while days_in_year < 0.0 {
+            year -= 1;
+            days_in_year += if is_leap_year(year) { 366.0 } else { 365.0 };
+        }
+
+        while days_in_year >= if is_leap_year(year) { 366.0 } else { 365.0 } {
+            days_in_year -= if is_leap_year(year) { 366.0 } else { 365.0 };
+            year += 1;
         }
 
         let cumul_days = if is_leap_year(year) {
