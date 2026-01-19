@@ -3,9 +3,10 @@ extern crate core;
 
 use hifitime::{
     is_gregorian_valid, Duration, Epoch, HifitimeError, ParsingError, Polynomial, TimeScale,
-    TimeUnits, Unit, Weekday, BDT_REF_EPOCH, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR, GPST_REF_EPOCH,
-    GST_REF_EPOCH, J1900_REF_EPOCH, J2000_REF_EPOCH, JD_J2000, MJD_J1900, MJD_J2000, MJD_OFFSET,
-    SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET, SECONDS_PER_DAY,
+    TimeSeries, TimeUnits, Unit, Weekday, BDT_REF_EPOCH, DAYS_GPS_TAI_OFFSET, DAYS_PER_YEAR,
+    GPST_REF_EPOCH, GST_REF_EPOCH, J1900_REF_EPOCH, J2000_REF_EPOCH, JD_J2000, MJD_J1900,
+    MJD_J2000, MJD_OFFSET, SECONDS_BDT_TAI_OFFSET, SECONDS_GPS_TAI_OFFSET, SECONDS_GST_TAI_OFFSET,
+    SECONDS_PER_DAY,
 };
 
 use hifitime::efmt::{Format, Formatter};
@@ -2395,4 +2396,69 @@ fn test_regression_gh_440_february_epoch() {
 #[should_panic]
 fn test_regression_gh_440_60s_non_leap() {
     let _ = Epoch::from_gregorian_tai(1971, 12, 31, 23, 59, 60, 0);
+}
+
+#[test]
+fn test_tdb_tt_distance() {
+    // Verifies that |TDB-TT| <= 1.6ms at all times
+    let one_year = Duration::from_days(365.0);
+
+    // tests for entire past century
+    let serie = TimeSeries::inclusive(J1900_REF_EPOCH, J2000_REF_EPOCH, one_year);
+
+    for epoch in serie {
+        let tdb = epoch.to_time_scale(TimeScale::TDB);
+        let tt = epoch.to_time_scale(TimeScale::TT);
+        let delta = (tdb - tt).to_seconds().abs();
+
+        assert!(
+            delta <= 1.6e-3,
+            "|TDB-TT| should be closer than 1.6ms at all times"
+        );
+    }
+}
+
+#[test]
+fn test_tdb_tt_mean_is_zero() {
+    // Verifies that the TDB-TT error, oscillates around zero for the course
+    // of an entire year.
+
+    // tests for 1 century
+    let one_day = Duration::from_days(1.0);
+    let one_year = Duration::from_days(365.0);
+
+    let century_20th = TimeSeries::inclusive(J1900_REF_EPOCH, J2000_REF_EPOCH, one_year);
+
+    for year_start in century_20th {
+        // calculates distance for each day, for entire year
+        let mut deltas_s = Vec::new();
+        let serie = TimeSeries::inclusive(year_start, year_start + one_year, one_day);
+
+        for day in serie {
+            let tdb = day.to_time_scale(TimeScale::TDB);
+            let tt = day.to_time_scale(TimeScale::TT);
+            deltas_s.push((tdb - tt).to_seconds());
+        }
+
+        let sum: f64 = deltas_s.iter().sum();
+        let mean = sum / deltas_s.len() as f64;
+
+        let min = deltas_s.iter().fold(f64::INFINITY, |a, &b| a.min(b));
+        let max = deltas_s.iter().fold(f64::NEG_INFINITY, |a, &b| a.max(b));
+
+        // The difference should not be consistently zero, it should oscillate.
+        assert!(
+            min < 0.0 && max > 0.0,
+            "TDB-TT should oscillate around zero for year starting at {}",
+            year_start
+        );
+
+        // The mean over one year should be very close to zero.
+        assert!(
+            mean.abs() < 1e-9,
+            "Mean of TDB-TT should be close to zero for year starting at {}, got {}",
+            year_start,
+            mean
+        );
+    }
 }
