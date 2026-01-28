@@ -3,7 +3,7 @@
 #
 #    maturin generate-ci --pytest -o .github/workflows/python.yml github
 #
-name: CI
+name: Python CI
 
 on:
   push:
