@@ -30,10 +30,8 @@ jobs:
             target: x86
           - runner: ubuntu-22.04-arm
             target: aarch64
-          - runner: ubuntu-22.04
+          - runner: ubuntu-22.04-arm
             target: armv7
-          - runner: ubuntu-22.04
-            target: s390x
           - runner: ubuntu-22.04
             target: ppc64le
     steps:
@@ -104,7 +102,7 @@ jobs:
             target: x86
           - runner: ubuntu-22.04-arm
             target: aarch64
-          - runner: ubuntu-22.04
+          - runner: ubuntu-22.04-arm
             target: armv7
     steps:
       - uses: actions/checkout@v6
