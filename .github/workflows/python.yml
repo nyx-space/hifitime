@@ -30,7 +30,7 @@ jobs:
             target: x86
           - runner: ubuntu-22.04-arm
             target: aarch64
-          - runner: ubuntu-22.04-arm
+          - runner: ubuntu-22.04
             target: armv7
           - runner: ubuntu-22.04
             target: ppc64le
@@ -66,7 +66,7 @@ jobs:
           name: wheels-linux-${{ matrix.platform.target }}
           path: dist
       - name: pytest
-        if: ${{ startsWith(matrix.platform.target, 'x86_64') }}
+        if: ${{ matrix.platform.target == 'x86_64' || matrix.platform.target == 'aarch64' }}
         shell: bash
         run: |
           set -e
@@ -76,7 +76,7 @@ jobs:
           pip install pytest
           pytest
       - name: pytest
-        if: ${{ !startsWith(matrix.platform.target, 'x86') && matrix.platform.target != 'ppc64' }}
+        if: ${{ matrix.platform.target != 'x86_64' && matrix.platform.target != 'x86' && matrix.platform.target != 'aarch64'}}
         uses: uraimo/run-on-arch-action@v2
         with:
           arch: ${{ matrix.platform.target }}
@@ -102,7 +102,7 @@ jobs:
             target: x86
           - runner: ubuntu-22.04-arm
             target: aarch64
-          - runner: ubuntu-22.04-arm
+          - runner: ubuntu-22.04
             target: armv7
     steps:
       - uses: actions/checkout@v6
@@ -122,7 +122,7 @@ jobs:
           name: wheels-musllinux-${{ matrix.platform.target }}
           path: dist
       - name: pytest
-        if: ${{ startsWith(matrix.platform.target, 'x86_64') }}
+        if: ${{ matrix.platform.target == 'x86_64' || matrix.platform.target == 'aarch64' }}
         uses: addnab/docker-run-action@v3
         with:
           image: alpine:latest
@@ -136,7 +136,7 @@ jobs:
             pip install pytest
             pytest
       - name: pytest
-        if: ${{ !startsWith(matrix.platform.target, 'x86') }}
+        if: ${{ matrix.platform.target != 'x86_64' && matrix.platform.target != 'x86' && matrix.platform.target != 'aarch64'}}
         uses: uraimo/run-on-arch-action@v2
         with:
           arch: ${{ matrix.platform.target }}
