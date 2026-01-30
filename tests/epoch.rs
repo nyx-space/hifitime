@@ -1314,19 +1314,7 @@ fn test_timescale_recip() {
         ] {
             let converted = utc_epoch.to_duration_in_time_scale(*ts);
             let from_dur = Epoch::from_duration(converted, *ts);
-            if *ts == TimeScale::ET {
-                // There is limitation in the ET scale due to the Newton Raphson iteration.
-                // So let's check for a near equality
-                // TODO: Make this more strict
-                assert!(
-                    (utc_epoch - from_dur).abs() < 150 * Unit::Nanosecond,
-                    "ET recip error = {} for {}",
-                    utc_epoch - from_dur,
-                    utc_epoch
-                );
-            } else {
-                assert_eq!(utc_epoch, from_dur);
-            }
+            assert_eq!(utc_epoch, from_dur);
 
             // RFC3339 test
             #[cfg(feature = "std")]
@@ -1820,25 +1808,13 @@ fn test_day_of_year() {
             let epoch = utc_epoch.to_time_scale(*ts);
             let (year, days) = epoch.year_days_of_year();
             let rebuilt = Epoch::from_day_of_year(year, days, *ts);
-            if *ts == TimeScale::ET || *ts == TimeScale::TDB {
-                // There is limitation in the ET scale due to the Newton Raphson iteration.
-                // So let's check for a near equality
-                assert!(
-                    (epoch - rebuilt).abs() < 750 * Unit::Nanosecond,
-                    "{} recip error = {} for {}",
-                    ts,
-                    epoch - rebuilt,
-                    epoch
-                );
-            } else {
-                assert!(
-                    (epoch - rebuilt).abs() < 50 * Unit::Nanosecond,
-                    "{} recip error = {} for {}",
-                    ts,
-                    epoch - rebuilt,
-                    epoch
-                );
-            }
+            assert!(
+                (epoch - rebuilt).abs() < 50 * Unit::Nanosecond,
+                "{} recip error = {} for {}",
+                ts,
+                epoch - rebuilt,
+                epoch
+            );
         }
     };
 
@@ -2335,7 +2311,7 @@ fn test_et_continuity_around_j2000() {
     let small_offset = Unit::Microsecond; // 1 microsecond
 
     // ET conversion can have larger errors due to Newton-Raphson
-    let tolerance = 150.0 * Unit::Nanosecond;
+    let tolerance = 1.0 * Unit::Nanosecond;
 
     let epoch_before_j2000_et = Epoch::from_et_seconds(-small_offset.in_seconds());
     let epoch_at_j2000_et = j2000_et;
