@@ -228,10 +228,10 @@ impl Epoch {
                     // The `prime_epoch_offset` is TAI. `ts.prime_epoch_offset()` is J2000 TAI.
                     let tai_seconds = (prime_epoch_offset - ts.prime_epoch_offset()).to_seconds();
                     let mut et_seconds = tai_seconds;
-                    for _ in 0..10 {
+                    for _ in 0..5 {
                         let delta = Self::delta_et_tai(et_seconds);
                         let next_et = tai_seconds + delta;
-                        if (next_et - et_seconds).abs() < 1e-12 {
+                        if (next_et - et_seconds).abs() < 1e-9 {
                             et_seconds = next_et;
                             break;
                         }
