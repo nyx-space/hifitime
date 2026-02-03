@@ -50,7 +50,7 @@ ureq = { version = "3.0.10", default-features = false, optional = true, features
 [features]
 default = ["std"]
 std = ["serde", "serde_derive", "web-time", "snafu/std", "snafu/backtrace"]
-python = ["std", "pyo3/extension-module", "ut1", "lts"]
+python = ["std", "pyo3/extension-module", "ut1", "lts", "openssl/vendored"]
 ut1 = ["std", "ureq", "tabled", "openssl"]
 lts = ["std", "ureq", "openssl", "ut1"]
 vendored-openssl = ["openssl?/vendored"]
