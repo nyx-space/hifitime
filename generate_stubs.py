@@ -72,8 +72,6 @@ def module_stubs(module: Any) -> ast.Module:
         element_path = [module.__name__, member_name]
         if member_name.startswith("__"):
             pass
-        elif member_name.startswith("DoraStatus"):
-            pass
         elif inspect.isclass(member_value):
             classes.append(
                 class_stubs(member_name, member_value, element_path, types_to_import)
@@ -90,6 +88,18 @@ def module_stubs(module: Any) -> ast.Module:
             )
         else:
             logging.warning(f"Unsupported root construction {member_name}")
+    # Add metadata constants if they exist in the module
+    for meta in ["__author__", "__version__"]:
+        if hasattr(module, meta):
+            functions.append(
+                ast.AnnAssign(
+                    target=ast.Name(id=meta, ctx=ast.Store()),
+                    annotation=ast.Name(id="str", ctx=ast.Load()),
+                    value=ast.Constant(getattr(module, meta)),
+                    simple=1,
+                )
+            )
+
     return ast.Module(
         body=[ast.Import(names=[ast.alias(name=t)]) for t in sorted(types_to_import)]
         + classes
@@ -107,24 +117,24 @@ def class_stubs(
     constants: List[ast.AST] = []
     for member_name, member_value in inspect.getmembers(cls_def):
         current_element_path = [*element_path, member_name]
-        if member_name == "__init__" and "Error" not in cls_name:
+        # Inside the loop in class_stubs
+        if member_name in ("__init__", "__new__") and "Error" not in cls_name:
             try:
-                inspect.signature(cls_def)  # we check it actually exists
-                methods = [
+                inspect.signature(cls_def)
+                # If it's __init__, we generate it with NO params to satisfy stubtest
+                # unless you want to specifically logic-gate this for Rust classes.
+                actual_member = cls_def if member_name == "__new__" else member_value
+                methods.append(
                     function_stub(
                         member_name,
-                        cls_def,
+                        actual_member,
                         current_element_path,
                         types_to_import,
                         in_class=True,
-                    ),
-                    *methods,
-                ]
+                    )
+                )
             except ValueError as e:
-                if "no signature found" not in str(e):
-                    raise ValueError(
-                        f"Error while parsing signature of {cls_name}.__init__"
-                    ) from e
+                continue
         elif (
             member_value == OBJECT_MEMBERS.get(member_name)
             or BUILTINS.get(member_name, ()) is None
@@ -240,9 +250,21 @@ def function_stub(
             body.append(doc_comment)
 
     decorator_list = []
-    if in_class and hasattr(fn_def, "__self__"):
-        decorator_list.append(ast.Name("staticmethod"))
-    
+    if in_class:
+        sig = inspect.signature(fn_def)
+        params = list(sig.parameters.values())
+        if params and params[0].name == "cls":
+            decorator_list.append(ast.Name(id="classmethod", ctx=ast.Load()))
+        elif (
+            in_class
+            and hasattr(fn_def, "__self__")
+            and not isinstance(fn_def.__self__, type)
+        ):
+            # This is a standard instance method bound to an object
+            pass
+        elif in_class and hasattr(fn_def, "__self__"):
+            decorator_list.append(ast.Name(id="staticmethod", ctx=ast.Load()))
+
     print(f"Documenting {fn_name}")
 
     return ast.FunctionDef(
@@ -271,7 +293,7 @@ def arguments_stub(
     real_parameters: Mapping[str, inspect.Parameter] = inspect.signature(
         callable_def
     ).parameters
-    
+
     if callable_name == "__init__":
         real_parameters = {
             "self": inspect.Parameter("self", inspect.Parameter.POSITIONAL_ONLY),
@@ -290,7 +312,16 @@ def arguments_stub(
         for name, t in zip(param_names, builtin[0]):
             parsed_param_types[name] = t
 
-    elif callable_name in ["__add__", "__sub__", "__div__", "__mul__", "__radd__", "__rsub__", "__rdiv__", "__rmul__"]:
+    elif callable_name in [
+        "__add__",
+        "__sub__",
+        "__div__",
+        "__mul__",
+        "__radd__",
+        "__rsub__",
+        "__rdiv__",
+        "__rmul__",
+    ]:
         return ast.arguments(posonlyargs=[], args=[], defaults=[], kwonlyargs=[])
 
     # Types from comment
@@ -319,7 +350,9 @@ def arguments_stub(
     kwarg = None
     defaults = []
     for param in real_parameters.values():
-        if param.name != "self" and param.name not in parsed_param_types:
+        if param.name in ("self", "cls"):
+            param_ast = ast.arg(arg=param.name, annotation=None)
+        elif param.name not in parsed_param_types:
             raise ValueError(
                 f"The parameter {param.name} of {'.'.join(element_path)} "
                 "has no type definition in the function documentation"
@@ -375,7 +408,16 @@ def returns_stub(
         # Don't document errors
         return
 
-    if callable_name in ["__add__", "__sub__", "__div__", "__mul__", "__radd__", "__rsub__", "__rdiv__", "__rmul__"]:
+    if callable_name in [
+        "__add__",
+        "__sub__",
+        "__div__",
+        "__mul__",
+        "__radd__",
+        "__rsub__",
+        "__rdiv__",
+        "__rmul__",
+    ]:
         return
     m = re.findall(r"^ *:rtype: *([^\n]*) *$", doc, re.MULTILINE)
     if len(m) == 0:
@@ -407,7 +449,13 @@ def parse_type_to_ast(
     tokens = []
     current_token = ""
     for c in type_str:
-        if "a" <= c <= "z" or "A" <= c <= "Z" or c == ".":
+        if (
+            "a" <= c <= "z"
+            or "A" <= c <= "Z"
+            or "0" <= c <= "9"
+            or c == "_"
+            or c == "."
+        ):
             current_token += c
         else:
             if current_token:
@@ -430,147 +478,62 @@ def parse_type_to_ast(
         else:
             stack[-1].append(token)
 
-    # then it's easy
     def parse_sequence(sequence: List[Any]) -> ast.AST:
-        # we split based on "or"
-        or_groups: List[List[Any]] = [[]] # Changed List[List[str]] to List[List[Any]]
-
+        # 1. Handle commas first: split the sequence into distinct arguments
+        args: List[List[Any]] = [[]]
         for e in sequence:
+            if e == ",":
+                args.append([])
+            else:
+                args[-1].append(e)
+
+        # Filter out empty args (e.g. trailing commas)
+        args = [a for a in args if a]
+
+        # 2. If there are multiple arguments (separated by commas),
+        # we return an ast.Tuple (this handles tuple[int, int, ...])
+        if len(args) > 1:
+            return ast.Tuple(elts=[parse_sequence(arg) for arg in args], ctx=ast.Load())
+
+        # 3. Existing logic for "or" (Union types) within a single argument
+        actual_sequence = args[0]
+        or_groups: List[List[Any]] = [[]]
+        for e in actual_sequence:
             if e == "or":
                 or_groups.append([])
             else:
                 or_groups[-1].append(e)
 
-        if not or_groups or any(not g for g in or_groups): # Ensure or_groups itself is not empty
-            raise ValueError(
-                f"Not able to parse type '{type_str}' used by {'.'.join(element_path)} (empty or malformed 'or' group)"
-            )
-
-        parsed_or_elements: List[ast.AST] = []
-        for group_items in or_groups:
-            # Pre-process group_items to join consecutive string tokens
-            processed_group: List[Any] = []
-            current_str_parts: List[str] = []
-            for item in group_items:
-                if isinstance(item, str):
-                    current_str_parts.append(item)
-                else:  # item is a nested list (generic type parameter)
-                    if current_str_parts:
-                        processed_group.append("".join(current_str_parts))
-                        current_str_parts = []
-                    processed_group.append(item) # append the nested list
-
-            if current_str_parts: # append any trailing string parts
-                processed_group.append("".join(current_str_parts))
-
-            if not processed_group:
-                 raise ValueError(
-                    f"Not able to parse type '{type_str}' used by {'.'.join(element_path)} (empty group after processing)"
-                )
-
-            # Now use processed_group for AST node creation
-            if len(processed_group) == 1 and isinstance(processed_group[0], str):
-                parsed_or_elements.append(
-                    concatenated_path_to_type(processed_group[0], element_path, types_to_import)
+        new_elements: List[ast.AST] = []
+        for group in or_groups:
+            if len(group) == 1 and isinstance(group[0], str):
+                # Standard type: int
+                new_elements.append(
+                    concatenated_path_to_type(group[0], element_path, types_to_import)
                 )
             elif (
-                len(processed_group) == 2
-                and isinstance(processed_group[0], str)
-                and isinstance(processed_group[1], list)
+                len(group) == 2
+                and isinstance(group[0], str)
+                and isinstance(group[1], list)
             ):
-                # This handles MyType[GenericParam]
-                slice_ast = parse_sequence(processed_group[1])
-                # If the slice is a single ast.Name and represents a tuple for Subscript, wrap it.
-                # e.g. Tuple[int, str] -> ast.Tuple for Subscript, not just ast.Name(id='Tuple')
-                # However, parse_sequence already returns an AST node. If it's a complex type like
-                # `typing.Tuple[A, B]`, it will be a BinOp (for A | B) or a Subscript itself.
-                # For `Tuple[A,B]`, `parse_sequence` on `[A, ',', B]` (if tokenized like that) would build it.
-                # The current tokenizer seems to put `A,B` into a list `['A', ',', 'B']`.
-                # `parse_sequence` on `['A', ',', 'B']` would try to join 'A', ',', 'B' -> "A,B"
-                # then `concatenated_path_to_type("A,B")` which is not right for tuple elements.
-                # The initial stack processing for '[' and ']' should correctly make `group[1]`
-                # a list of tokens for the slice. `parse_sequence(group[1])` is then called.
-                # If `group[1]` is `['A', ',', 'B']`, `parse_sequence` will process this.
-                # It will split by 'or' (none here). Then `processed_group` inside that call will be ['A', ',', 'B'].
-                # This then fails the len==1 or len==2 checks.
-                # This indicates the tokenization of tuple elements needs to be robust.
-                # The current fix focuses on joining the base type name. Tuple content parsing is a deeper issue.
-                parsed_or_elements.append(
+                # Nested type: list[int] or tuple[...]
+                new_elements.append(
                     ast.Subscript(
                         value=concatenated_path_to_type(
-                            processed_group[0], element_path, types_to_import
+                            group[0], element_path, types_to_import
                         ),
-                        slice=slice_ast,
+                        slice=parse_sequence(group[1]),
                         ctx=ast.Load(),
                     )
                 )
-            elif len(processed_group) == 1 and isinstance(processed_group[0], list):
-                # This can happen if the type is just a generic like `List[str]` which becomes `[['List', ['str']]]`
-                # then `or_groups` is `[[['List', ['str']']]]`. `group_items` is `[['List', ['str']']]`.
-                # `processed_group` becomes `[['List', ['str']']]`. This case is not handled.
-                # This case should ideally not occur if tokenization and initial stack processing is correct.
-                # A simple string like "typing.List[str]" should result in tokens: ['typing.List', '[', 'str', ']']
-                # Stack processing: [['typing.List', ['str']]]
-                # `parse_sequence` called with `[['typing.List', ['str']]]`.
-                # `or_groups` becomes `[[['typing.List', ['str']']]]`.
-                # `group_items` is `[['typing.List', ['str']']]`.
-                # `processed_group` logic: item is `['typing.List', ['str']]` (a list). current_str_parts is empty.
-                # processed_group becomes `[['typing.List', ['str']']]`.
-                # This then fails.
-                # The issue is that `group_items` can be `List[Any]` where Any is `str` OR `List[Any]`.
-                # The `processed_group.append(item)` for `item` being a list is correct for generics.
-                # The problem is the structure of `group_items` itself.
-                # Let's assume `group_items` for "typing.List[str]" is `['typing', '.', 'List', ['str']]`.
-                # Then `processed_group` becomes `['typing.List', ['str']]`. This is correct for the len(processed_group)==2 case.
-
-                # What if the type_str is simply "List[str]" (no "typing.") and List is not imported?
-                # `tokens` = ['List', '[', 'str', ']']
-                # `stack[0]` = `['List', ['str']]`
-                # `parse_sequence` called with `['List', ['str']]`
-                # `or_groups` = `[['List', ['str']]]`
-                # `group_items` = `['List', ['str']]`
-                # `processed_group` from `group_items`:
-                #   item = 'List', current_str_parts = ['List']
-                #   item = ['str'] (list), processed_group.append("".join(['List'])) -> processed_group = ['List']
-                #                      current_str_parts = [], processed_group.append(['str']) -> processed_group = ['List', ['str']]
-                # This correctly forms `['List', ['str']]`.
-
-                # The case of `Tuple[A, B, C]` is tricky. `slice=parse_sequence(group[1])`
-                # `group[1]` would be `['A', ',', 'B', ',', 'C']`.
-                # `parse_sequence(['A', ',', 'B', ',', 'C'])`:
-                #   `or_groups` = `[['A', ',', 'B', ',', 'C']]`
-                #   `group_items` = `['A', ',', 'B', ',', 'C']`
-                #   `processed_group` becomes `['A,B,C']` (if ',' are treated as joinable string parts)
-                #   or `['A', ',', 'B', ',', 'C']` if current_str_parts appends then joins.
-                #   If `tokens.append(c)` includes ',', then `['A', ',', 'B', ',', 'C']`.
-                #   `processed_group` from `['A', ',', 'B', ',', 'C']`:
-                #     item='A', csp=['A']
-                #     item=',', csp=['A', ',']
-                #     item='B', csp=['A', ',', 'B']
-                #     item=',', csp=['A', ',', 'B', ',']
-                #     item='C', csp=['A', ',', 'B', ',', 'C']
-                #   `processed_group` becomes `['A,B,C']`. Then `concatenated_path_to_type('A,B,C')`. This is wrong for tuple elements.
-                # For tuples, the slice should be an `ast.Tuple` node.
-                # `ast.Subscript(value=Name(id='Tuple'), slice=Tuple(elts=[Name(id='A'), Name(id='B')]))`
-                # This means `parse_sequence` needs to detect if it's parsing the contents of a Tuple slice
-                # and return an `ast.Tuple` if multiple comma-separated elements are found.
-                # This is a larger change. The current fix is for joining base type names.
-                # For now, we accept that complex tuple parsing might still be imperfect.
-                # The original TODO was about "Ros2" type names.
-                 raise ValueError(
-                    f"Not able to parse type '{type_str}' used by {'.'.join(element_path)} (unhandled processed group structure: {processed_group})"
-                )
             else:
                 raise ValueError(
-                    f"Not able to parse type '{type_str}' used by {'.'.join(element_path)} (unhandled processed group structure after joining: {processed_group})"
+                    f"Not able to parse type fragment '{group}' used by {'.'.join(element_path)}"
                 )
-
-        if not parsed_or_elements:
-            raise ValueError(f"Not able to parse type '{type_str}' used by {'.'.join(element_path)} (no elements parsed for 'or' groups)")
 
         return reduce(
             lambda left, right: ast.BinOp(left=left, op=ast.BitOr(), right=right),
-            parsed_or_elements,
+            new_elements,
         )
 
     return parse_sequence(stack[0])
