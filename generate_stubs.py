@@ -119,22 +119,19 @@ def class_stubs(
         current_element_path = [*element_path, member_name]
         # Inside the loop in class_stubs
         if member_name in ("__init__", "__new__") and "Error" not in cls_name:
-            try:
-                inspect.signature(cls_def)
-                # If it's __init__, we generate it with NO params to satisfy stubtest
-                # unless you want to specifically logic-gate this for Rust classes.
-                actual_member = cls_def if member_name == "__new__" else member_value
-                methods.append(
-                    function_stub(
-                        member_name,
-                        actual_member,
-                        current_element_path,
-                        types_to_import,
-                        in_class=True,
-                    )
+            inspect.signature(cls_def)
+            # If it's __init__, we generate it with NO params to satisfy stubtest
+            # unless you want to specifically logic-gate this for Rust classes.
+            actual_member = cls_def if member_name == "__new__" else member_value
+            methods.append(
+                function_stub(
+                    member_name,
+                    actual_member,
+                    current_element_path,
+                    types_to_import,
+                    in_class=True,
                 )
-            except ValueError as e:
-                continue
+            )
         elif (
             member_value == OBJECT_MEMBERS.get(member_name)
             or BUILTINS.get(member_name, ()) is None

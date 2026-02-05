@@ -986,7 +986,7 @@ impl Epoch {
 
     /// Returns a Python datetime object from this Epoch (truncating the nanoseconds away).
     /// If set_tz is True, then this will return a time zone aware datetime object
-    /// :type set_tz: bool|None, optional
+    /// :type set_tz: bool or None, optional
     /// :rtype: datetime.datetime
     #[pyo3(signature=(set_tz=None))]
     fn todatetime<'py>(
@@ -1015,7 +1015,7 @@ impl Epoch {
 
     /// Returns a Python datetime object from this Epoch (truncating the nanoseconds away)
     /// If set_tz is True, then this will return a time zone aware datetime object
-    /// :type set_tz: bool|None, optional
+    /// :type set_tz: bool or None, optional
     /// :rtype: datetime.datetime
     #[pyo3(signature=(set_tz=None))]
     fn to_datetime<'py>(
