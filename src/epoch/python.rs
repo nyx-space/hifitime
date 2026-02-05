@@ -944,8 +944,8 @@ impl Epoch {
         *self + duration
     }
 
-    /// :type duration: Duration
-    /// :rtype: Epoch
+    /// :type other: Duration or Epoch
+    /// :rtype: Duration or Epoch
     fn __sub__(&self, other: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
         let py = other.py();
         if let Ok(d) = other.extract::<Duration>() {
