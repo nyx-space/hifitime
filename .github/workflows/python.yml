@@ -73,7 +73,7 @@ jobs:
           python3 -m venv .venv
           source .venv/bin/activate
           pip install hifitime --find-links dist --force-reinstall
-          pip install pytest
+          pip install pytest mypy
           pytest
       - name: pytest
         if: ${{ matrix.platform.target != 'x86_64' && matrix.platform.target != 'x86' && matrix.platform.target != 'aarch64'}}
@@ -90,6 +90,8 @@ jobs:
             set -e
             pip3 install hifitime --find-links dist --force-reinstall
             pytest
+            # Type hint checks
+            python -m mypy.stubtest hifitime --ignore-missing-stub
 
   musllinux:
     runs-on: ${{ matrix.platform.runner }}

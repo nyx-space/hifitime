@@ -938,10 +938,14 @@ impl Epoch {
         format!("{self:?} @ {self:p}")
     }
 
+    /// :type duration: Duration
+    /// :rtype: Epoch
     fn __add__(&self, duration: Duration) -> Self {
         *self + duration
     }
 
+    /// :type other: Duration or Epoch
+    /// :rtype: Duration or Epoch
     fn __sub__(&self, other: &Bound<'_, PyAny>) -> PyResult<Py<PyAny>> {
         let py = other.py();
         if let Ok(d) = other.extract::<Duration>() {
@@ -982,7 +986,7 @@ impl Epoch {
 
     /// Returns a Python datetime object from this Epoch (truncating the nanoseconds away).
     /// If set_tz is True, then this will return a time zone aware datetime object
-    /// :type set_tz: bool, optional
+    /// :type set_tz: bool or None, optional
     /// :rtype: datetime.datetime
     #[pyo3(signature=(set_tz=None))]
     fn todatetime<'py>(
@@ -1011,7 +1015,7 @@ impl Epoch {
 
     /// Returns a Python datetime object from this Epoch (truncating the nanoseconds away)
     /// If set_tz is True, then this will return a time zone aware datetime object
-    /// :type set_tz: bool, optional
+    /// :type set_tz: bool or None, optional
     /// :rtype: datetime.datetime
     #[pyo3(signature=(set_tz=None))]
     fn to_datetime<'py>(
