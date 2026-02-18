@@ -1,5 +1,5 @@
-import sys
 import re
+import sys
 
 
 def main():

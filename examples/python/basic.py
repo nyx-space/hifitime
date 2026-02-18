@@ -8,7 +8,7 @@
  * Documentation: https://nyxspace.com/
 """
 
-from hifitime import Duration, Epoch, TimeSeries, TimeScale, Unit
+from hifitime import Duration, Epoch, TimeScale, TimeSeries, Unit
 
 if __name__ == "__main__":
     # All of the functions available in Rust are also available in Python.

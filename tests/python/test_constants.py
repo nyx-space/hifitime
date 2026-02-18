@@ -1,5 +1,6 @@
 import hifitime
 
+
 def test_constants():
     assert hifitime.DAYS_PER_CENTURY == 36525.0
     assert hifitime.DAYS_IN_CENTURY == 36525.0

@@ -1,3 +1,6 @@
+import pickle
+from datetime import datetime, timedelta, timezone
+
 from hifitime import (
     Duration,
     Epoch,
@@ -12,8 +15,6 @@ from hifitime import (
     Ut1Provider,
     Weekday,
 )
-from datetime import datetime, timezone, timedelta
-import pickle
 
 
 def test_strtime():
