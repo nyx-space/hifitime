@@ -57,11 +57,23 @@ fn hifitime(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("SECONDS_PER_DAY", crate::SECONDS_PER_DAY)?;
     m.add("SECONDS_PER_CENTURY", crate::SECONDS_PER_CENTURY)?;
     m.add("SECONDS_PER_YEAR", crate::SECONDS_PER_YEAR)?;
-    m.add("SECONDS_PER_TROPICAL_YEAR", crate::SECONDS_PER_TROPICAL_YEAR)?;
-    m.add("SECONDS_PER_SIDEREAL_YEAR", crate::SECONDS_PER_SIDEREAL_YEAR)?;
+    m.add(
+        "SECONDS_PER_TROPICAL_YEAR",
+        crate::SECONDS_PER_TROPICAL_YEAR,
+    )?;
+    m.add(
+        "SECONDS_PER_SIDEREAL_YEAR",
+        crate::SECONDS_PER_SIDEREAL_YEAR,
+    )?;
 
-    m.add("NANOSECONDS_PER_MICROSECOND", crate::NANOSECONDS_PER_MICROSECOND)?;
-    m.add("NANOSECONDS_PER_MILLISECOND", crate::NANOSECONDS_PER_MILLISECOND)?;
+    m.add(
+        "NANOSECONDS_PER_MICROSECOND",
+        crate::NANOSECONDS_PER_MICROSECOND,
+    )?;
+    m.add(
+        "NANOSECONDS_PER_MILLISECOND",
+        crate::NANOSECONDS_PER_MILLISECOND,
+    )?;
     m.add("NANOSECONDS_PER_SECOND", crate::NANOSECONDS_PER_SECOND)?;
     m.add("NANOSECONDS_PER_MINUTE", crate::NANOSECONDS_PER_MINUTE)?;
     m.add("NANOSECONDS_PER_HOUR", crate::NANOSECONDS_PER_HOUR)?;
