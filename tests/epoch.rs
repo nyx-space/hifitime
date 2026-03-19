@@ -2196,6 +2196,73 @@ fn regression_test_gh_302() {
     );
 }
 
+#[cfg(feature = "std")]
+#[test]
+fn regression_test_gh_409_far_future_printing() {
+    let future = Epoch::from_gregorian_tai(20000, 2, 9, 14, 57, 29, 37);
+    assert_eq!("20000-02-09T14:57:29.000000037 TAI", format!("{future}"));
+    assert_eq!(future.to_gregorian_tai(), (20000, 2, 9, 14, 57, 29, 37));
+
+    let past = Epoch::from_gregorian_tai(-20000, 2, 9, 14, 57, 29, 37);
+    assert_eq!("-20000-02-09T14:57:29.000000037 TAI", format!("{past}"));
+    assert_eq!(past.to_gregorian_tai(), (-20000, 2, 9, 14, 57, 29, 37));
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn extreme_gregorian_print_roundtrip() {
+    fn assert_roundtrip(
+        time_scale: TimeScale,
+        year: i32,
+        month: u8,
+        day: u8,
+        hour: u8,
+        minute: u8,
+        second: u8,
+        nanos: u32,
+    ) {
+        let epoch =
+            Epoch::from_gregorian(year, month, day, hour, minute, second, nanos, time_scale);
+        let expected = if nanos == 0 {
+            format!("{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02} {time_scale}")
+        } else {
+            format!(
+                "{year:04}-{month:02}-{day:02}T{hour:02}:{minute:02}:{second:02}.{nanos:09} {time_scale}"
+            )
+        };
+
+        assert_eq!(format!("{epoch}"), expected);
+        assert_eq!(
+            epoch.to_gregorian(time_scale),
+            (year, month, day, hour, minute, second, nanos)
+        );
+    }
+
+    for &time_scale in &[TimeScale::TAI, TimeScale::UTC] {
+        for &(year, month, day, hour, minute, second, nanos) in &[
+            (-200_000, 1, 1, 0, 0, 0, 0),
+            (-20_000, 12, 31, 23, 59, 59, 999_999_999),
+            (-19_000, 3, 1, 14, 57, 29, 37),
+            (-1, 12, 31, 23, 59, 59, 0),
+            (0, 1, 1, 0, 0, 0, 0),
+            (1, 1, 1, 0, 0, 0, 0),
+            (1600, 2, 29, 0, 0, 0, 0),
+            (1607, 1, 25, 0, 0, 0, 0),
+            (1700, 1, 1, 0, 0, 0, 0),
+            (1700, 4, 17, 2, 10, 9, 0),
+            (1800, 3, 1, 0, 0, 0, 0),
+            (1899, 12, 31, 23, 59, 59, 0),
+            (1900, 1, 1, 0, 0, 0, 0),
+            (1900, 3, 1, 0, 0, 0, 0),
+            (2000, 2, 29, 12, 0, 0, 0),
+            (20_000, 2, 9, 14, 57, 29, 37),
+            (200_000, 2, 29, 14, 57, 29, 37),
+        ] {
+            assert_roundtrip(time_scale, year, month, day, hour, minute, second, nanos);
+        }
+    }
+}
+
 #[test]
 fn precise_timescale_conversion() {
     // Arbitrary GPST Epoch for forward conversion to UTC

@@ -1039,10 +1039,12 @@ impl FromStr for Epoch {
     }
 }
 
+#[allow(dead_code)]
 fn div_rem_f64(me: f64, rhs: f64) -> (i32, f64) {
     ((div_euclid_f64(me, rhs) as i32), rem_euclid_f64(me, rhs))
 }
 
+#[allow(dead_code)]
 fn div_euclid_f64(lhs: f64, rhs: f64) -> f64 {
     let q = (lhs / rhs).trunc();
     if lhs % rhs < 0.0 {
