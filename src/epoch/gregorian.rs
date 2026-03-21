@@ -23,18 +23,37 @@ impl Epoch {
     // Integer civil date conversion adapted from Howard Hinnant's `civil_from_days`
     // algorithm, using a J1900 day count instead of the original Unix-epoch day count:
     // https://howardhinnant.github.io/date_algorithms.html#civil_from_days
+    //
+    // The derivation works in a March-based year, where March is month 0 and February
+    // is month 11. That moves leap day to the end of the year, which makes the
+    // Gregorian pattern regular enough to recover year/month/day with integer math:
+    // - shift the serial day count to 0000-03-01,
+    // - split it into a 400-year Gregorian era (`146_097` days),
+    // - recover the year-of-era, then the day-of-year,
+    // - map the March-based day-of-year back to month/day.
     fn civil_from_days_since_j1900(days_since_j1900: i128) -> (i32, u8, u8) {
+        // Translate our J1900 serial day into the same `z` Hinnant starts from
+        // (days since 1970-01-01), then apply the standard shift to 0000-03-01.
         let z = days_since_j1900 - Self::DAYS_FROM_J1900_TO_UNIX_EPOCH;
         let z = z + 719_468;
         let era = z.div_euclid(146_097);
         let doe = z.rem_euclid(146_097);
+        // `doe` is the day-of-era in [0, 146096]. `yoe` is the year-of-era in [0, 399].
+        // The correction terms account for the leap-day structure inside one Gregorian
+        // era: every 4th year is leap, century years are not, and every 400th year is.
         let yoe = (doe - doe.div_euclid(1_460) + doe.div_euclid(36_524) - doe.div_euclid(146_096))
             .div_euclid(365);
         let mut year = yoe + era * 400;
         let doy = doe - (365 * yoe + yoe.div_euclid(4) - yoe.div_euclid(100));
+        // `mp` is a March-based month index in [0, 11]. The `(5 * doy + 2) / 153`
+        // expression is the inverse of the March-based day-of-year table used in
+        // `days_from_civil`; the divisor `153` comes from the repeating 31/30 month
+        // pattern over five-month blocks in that shifted calendar.
         let mp = (5 * doy + 2).div_euclid(153);
         let day = doy - (153 * mp + 2).div_euclid(5) + 1;
         let month = mp + if mp < 10 { 3 } else { -9 };
+        // January and February belong to the following civil year, because internally
+        // the year still begins on March 1.
         if month <= 2 {
             year += 1;
         }
