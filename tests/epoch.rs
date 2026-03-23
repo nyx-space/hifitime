@@ -2439,3 +2439,13 @@ fn test_regression_gh_440_february_epoch() {
 fn test_regression_gh_440_60s_non_leap() {
     let _ = Epoch::from_gregorian_tai(1971, 12, 31, 23, 59, 60, 0);
 }
+
+#[test]
+fn test_gh_450() {
+    use hifitime::TimeScale;
+    let e = Epoch::from_gregorian(2024, 1, 1, 0, 1, 9, 183906049, TimeScale::ET);
+    assert_eq!(
+        format!("{}", e.to_time_scale(TimeScale::UTC)),
+        "2023-12-31T23:59:59.999999933 UTC"
+    );
+}
