@@ -365,21 +365,12 @@ impl Neg for Duration {
         } else if self == Self::MAX {
             Self::MIN
         } else {
-            match NANOSECONDS_PER_CENTURY.checked_sub(self.nanoseconds) {
-                Some(nanoseconds) => {
-                    // yay
-                    Self::from_parts(-self.centuries - 1, nanoseconds)
-                }
-                None => {
-                    if self > Duration::ZERO {
-                        let dur_to_max = Self::MAX - self;
-                        Self::MIN + dur_to_max
-                    } else {
-                        let dur_to_min = Self::MIN + self;
-                        Self::MAX - dur_to_min
-                    }
-                }
-            }
+            let centuries = -i32::from(self.centuries) - 1;
+            let nanoseconds = NANOSECONDS_PER_CENTURY - self.nanoseconds;
+            Self::from_parts(
+                i16::try_from(centuries).expect("negated duration centuries must fit in i16"),
+                nanoseconds,
+            )
         }
     }
 }

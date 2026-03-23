@@ -1039,23 +1039,6 @@ impl FromStr for Epoch {
     }
 }
 
-fn div_rem_f64(me: f64, rhs: f64) -> (i32, f64) {
-    ((div_euclid_f64(me, rhs) as i32), rem_euclid_f64(me, rhs))
-}
-
-fn div_euclid_f64(lhs: f64, rhs: f64) -> f64 {
-    let q = (lhs / rhs).trunc();
-    if lhs % rhs < 0.0 {
-        if rhs > 0.0 {
-            q - 1.0
-        } else {
-            q + 1.0
-        }
-    } else {
-        q
-    }
-}
-
 fn rem_euclid_f64(lhs: f64, rhs: f64) -> f64 {
     let r = lhs % rhs;
     if r < 0.0 {
@@ -1068,20 +1051,7 @@ fn rem_euclid_f64(lhs: f64, rhs: f64) -> f64 {
 #[cfg(test)]
 mod ut_epoch {
 
-    use super::{div_rem_f64, Duration, Epoch};
-
-    #[test]
-    fn div_rem_f64_test() {
-        assert_eq!(div_rem_f64(24.0, 6.0), (4, 0.0));
-        assert_eq!(div_rem_f64(25.0, 6.0), (4, 1.0));
-        assert_eq!(div_rem_f64(6.0, 6.0), (1, 0.0));
-        assert_eq!(div_rem_f64(5.0, 6.0), (0, 5.0));
-        assert_eq!(div_rem_f64(3540.0, 3600.0), (0, 3540.0));
-        assert_eq!(div_rem_f64(3540.0, 60.0), (59, 0.0));
-        assert_eq!(div_rem_f64(24.0, -6.0), (-4, 0.0));
-        assert_eq!(div_rem_f64(-24.0, 6.0), (-4, 0.0));
-        assert_eq!(div_rem_f64(-24.0, -6.0), (4, 0.0));
-    }
+    use super::{Duration, Epoch};
 
     #[test]
     fn test_days_et_j2000() {
@@ -1120,20 +1090,6 @@ mod ut_epoch {
 #[cfg(kani)]
 mod kani_harnesses {
     use super::*;
-
-    #[kani::proof]
-    fn kani_harness_div_rem_f64() {
-        let me: f64 = kani::any();
-        let rhs: f64 = kani::any();
-        div_rem_f64(me, rhs);
-    }
-
-    #[kani::proof]
-    fn kani_harness_div_euclid_f64() {
-        let lhs: f64 = kani::any();
-        let rhs: f64 = kani::any();
-        div_euclid_f64(lhs, rhs);
-    }
 
     #[kani::proof]
     fn kani_harness_rem_euclid_f64() {

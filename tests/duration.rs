@@ -243,6 +243,10 @@ fn test_neg() {
     assert_eq!(2.nanoseconds(), -(2.0.nanoseconds()));
     assert_eq!(Duration::MIN, -Duration::MAX);
     assert_eq!(Duration::MAX, -Duration::MIN);
+    assert_eq!(
+        -(Duration::MIN + Unit::Nanosecond),
+        Duration::MAX - Unit::Nanosecond
+    );
 }
 
 #[test]
@@ -350,6 +354,32 @@ fn duration_recip() {
             Duration::from_total_nanoseconds(duration.total_nanoseconds()),
         );
     }
+}
+
+#[test]
+fn duration_century_range_is_exact() {
+    let one_side_range_ns = 32_768_i128 * i128::from(NANOSECONDS_PER_CENTURY);
+
+    assert_eq!(Duration::MAX.total_nanoseconds(), one_side_range_ns);
+    assert_eq!(Duration::MIN.total_nanoseconds(), -one_side_range_ns);
+
+    assert_eq!(
+        Duration::from_total_nanoseconds(one_side_range_ns),
+        Duration::MAX
+    );
+    assert_eq!(
+        Duration::from_total_nanoseconds(-one_side_range_ns),
+        Duration::MIN
+    );
+
+    assert_eq!(
+        Duration::from_total_nanoseconds(one_side_range_ns + 1),
+        Duration::MAX
+    );
+    assert_eq!(
+        Duration::from_total_nanoseconds(-one_side_range_ns - 1),
+        Duration::MIN
+    );
 }
 
 #[test]

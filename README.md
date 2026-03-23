@@ -1,6 +1,6 @@
 # Introduction to Hifitime
 
-Hifitime is a powerful Rust and Python library designed for time management. It provides extensive functionalities with precise operations for time calculation in different time scales, making it suitable for engineering and scientific applications where general relativity and time dilation matter. Hifitime guarantees nanosecond precision for 65,536 years around the reference epoch of the initialization time scale, e.g. 01 January 1900 for TAI. Hifitime is also formally verified using the [`Kani` model checker](https://model-checking.github.io/kani/), read more about it [this verification here](https://model-checking.github.io/kani-verifier-blog/2023/03/31/how-kani-helped-find-bugs-in-hifitime.html).
+Hifitime is a powerful Rust and Python library designed for time management. It provides extensive functionalities with precise operations for time calculation in different time scales, making it suitable for engineering and scientific applications where general relativity and time dilation matter. Hifitime guarantees nanosecond precision for 65,536 centuries around the reference epoch of the initialization time scale, e.g. 01 January 1900 for TAI. Hifitime is also formally verified using the [`Kani` model checker](https://model-checking.github.io/kani/), read more about it [this verification here](https://model-checking.github.io/kani-verifier-blog/2023/03/31/how-kani-helped-find-bugs-in-hifitime.html).
 
 Most users of Hifitime will only need to rely on the `Epoch` and `Duration` structures, and optionally the `Weekday` enum for week based computations. Scientific applications may make use of the `TimeScale` enum as well.
 
@@ -274,7 +274,7 @@ No software is perfect, so please report any issue or bug on [Github](https://gi
 Under the hood, a Duration is represented as a 16 bit signed integer of centuries (`i16`) and a 64 bit unsigned integer (`u64`) of the nanoseconds past that century. The overflowing and underflowing of nanoseconds is handled by changing the number of centuries such that the nanoseconds number never represents more than one century (just over four centuries can be stored in 64 bits).
 
 Advantages:
-1. Exact precision of a duration: using a floating point value would cause large durations (e.g. Julian Dates) to have less precision than smaller durations. Durations in hifitime have exactly one nanosecond of precision for 65,536 years.
+1. Exact precision of a duration: using a floating point value would cause large durations (e.g. Julian Dates) to have less precision than smaller durations. Durations in hifitime have exactly one nanosecond of precision for 65,536 centuries.
 2. Skipping floating point operations allows this library to be used in embedded devices without a floating point unit.
 3. Duration arithmetics are exact, e.g. one third of an hour is exactly twenty minutes and not "0.33333 hours."
 
