@@ -631,9 +631,14 @@ fn gh_248_regression() {
     assert_eq!(format!("{e}"), "2023-04-27T12:55:26 UTC");
 }
 
+#[cfg(feature = "std")]
 #[test]
 fn test_strptime_no_separators() {
     let fmt = Format::from_str("%Y%m%d%H%M%S").unwrap();
     let e = fmt.parse("20270216143714").unwrap();
     assert_eq!(format!("{e}"), "2027-02-16T14:37:14 UTC");
+
+    let fmt = Format::from_str("%Y%m%d").unwrap();
+    let e = fmt.parse("20230102").unwrap();
+    assert_eq!(format!("{e}"), "2023-01-02T00:00:00 UTC");
 }
