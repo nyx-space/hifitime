@@ -279,4 +279,21 @@ impl Token {
                 | Token::MonthNameShort
         )
     }
+
+    pub(crate) const fn fixed_length(self) -> Option<usize> {
+        match self {
+            Token::Year => Some(4),
+            Token::YearShort
+            | Token::Month
+            | Token::Day
+            | Token::Hour
+            | Token::Minute
+            | Token::Second
+            | Token::OffsetHours
+            | Token::OffsetMinutes => Some(2),
+            Token::DayOfYearInteger => Some(3),
+            Token::WeekdayDecimal => Some(1),
+            _ => None,
+        }
+    }
 }
