@@ -225,12 +225,9 @@ impl Format {
                     // Advance the token, unless we're at the end of the tokens.
                     if cur_item_idx < self.num_items {
                         cur_item_idx += 1;
-                        match self.items[cur_item_idx] {
-                            Some(item) => {
-                                cur_item = item;
-                                cur_token = cur_item.token;
-                            }
-                            None => {}
+                        if let Some(item) = self.items[cur_item_idx] {
+                            cur_item = item;
+                            cur_token = cur_item.token;
                         }
                     }
                     idx + 1
