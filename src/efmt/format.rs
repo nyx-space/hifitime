@@ -176,18 +176,29 @@ impl Format {
         let s = s_in.trim();
 
         for (idx, char) in s.char_indices() {
+            let reached_fixed_length = cur_item.sep_char.is_none()
+                && cur_item.second_sep_char.is_none()
+                && !cur_item.optional
+                && cur_token
+                    .fixed_length()
+                    .map(|l| idx >= prev_idx && idx - prev_idx + 1 == l)
+                    .unwrap_or(false);
+
             // We should parse if:
             // 1. we're at the end of the string
             // 2. Or we've hit a non-numeric char and the token is fully numeric
             // 3. Or, token is not numeric (e.g. month name) and the current char is the separator
-            // 4. And, if the length of the current substring is longer than 1 and the char is not the optional separator of the previous token.
+            // 4. Or, we've reached the fixed length of the token and there are no separators
+            // 5. And, if the length of the current substring is longer than 1 and the char is not the optional separator of the previous token.
             if idx == s.len() - 1
                 || ((cur_token.is_numeric() && !char.is_numeric())
                     || (!cur_token.is_numeric() && (cur_item.sep_char_is(char))))
+                || reached_fixed_length
             {
                 // If we've found the second separator of the previous token, let's simply increment the start index of the next substring.
                 if idx == prev_idx
                     && (prev_item.second_sep_char.is_none() || prev_item.second_sep_char_is(char))
+                    && !reached_fixed_length
                 {
                     prev_idx += 1;
                     continue;
@@ -210,9 +221,20 @@ impl Format {
                 prev_item = cur_item;
                 prev_token = cur_token;
 
-                let end_idx = if idx != s.len() - 1 || !char.is_numeric() {
+                let end_idx = if reached_fixed_length {
+                    // Advance the token, unless we're at the end of the tokens.
+                    if cur_item_idx < self.num_items {
+                        cur_item_idx += 1;
+                        if let Some(item) = self.items[cur_item_idx] {
+                            cur_item = item;
+                            cur_token = cur_item.token;
+                        }
+                    }
+                    idx + 1
+                } else if idx != s.len() - 1 || !char.is_numeric() {
                     // Only advance the token if we aren't at the end of the string
-                    if cur_item.sep_char_is_not(char)
+                    if !reached_fixed_length
+                        && cur_item.sep_char_is_not(char)
                         && (cur_item.second_sep_char.is_none()
                             || (cur_item.second_sep_char_is_not(char)))
                     {
@@ -337,7 +359,8 @@ impl Format {
                 prev_idx = idx + 1;
                 // If we are about to parse an hours offset, we need to set the sign now.
                 if cur_token == Token::OffsetHours {
-                    if &s[idx..idx + 1] == "-" {
+                    let sign_idx = if reached_fixed_length { idx + 1 } else { idx };
+                    if sign_idx < s.len() && &s[sign_idx..sign_idx + 1] == "-" {
                         offset_sign = -1;
                     }
                     prev_idx += 1;
@@ -603,4 +626,16 @@ fn gh_248_regression() {
     let e = Epoch::from_format_str("2023-117T12:55:26", "%Y-%jT%H:%M:%S").unwrap();
 
     assert_eq!(format!("{e}"), "2023-04-27T12:55:26 UTC");
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn test_strptime_no_separators() {
+    let fmt = Format::from_str("%Y%m%d%H%M%S").unwrap();
+    let e = fmt.parse("20270216143714").unwrap();
+    assert_eq!(format!("{e}"), "2027-02-16T14:37:14 UTC");
+
+    let fmt = Format::from_str("%Y%m%d").unwrap();
+    let e = fmt.parse("20230102").unwrap();
+    assert_eq!(format!("{e}"), "2023-01-02T00:00:00 UTC");
 }
