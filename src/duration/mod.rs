@@ -375,17 +375,13 @@ impl Duration {
 
     /// Returns the total nanoseconds in a signed 128 bit integer
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| {
+        *result == i128::from(self.centuries) * i128::from(NANOSECONDS_PER_CENTURY)
+                 + i128::from(self.nanoseconds)
+    }))]
     pub fn total_nanoseconds(&self) -> i128 {
-        if self.centuries == -1 {
-            -i128::from(NANOSECONDS_PER_CENTURY - self.nanoseconds)
-        } else if self.centuries >= 0 {
-            i128::from(self.centuries) * i128::from(NANOSECONDS_PER_CENTURY)
-                + i128::from(self.nanoseconds)
-        } else {
-            // Centuries negative by a decent amount
-            i128::from(self.centuries) * i128::from(NANOSECONDS_PER_CENTURY)
-                - i128::from(self.nanoseconds)
-        }
+        i128::from(self.centuries) * i128::from(NANOSECONDS_PER_CENTURY)
+            + i128::from(self.nanoseconds)
     }
 
     /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.

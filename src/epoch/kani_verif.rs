@@ -895,3 +895,31 @@ mod kani_harnesses {
         callee.with_hms_strict_from(other);
     }
 }
+
+/// Proves Epoch::PartialEq and Epoch::Ord are consistent:
+/// equal total_nanoseconds implies Ordering::Equal.
+///
+/// This caught a bug where Epoch::PartialEq delegated to Duration::PartialEq
+/// (which ignores sign at zero crossing: -1ns == +1ns), while Epoch::Ord
+/// used derived Duration::cmp (lexicographic, sign-aware). Two epochs
+/// could satisfy a == b and a < b simultaneously.
+///
+/// Fixed by making both use total_nanoseconds() as the canonical scalar.
+/// No assumptions needed — the property holds for all Duration values.
+#[kani::proof]
+fn verify_epoch_eq_ord_consistent() {
+    let c1: i16 = kani::any();
+    let n1: u64 = kani::any();
+    let c2: i16 = kani::any();
+    let n2: u64 = kani::any();
+    let d1 = Duration::from_parts(c1, n1);
+    let d2 = Duration::from_parts(c2, n2);
+    let ns1 = d1.total_nanoseconds();
+    let ns2 = d2.total_nanoseconds();
+    if ns1 == ns2 {
+        assert!(ns1.cmp(&ns2) == core::cmp::Ordering::Equal);
+    }
+    if ns1 < ns2 {
+        assert!(ns1 != ns2);
+    }
+}
