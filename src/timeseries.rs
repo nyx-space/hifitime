@@ -71,6 +71,21 @@ impl TimeSeries {
         }
     }
 
+    /// Returns first [Epoch] (starting point) of this [TimeSeries].
+    pub fn first_epoch(&self) -> Epoch {
+        self.start
+    }
+
+    /// Returns last [Epoch] included in this [TimeSeries].
+    pub fn last_epoch(&self) -> Epoch {
+        let mut epoch = self.start + self.duration;
+        if !self.incl {
+            // remove one step
+            epoch -= self.step;
+        }
+        epoch
+    }
+
     /// Return an iterator of evenly spaced Epochs, inclusive on start **and** on end.
     /// ```
     /// use hifitime::{Epoch, Unit, TimeSeries};
