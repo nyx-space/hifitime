@@ -1206,6 +1206,50 @@ fn test_ord() {
     assert_eq!(epoch1.cmp(&epoch1), core::cmp::Ordering::Equal);
 }
 
+/// Regression test for the PartialEq/Ord inconsistency at the zero crossing.
+///
+/// This bug was invisible to conventional testing because:
+/// 1. It only manifests for epochs constructed from raw Duration parts near
+///    the zero crossing (centuries = -1, nanoseconds close to NPC).
+/// 2. All Gregorian constructors produce normalized durations that never
+///    hit the zero-crossing representation.
+/// 3. The existing test_ord test above uses Gregorian dates (year 2020),
+///    which are far from the zero crossing.
+///
+/// The test below constructs epochs directly from Duration parts to hit
+/// the exact representation that triggers the inconsistency. Without
+/// formal verification, finding this would require knowing the internal
+/// Duration encoding AND the interaction between Duration::PartialEq's
+/// zero-crossing special case and the derived Duration::Ord.
+#[test]
+fn test_epoch_eq_ord_consistency_at_zero_crossing() {
+    use hifitime::prelude::*;
+
+    // These two durations represent the same absolute offset (1 nanosecond)
+    // but with opposite signs in the internal representation:
+    //   pos = { centuries: 0, nanoseconds: 1 }  → +1 ns from J1900
+    //   neg = { centuries: -1, nanoseconds: NPC-1 } → -1 ns from J1900
+    //
+    // Duration::PartialEq says pos == neg (opposite durations are equal).
+    // But as Epochs, these are DIFFERENT points in time.
+    let pos = Epoch::from_tai_duration(Duration::from_parts(0, 1));
+    let neg = Epoch::from_tai_duration(Duration::from_parts(
+        -1,
+        hifitime::NANOSECONDS_PER_CENTURY - 1,
+    ));
+
+    // These must NOT be equal as epochs — they are 2 nanoseconds apart.
+    assert_ne!(pos, neg, "Epochs at +1ns and -1ns from J1900 must differ");
+
+    // And ordering must be consistent: pos > neg.
+    assert!(pos > neg, "Epoch at +1ns must be after epoch at -1ns");
+
+    // Verify the contract: if two epochs ARE equal, cmp must say Equal.
+    let same = Epoch::from_tai_duration(Duration::from_parts(0, 1));
+    assert_eq!(pos, same);
+    assert_eq!(pos.cmp(&same), core::cmp::Ordering::Equal);
+}
+
 #[test]
 fn regression_test_gh_145() {
     // Ceil and floor in the TAI time system

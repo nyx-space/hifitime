@@ -404,7 +404,7 @@ fn duration_floor_ceil_round() {
     assert_eq!(d.floor(9.minutes()), 0.minutes());
     assert_eq!(
         (Duration::MIN + 10.seconds()).floor(10.seconds()),
-        Duration::MIN
+        Duration::MIN + 10.seconds()
     );
 
     // Ceil

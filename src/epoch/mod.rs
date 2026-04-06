@@ -126,6 +126,9 @@ impl Epoch {
         iers_only: bool,
         provider: L,
     ) -> Option<f64> {
+        // NOTE: Kani loop contracts for `for` loops over custom DoubleEndedIterators
+        // (like Rev<L>) are not supported. A future `while let` rewrite would enable
+        // annotation, but requires quantifier support for a meaningful invariant.
         for leap_second in provider.rev() {
             if self.to_tai_duration().to_seconds() >= leap_second.timestamp_tai_s
                 && (!iers_only || leap_second.announced_by_iers)

@@ -26,8 +26,7 @@ jobs:
           sed '17d' Cargo.toml > Cargo.toml.new
           mv Cargo.toml.new Cargo.toml
 
-      # Only ensure that Kani can build successfully
       - name: Kani Rust Verifier
         uses: model-checking/kani-github-action@v1.1
         with:
-          args: --only-codegen
+          args: --only-codegen -Z function-contracts -Z loop-contracts

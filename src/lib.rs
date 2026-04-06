@@ -1,6 +1,8 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(docsrs, feature(doc_cfg))]
 #![cfg_attr(not(feature = "std"), no_std)]
+#![cfg_attr(kani, feature(stmt_expr_attributes))]
+#![cfg_attr(kani, feature(proc_macro_hygiene))]
 /*
 * Hifitime
 * Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
