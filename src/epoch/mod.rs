@@ -126,18 +126,10 @@ impl Epoch {
         iers_only: bool,
         provider: L,
     ) -> Option<f64> {
-        // Rewritten from `for leap_second in provider.rev()` to `while let`
-        // so that Kani loop contracts can be applied in the future. The `for`
-        // loop over `Rev<L>` (a custom DoubleEndedIterator) is not supported
-        // by Kani's loop contract infrastructure, but `while let` desugars to
-        // a regular `while` loop at the MIR level.
-        //
-        // A meaningful loop invariant would express "no leap second visited so
-        // far satisfies the condition," but this requires quantifying over the
-        // visited elements (kani::forall over the iterator's visited range),
-        // which is not supported in Kani's loop invariant syntax today.
-        let mut iter = provider.rev();
-        while let Some(leap_second) = iter.next() {
+        // NOTE: Kani loop contracts for `for` loops over custom DoubleEndedIterators
+        // (like Rev<L>) are not supported. A future `while let` rewrite would enable
+        // annotation, but requires quantifier support for a meaningful invariant.
+        for leap_second in provider.rev() {
             if self.to_tai_duration().to_seconds() >= leap_second.timestamp_tai_s
                 && (!iers_only || leap_second.announced_by_iers)
             {
