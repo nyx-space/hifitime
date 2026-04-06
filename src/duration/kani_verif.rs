@@ -182,7 +182,7 @@ mod kani_harnesses {
         Duration::from_nanoseconds(value);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(Duration::compose)]
     fn kani_harness_Duration_compose() {
         let sign: i8 = kani::any();
         let days: u64 = kani::any();
@@ -226,7 +226,7 @@ mod kani_harnesses {
         );
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(Duration::from_tz_offset)]
     fn kani_harness_Duration_from_tz_offset() {
         let sign: i8 = kani::any();
         let hours: i64 = kani::any();
@@ -277,7 +277,7 @@ mod kani_harnesses {
         callee.to_unit(unit);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(Duration::abs)]
     fn kani_harness_abs() {
         let callee: Duration = kani::any();
         callee.abs();
@@ -302,7 +302,7 @@ mod kani_harnesses {
         callee.subdivision(unit);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(Duration::floor)]
     fn kani_harness_floor() {
         let duration: Duration = kani::any();
         let callee: Duration = kani::any();
@@ -329,14 +329,14 @@ mod kani_harnesses {
         callee.approx();
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(Duration::min)]
     fn kani_harness_min() {
         let other: Duration = kani::any();
         let callee: Duration = kani::any();
         callee.min(other);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(Duration::max)]
     fn kani_harness_max() {
         let other: Duration = kani::any();
         let callee: Duration = kani::any();

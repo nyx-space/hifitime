@@ -251,6 +251,11 @@ impl Duration {
     /// Creates a new duration from its parts. Set the sign to a negative number for the duration to be negative.
     #[allow(clippy::too_many_arguments)]
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub fn compose(
         sign: i8,
         days: u64,
@@ -302,6 +307,11 @@ impl Duration {
 
     /// Initializes a Duration from a timezone offset
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub fn from_tz_offset(sign: i8, hours: i64, minutes: i64) -> Self {
         let dur = hours * Unit::Hour + minutes * Unit::Minute;
         if sign < 0 {
@@ -460,6 +470,7 @@ impl Duration {
 
     /// Returns the absolute value of this duration
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| !result.centuries.is_negative() || result.parts_are_equal(Self::MIN)))]
     pub fn abs(&self) -> Self {
         if self.centuries.is_negative() {
             -*self
@@ -554,6 +565,11 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.floor(1.hours() + 1.minutes()), 2.hours() + 2.minutes());
     /// assert_eq!(two_hours_three_min.floor(1.hours() + 5.minutes()), 1.hours() + 5.minutes());
     /// ```
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub fn floor(&self, duration: Self) -> Self {
         Self::from_total_nanoseconds(if duration.total_nanoseconds() == 0 {
             0
@@ -664,6 +680,7 @@ impl Duration {
     /// assert_eq!(d0, d1.min(d0));
     /// assert_eq!(d0, d0.min(d1));
     /// ```
+    #[cfg_attr(kani, kani::ensures(|result: &Self| *result <= self || *result <= other))]
     pub fn min(self, other: Self) -> Self {
         if self < other {
             self
@@ -683,6 +700,7 @@ impl Duration {
     /// assert_eq!(d1, d1.max(d0));
     /// assert_eq!(d1, d0.max(d1));
     /// ```
+    #[cfg_attr(kani, kani::ensures(|result: &Self| *result >= self || *result >= other))]
     pub fn max(self, other: Self) -> Self {
         if self > other {
             self
