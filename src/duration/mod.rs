@@ -165,6 +165,11 @@ impl Duration {
 
     #[must_use]
     /// Create a normalized duration from its parts
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub const fn from_parts(centuries: i16, nanoseconds: u64) -> Self {
         Self {
             centuries,
@@ -175,6 +180,11 @@ impl Duration {
 
     #[must_use]
     /// Converts the total nanoseconds as i128 into this Duration (saving 48 bits)
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub const fn from_total_nanoseconds(nanos: i128) -> Self {
         // In this function, we simply check that the input data can be casted. The `normalize` function will check whether more work needs to be done.
         if nanos == 0 {
@@ -197,6 +207,11 @@ impl Duration {
 
     #[must_use]
     /// Create a new duration from the truncated nanoseconds (+/- 2927.1 years of duration)
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub const fn from_truncated_nanoseconds(nanos: i64) -> Self {
         if nanos < 0 {
             let ns = nanos.unsigned_abs();
@@ -214,36 +229,66 @@ impl Duration {
 
     /// Creates a new duration from the provided number of days
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub const fn from_days(value: f64) -> Self {
         Unit::Day.const_multiply(value)
     }
 
     /// Creates a new duration from the provided number of hours
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub const fn from_hours(value: f64) -> Self {
         Unit::Hour.const_multiply(value)
     }
 
     /// Creates a new duration from the provided number of seconds
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub const fn from_seconds(value: f64) -> Self {
         Unit::Second.const_multiply(value)
     }
 
     /// Creates a new duration from the provided number of milliseconds
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub const fn from_milliseconds(value: f64) -> Self {
         Unit::Millisecond.const_multiply(value)
     }
 
     /// Creates a new duration from the provided number of microsecond
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub const fn from_microseconds(value: f64) -> Self {
         Unit::Microsecond.const_multiply(value)
     }
 
     /// Creates a new duration from the provided number of nanoseconds
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub const fn from_nanoseconds(value: f64) -> Self {
         Unit::Nanosecond.const_multiply(value)
     }
@@ -329,6 +374,11 @@ impl Duration {
     }
 
     /// Return the normalized equivalent of a [Duration].
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     const fn as_normalized(self) -> Self {
         let mut normalized_self = self;
 
