@@ -318,6 +318,7 @@ impl Epoch {
     #[must_use]
     /// Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian_tai if unsure.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
     pub fn from_gregorian_tai(
         year: i32,
         month: u8,
@@ -333,6 +334,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from the Gregorian date at midnight in TAI.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
     pub fn from_gregorian_tai_at_midnight(year: i32, month: u8, day: u8) -> Self {
         Self::maybe_from_gregorian_tai(year, month, day, 0, 0, 0, 0)
             .expect("invalid Gregorian date")
@@ -340,6 +342,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from the Gregorian date at noon in TAI
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
     pub fn from_gregorian_tai_at_noon(year: i32, month: u8, day: u8) -> Self {
         Self::maybe_from_gregorian_tai(year, month, day, 12, 0, 0, 0)
             .expect("invalid Gregorian date")
@@ -347,6 +350,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from the Gregorian date and time (without the nanoseconds) in TAI
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
     pub fn from_gregorian_tai_hms(
         year: i32,
         month: u8,
@@ -384,6 +388,7 @@ impl Epoch {
     #[must_use]
     /// Builds an Epoch from the provided Gregorian date and time in UTC. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian_utc if unsure.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
     pub fn from_gregorian_utc(
         year: i32,
         month: u8,
@@ -399,6 +404,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from Gregorian date in UTC at midnight
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
     pub fn from_gregorian_utc_at_midnight(year: i32, month: u8, day: u8) -> Self {
         Self::maybe_from_gregorian_utc(year, month, day, 0, 0, 0, 0)
             .expect("invalid Gregorian date")
@@ -406,6 +412,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from Gregorian date in UTC at noon
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
     pub fn from_gregorian_utc_at_noon(year: i32, month: u8, day: u8) -> Self {
         Self::maybe_from_gregorian_utc(year, month, day, 12, 0, 0, 0)
             .expect("invalid Gregorian date")
@@ -413,6 +420,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from the Gregorian date and time (without the nanoseconds) in UTC
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
     pub fn from_gregorian_utc_hms(
         year: i32,
         month: u8,
@@ -429,6 +437,7 @@ impl Epoch {
     #[must_use]
     /// Builds an Epoch from the provided Gregorian date and time in the provided time scale. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian if unsure.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     pub fn from_gregorian(
         year: i32,
         month: u8,
@@ -445,6 +454,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from Gregorian date in UTC at midnight
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     pub fn from_gregorian_at_midnight(
         year: i32,
         month: u8,
@@ -457,6 +467,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from Gregorian date in UTC at noon
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     pub fn from_gregorian_at_noon(year: i32, month: u8, day: u8, time_scale: TimeScale) -> Self {
         Self::maybe_from_gregorian(year, month, day, 12, 0, 0, 0, time_scale)
             .expect("invalid Gregorian date")
@@ -464,6 +475,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from the Gregorian date and time (without the nanoseconds) in UTC
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     pub fn from_gregorian_hms(
         year: i32,
         month: u8,

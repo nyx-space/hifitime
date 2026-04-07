@@ -429,6 +429,7 @@ impl Duration {
     #[must_use]
     /// Returns the centuries and nanoseconds of this duration
     /// NOTE: These items are not public to prevent incorrect durations from being created by modifying the values of the structure directly.
+    #[cfg_attr(kani, kani::ensures(|result| result.0 == self.centuries && result.1 == self.nanoseconds))]
     pub const fn to_parts(&self) -> (i16, u64) {
         (self.centuries, self.nanoseconds)
     }
@@ -530,6 +531,7 @@ impl Duration {
     /// + 1 if the number is positive
     /// + -1 if the number is negative
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| *result == -1 || *result == 0 || *result == 1))]
     pub const fn signum(&self) -> i8 {
         self.centuries.signum() as i8
     }
@@ -756,6 +758,7 @@ impl Duration {
     }
 
     /// Returns whether this is a negative or positive duration.
+    #[cfg_attr(kani, kani::ensures(|result| *result == self.centuries.is_negative()))]
     pub const fn is_negative(&self) -> bool {
         self.centuries.is_negative()
     }

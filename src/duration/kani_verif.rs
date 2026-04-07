@@ -245,7 +245,7 @@ mod kani_harnesses {
         let _ = dur.as_normalized();
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(Duration::to_parts)]
     fn kani_harness_to_parts() {
         let callee: Duration = kani::any();
         callee.to_parts();
@@ -288,7 +288,7 @@ mod kani_harnesses {
         callee.abs();
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(Duration::signum)]
     fn kani_harness_signum() {
         let callee: Duration = kani::any();
         callee.signum();
@@ -348,7 +348,7 @@ mod kani_harnesses {
         callee.max(other);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(Duration::is_negative)]
     fn kani_harness_is_negative() {
         let callee: Duration = kani::any();
         callee.is_negative();

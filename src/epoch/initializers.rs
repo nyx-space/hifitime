@@ -21,6 +21,7 @@ use crate::{
 impl Epoch {
     #[must_use]
     /// Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
     pub const fn from_tai_duration(duration: Duration) -> Self {
         Self {
             duration,
@@ -34,12 +35,15 @@ impl Epoch {
 
     #[must_use]
     /// Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
     pub fn from_tai_parts(centuries: i16, nanoseconds: u64) -> Self {
         Self::from_tai_duration(Duration::from_parts(centuries, nanoseconds))
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
+    #[cfg_attr(kani, kani::requires(seconds.is_finite()))]
     pub fn from_tai_seconds(seconds: f64) -> Self {
         assert!(
             seconds.is_finite(),
@@ -50,6 +54,8 @@ impl Epoch {
 
     #[must_use]
     /// Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_tai_days(days: f64) -> Self {
         assert!(
             days.is_finite(),
@@ -60,51 +66,64 @@ impl Epoch {
 
     #[must_use]
     /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
     pub fn from_utc_duration(duration: Duration) -> Self {
         Self::from_duration(duration, TimeScale::UTC)
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
+    #[cfg_attr(kani, kani::requires(seconds.is_finite()))]
     pub fn from_utc_seconds(seconds: f64) -> Self {
         Self::from_utc_duration(seconds * Unit::Second)
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_utc_days(days: f64) -> Self {
         Self::from_utc_duration(days * Unit::Day)
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided duration since 1980 January 6 at midnight
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GPST))]
     pub fn from_gpst_duration(duration: Duration) -> Self {
         Self::from_duration(duration, TimeScale::GPST)
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided duration since 1980 January 6 at midnight
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::QZSST))]
     pub fn from_qzsst_duration(duration: Duration) -> Self {
         Self::from_duration(duration, TimeScale::QZSST)
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided duration since August 21st 1999 midnight
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GST))]
     pub fn from_gst_duration(duration: Duration) -> Self {
         Self::from_duration(duration, TimeScale::GST)
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided duration since January 1st midnight
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::BDT))]
     pub fn from_bdt_duration(duration: Duration) -> Self {
         Self::from_duration(duration, TimeScale::BDT)
     }
 
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_mjd_tai(days: f64) -> Self {
         Self::from_mjd_in_time_scale(days, TimeScale::TAI)
     }
 
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_mjd_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
         assert!(
             days.is_finite(),
@@ -117,31 +136,45 @@ impl Epoch {
     }
 
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_mjd_utc(days: f64) -> Self {
         Self::from_mjd_in_time_scale(days, TimeScale::UTC)
     }
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GPST))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_mjd_gpst(days: f64) -> Self {
         Self::from_mjd_in_time_scale(days, TimeScale::GPST)
     }
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::QZSST))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_mjd_qzsst(days: f64) -> Self {
         Self::from_mjd_in_time_scale(days, TimeScale::QZSST)
     }
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GST))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_mjd_gst(days: f64) -> Self {
         Self::from_mjd_in_time_scale(days, TimeScale::GST)
     }
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::BDT))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_mjd_bdt(days: f64) -> Self {
         Self::from_mjd_in_time_scale(days, TimeScale::BDT)
     }
 
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_tai(days: f64) -> Self {
         Self::from_jde_in_time_scale(days, TimeScale::TAI)
     }
 
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
         assert!(
             days.is_finite(),
@@ -154,28 +187,40 @@ impl Epoch {
     }
 
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_utc(days: f64) -> Self {
         Self::from_jde_in_time_scale(days, TimeScale::UTC)
     }
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GPST))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_gpst(days: f64) -> Self {
         Self::from_jde_in_time_scale(days, TimeScale::GPST)
     }
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::QZSST))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_qzsst(days: f64) -> Self {
         Self::from_jde_in_time_scale(days, TimeScale::QZSST)
     }
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GST))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_gst(days: f64) -> Self {
         Self::from_jde_in_time_scale(days, TimeScale::GST)
     }
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::BDT))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_bdt(days: f64) -> Self {
         Self::from_jde_in_time_scale(days, TimeScale::BDT)
     }
 
     #[must_use]
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TT))]
+    #[cfg_attr(kani, kani::requires(seconds.is_finite()))]
     pub fn from_tt_seconds(seconds: f64) -> Self {
         assert!(
             seconds.is_finite(),
@@ -186,12 +231,15 @@ impl Epoch {
 
     #[must_use]
     /// Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TT))]
     pub fn from_tt_duration(duration: Duration) -> Self {
         Self::from_duration(duration, TimeScale::TT)
     }
 
     #[must_use]
     /// Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::ET))]
+    #[cfg_attr(kani, kani::requires(seconds_since_j2000.is_finite()))]
     pub fn from_et_seconds(seconds_since_j2000: f64) -> Epoch {
         Self::from_et_duration(seconds_since_j2000 * Unit::Second)
     }
@@ -209,6 +257,7 @@ impl Epoch {
     ///
     /// In order to match SPICE, the as_et_duration() function will manually get rid of that difference.
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::ET))]
     pub fn from_et_duration(duration_since_j2000: Duration) -> Self {
         Self::from_duration(duration_since_j2000, TimeScale::ET)
     }
@@ -217,6 +266,8 @@ impl Epoch {
     /// Initialize an Epoch from Dynamic Barycentric Time (TDB) seconds past 2000 JAN 01 midnight (difference than SPICE)
     /// NOTE: This uses the ESA algorithm, which is a notch more complicated than the SPICE algorithm, but more precise.
     /// In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ESA algorithm should be exactly correct.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TDB))]
+    #[cfg_attr(kani, kani::requires(seconds_j2000.is_finite()))]
     pub fn from_tdb_seconds(seconds_j2000: f64) -> Epoch {
         assert!(
             seconds_j2000.is_finite(),
@@ -227,6 +278,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TDB))]
     pub fn from_tdb_duration(duration_since_j2000: Duration) -> Epoch {
         Self::from_duration(duration_since_j2000, TimeScale::TDB)
     }
@@ -254,6 +306,8 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the number of seconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GPST))]
+    #[cfg_attr(kani, kani::requires(seconds.is_finite()))]
     pub fn from_gpst_seconds(seconds: f64) -> Self {
         Self::from_duration(seconds * Unit::Second, TimeScale::GPST)
     }
@@ -261,6 +315,8 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the number of days since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GPST))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_gpst_days(days: f64) -> Self {
         Self::from_duration(days * Unit::Day, TimeScale::GPST)
     }
@@ -269,6 +325,7 @@ impl Epoch {
     /// Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use GPS as a time source.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GPST))]
     pub fn from_gpst_nanoseconds(nanoseconds: u64) -> Self {
         Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::GPST)
     }
@@ -276,6 +333,8 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the number of seconds since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::QZSST))]
+    #[cfg_attr(kani, kani::requires(seconds.is_finite()))]
     pub fn from_qzsst_seconds(seconds: f64) -> Self {
         Self::from_duration(seconds * Unit::Second, TimeScale::QZSST)
     }
@@ -283,6 +342,8 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the number of days since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::QZSST))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_qzsst_days(days: f64) -> Self {
         Self::from_duration(days * Unit::Day, TimeScale::QZSST)
     }
@@ -291,6 +352,7 @@ impl Epoch {
     /// Initialize an Epoch from the number of nanoseconds since the QZSS Time Epoch,
     /// defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
     /// This may be useful for time keeping devices that use QZSS as a time source.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::QZSST))]
     pub fn from_qzsst_nanoseconds(nanoseconds: u64) -> Self {
         Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::QZSST)
     }
@@ -299,6 +361,8 @@ impl Epoch {
     /// Initialize an Epoch from the number of seconds since the GST Time Epoch,
     /// starting August 21st 1999 midnight (UTC)
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GST))]
+    #[cfg_attr(kani, kani::requires(seconds.is_finite()))]
     pub fn from_gst_seconds(seconds: f64) -> Self {
         Self::from_duration(seconds * Unit::Second, TimeScale::GST)
     }
@@ -307,6 +371,8 @@ impl Epoch {
     /// Initialize an Epoch from the number of days since the GST Time Epoch,
     /// starting August 21st 1999 midnight (UTC)
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GST))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_gst_days(days: f64) -> Self {
         Self::from_duration(days * Unit::Day, TimeScale::GST)
     }
@@ -315,6 +381,7 @@ impl Epoch {
     /// Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
     /// starting August 21st 1999 midnight (UTC)
     /// (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GST))]
     pub fn from_gst_nanoseconds(nanoseconds: u64) -> Self {
         Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::GST)
     }
@@ -322,6 +389,8 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the number of seconds since the BDT Time Epoch,
     /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::BDT))]
+    #[cfg_attr(kani, kani::requires(seconds.is_finite()))]
     pub fn from_bdt_seconds(seconds: f64) -> Self {
         Self::from_duration(seconds * Unit::Second, TimeScale::BDT)
     }
@@ -329,6 +398,8 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the number of days since the BDT Time Epoch,
     /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::BDT))]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_bdt_days(days: f64) -> Self {
         Self::from_duration(days * Unit::Day, TimeScale::BDT)
     }
@@ -337,6 +408,7 @@ impl Epoch {
     /// Initialize an Epoch from the number of nanoseconds since the BDT Time Epoch,
     /// starting on January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
     /// This may be useful for time keeping devices that use BDT as a time source.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::BDT))]
     pub fn from_bdt_nanoseconds(nanoseconds: u64) -> Self {
         Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::BDT)
     }
@@ -351,6 +423,7 @@ impl Epoch {
     #[must_use]
     /// Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) second timestamp since TAI midnight 1970 January 01.
     /// PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems.
+    #[cfg_attr(kani, kani::requires(seconds.is_finite()))]
     pub fn from_ptp_seconds(seconds: f64) -> Self {
         Self::from_ptp_duration(seconds * Unit::Second)
     }
@@ -399,6 +472,7 @@ impl Epoch {
     ///
     /// Note that this constructor relies on 128 bit integer math and may be slow on embedded devices.
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     pub fn from_time_of_week(week: u32, nanoseconds: u64, time_scale: TimeScale) -> Self {
         let mut nanos = i128::from(nanoseconds);
         nanos += i128::from(week) * Weekday::DAYS_PER_WEEK_I128 * i128::from(NANOSECONDS_PER_DAY);
@@ -408,6 +482,7 @@ impl Epoch {
 
     #[must_use]
     /// Builds a UTC Epoch from given `week`: elapsed weeks counter and "ns" amount of nanoseconds since closest Sunday Midnight.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
     pub fn from_time_of_week_utc(week: u32, nanoseconds: u64) -> Self {
         Self::from_time_of_week(week, nanoseconds, TimeScale::UTC)
     }

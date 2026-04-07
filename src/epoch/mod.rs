@@ -144,6 +144,7 @@ impl Epoch {
     /// For example, if the duration is 1 day and the time scale is Ephemeris Time, then this will create an epoch of 2000-01-02 at midnight ET. If the duration is 1 day and the time scale is TAI, this will create an epoch of 1900-01-02 at noon, because the TAI reference epoch in Hifitime is chosen to be the J1900 epoch.
     /// In case of ET, TDB Timescales, a duration since J2000 is expected.
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == ts))]
     pub const fn from_duration(duration: Duration, ts: TimeScale) -> Self {
         Self {
             duration,
@@ -178,6 +179,7 @@ impl Epoch {
     ///
     /// :type ts: TimeScale
     /// :rtype: Epoch
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == ts))]
     pub fn to_time_scale(&self, ts: TimeScale) -> Self {
         if ts == self.time_scale {
             // Do nothing, just return a copy
