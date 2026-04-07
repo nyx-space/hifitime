@@ -294,6 +294,12 @@ impl Mul<f64> for Unit {
 
 impl Unit {
     /// `const`-compatible copy of [Self::mul].
+    #[cfg_attr(kani, kani::ensures(|result: &Duration| {
+        let (c, n) = result.to_parts();
+        n < NANOSECONDS_PER_CENTURY
+            || (c == i16::MAX && n == NANOSECONDS_PER_CENTURY)
+            || (c == i16::MIN && n == 0)
+    }))]
     pub(crate) const fn const_multiply(self, q: f64) -> Duration {
         let factor = match self {
             Unit::Century => NANOSECONDS_PER_CENTURY as f64,

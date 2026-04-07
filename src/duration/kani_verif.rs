@@ -353,4 +353,12 @@ mod kani_harnesses {
         let callee: Duration = kani::any();
         callee.is_negative();
     }
+
+    /// Verifies Unit::const_multiply always returns a normalized Duration.
+    #[kani::proof_for_contract(Unit::const_multiply)]
+    fn verify_unit_const_multiply_contract() {
+        let unit: Unit = kani::any();
+        let q: f64 = kani::any();
+        unit.const_multiply(q);
+    }
 }
