@@ -520,7 +520,7 @@ impl Duration {
 
     /// Returns the absolute value of this duration
     #[must_use]
-    #[cfg_attr(kani, kani::ensures(|result: &Self| !result.centuries.is_negative() || result.parts_are_equal(Self::MIN)))]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| !result.centuries.is_negative()))]
     pub fn abs(&self) -> Self {
         if self.centuries.is_negative() {
             -*self
@@ -730,7 +730,7 @@ impl Duration {
     /// assert_eq!(d0, d1.min(d0));
     /// assert_eq!(d0, d0.min(d1));
     /// ```
-    #[cfg_attr(kani, kani::ensures(|result: &Self| *result <= self || *result <= other))]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| *result <= self && *result <= other && (*result == self || *result == other)))]
     pub fn min(self, other: Self) -> Self {
         if self < other {
             self
@@ -750,7 +750,7 @@ impl Duration {
     /// assert_eq!(d1, d1.max(d0));
     /// assert_eq!(d1, d0.max(d1));
     /// ```
-    #[cfg_attr(kani, kani::ensures(|result: &Self| *result >= self || *result >= other))]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| *result >= self && *result >= other && (*result == self || *result == other)))]
     pub fn max(self, other: Self) -> Self {
         if self > other {
             self
