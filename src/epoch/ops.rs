@@ -471,25 +471,12 @@ impl AddAssign<Duration> for Epoch {
 }
 
 /// Equality only checks the duration since J1900 match in TAI, because this is how all of the epochs are referenced.
-/// Equality compares epochs as points in time, using total nanoseconds for
-/// a canonical comparison that correctly distinguishes positive and negative
-/// durations (unlike Duration::PartialEq which treats opposite signs as equal).
+/// Equality compares epochs as points in time by normalizing to TAI.
+/// Uses field comparison via to_parts() to bypass Duration::PartialEq's
+/// zero-crossing special case (which treats opposite-sign durations as equal).
 impl PartialEq for Epoch {
     fn eq(&self, other: &Self) -> bool {
-        if self.time_scale == other.time_scale {
-            self.duration.total_nanoseconds() == other.duration.total_nanoseconds()
-        } else if self.time_scale.uses_leap_seconds() != other.time_scale.uses_leap_seconds() {
-            if self.time_scale.uses_leap_seconds() {
-                let converted = self.to_time_scale(other.time_scale).duration;
-                converted.total_nanoseconds() == other.duration.total_nanoseconds()
-            } else {
-                let converted = other.to_time_scale(self.time_scale).duration;
-                self.duration.total_nanoseconds() == converted.total_nanoseconds()
-            }
-        } else {
-            let converted = other.to_time_scale(self.time_scale).duration;
-            self.duration.total_nanoseconds() == converted.total_nanoseconds()
-        }
+        self.to_tai_duration().to_parts() == other.to_tai_duration().to_parts()
     }
 }
 
@@ -500,20 +487,16 @@ impl PartialOrd for Epoch {
 }
 
 impl Ord for Epoch {
-    /// Ordering uses total_nanoseconds() for consistency with PartialEq.
     fn cmp(&self, other: &Self) -> Ordering {
-        let self_dur = self.duration;
-        let other_dur = other.to_time_scale(self.time_scale).duration;
-        self_dur
-            .total_nanoseconds()
-            .cmp(&other_dur.total_nanoseconds())
+        self.to_tai_duration()
+            .to_parts()
+            .cmp(&other.to_tai_duration().to_parts())
     }
 }
 
 impl Hash for Epoch {
-    /// Hash normalizes to TAI nanoseconds so that two epochs representing the
-    /// same point in time produce the same hash, consistent with PartialEq.
+    /// Hash normalizes to TAI for consistency with PartialEq.
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.to_tai_duration().total_nanoseconds().hash(state);
+        self.to_tai_duration().hash(state);
     }
 }
