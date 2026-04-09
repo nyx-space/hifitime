@@ -471,12 +471,27 @@ impl AddAssign<Duration> for Epoch {
 }
 
 /// Equality only checks the duration since J1900 match in TAI, because this is how all of the epochs are referenced.
-/// Equality compares epochs as points in time by normalizing to TAI.
+/// Equality compares epochs as points in time.
 /// Uses field comparison via to_parts() to bypass Duration::PartialEq's
 /// zero-crossing special case (which treats opposite-sign durations as equal).
 impl PartialEq for Epoch {
     fn eq(&self, other: &Self) -> bool {
-        self.to_tai_duration().to_parts() == other.to_tai_duration().to_parts()
+        if self.time_scale == other.time_scale {
+            self.duration.to_parts() == other.duration.to_parts()
+        } else if self.time_scale.uses_leap_seconds() != other.time_scale.uses_leap_seconds() {
+            // If one of the two time scales includes leap seconds,
+            // we always convert the time scale with leap seconds into the
+            // time scale that does NOT have leap seconds.
+            if self.time_scale.uses_leap_seconds() {
+                self.to_time_scale(other.time_scale).duration.to_parts()
+                    == other.duration.to_parts()
+            } else {
+                self.duration.to_parts() == other.to_time_scale(self.time_scale).duration.to_parts()
+            }
+        } else {
+            // Otherwise it does not matter
+            self.duration.to_parts() == other.to_time_scale(self.time_scale).duration.to_parts()
+        }
     }
 }
 
