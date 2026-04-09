@@ -7,3 +7,4 @@ dist/
 .venv
 src/epoch.rs
 .vscode/settings.json
+.DS_Store

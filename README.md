@@ -301,6 +301,15 @@ In theory, as of January 2000, ET and TDB should now be identical. _However_, th
 
 In order to provide full interoperability with NAIF, hifitime uses the NAIF algorithm for "ephemeris time" and the [ESA algorithm](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) for "dynamical barycentric time." Hence, if exact NAIF behavior is needed, use all of the functions marked as `et` instead of the `tdb` functions, such as `epoch.to_et_seconds()` instead of `epoch.to_tdb_seconds()`.
 
+## Formal Verification with Kani
+
+Hifitime uses the [Kani model checker](https://model-checking.github.io/kani/) for formal verification. The verification harnesses serve two purposes:
+
+**Panic-freedom proofs (`#[kani::proof]`):** Most harnesses verify that functions do not panic for any possible input. These use `kani::any()` to generate fully symbolic inputs and call the function under test. They prove the absence of arithmetic overflow, division by zero, out-of-bounds access, and other runtime failures across the entire input space.
+
+**Functional correctness contracts (`#[kani::ensures]` + `#[kani::proof_for_contract]`):** Selected functions have [formal specifications](https://model-checking.github.io/kani/reference/experimental/contracts.html) attached directly to the function signature. These contracts express postconditions that the function must satisfy, for example, that `total_nanoseconds()` returns `centuries * NPC + nanoseconds`, or that `Duration::min` returns a value no greater than either input. The `proof_for_contract` harnesses verify these contracts for all inputs, enabling compositional verification: callers can rely on the contract without re-verifying the implementation.
+
+**Loop contracts (`#[kani::loop_invariant]`):** The `Duration::Mul<f64>` precision-finding loop is annotated with a loop invariant that bounds the iteration variable, enabling Kani to verify termination inductively rather than by unrolling.
 
 # Changelog
 
