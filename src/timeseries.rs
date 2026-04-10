@@ -347,6 +347,10 @@ mod tests {
 
         let mut count = 0;
         let time_series = TimeSeries::exclusive(start, end, step);
+
+        assert_eq!(time_series.first_epoch(), start, "invalid first epoch");
+        assert_eq!(time_series.last_epoch(), end - step, "invalid last epoch");
+
         for epoch in time_series {
             if count == 0 {
                 assert_eq!(
@@ -372,6 +376,10 @@ mod tests {
 
         let mut count = 0;
         let time_series = TimeSeries::inclusive(start, end, step);
+        
+        assert_eq!(time_series.first_epoch(), start, "invalid first epoch");
+        assert_eq!(time_series.last_epoch(), end, "invalid last epoch");
+
         for epoch in time_series {
             if count == 0 {
                 assert_eq!(
