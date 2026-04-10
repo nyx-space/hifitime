@@ -376,7 +376,7 @@ mod tests {
 
         let mut count = 0;
         let time_series = TimeSeries::inclusive(start, end, step);
-        
+
         assert_eq!(time_series.first_epoch(), start, "invalid first epoch");
         assert_eq!(time_series.last_epoch(), end, "invalid last epoch");
 
@@ -417,10 +417,16 @@ mod tests {
     #[test]
     fn ts_over_leap_second() {
         let start = Epoch::from_gregorian_utc(2016, 12, 31, 23, 59, 59, 0);
-        let times = TimeSeries::exclusive(start, start + Unit::Second * 5, Unit::Second * 1);
+        let end = start + Unit::Second * 5;
+        let step = Unit::Second * 1;
+
+        let times = TimeSeries::exclusive(start, end, step);
         let expect_end = start + Unit::Second * 4;
         let mut cnt = 0;
         let mut cur_epoch = start;
+
+        assert_eq!(times.first_epoch(), start, "invalid first epoch");
+        assert_eq!(times.last_epoch(), end - step, "invalid last epoch");
 
         for epoch in times {
             cnt += 1;
@@ -434,9 +440,14 @@ mod tests {
     #[test]
     fn ts_backward() {
         let start = Epoch::from_gregorian_utc(2015, 1, 1, 12, 0, 0, 0);
-        let times = TimeSeries::exclusive(start, start + Unit::Second * 5, Unit::Second * 1);
+        let end = start + Unit::Second * 5;
+        let step = Unit::Second * 1;
+        let times = TimeSeries::exclusive(start, end, step);
         let mut cnt = 0;
         let mut cur_epoch = start;
+
+        assert_eq!(times.first_epoch(), start, "invalid first epoch");
+        assert_eq!(times.last_epoch(), end - step, "invalid last epoch");
 
         for epoch in times.rev() {
             cnt += 1;
