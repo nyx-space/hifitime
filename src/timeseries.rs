@@ -71,12 +71,16 @@ impl TimeSeries {
         }
     }
 
-    /// Returns first [Epoch] (starting point) of this [TimeSeries].
+    /// Returns first [Epoch] of this [TimeSeries], without consuming
+    /// the iterator.
+    #[inline]
     pub fn first_epoch(&self) -> Epoch {
         self.start
     }
 
-    /// Returns last [Epoch] included in this [TimeSeries].
+    /// Returns last [Epoch] of this [TimeSeries], without consuming
+    /// the iterator.
+    #[inline]
     pub fn last_epoch(&self) -> Epoch {
         let mut epoch = self.start + self.duration;
         if !self.incl {
