@@ -38,7 +38,7 @@ NOTE: This is taken from itertools: https://docs.rs/itertools-num/0.1.3/src/iter
 /// :type inclusive: bool
 #[cfg_attr(kani, derive(kani::Arbitrary))]
 #[derive(Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[cfg_attr(all(feature = "serde", not(kani)), derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
 pub struct TimeSeries {
