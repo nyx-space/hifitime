@@ -923,3 +923,35 @@ fn verify_epoch_eq_ord_consistent() {
         assert!(ns1 != ns2);
     }
 }
+/// Stub for Epoch::leap_seconds: returns bounded non-deterministic leap seconds.
+/// Over-approximates the real function (which looks up a specific value from
+/// the 42-entry leap second table) with any value in [0, 37].
+#[cfg(kani)]
+fn stub_leap_seconds(_epoch: &Epoch, _iers_only: bool) -> Option<f64> {
+    if kani::any() {
+        let delta: f64 = kani::any();
+        kani::assume(delta >= 0.0 && delta <= 37.0);
+        Some(delta)
+    } else {
+        None
+    }
+}
+
+#[kani::proof]
+fn verify_from_ptp_seconds_contract() {
+    let seconds: f64 = kani::any();
+    Epoch::from_ptp_seconds(seconds);
+}
+
+#[kani::proof_for_contract(crate::epoch::Epoch::from_ptp_duration)]
+#[kani::stub(Epoch::leap_seconds, stub_leap_seconds)]
+fn verify_from_ptp_duration_contract() {
+    let duration: Duration = kani::any();
+    Epoch::from_ptp_duration(duration);
+}
+
+#[kani::proof]
+fn verify_from_ptp_nanoseconds_contract() {
+    let nanoseconds: u64 = kani::any();
+    Epoch::from_ptp_nanoseconds(nanoseconds);
+}
