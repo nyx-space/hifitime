@@ -45,10 +45,6 @@ impl Epoch {
     #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
     #[cfg_attr(kani, kani::requires(seconds.is_finite()))]
     pub fn from_tai_seconds(seconds: f64) -> Self {
-        assert!(
-            seconds.is_finite(),
-            "Attempted to initialize Epoch with non finite number"
-        );
         Self::from_tai_duration(seconds * Unit::Second)
     }
 
@@ -57,10 +53,6 @@ impl Epoch {
     #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
     #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_tai_days(days: f64) -> Self {
-        assert!(
-            days.is_finite(),
-            "Attempted to initialize Epoch with non finite number"
-        );
         Self::from_tai_duration(days * Unit::Day)
     }
 
@@ -125,10 +117,6 @@ impl Epoch {
     #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_mjd_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
-        assert!(
-            days.is_finite(),
-            "Attempted to initialize Epoch with non finite number"
-        );
         Self {
             duration: (days - MJD_J1900) * Unit::Day,
             time_scale,
@@ -176,10 +164,6 @@ impl Epoch {
     #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
-        assert!(
-            days.is_finite(),
-            "Attempted to initialize Epoch with non finite number"
-        );
         Self {
             duration: (days - MJD_J1900 - MJD_OFFSET) * Unit::Day,
             time_scale,
@@ -222,10 +206,6 @@ impl Epoch {
     #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TT))]
     #[cfg_attr(kani, kani::requires(seconds.is_finite()))]
     pub fn from_tt_seconds(seconds: f64) -> Self {
-        assert!(
-            seconds.is_finite(),
-            "Attempted to initialize Epoch with non finite number"
-        );
         Self::from_tt_duration(seconds * Unit::Second)
     }
 
@@ -269,10 +249,6 @@ impl Epoch {
     #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TDB))]
     #[cfg_attr(kani, kani::requires(seconds_j2000.is_finite()))]
     pub fn from_tdb_seconds(seconds_j2000: f64) -> Epoch {
-        assert!(
-            seconds_j2000.is_finite(),
-            "Attempted to initialize Epoch with non finite number"
-        );
         Self::from_tdb_duration(seconds_j2000 * Unit::Second)
     }
 
@@ -286,20 +262,12 @@ impl Epoch {
     #[must_use]
     /// Initialize from the JDE days
     pub fn from_jde_et(days: f64) -> Self {
-        assert!(
-            days.is_finite(),
-            "Attempted to initialize Epoch with non finite number"
-        );
         Self::from_jde_tdb(days)
     }
 
     #[must_use]
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days
     pub fn from_jde_tdb(days: f64) -> Self {
-        assert!(
-            days.is_finite(),
-            "Attempted to initialize Epoch with non finite number"
-        );
         Self::from_jde_tai(days) - Unit::Microsecond * ET_OFFSET_US
     }
 
