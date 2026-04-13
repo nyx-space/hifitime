@@ -236,11 +236,41 @@ fn test_ops_near_bounds() {
     assert_ne!(Duration::MAX - 1 * Unit::Nanosecond, Duration::MAX);
 }
 
+/// Regression test for https://github.com/nyx-space/hifitime/issues/469
+/// Duration::PartialEq previously treated opposite-sign durations as equal
+/// (-15min == 15min), which violated Rust's Eq/Ord contract since the derived
+/// Ord did not have this special case.
+#[test]
+fn test_duration_eq_ord_consistency() {
+    use hifitime::prelude::*;
+
+    // Opposite-sign durations must NOT be equal
+    assert_ne!(15.minutes(), -15.minutes());
+    assert_ne!(1.seconds(), -1.seconds());
+    assert_ne!(Duration::MIN_POSITIVE, Duration::MIN_NEGATIVE);
+
+    // Positive > Negative
+    assert!(15.minutes() > -15.minutes());
+    assert!(1.nanoseconds() > -1.nanoseconds());
+
+    // Eq and Ord must be consistent
+    let pos = Duration::from_parts(0, 1);
+    let neg = Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - 1);
+    assert_ne!(pos, neg, "+1ns and -1ns must not be equal");
+    assert!(pos > neg, "+1ns must be greater than -1ns");
+
+    // Same-value durations are still equal
+    assert_eq!(15.minutes(), 15.minutes());
+    assert_eq!(-15.minutes(), -15.minutes());
+    assert_eq!(Duration::ZERO, Duration::ZERO);
+}
+
 #[test]
 fn test_neg() {
     assert_eq!(Duration::MIN_NEGATIVE, -Duration::MIN_POSITIVE);
     assert_eq!(Duration::MIN_POSITIVE, -Duration::MIN_NEGATIVE);
-    assert_eq!(2.nanoseconds(), -(2.0.nanoseconds()));
+    assert_eq!(2.nanoseconds(), -(-(2.0.nanoseconds()))); // double negation is identity
+    assert_ne!(2.nanoseconds(), -(2.0.nanoseconds())); // 2ns != -2ns
     assert_eq!(Duration::MIN, -Duration::MAX);
     assert_eq!(Duration::MAX, -Duration::MIN);
     assert_eq!(
