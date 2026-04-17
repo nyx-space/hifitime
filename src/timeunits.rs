@@ -301,6 +301,10 @@ impl Unit {
             || (c == i16::MIN && n == 0)
     }))]
     pub(crate) const fn const_multiply(self, q: f64) -> Duration {
+        assert!(
+            q.is_finite(),
+            "Attempted to create a Duration from a non-finite number"
+        );
         let factor = match self {
             Unit::Century => NANOSECONDS_PER_CENTURY as f64,
             Unit::Week => NANOSECONDS_PER_DAY as f64 * DAYS_PER_WEEK,

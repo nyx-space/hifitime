@@ -405,13 +405,13 @@ mod kani_harnesses {
         callee.to_time_scale(ts);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_tai_duration)]
     fn kani_harness_Epoch_from_tai_duration() {
         let duration: Duration = kani::any();
         Epoch::from_tai_duration(duration);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_duration)]
     fn kani_harness_Epoch_from_duration() {
         let duration: Duration = kani::any();
         let ts: TimeScale = kani::any();
@@ -424,184 +424,184 @@ mod kani_harnesses {
         callee.to_duration_since_j1900();
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_tai_parts)]
     fn kani_harness_Epoch_from_tai_parts() {
         let centuries: i16 = kani::any();
         let nanoseconds: u64 = kani::any();
         Epoch::from_tai_parts(centuries, nanoseconds);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_tai_seconds)]
     fn kani_harness_Epoch_from_tai_seconds() {
         let seconds: f64 = kani::any();
         Epoch::from_tai_seconds(seconds);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_tai_days)]
     fn kani_harness_Epoch_from_tai_days() {
         let days: f64 = kani::any();
         Epoch::from_tai_days(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_utc_duration)]
     fn kani_harness_Epoch_from_utc_duration() {
         let duration: Duration = kani::any();
         Epoch::from_utc_duration(duration);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_utc_seconds)]
     fn kani_harness_Epoch_from_utc_seconds() {
         let seconds: f64 = kani::any();
         Epoch::from_utc_seconds(seconds);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_utc_days)]
     fn kani_harness_Epoch_from_utc_days() {
         let days: f64 = kani::any();
         Epoch::from_utc_days(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_gpst_duration)]
     fn kani_harness_Epoch_from_gpst_duration() {
         let duration: Duration = kani::any();
         Epoch::from_gpst_duration(duration);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_qzsst_duration)]
     fn kani_harness_Epoch_from_qzsst_duration() {
         let duration: Duration = kani::any();
         Epoch::from_qzsst_duration(duration);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_gst_duration)]
     fn kani_harness_Epoch_from_gst_duration() {
         let duration: Duration = kani::any();
         Epoch::from_gst_duration(duration);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_bdt_duration)]
     fn kani_harness_Epoch_from_bdt_duration() {
         let duration: Duration = kani::any();
         Epoch::from_bdt_duration(duration);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_mjd_tai)]
     fn kani_harness_Epoch_from_mjd_tai() {
         let days: f64 = kani::any();
         Epoch::from_mjd_tai(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_mjd_in_time_scale)]
     fn kani_harness_Epoch_from_mjd_in_time_scale() {
         let days: f64 = kani::any();
         let time_scale: TimeScale = kani::any();
         Epoch::from_mjd_in_time_scale(days, time_scale);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_mjd_utc)]
     fn kani_harness_Epoch_from_mjd_utc() {
         let days: f64 = kani::any();
         Epoch::from_mjd_utc(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_mjd_gpst)]
     fn kani_harness_Epoch_from_mjd_gpst() {
         let days: f64 = kani::any();
         Epoch::from_mjd_gpst(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_mjd_qzsst)]
     fn kani_harness_Epoch_from_mjd_qzsst() {
         let days: f64 = kani::any();
         Epoch::from_mjd_qzsst(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_mjd_gst)]
     fn kani_harness_Epoch_from_mjd_gst() {
         let days: f64 = kani::any();
         Epoch::from_mjd_gst(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_mjd_bdt)]
     fn kani_harness_Epoch_from_mjd_bdt() {
         let days: f64 = kani::any();
         Epoch::from_mjd_bdt(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_jde_tai)]
     fn kani_harness_Epoch_from_jde_tai() {
         let days: f64 = kani::any();
         Epoch::from_jde_tai(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_jde_in_time_scale)]
     fn kani_harness_Epoch_from_jde_in_time_scale() {
         let days: f64 = kani::any();
         let time_scale: TimeScale = kani::any();
         Epoch::from_jde_in_time_scale(days, time_scale);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_jde_utc)]
     fn kani_harness_Epoch_from_jde_utc() {
         let days: f64 = kani::any();
         Epoch::from_jde_utc(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_jde_gpst)]
     fn kani_harness_Epoch_from_jde_gpst() {
         let days: f64 = kani::any();
         Epoch::from_jde_gpst(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_jde_qzsst)]
     fn kani_harness_Epoch_from_jde_qzsst() {
         let days: f64 = kani::any();
         Epoch::from_jde_qzsst(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_jde_gst)]
     fn kani_harness_Epoch_from_jde_gst() {
         let days: f64 = kani::any();
         Epoch::from_jde_gst(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_jde_bdt)]
     fn kani_harness_Epoch_from_jde_bdt() {
         let days: f64 = kani::any();
         Epoch::from_jde_bdt(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_tt_seconds)]
     fn kani_harness_Epoch_from_tt_seconds() {
         let seconds: f64 = kani::any();
         Epoch::from_tt_seconds(seconds);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_tt_duration)]
     fn kani_harness_Epoch_from_tt_duration() {
         let duration: Duration = kani::any();
         Epoch::from_tt_duration(duration);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_et_seconds)]
     fn kani_harness_Epoch_from_et_seconds() {
         let seconds_since_j2000: f64 = kani::any();
         Epoch::from_et_seconds(seconds_since_j2000);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_et_duration)]
     fn kani_harness_Epoch_from_et_duration() {
         let duration_since_j2000: Duration = kani::any();
         Epoch::from_et_duration(duration_since_j2000);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_tdb_seconds)]
     fn kani_harness_Epoch_from_tdb_seconds() {
         let seconds_j2000: f64 = kani::any();
         Epoch::from_tdb_seconds(seconds_j2000);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_tdb_duration)]
     fn kani_harness_Epoch_from_tdb_duration() {
         let duration_since_j2000: Duration = kani::any();
         Epoch::from_tdb_duration(duration_since_j2000);
@@ -619,73 +619,73 @@ mod kani_harnesses {
         Epoch::from_jde_tdb(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_gpst_seconds)]
     fn kani_harness_Epoch_from_gpst_seconds() {
         let seconds: f64 = kani::any();
         Epoch::from_gpst_seconds(seconds);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_gpst_days)]
     fn kani_harness_Epoch_from_gpst_days() {
         let days: f64 = kani::any();
         Epoch::from_gpst_days(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_gpst_nanoseconds)]
     fn kani_harness_Epoch_from_gpst_nanoseconds() {
         let nanoseconds: u64 = kani::any();
         Epoch::from_gpst_nanoseconds(nanoseconds);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_qzsst_seconds)]
     fn kani_harness_Epoch_from_qzsst_seconds() {
         let seconds: f64 = kani::any();
         Epoch::from_qzsst_seconds(seconds);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_qzsst_days)]
     fn kani_harness_Epoch_from_qzsst_days() {
         let days: f64 = kani::any();
         Epoch::from_qzsst_days(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_qzsst_nanoseconds)]
     fn kani_harness_Epoch_from_qzsst_nanoseconds() {
         let nanoseconds: u64 = kani::any();
         Epoch::from_qzsst_nanoseconds(nanoseconds);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_gst_seconds)]
     fn kani_harness_Epoch_from_gst_seconds() {
         let seconds: f64 = kani::any();
         Epoch::from_gst_seconds(seconds);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_gst_days)]
     fn kani_harness_Epoch_from_gst_days() {
         let days: f64 = kani::any();
         Epoch::from_gst_days(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_gst_nanoseconds)]
     fn kani_harness_Epoch_from_gst_nanoseconds() {
         let nanoseconds: u64 = kani::any();
         Epoch::from_gst_nanoseconds(nanoseconds);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_bdt_seconds)]
     fn kani_harness_Epoch_from_bdt_seconds() {
         let seconds: f64 = kani::any();
         Epoch::from_bdt_seconds(seconds);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_bdt_days)]
     fn kani_harness_Epoch_from_bdt_days() {
         let days: f64 = kani::any();
         Epoch::from_bdt_days(days);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_bdt_nanoseconds)]
     fn kani_harness_Epoch_from_bdt_nanoseconds() {
         let nanoseconds: u64 = kani::any();
         Epoch::from_bdt_nanoseconds(nanoseconds);
@@ -721,7 +721,7 @@ mod kani_harnesses {
         Epoch::inner_g(seconds);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_time_of_week)]
     fn kani_harness_Epoch_from_time_of_week() {
         let week: u32 = kani::any();
         let nanoseconds: u64 = kani::any();
@@ -729,7 +729,7 @@ mod kani_harnesses {
         Epoch::from_time_of_week(week, nanoseconds, time_scale);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(crate::epoch::Epoch::from_time_of_week_utc)]
     fn kani_harness_Epoch_from_time_of_week_utc() {
         let week: u32 = kani::any();
         let nanoseconds: u64 = kani::any();
@@ -922,4 +922,37 @@ fn verify_epoch_eq_ord_consistent() {
     if ns1 < ns2 {
         assert!(ns1 != ns2);
     }
+}
+/// Stub for Epoch::leap_seconds: returns bounded non-deterministic leap seconds.
+/// Over-approximates the real function (which looks up a specific value from
+/// the 42-entry leap second table) with any value in [0, 37].
+#[cfg(kani)]
+#[allow(dead_code)]
+fn stub_leap_seconds(_epoch: &Epoch, _iers_only: bool) -> Option<f64> {
+    if kani::any() {
+        let delta: f64 = kani::any();
+        kani::assume(delta >= 0.0 && delta <= 37.0);
+        Some(delta)
+    } else {
+        None
+    }
+}
+
+#[kani::proof]
+fn verify_from_ptp_seconds_contract() {
+    let seconds: f64 = kani::any();
+    let _ = Epoch::from_ptp_seconds(seconds);
+}
+
+#[kani::proof_for_contract(crate::epoch::Epoch::from_ptp_duration)]
+#[kani::stub(Epoch::leap_seconds, stub_leap_seconds)]
+fn verify_from_ptp_duration_contract() {
+    let duration: Duration = kani::any();
+    let _ = Epoch::from_ptp_duration(duration);
+}
+
+#[kani::proof]
+fn verify_from_ptp_nanoseconds_contract() {
+    let nanoseconds: u64 = kani::any();
+    let _ = Epoch::from_ptp_nanoseconds(nanoseconds);
 }

@@ -29,4 +29,4 @@ jobs:
       - name: Kani Rust Verifier
         uses: model-checking/kani-github-action@v1.1
         with:
-          args: --only-codegen -Z function-contracts -Z loop-contracts
+          args: --only-codegen -Z function-contracts -Z loop-contracts -Z stubbing
