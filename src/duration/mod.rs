@@ -59,7 +59,7 @@ pub mod ops;
 ///    Duration zero minus one nanosecond returns a century of -1 and a nanosecond set to the number of nanoseconds in one century minus one.
 ///    That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
 ///    As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
-/// 2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
+/// 2. Negative and positive durations are distinct: -15 minutes != 15 minutes. Use the signum function to check the sign, and abs() to get the absolute value.
 ///
 /// (Python documentation hints)
 /// :type string_repr: str
@@ -74,22 +74,7 @@ pub struct Duration {
 
 impl PartialEq for Duration {
     fn eq(&self, other: &Self) -> bool {
-        if self.centuries == other.centuries {
-            self.nanoseconds == other.nanoseconds
-        } else if (self.centuries.saturating_sub(other.centuries)).saturating_abs() == 1
-            && (self.centuries == 0 || other.centuries == 0)
-        {
-            // Special case where we're at the zero crossing
-            if self.centuries < 0 {
-                // Self is negative,
-                (NANOSECONDS_PER_CENTURY - self.nanoseconds) == other.nanoseconds
-            } else {
-                // Other is negative
-                (NANOSECONDS_PER_CENTURY - other.nanoseconds) == self.nanoseconds
-            }
-        } else {
-            false
-        }
+        self.centuries == other.centuries && self.nanoseconds == other.nanoseconds
     }
 }
 

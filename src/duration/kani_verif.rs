@@ -438,3 +438,20 @@ fn verify_mul_f64_terminates() {
             || (c == i16::MIN && n == 0)
     );
 }
+
+/// Proves Duration::PartialEq and Duration::Ord are consistent:
+/// if a == b then a.cmp(&b) == Equal, for all Duration values.
+/// This was Bug 5 (issue #469): the zero-crossing special case in
+/// PartialEq made -d == d, but derived Ord did not, violating
+/// Rust's Eq/Ord contract.
+#[kani::proof]
+fn verify_duration_eq_ord_consistent() {
+    let a: Duration = kani::any();
+    let b: Duration = kani::any();
+    if a == b {
+        assert!(
+            a.cmp(&b) == core::cmp::Ordering::Equal,
+            "PartialEq and Ord must be consistent"
+        );
+    }
+}
