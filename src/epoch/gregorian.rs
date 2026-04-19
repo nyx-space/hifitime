@@ -12,131 +12,98 @@ use crate::errors::DurationError;
 use crate::parser::Token;
 use crate::{
     Duration, Epoch, HifitimeError, ParsingError, TimeScale, Unit, DAYS_PER_YEAR_NLD,
-    HIFITIME_REF_YEAR, NANOSECONDS_PER_MICROSECOND, NANOSECONDS_PER_MILLISECOND,
-    NANOSECONDS_PER_SECOND_U32,
+    HIFITIME_REF_YEAR, NANOSECONDS_PER_DAY, NANOSECONDS_PER_HOUR, NANOSECONDS_PER_MINUTE,
+    NANOSECONDS_PER_SECOND, NANOSECONDS_PER_SECOND_U32,
 };
 use core::str::FromStr;
 
-use super::div_rem_f64;
-
 impl Epoch {
+    const DAYS_FROM_J1900_TO_UNIX_EPOCH: i128 = 25_567;
+
+    // Integer civil date conversion adapted from Howard Hinnant's `civil_from_days`
+    // algorithm, using a J1900 day count instead of the original Unix-epoch day count:
+    // https://howardhinnant.github.io/date_algorithms.html#civil_from_days
+    //
+    // The derivation works in a March-based year, where March is month 0 and February
+    // is month 11. That moves leap day to the end of the year, which makes the
+    // Gregorian pattern regular enough to recover year/month/day with integer math:
+    // - shift the serial day count to 0000-03-01,
+    // - split it into a 400-year Gregorian era (`146_097` days),
+    // - recover the year-of-era, then the day-of-year,
+    // - map the March-based day-of-year back to month/day.
+    fn civil_from_days_since_j1900(days_since_j1900: i128) -> (i32, u8, u8) {
+        // Translate our J1900 serial day into the same `z` Hinnant starts from
+        // (days since 1970-01-01), then apply the standard shift to 0000-03-01.
+        let z = days_since_j1900 - Self::DAYS_FROM_J1900_TO_UNIX_EPOCH;
+        let z = z + 719_468;
+        let era = z.div_euclid(146_097);
+        let doe = z.rem_euclid(146_097);
+        // `doe` is the day-of-era in [0, 146096]. `yoe` is the year-of-era in [0, 399].
+        // The correction terms account for the leap-day structure inside one Gregorian
+        // era: every 4th year is leap, century years are not, and every 400th year is.
+        let yoe = (doe - doe.div_euclid(1_460) + doe.div_euclid(36_524) - doe.div_euclid(146_096))
+            .div_euclid(365);
+        let mut year = yoe + era * 400;
+        let doy = doe - (365 * yoe + yoe.div_euclid(4) - yoe.div_euclid(100));
+        // `mp` is a March-based month index in [0, 11]. The `(5 * doy + 2) / 153`
+        // expression is the inverse of the March-based day-of-year table used in
+        // `days_from_civil`; the divisor `153` comes from the repeating 31/30 month
+        // pattern over five-month blocks in that shifted calendar.
+        let mp = (5 * doy + 2).div_euclid(153);
+        let day = doy - (153 * mp + 2).div_euclid(5) + 1;
+        let month = mp + if mp < 10 { 3 } else { -9 };
+        // January and February belong to the following civil year, because internally
+        // the year still begins on March 1.
+        if month <= 2 {
+            year += 1;
+        }
+
+        (
+            year as i32,
+            u8::try_from(month).expect("month must fit in u8"),
+            u8::try_from(day).expect("day must fit in u8"),
+        )
+    }
+
     pub(crate) fn compute_gregorian(
         duration: Duration,
         time_scale: TimeScale,
     ) -> (i32, u8, u8, u8, u8, u8, u32) {
         let duration_wrt_ref = duration + time_scale.gregorian_epoch_offset();
-        let sign = duration_wrt_ref.signum();
-        let (days, hours, minutes, seconds, milliseconds, microseconds, nanos) = if sign < 0 {
-            // For negative epochs, the computation of days and time must account for the time as it'll cause the days computation to be off by one.
-            let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-                duration_wrt_ref.decompose();
+        let (days, ns_of_day) = if duration_wrt_ref.signum() < 0 {
+            let magnitude = (-duration_wrt_ref).total_nanoseconds();
+            let whole_days = magnitude.div_euclid(i128::from(NANOSECONDS_PER_DAY));
+            let rem_ns = magnitude.rem_euclid(i128::from(NANOSECONDS_PER_DAY));
 
-            // Recompute the time since we count backward and not forward for negative durations.
-            let time = Duration::compose(
-                0,
-                0,
-                hours,
-                minutes,
-                seconds,
-                milliseconds,
-                microseconds,
-                nanos,
-            );
-
-            // Compute the correct time.
-            let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-                (24 * Unit::Hour - time).decompose();
-
-            let days_f64 = if time > Duration::ZERO {
-                -((days + 1) as f64)
+            if rem_ns == 0 {
+                (-whole_days, 0)
             } else {
-                -(days as f64)
-            };
-
-            (
-                days_f64,
-                hours,
-                minutes,
-                seconds,
-                milliseconds,
-                microseconds,
-                nanos,
-            )
+                (-whole_days - 1, i128::from(NANOSECONDS_PER_DAY) - rem_ns)
+            }
         } else {
-            // For positive epochs, the computation of days and time is trivally the decomposition of the duration.
-            let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanos) =
-                duration_wrt_ref.decompose();
+            let total_ns = duration_wrt_ref.total_nanoseconds();
             (
-                days as f64,
-                hours,
-                minutes,
-                seconds,
-                milliseconds,
-                microseconds,
-                nanos,
+                total_ns.div_euclid(i128::from(NANOSECONDS_PER_DAY)),
+                total_ns.rem_euclid(i128::from(NANOSECONDS_PER_DAY)),
             )
         };
+        let (year, month, day) = Self::civil_from_days_since_j1900(days);
 
-        let (mut year, mut days_in_year) = div_rem_f64(days, DAYS_PER_YEAR_NLD);
-        year += HIFITIME_REF_YEAR;
-
-        // Base calculation was on 365 days, so we need to remove one day per leap year
-        if year >= HIFITIME_REF_YEAR {
-            for y in HIFITIME_REF_YEAR..year {
-                if is_leap_year(y) {
-                    days_in_year -= 1.0;
-                }
-            }
-            if days_in_year < 0.0 {
-                // We've underflowed the number of days in a year because of the leap years
-                year -= 1;
-                days_in_year += DAYS_PER_YEAR_NLD;
-                // If we had incorrectly removed one day of the year in the previous loop, fix it here.
-                if is_leap_year(year) {
-                    days_in_year += 1.0;
-                }
-            }
-        } else {
-            for y in year..HIFITIME_REF_YEAR {
-                if is_leap_year(y) {
-                    days_in_year += 1.0;
-                }
-            }
-            // Check for greater than or equal because the days are still zero indexed here.
-            if (days_in_year >= DAYS_PER_YEAR_NLD && !is_leap_year(year))
-                || (days_in_year >= DAYS_PER_YEAR_NLD + 1.0 && is_leap_year(year))
-            {
-                // We've overflowed the number of days in a year because of the leap years
-                year += 1;
-                days_in_year -= DAYS_PER_YEAR_NLD;
-            }
-        }
-
-        let cumul_days = if is_leap_year(year) {
-            CUMULATIVE_DAYS_FOR_MONTH_LEAP_YEARS
-        } else {
-            CUMULATIVE_DAYS_FOR_MONTH
-        };
-
-        let month_search = cumul_days.binary_search(&(days_in_year as u16));
-        let month = match month_search {
-            Ok(index) => index + 1, // Exact month found, add 1 for month number (indexing starts from 0)
-            Err(insertion_point) => insertion_point, // We're before the number of months, so use the insertion point as the month number
-        };
-
-        // Directly compute the day from the computed month, and ensure that day counter is one indexed.
-        let day = days_in_year - cumul_days[month - 1] as f64 + 1.0;
+        let hours = ns_of_day.div_euclid(i128::from(NANOSECONDS_PER_HOUR));
+        let rem_after_hours = ns_of_day.rem_euclid(i128::from(NANOSECONDS_PER_HOUR));
+        let minutes = rem_after_hours.div_euclid(i128::from(NANOSECONDS_PER_MINUTE));
+        let rem_after_minutes = rem_after_hours.rem_euclid(i128::from(NANOSECONDS_PER_MINUTE));
+        let seconds = rem_after_minutes.div_euclid(i128::from(NANOSECONDS_PER_SECOND));
+        let nanos = rem_after_minutes.rem_euclid(i128::from(NANOSECONDS_PER_SECOND));
 
         (
             year,
-            month as u8,
-            day as u8,
+            month,
+            day,
             hours as u8,
             minutes as u8,
             seconds as u8,
-            (nanos
-                + microseconds * NANOSECONDS_PER_MICROSECOND
-                + milliseconds * NANOSECONDS_PER_MILLISECOND) as u32,
+            nanos as u32,
         )
     }
 
@@ -351,6 +318,7 @@ impl Epoch {
     #[must_use]
     /// Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian_tai if unsure.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
     pub fn from_gregorian_tai(
         year: i32,
         month: u8,
@@ -366,6 +334,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from the Gregorian date at midnight in TAI.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
     pub fn from_gregorian_tai_at_midnight(year: i32, month: u8, day: u8) -> Self {
         Self::maybe_from_gregorian_tai(year, month, day, 0, 0, 0, 0)
             .expect("invalid Gregorian date")
@@ -373,6 +342,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from the Gregorian date at noon in TAI
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
     pub fn from_gregorian_tai_at_noon(year: i32, month: u8, day: u8) -> Self {
         Self::maybe_from_gregorian_tai(year, month, day, 12, 0, 0, 0)
             .expect("invalid Gregorian date")
@@ -380,6 +350,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from the Gregorian date and time (without the nanoseconds) in TAI
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::TAI))]
     pub fn from_gregorian_tai_hms(
         year: i32,
         month: u8,
@@ -417,6 +388,7 @@ impl Epoch {
     #[must_use]
     /// Builds an Epoch from the provided Gregorian date and time in UTC. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian_utc if unsure.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
     pub fn from_gregorian_utc(
         year: i32,
         month: u8,
@@ -432,6 +404,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from Gregorian date in UTC at midnight
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
     pub fn from_gregorian_utc_at_midnight(year: i32, month: u8, day: u8) -> Self {
         Self::maybe_from_gregorian_utc(year, month, day, 0, 0, 0, 0)
             .expect("invalid Gregorian date")
@@ -439,6 +412,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from Gregorian date in UTC at noon
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
     pub fn from_gregorian_utc_at_noon(year: i32, month: u8, day: u8) -> Self {
         Self::maybe_from_gregorian_utc(year, month, day, 12, 0, 0, 0)
             .expect("invalid Gregorian date")
@@ -446,6 +420,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from the Gregorian date and time (without the nanoseconds) in UTC
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::UTC))]
     pub fn from_gregorian_utc_hms(
         year: i32,
         month: u8,
@@ -462,6 +437,7 @@ impl Epoch {
     #[must_use]
     /// Builds an Epoch from the provided Gregorian date and time in the provided time scale. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian if unsure.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     pub fn from_gregorian(
         year: i32,
         month: u8,
@@ -478,6 +454,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from Gregorian date in UTC at midnight
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     pub fn from_gregorian_at_midnight(
         year: i32,
         month: u8,
@@ -490,6 +467,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from Gregorian date in UTC at noon
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     pub fn from_gregorian_at_noon(year: i32, month: u8, day: u8, time_scale: TimeScale) -> Self {
         Self::maybe_from_gregorian(year, month, day, 12, 0, 0, 0, time_scale)
             .expect("invalid Gregorian date")
@@ -497,6 +475,7 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from the Gregorian date and time (without the nanoseconds) in UTC
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     pub fn from_gregorian_hms(
         year: i32,
         month: u8,

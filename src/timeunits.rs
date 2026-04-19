@@ -255,7 +255,7 @@ impl Mul<i64> for Unit {
 
         match q.checked_mul(factor) {
             Some(total_ns) => {
-                if total_ns.abs() < i64::MAX {
+                if total_ns.unsigned_abs() < i64::MAX as u64 {
                     Duration::from_truncated_nanoseconds(total_ns)
                 } else {
                     Duration::from_total_nanoseconds(i128::from(total_ns))
@@ -294,7 +294,17 @@ impl Mul<f64> for Unit {
 
 impl Unit {
     /// `const`-compatible copy of [Self::mul].
+    #[cfg_attr(kani, kani::ensures(|result: &Duration| {
+        let (c, n) = result.to_parts();
+        n < NANOSECONDS_PER_CENTURY
+            || (c == i16::MAX && n == NANOSECONDS_PER_CENTURY)
+            || (c == i16::MIN && n == 0)
+    }))]
     pub(crate) const fn const_multiply(self, q: f64) -> Duration {
+        assert!(
+            q.is_finite(),
+            "Attempted to create a Duration from a non-finite number"
+        );
         let factor = match self {
             Unit::Century => NANOSECONDS_PER_CENTURY as f64,
             Unit::Week => NANOSECONDS_PER_DAY as f64 * DAYS_PER_WEEK,

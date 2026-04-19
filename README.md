@@ -1,6 +1,6 @@
 # Introduction to Hifitime
 
-Hifitime is a powerful Rust and Python library designed for time management. It provides extensive functionalities with precise operations for time calculation in different time scales, making it suitable for engineering and scientific applications where general relativity and time dilation matter. Hifitime guarantees nanosecond precision for 65,536 years around the reference epoch of the initialization time scale, e.g. 01 January 1900 for TAI. Hifitime is also formally verified using the [`Kani` model checker](https://model-checking.github.io/kani/), read more about it [this verification here](https://model-checking.github.io/kani-verifier-blog/2023/03/31/how-kani-helped-find-bugs-in-hifitime.html).
+Hifitime is a powerful Rust and Python library designed for time management. It provides extensive functionalities with precise operations for time calculation in different time scales, making it suitable for engineering and scientific applications where general relativity and time dilation matter. Hifitime guarantees nanosecond precision for 65,536 centuries around the reference epoch of the initialization time scale, e.g. 01 January 1900 for TAI. Hifitime is also formally verified using the [`Kani` model checker](https://model-checking.github.io/kani/), read more about it [this verification here](https://model-checking.github.io/kani-verifier-blog/2023/03/31/how-kani-helped-find-bugs-in-hifitime.html).
 
 Most users of Hifitime will only need to rely on the `Epoch` and `Duration` structures, and optionally the `Weekday` enum for week based computations. Scientific applications may make use of the `TimeScale` enum as well.
 
@@ -274,7 +274,7 @@ No software is perfect, so please report any issue or bug on [Github](https://gi
 Under the hood, a Duration is represented as a 16 bit signed integer of centuries (`i16`) and a 64 bit unsigned integer (`u64`) of the nanoseconds past that century. The overflowing and underflowing of nanoseconds is handled by changing the number of centuries such that the nanoseconds number never represents more than one century (just over four centuries can be stored in 64 bits).
 
 Advantages:
-1. Exact precision of a duration: using a floating point value would cause large durations (e.g. Julian Dates) to have less precision than smaller durations. Durations in hifitime have exactly one nanosecond of precision for 65,536 years.
+1. Exact precision of a duration: using a floating point value would cause large durations (e.g. Julian Dates) to have less precision than smaller durations. Durations in hifitime have exactly one nanosecond of precision for 65,536 centuries.
 2. Skipping floating point operations allows this library to be used in embedded devices without a floating point unit.
 3. Duration arithmetics are exact, e.g. one third of an hour is exactly twenty minutes and not "0.33333 hours."
 
@@ -301,6 +301,15 @@ In theory, as of January 2000, ET and TDB should now be identical. _However_, th
 
 In order to provide full interoperability with NAIF, hifitime uses the NAIF algorithm for "ephemeris time" and the [ESA algorithm](https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB) for "dynamical barycentric time." Hence, if exact NAIF behavior is needed, use all of the functions marked as `et` instead of the `tdb` functions, such as `epoch.to_et_seconds()` instead of `epoch.to_tdb_seconds()`.
 
+## Formal Verification with Kani
+
+Hifitime uses the [Kani model checker](https://model-checking.github.io/kani/) for formal verification. The verification harnesses serve two purposes:
+
+**Panic-freedom proofs (`#[kani::proof]`):** Most harnesses verify that functions do not panic for any possible input. These use `kani::any()` to generate fully symbolic inputs and call the function under test. They prove the absence of arithmetic overflow, division by zero, out-of-bounds access, and other runtime failures across the entire input space.
+
+**Functional correctness contracts (`#[kani::ensures]` + `#[kani::proof_for_contract]`):** Selected functions have [formal specifications](https://model-checking.github.io/kani/reference/experimental/contracts.html) attached directly to the function signature. These contracts express postconditions that the function must satisfy, for example, that `total_nanoseconds()` returns `centuries * NPC + nanoseconds`, or that `Duration::min` returns a value no greater than either input. The `proof_for_contract` harnesses verify these contracts for all inputs, enabling compositional verification: callers can rely on the contract without re-verifying the implementation.
+
+**Loop contracts (`#[kani::loop_invariant]`):** The `Duration::Mul<f64>` precision-finding loop is annotated with a loop invariant that bounds the iteration variable, enabling Kani to verify termination inductively rather than by unrolling.
 
 # Changelog
 

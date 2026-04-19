@@ -126,6 +126,9 @@ impl Epoch {
         iers_only: bool,
         provider: L,
     ) -> Option<f64> {
+        // NOTE: Kani loop contracts for `for` loops over custom DoubleEndedIterators
+        // (like Rev<L>) are not supported. A future `while let` rewrite would enable
+        // annotation, but requires quantifier support for a meaningful invariant.
         for leap_second in provider.rev() {
             if self.to_tai_duration().to_seconds() >= leap_second.timestamp_tai_s
                 && (!iers_only || leap_second.announced_by_iers)
@@ -141,6 +144,7 @@ impl Epoch {
     /// For example, if the duration is 1 day and the time scale is Ephemeris Time, then this will create an epoch of 2000-01-02 at midnight ET. If the duration is 1 day and the time scale is TAI, this will create an epoch of 1900-01-02 at noon, because the TAI reference epoch in Hifitime is chosen to be the J1900 epoch.
     /// In case of ET, TDB Timescales, a duration since J2000 is expected.
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == ts))]
     pub const fn from_duration(duration: Duration, ts: TimeScale) -> Self {
         Self {
             duration,
@@ -175,6 +179,7 @@ impl Epoch {
     ///
     /// :type ts: TimeScale
     /// :rtype: Epoch
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == ts))]
     pub fn to_time_scale(&self, ts: TimeScale) -> Self {
         if ts == self.time_scale {
             // Do nothing, just return a copy
@@ -186,21 +191,10 @@ impl Epoch {
                 TimeScale::TAI => self.duration,
                 TimeScale::TT => self.duration - TT_OFFSET_MS.milliseconds(),
                 TimeScale::ET => {
-                    // Run a Newton Raphston to convert find the correct value of the
-                    let mut seconds_j2000 = self.duration.to_seconds();
-                    for _ in 0..5 {
-                        seconds_j2000 += -NAIF_K
-                            * (NAIF_M0
-                                + NAIF_M1 * seconds_j2000
-                                + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds_j2000).sin())
-                            .sin();
-                    }
-
-                    // At this point, we have a good estimate of the number of seconds of this epoch.
-                    // Reverse the algorithm:
-                    let delta_et_tai = Self::delta_et_tai(
-                        seconds_j2000 - (TT_OFFSET_MS * Unit::Millisecond).to_seconds(),
-                    );
+                    let seconds_j2000 = self.duration.to_seconds();
+                    // We can compute the delta ET TAI directly because the NAIF coefficients are for ET.
+                    // So we do not need to iterate.
+                    let delta_et_tai = Self::delta_et_tai(seconds_j2000);
 
                     // Match SPICE by changing the UTC definition.
                     self.duration - delta_et_tai.seconds() + self.time_scale.prime_epoch_offset()
@@ -231,21 +225,26 @@ impl Epoch {
                 TimeScale::TT => prime_epoch_offset + TT_OFFSET_MS.milliseconds(),
                 TimeScale::ET => {
                     // Run a Newton Raphston to convert find the correct value of the ... ?!
+                    // The NAIF coefficients are for ET, so we need to find the ET such that
+                    // ET = TAI + delta_et_tai(ET)
+                    // We iterate to find that value.
 
-                    let mut seconds = (prime_epoch_offset - ts.prime_epoch_offset()).to_seconds();
+                    // Initial guess: TAI (well, really TAI + 32.184s is a better guess but TAI is close enough)
+                    // The `prime_epoch_offset` is TAI. `ts.prime_epoch_offset()` is J2000 TAI.
+                    let tai_seconds = (prime_epoch_offset - ts.prime_epoch_offset()).to_seconds();
+                    let mut et_seconds = tai_seconds;
                     for _ in 0..5 {
-                        seconds -= -NAIF_K
-                            * (NAIF_M0
-                                + NAIF_M1 * seconds
-                                + NAIF_EB * (NAIF_M0 + NAIF_M1 * seconds).sin())
-                            .sin();
+                        let delta = Self::delta_et_tai(et_seconds);
+                        let next_et = tai_seconds + delta;
+                        if (next_et - et_seconds).abs() < 1e-9 {
+                            et_seconds = next_et;
+                            break;
+                        }
+                        et_seconds = next_et;
                     }
 
                     // At this point, we have a good estimate of the number of seconds of this epoch.
-                    // Reverse the algorithm:
-                    let delta_et_tai = Self::delta_et_tai(
-                        seconds + (TT_OFFSET_MS * Unit::Millisecond).to_seconds(),
-                    );
+                    let delta_et_tai = Self::delta_et_tai(et_seconds);
 
                     // Match SPICE by changing the UTC definition.
                     prime_epoch_offset + delta_et_tai.seconds() - ts.prime_epoch_offset()
@@ -1045,23 +1044,6 @@ impl FromStr for Epoch {
     }
 }
 
-fn div_rem_f64(me: f64, rhs: f64) -> (i32, f64) {
-    ((div_euclid_f64(me, rhs) as i32), rem_euclid_f64(me, rhs))
-}
-
-fn div_euclid_f64(lhs: f64, rhs: f64) -> f64 {
-    let q = (lhs / rhs).trunc();
-    if lhs % rhs < 0.0 {
-        if rhs > 0.0 {
-            q - 1.0
-        } else {
-            q + 1.0
-        }
-    } else {
-        q
-    }
-}
-
 fn rem_euclid_f64(lhs: f64, rhs: f64) -> f64 {
     let r = lhs % rhs;
     if r < 0.0 {
@@ -1074,20 +1056,7 @@ fn rem_euclid_f64(lhs: f64, rhs: f64) -> f64 {
 #[cfg(test)]
 mod ut_epoch {
 
-    use super::{div_rem_f64, Duration, Epoch};
-
-    #[test]
-    fn div_rem_f64_test() {
-        assert_eq!(div_rem_f64(24.0, 6.0), (4, 0.0));
-        assert_eq!(div_rem_f64(25.0, 6.0), (4, 1.0));
-        assert_eq!(div_rem_f64(6.0, 6.0), (1, 0.0));
-        assert_eq!(div_rem_f64(5.0, 6.0), (0, 5.0));
-        assert_eq!(div_rem_f64(3540.0, 3600.0), (0, 3540.0));
-        assert_eq!(div_rem_f64(3540.0, 60.0), (59, 0.0));
-        assert_eq!(div_rem_f64(24.0, -6.0), (-4, 0.0));
-        assert_eq!(div_rem_f64(-24.0, 6.0), (-4, 0.0));
-        assert_eq!(div_rem_f64(-24.0, -6.0), (4, 0.0));
-    }
+    use super::{Duration, Epoch};
 
     #[test]
     fn test_days_et_j2000() {
@@ -1126,20 +1095,6 @@ mod ut_epoch {
 #[cfg(kani)]
 mod kani_harnesses {
     use super::*;
-
-    #[kani::proof]
-    fn kani_harness_div_rem_f64() {
-        let me: f64 = kani::any();
-        let rhs: f64 = kani::any();
-        div_rem_f64(me, rhs);
-    }
-
-    #[kani::proof]
-    fn kani_harness_div_euclid_f64() {
-        let lhs: f64 = kani::any();
-        let rhs: f64 = kani::any();
-        div_euclid_f64(lhs, rhs);
-    }
 
     #[kani::proof]
     fn kani_harness_rem_euclid_f64() {

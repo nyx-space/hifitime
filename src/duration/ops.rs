@@ -107,15 +107,29 @@ impl Mul<f64> for Duration {
         let mut new_val = q;
         let ten: f64 = 10.0;
 
+        #[cfg_attr(kani, kani::loop_invariant(p >= 0 && p <= 19))]
         loop {
-            if (new_val.floor() - new_val).abs() < f64::EPSILON {
-                // Yay, we've found the precision of this number
+            if !new_val.is_finite() || (new_val.floor() - new_val).abs() < f64::EPSILON {
+                // Found the precision, or value is no longer finite
                 break;
             }
-            // Multiply by the precision
-            // https://play.rust-lang.org/?version=stable&mode=debug&edition=2018&gist=b760579f103b7192c20413ebbe167b90
             p += 1;
             new_val = q * ten.powi(p);
+            if p >= 19 {
+                // f64 has at most ~17 significant decimal digits.
+                // If we haven't converged by p=19, we never will (subnormals, etc.).
+                break;
+            }
+        }
+
+        // If new_val overflowed to infinity (e.g., very large q), the cast
+        // `inf as i128` is undefined behavior. Handle it explicitly.
+        if !new_val.is_finite() {
+            if q.is_sign_negative() {
+                return Duration::MIN;
+            } else {
+                return Duration::MAX;
+            }
         }
 
         Duration::from_total_nanoseconds(
@@ -365,21 +379,12 @@ impl Neg for Duration {
         } else if self == Self::MAX {
             Self::MIN
         } else {
-            match NANOSECONDS_PER_CENTURY.checked_sub(self.nanoseconds) {
-                Some(nanoseconds) => {
-                    // yay
-                    Self::from_parts(-self.centuries - 1, nanoseconds)
-                }
-                None => {
-                    if self > Duration::ZERO {
-                        let dur_to_max = Self::MAX - self;
-                        Self::MIN + dur_to_max
-                    } else {
-                        let dur_to_min = Self::MIN + self;
-                        Self::MAX - dur_to_min
-                    }
-                }
-            }
+            let centuries = -i32::from(self.centuries) - 1;
+            let nanoseconds = NANOSECONDS_PER_CENTURY - self.nanoseconds;
+            Self::from_parts(
+                i16::try_from(centuries).expect("negated duration centuries must fit in i16"),
+                nanoseconds,
+            )
         }
     }
 }

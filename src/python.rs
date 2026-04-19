@@ -39,6 +39,47 @@ fn hifitime(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
     m.add("__doc__", env!("CARGO_PKG_DESCRIPTION"))?;
     m.add("__author__", env!("CARGO_PKG_AUTHORS"))?;
+
+    // Export constants
+    m.add("JD_J1900", crate::JD_J1900)?;
+    m.add("JD_J2000", crate::JD_J2000)?;
+    m.add("MJD_J1900", crate::MJD_J1900)?;
+    m.add("MJD_J2000", crate::MJD_J2000)?;
+    m.add("ET_EPOCH_S", crate::ET_EPOCH_S)?;
+    m.add("MJD_OFFSET", crate::MJD_OFFSET)?;
+    m.add("DAYS_PER_YEAR", crate::DAYS_PER_YEAR)?;
+    m.add("DAYS_PER_YEAR_NLD", crate::DAYS_PER_YEAR_NLD)?;
+    m.add("DAYS_PER_CENTURY", crate::DAYS_PER_CENTURY)?;
+    m.add("DAYS_IN_CENTURY", crate::DAYS_PER_CENTURY)?;
+    m.add("DAYS_PER_WEEK", crate::DAYS_PER_WEEK)?;
+    m.add("SECONDS_PER_MINUTE", crate::SECONDS_PER_MINUTE)?;
+    m.add("SECONDS_PER_HOUR", crate::SECONDS_PER_HOUR)?;
+    m.add("SECONDS_PER_DAY", crate::SECONDS_PER_DAY)?;
+    m.add("SECONDS_PER_CENTURY", crate::SECONDS_PER_CENTURY)?;
+    m.add("SECONDS_PER_YEAR", crate::SECONDS_PER_YEAR)?;
+    m.add(
+        "SECONDS_PER_TROPICAL_YEAR",
+        crate::SECONDS_PER_TROPICAL_YEAR,
+    )?;
+    m.add(
+        "SECONDS_PER_SIDEREAL_YEAR",
+        crate::SECONDS_PER_SIDEREAL_YEAR,
+    )?;
+
+    m.add(
+        "NANOSECONDS_PER_MICROSECOND",
+        crate::NANOSECONDS_PER_MICROSECOND,
+    )?;
+    m.add(
+        "NANOSECONDS_PER_MILLISECOND",
+        crate::NANOSECONDS_PER_MILLISECOND,
+    )?;
+    m.add("NANOSECONDS_PER_SECOND", crate::NANOSECONDS_PER_SECOND)?;
+    m.add("NANOSECONDS_PER_MINUTE", crate::NANOSECONDS_PER_MINUTE)?;
+    m.add("NANOSECONDS_PER_HOUR", crate::NANOSECONDS_PER_HOUR)?;
+    m.add("NANOSECONDS_PER_DAY", crate::NANOSECONDS_PER_DAY)?;
+    m.add("NANOSECONDS_PER_CENTURY", crate::NANOSECONDS_PER_CENTURY)?;
+
     Ok(())
 }
 

@@ -200,3 +200,33 @@ impl Polynomial {
         *self == other
     }
 }
+
+#[cfg(kani)]
+mod kani_verif {
+    use super::*;
+
+    /// Verifies Polynomial::correction_duration does not panic and returns
+    /// a normalized Duration.
+    /// Note: proof_for_contract fails with "return_value is not assignable"
+    /// error, likely a Kani limitation with pymethods impl blocks.
+    /// Using standalone proof with explicit assertion instead.
+    #[kani::proof]
+    fn verify_polynomial_correction_duration() {
+        let constant: Duration = kani::any();
+        let rate: Duration = kani::any();
+        let accel: Duration = kani::any();
+        let interval: Duration = kani::any();
+        let poly = Polynomial {
+            constant,
+            rate,
+            accel,
+        };
+        let result = poly.correction_duration(interval);
+        let (c, n) = result.to_parts();
+        assert!(
+            n < crate::NANOSECONDS_PER_CENTURY
+                || (c == i16::MAX && n == crate::NANOSECONDS_PER_CENTURY)
+                || (c == i16::MIN && n == 0)
+        );
+    }
+}

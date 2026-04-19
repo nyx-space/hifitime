@@ -11,6 +11,9 @@ fn test_timeseries() {
     let mut count = 0;
     let time_series = TimeSeries::exclusive(start, end, step);
 
+    assert_eq!(time_series.first_epoch(), start);
+    assert_eq!(time_series.last_epoch(), end - step);
+
     assert_eq!(
         format!("{time_series}"),
         "TimeSeries [2017-01-14T00:00:00 UTC : 2017-01-14T10:00:00 UTC : 2 h]"
@@ -65,6 +68,9 @@ fn test_timeseries() {
     count = 0;
     let time_series = TimeSeries::inclusive(start, end, step);
 
+    assert_eq!(time_series.first_epoch(), start);
+    assert_eq!(time_series.last_epoch(), end);
+
     assert_eq!(
         format!("{time_series}"),
         "TimeSeries [2017-01-14T00:00:00 UTC : 2017-01-14T12:00:00 UTC : 2 h]"
@@ -98,10 +104,16 @@ fn gh131_regression() {
     assert_eq!(times.len(), steps as usize - 1);
     assert_eq!(times.len(), times.size_hint().0);
 
+    assert_eq!(times.first_epoch(), start);
+    assert_eq!(times.last_epoch(), end - step);
+
     // For an _inclusive_ time series, we skip the last item, so it's the steps count
     let times = TimeSeries::inclusive(start, end, step);
     assert_eq!(times.len(), steps as usize);
     assert_eq!(times.len(), times.size_hint().0);
+
+    assert_eq!(times.first_epoch(), start);
+    assert_eq!(times.last_epoch(), end);
 }
 
 #[test]
