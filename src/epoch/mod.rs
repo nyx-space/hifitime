@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 /*
 * Hifitime
 * Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
@@ -1093,6 +1094,7 @@ mod ut_epoch {
 }
 
 #[cfg(kani)]
+#[allow(non_snake_case)]
 mod kani_harnesses {
     use super::*;
 
@@ -1100,6 +1102,6 @@ mod kani_harnesses {
     fn kani_harness_rem_euclid_f64() {
         let lhs: f64 = kani::any();
         let rhs: f64 = kani::any();
-        rem_euclid_f64(lhs, rhs);
+        let _ = rem_euclid_f64(lhs, rhs);
     }
 }
