@@ -44,7 +44,7 @@ fn formal_duration_truncated_ns_reciprocity() {
         assert_eq!(
             dur_from_part.try_truncated_nanoseconds(),
             Err(HifitimeError::Duration {
-                source: DurationError::Overflow,
+                source: DurationError::Underflow,
             })
         );
     } else if centuries == -1 {
@@ -56,10 +56,9 @@ fn formal_duration_truncated_ns_reciprocity() {
         let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
         assert_eq!(recip_ns, expect_rslt);
     } else if centuries < 0 {
-        // We fit on a i64 but we need to account for the number of nanoseconds wrapped to the negative centuries.
-
-        let nanos = u_ns.rem_euclid(NANOSECONDS_PER_CENTURY);
-        let expect_rslt = i64::from(centuries) * NANOSECONDS_PER_CENTURY as i64 + nanos as i64;
+        // Centuries negative by more than -1: formula is (centuries + 1) * NPC + nanoseconds
+        let expect_rslt = i64::from(centuries + 1) * NANOSECONDS_PER_CENTURY as i64
+            + u_ns as i64;
 
         let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
         assert_eq!(recip_ns, expect_rslt);

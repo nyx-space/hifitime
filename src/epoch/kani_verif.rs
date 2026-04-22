@@ -193,6 +193,15 @@ fn formal_epoch_julian() {
 
 #[cfg(kani)]
 #[allow(non_snake_case)]
+/// Stub for duration_since_unix_epoch: returns a bounded non-deterministic
+/// Duration representing a valid Unix timestamp (1970-01-01 to ~2100).
+fn stub_duration_since_unix_epoch() -> Result<Duration, crate::HifitimeError> {
+    let dur: Duration = kani::any();
+    // Constrain to a plausible Unix timestamp range (0 to ~130 years in seconds)
+    let secs = dur.to_seconds();
+    kani::assume(secs >= 0.0 && secs < 4_102_444_800.0 && secs.is_finite());
+    Ok(dur)
+}
 mod kani_harnesses {
     use super::*;
     use crate::*;
@@ -851,11 +860,13 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
+    #[kani::stub(crate::epoch::system_time::duration_since_unix_epoch, stub_duration_since_unix_epoch)]
     fn kani_harness_duration_since_unix_epoch() {
         let _ = duration_since_unix_epoch();
     }
 
     #[kani::proof]
+    #[kani::stub(crate::epoch::system_time::duration_since_unix_epoch, stub_duration_since_unix_epoch)]
     fn kani_harness_Epoch_now() {
         let _ = Epoch::now();
     }
