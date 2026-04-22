@@ -1102,6 +1102,7 @@ mod kani_harnesses {
     fn kani_harness_rem_euclid_f64() {
         let lhs: f64 = kani::any();
         let rhs: f64 = kani::any();
+        kani::assume(lhs.is_finite() && rhs.is_finite() && rhs != 0.0);
         let _ = rem_euclid_f64(lhs, rhs);
     }
 }

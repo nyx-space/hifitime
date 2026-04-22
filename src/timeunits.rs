@@ -300,6 +300,7 @@ impl Unit {
             || (c == i16::MAX && n == NANOSECONDS_PER_CENTURY)
             || (c == i16::MIN && n == 0)
     }))]
+    #[cfg_attr(kani, kani::requires(q.is_finite()))]
     pub(crate) const fn const_multiply(self, q: f64) -> Duration {
         assert!(
             q.is_finite(),

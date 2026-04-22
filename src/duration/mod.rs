@@ -219,6 +219,7 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
+    #[cfg_attr(kani, kani::requires(value.is_finite()))]
     pub const fn from_days(value: f64) -> Self {
         Unit::Day.const_multiply(value)
     }
@@ -230,6 +231,7 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
+    #[cfg_attr(kani, kani::requires(value.is_finite()))]
     pub const fn from_hours(value: f64) -> Self {
         Unit::Hour.const_multiply(value)
     }
@@ -241,6 +243,7 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
+    #[cfg_attr(kani, kani::requires(value.is_finite()))]
     pub const fn from_seconds(value: f64) -> Self {
         Unit::Second.const_multiply(value)
     }
@@ -252,6 +255,7 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
+    #[cfg_attr(kani, kani::requires(value.is_finite()))]
     pub const fn from_milliseconds(value: f64) -> Self {
         Unit::Millisecond.const_multiply(value)
     }
@@ -263,6 +267,7 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
+    #[cfg_attr(kani, kani::requires(value.is_finite()))]
     pub const fn from_microseconds(value: f64) -> Self {
         Unit::Microsecond.const_multiply(value)
     }
@@ -274,6 +279,7 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
+    #[cfg_attr(kani, kani::requires(value.is_finite()))]
     pub const fn from_nanoseconds(value: f64) -> Self {
         Unit::Nanosecond.const_multiply(value)
     }

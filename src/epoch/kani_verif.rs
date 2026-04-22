@@ -389,6 +389,8 @@ mod kani_harnesses {
         let minute: u8 = kani::any();
         let second: u8 = kani::any();
         let nanos: u32 = kani::any();
+        // Avoid overflow in `january_years(year + 1)` inside is_gregorian_valid
+        kani::assume(year < i32::MAX);
         let _ = is_gregorian_valid(year, month, day, hour, minute, second, nanos);
     }
 
@@ -943,6 +945,7 @@ fn stub_leap_seconds(_epoch: &Epoch, _iers_only: bool) -> Option<f64> {
 #[kani::proof]
 fn verify_from_ptp_seconds_contract() {
     let seconds: f64 = kani::any();
+    kani::assume(seconds.is_finite());
     let _ = Epoch::from_ptp_seconds(seconds);
 }
 

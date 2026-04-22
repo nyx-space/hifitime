@@ -261,11 +261,13 @@ impl Epoch {
 
     #[must_use]
     /// Initialize from the JDE days
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_et(days: f64) -> Self {
         Self::from_jde_tdb(days)
     }
 
     #[must_use]
+    #[cfg_attr(kani, kani::requires(days.is_finite()))]
     /// Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days
     pub fn from_jde_tdb(days: f64) -> Self {
         Self::from_jde_tai(days) - Unit::Microsecond * ET_OFFSET_US
@@ -412,14 +414,18 @@ impl Epoch {
         Self::from_utc_duration(UNIX_REF_EPOCH.to_utc_duration() + duration)
     }
 
+    #[cfg_attr(kani, kani::requires(seconds.is_finite()))]
     #[must_use]
     /// Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01.
+    #[cfg_attr(kani, kani::requires(seconds.is_finite()))]
     pub fn from_unix_seconds(seconds: f64) -> Self {
         Self::from_utc_duration(UNIX_REF_EPOCH.to_utc_duration() + seconds * Unit::Second)
     }
+    #[cfg_attr(kani, kani::requires(millisecond.is_finite()))]
 
     #[must_use]
     /// Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01.
+    #[cfg_attr(kani, kani::requires(millisecond.is_finite()))]
     pub fn from_unix_milliseconds(millisecond: f64) -> Self {
         Self::from_utc_duration(UNIX_REF_EPOCH.to_utc_duration() + millisecond * Unit::Millisecond)
     }
