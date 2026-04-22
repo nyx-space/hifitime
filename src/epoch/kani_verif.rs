@@ -409,9 +409,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
-    #[kani::stub(crate::epoch::Epoch::delta_et_tai, stub_delta_et_tai)]
-    #[kani::stub(crate::epoch::Epoch::inner_g, stub_inner_g)]
-    #[kani::stub(crate::epoch::Epoch::leap_seconds, stub_leap_seconds)]
+    #[kani::stub_verified(crate::epoch::Epoch::to_time_scale)]
     fn kani_harness_to_time_scale() {
         let ts: TimeScale = kani::any();
         let callee: Epoch = kani::any();
@@ -991,6 +989,7 @@ fn verify_from_ptp_seconds_contract() {
 
 #[kani::proof_for_contract(crate::epoch::Epoch::from_ptp_duration)]
 #[kani::stub(crate::epoch::Epoch::leap_seconds, stub_leap_seconds)]
+#[kani::stub_verified(crate::epoch::Epoch::to_time_scale)]
 fn verify_from_ptp_duration_contract() {
     let duration: Duration = kani::any();
     let _ = Epoch::from_ptp_duration(duration);
@@ -1000,4 +999,13 @@ fn verify_from_ptp_duration_contract() {
 fn verify_from_ptp_nanoseconds_contract() {
     let nanoseconds: u64 = kani::any();
     let _ = Epoch::from_ptp_nanoseconds(nanoseconds);
+}
+
+/// Verifies the to_time_scale contract for TAI time scale.
+/// This proof_for_contract enables stub_verified for callers.
+#[kani::proof_for_contract(crate::epoch::Epoch::to_time_scale)]
+fn verify_to_time_scale_contract_tai() {
+    let dur: Duration = kani::any();
+    let epoch = Epoch::from_duration(dur, TimeScale::TAI);
+    let _ = epoch.to_time_scale(TimeScale::TAI);
 }
