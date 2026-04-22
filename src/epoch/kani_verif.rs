@@ -412,6 +412,9 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
+    #[kani::stub(crate::epoch::Epoch::delta_et_tai, stub_delta_et_tai)]
+    #[kani::stub(crate::epoch::Epoch::inner_g, stub_inner_g)]
+    #[kani::stub(crate::epoch::Epoch::leap_seconds, stub_leap_seconds)]
     fn kani_harness_to_time_scale() {
         let ts: TimeScale = kani::any();
         let callee: Epoch = kani::any();
@@ -432,6 +435,9 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
+    #[kani::stub(crate::epoch::Epoch::delta_et_tai, stub_delta_et_tai)]
+    #[kani::stub(crate::epoch::Epoch::inner_g, stub_inner_g)]
+    #[kani::stub(crate::epoch::Epoch::leap_seconds, stub_leap_seconds)]
     fn kani_harness_to_duration_since_j1900() {
         let callee: Epoch = kani::any();
         let _ = callee.to_duration_since_j1900();
@@ -953,6 +959,22 @@ fn stub_leap_seconds(_epoch: &Epoch, _iers_only: bool) -> Option<f64> {
     }
 }
 
+/// Stub for delta_et_tai: over-approximates with bounded non-deterministic value.
+/// Real function returns TT_OFFSET + NAIF_K * sin(e) ≈ 32.184 ± 0.002.
+fn stub_delta_et_tai(_seconds: f64) -> f64 {
+    let result: f64 = kani::any();
+    kani::assume(result > 32.0 && result < 33.0);
+    result
+}
+
+/// Stub for inner_g: over-approximates with bounded non-deterministic value.
+/// Real function returns 1.658e-3 * sin(...), bounded by [-0.002, 0.002].
+fn stub_inner_g(_seconds: f64) -> f64 {
+    let result: f64 = kani::any();
+    kani::assume(result > -0.002 && result < 0.002);
+    result
+}
+
 #[kani::proof]
 fn verify_from_ptp_seconds_contract() {
     let seconds: f64 = kani::any();
@@ -961,7 +983,7 @@ fn verify_from_ptp_seconds_contract() {
 }
 
 #[kani::proof_for_contract(crate::epoch::Epoch::from_ptp_duration)]
-#[kani::stub(Epoch::leap_seconds, stub_leap_seconds)]
+#[kani::stub(crate::epoch::Epoch::leap_seconds, stub_leap_seconds)]
 fn verify_from_ptp_duration_contract() {
     let duration: Duration = kani::any();
     let _ = Epoch::from_ptp_duration(duration);
