@@ -67,8 +67,6 @@ fn formal_epoch_reciprocity_tt() {
 // these transformations with arbitrary inputs in Kani is challenging.
 // The specific test case below (`formal_epoch_reciprocity_tdb`) was an attempt
 // to debug issues with a particular duration value but highlights the difficulties.
-//
-// #[kani::proof]
 #[test]
 fn formal_epoch_reciprocity_tdb() {
     // let duration: Duration = kani::any();
@@ -99,7 +97,6 @@ fn formal_epoch_reciprocity_tdb() {
 // These aspects are challenging to model and verify exhaustively with Kani.
 
 #[kani::proof]
-#[test]
 fn formal_epoch_reciprocity_gpst() {
     let duration: Duration = kani::any();
 
