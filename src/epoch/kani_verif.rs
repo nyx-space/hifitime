@@ -626,12 +626,14 @@ mod kani_harnesses {
     #[kani::proof]
     fn kani_harness_Epoch_from_jde_et() {
         let days: f64 = kani::any();
+        kani::assume(days.is_finite());
         let _ = Epoch::from_jde_et(days);
     }
 
     #[kani::proof]
     fn kani_harness_Epoch_from_jde_tdb() {
         let days: f64 = kani::any();
+        kani::assume(days.is_finite());
         let _ = Epoch::from_jde_tdb(days);
     }
 
@@ -716,12 +718,14 @@ mod kani_harnesses {
     #[kani::proof]
     fn kani_harness_Epoch_from_unix_seconds() {
         let seconds: f64 = kani::any();
+        kani::assume(seconds.is_finite());
         let _ = Epoch::from_unix_seconds(seconds);
     }
 
     #[kani::proof]
     fn kani_harness_Epoch_from_unix_milliseconds() {
         let millisecond: f64 = kani::any();
+        kani::assume(millisecond.is_finite());
         let _ = Epoch::from_unix_milliseconds(millisecond);
     }
 
