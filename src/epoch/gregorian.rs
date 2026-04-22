@@ -8,7 +8,6 @@
 *
 * Documentation: https://nyxspace.com/
 */
-
 use crate::errors::DurationError;
 use crate::parser::Token;
 use crate::{

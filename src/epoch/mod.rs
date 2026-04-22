@@ -8,7 +8,6 @@
 *
 * Documentation: https://nyxspace.com/
 */
-
 mod formatting;
 mod gregorian;
 pub mod initializers;

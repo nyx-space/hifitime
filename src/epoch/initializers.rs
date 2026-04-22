@@ -422,7 +422,6 @@ impl Epoch {
         Self::from_utc_duration(UNIX_REF_EPOCH.to_utc_duration() + seconds * Unit::Second)
     }
     #[cfg_attr(kani, kani::requires(millisecond.is_finite()))]
-
     #[must_use]
     /// Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01.
     #[cfg_attr(kani, kani::requires(millisecond.is_finite()))]

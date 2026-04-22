@@ -8,7 +8,6 @@
 *
 * Documentation: https://nyxspace.com/
 */
-
 use super::{
     format::Format,
     formatter::{Formatter, Item},

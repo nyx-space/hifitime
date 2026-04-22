@@ -8,7 +8,6 @@
 *
 * Documentation: https://nyxspace.com/
 */
-
 use crate::epoch::system_time::duration_since_unix_epoch;
 use crate::leap_seconds::LeapSecond;
 use crate::{Duration, Epoch, TimeScale, Unit, Weekday, TT_OFFSET_MS};
@@ -250,7 +249,8 @@ mod kani_harnesses {
         let second: u8 = kani::any();
         let nanos: u32 = kani::any();
         let time_scale: TimeScale = kani::any();
-        let _ = Epoch::maybe_from_gregorian(year, month, day, hour, minute, second, nanos, time_scale);
+        let _ =
+            Epoch::maybe_from_gregorian(year, month, day, hour, minute, second, nanos, time_scale);
     }
 
     #[kani::proof]
@@ -867,13 +867,19 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
-    #[kani::stub(crate::epoch::system_time::duration_since_unix_epoch, stub_duration_since_unix_epoch)]
+    #[kani::stub(
+        crate::epoch::system_time::duration_since_unix_epoch,
+        stub_duration_since_unix_epoch
+    )]
     fn kani_harness_duration_since_unix_epoch() {
         let _ = duration_since_unix_epoch();
     }
 
     #[kani::proof]
-    #[kani::stub(crate::epoch::system_time::duration_since_unix_epoch, stub_duration_since_unix_epoch)]
+    #[kani::stub(
+        crate::epoch::system_time::duration_since_unix_epoch,
+        stub_duration_since_unix_epoch
+    )]
     fn kani_harness_Epoch_now() {
         let _ = Epoch::now();
     }
