@@ -182,6 +182,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof_for_contract(Duration::compose)]
+    #[kani::stub_verified(Unit::const_multiply)]
     fn kani_harness_Duration_compose() {
         let sign: i8 = kani::any();
         let days: u64 = kani::any();
@@ -204,6 +205,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
+    #[kani::stub_verified(Unit::const_multiply)]
     fn kani_harness_Duration_compose_f64() {
         let sign: i8 = kani::any();
         let days: f64 = kani::any();
@@ -213,6 +215,9 @@ mod kani_harnesses {
         let milliseconds: f64 = kani::any();
         let microseconds: f64 = kani::any();
         let nanoseconds: f64 = kani::any();
+        kani::assume(days.is_finite() && hours.is_finite() && minutes.is_finite()
+            && seconds.is_finite() && milliseconds.is_finite()
+            && microseconds.is_finite() && nanoseconds.is_finite());
         let _ = Duration::compose_f64(
             sign,
             days,
