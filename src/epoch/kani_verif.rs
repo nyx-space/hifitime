@@ -763,6 +763,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
+    #[kani::stub_verified(crate::epoch::Epoch::to_time_scale)]
     fn kani_harness_min() {
         let other: Epoch = kani::any();
         let callee: Epoch = kani::any();
@@ -770,6 +771,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
+    #[kani::stub_verified(crate::epoch::Epoch::to_time_scale)]
     fn kani_harness_max() {
         let other: Epoch = kani::any();
         let callee: Epoch = kani::any();
