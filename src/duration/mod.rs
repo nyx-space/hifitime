@@ -609,6 +609,11 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub fn floor(&self, duration: Self) -> Self {
         Self::from_total_nanoseconds(if duration.total_nanoseconds() == 0 {
             0
@@ -632,6 +637,11 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.ceil(1.seconds()), two_hours_three_min + 1.seconds());
     /// assert_eq!(two_hours_three_min.ceil(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
     /// ```
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub fn ceil(&self, duration: Self) -> Self {
         let floored = self.floor(duration);
         match floored
@@ -657,6 +667,11 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.round(1.seconds()), two_hours_three_min);
     /// assert_eq!(two_hours_three_min.round(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
     /// ```
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub fn round(&self, duration: Self) -> Self {
         let floored = self.floor(duration);
         let ceiled = self.ceil(duration);

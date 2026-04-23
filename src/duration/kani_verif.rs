@@ -313,14 +313,14 @@ mod kani_harnesses {
         let _ = callee.floor(duration);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(Duration::ceil)]
     fn kani_harness_ceil() {
         let duration: Duration = kani::any();
         let callee: Duration = kani::any();
         let _ = callee.ceil(duration);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(Duration::round)]
     fn kani_harness_round() {
         let duration: Duration = kani::any();
         let callee: Duration = kani::any();
