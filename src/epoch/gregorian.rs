@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 /*
 * Hifitime
 * Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
@@ -7,7 +8,6 @@
 *
 * Documentation: https://nyxspace.com/
 */
-
 use crate::errors::DurationError;
 use crate::parser::Token;
 use crate::{
@@ -804,30 +804,31 @@ mod ut_gregorian {
 }
 
 #[cfg(kani)]
+#[allow(non_snake_case)]
 mod kani_harnesses {
     use super::*;
 
     #[kani::proof]
     fn kani_harness_january_years() {
         let year: i32 = kani::any();
-        january_years(year);
+        let _ = january_years(year);
     }
 
     #[kani::proof]
     fn kani_harness_july_years() {
         let year: i32 = kani::any();
-        july_years(year);
+        let _ = july_years(year);
     }
 
     #[kani::proof]
     fn kani_harness_usual_days_per_month() {
         let month: u8 = kani::any();
-        usual_days_per_month(month);
+        let _ = usual_days_per_month(month);
     }
 
     #[kani::proof]
     fn kani_harness_is_leap_year() {
         let year: i32 = kani::any();
-        is_leap_year(year);
+        let _ = is_leap_year(year);
     }
 }

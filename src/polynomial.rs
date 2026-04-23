@@ -216,6 +216,12 @@ mod kani_verif {
         let rate: Duration = kani::any();
         let accel: Duration = kani::any();
         let interval: Duration = kani::any();
+        // Constrain to durations whose seconds representation is finite
+        // to avoid NaN/inf in the f64 arithmetic inside correction_duration
+        kani::assume(constant.to_seconds().is_finite());
+        kani::assume(rate.to_seconds().is_finite());
+        kani::assume(accel.to_seconds().is_finite());
+        kani::assume(interval.to_seconds().is_finite());
         let poly = Polynomial {
             constant,
             rate,

@@ -30,30 +30,30 @@ mod kani_harnesses {
     #[kani::proof]
     fn kani_harness_formatted_len() {
         let callee: TimeScale = kani::any();
-        callee.formatted_len();
+        let _ = callee.formatted_len();
     }
 
     #[kani::proof]
     fn kani_harness_is_gnss() {
         let callee: TimeScale = kani::any();
-        callee.is_gnss();
+        let _ = callee.is_gnss();
     }
 
     #[kani::proof]
     fn kani_harness_reference_epoch() {
         let callee: TimeScale = kani::any();
-        callee.reference_epoch();
+        let _ = callee.reference_epoch();
     }
 
     #[kani::proof]
     fn kani_harness_prime_epoch_offset() {
         let callee: TimeScale = kani::any();
-        callee.prime_epoch_offset();
+        let _ = callee.prime_epoch_offset();
     }
 
     #[kani::proof]
     fn kani_harness_gregorian_epoch_offset() {
         let callee: TimeScale = kani::any();
-        callee.gregorian_epoch_offset();
+        let _ = callee.gregorian_epoch_offset();
     }
 }

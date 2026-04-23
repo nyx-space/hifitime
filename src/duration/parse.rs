@@ -279,20 +279,19 @@ fn parse_offset(s: &str) -> Result<Duration, HifitimeError> {
                 None => {
                     // Do nothing, there are no seconds in this offset
                 }
-                Some(subs) => {
-                    if !subs.is_empty() {
-                        // Fetch the seconds
-                        match lexical_core::parse(subs.as_bytes()) {
-                            Ok(val) => seconds = val,
-                            Err(_) => {
-                                return Err(HifitimeError::Parse {
-                                    source: ParsingError::ValueError,
-                                    details: "invalid seconds",
-                                })
-                            }
+                Some(subs) if !subs.is_empty() => {
+                    // Fetch the seconds
+                    match lexical_core::parse(subs.as_bytes()) {
+                        Ok(val) => seconds = val,
+                        Err(_) => {
+                            return Err(HifitimeError::Parse {
+                                source: ParsingError::ValueError,
+                                details: "invalid seconds",
+                            })
                         }
                     }
                 }
+                _ => {}
             }
         }
     }

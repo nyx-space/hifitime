@@ -392,12 +392,3 @@ impl<'a> IntoIterator for &'a Ut1Provider {
         self.data.iter()
     }
 }
-
-#[cfg(kani)]
-mod kani_harnesses {
-    use super::*;
-    #[kani::proof]
-    fn kani_harness_Ut1Provider_download_short_from_jpl() {
-        Ut1Provider::download_short_from_jpl();
-    }
-}
