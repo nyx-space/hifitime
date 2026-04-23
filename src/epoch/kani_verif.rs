@@ -191,6 +191,7 @@ fn formal_epoch_julian() {
 #[allow(non_snake_case)]
 /// Stub for duration_since_unix_epoch: returns a bounded non-deterministic
 /// Duration representing a valid Unix timestamp (1970-01-01 to ~2100).
+#[allow(dead_code)]
 fn stub_duration_since_unix_epoch() -> Result<Duration, crate::HifitimeError> {
     let dur: Duration = kani::any();
     // Constrain to a plausible Unix timestamp range (0 to ~130 years in seconds)
@@ -956,6 +957,7 @@ fn verify_epoch_eq_ord_consistent() {
 /// the 42-entry leap second table) with any value in [0, 37].
 #[cfg(kani)]
 #[allow(dead_code)]
+#[allow(dead_code)]
 fn stub_leap_seconds(_epoch: &Epoch, _iers_only: bool) -> Option<f64> {
     if kani::any() {
         let delta: f64 = kani::any();
@@ -968,6 +970,7 @@ fn stub_leap_seconds(_epoch: &Epoch, _iers_only: bool) -> Option<f64> {
 
 /// Stub for delta_et_tai: over-approximates with bounded non-deterministic value.
 /// Real function returns TT_OFFSET + NAIF_K * sin(e) ≈ 32.184 ± 0.002.
+#[allow(dead_code)]
 fn stub_delta_et_tai(_seconds: f64) -> f64 {
     let result: f64 = kani::any();
     kani::assume(result > 32.0 && result < 33.0);
@@ -976,6 +979,7 @@ fn stub_delta_et_tai(_seconds: f64) -> f64 {
 
 /// Stub for inner_g: over-approximates with bounded non-deterministic value.
 /// Real function returns 1.658e-3 * sin(...), bounded by [-0.002, 0.002].
+#[allow(dead_code)]
 fn stub_inner_g(_seconds: f64) -> f64 {
     let result: f64 = kani::any();
     kani::assume(result > -0.002 && result < 0.002);

@@ -17,6 +17,7 @@ use crate::Epoch;
 use crate::{duration::Duration, TimeScale};
 
 #[cfg(kani)]
+#[allow(non_snake_case)]
 mod kani_harnesses {
     use super::*;
     use crate::*;
