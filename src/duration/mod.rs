@@ -644,10 +644,10 @@ impl Duration {
     }))]
     pub fn ceil(&self, duration: Self) -> Self {
         let floored = self.floor(duration);
-        match floored
-            .total_nanoseconds()
-            .checked_add(duration.abs().total_nanoseconds())
-        {
+        let floored_ns = floored.total_nanoseconds();
+        let abs_dur = duration.abs();
+        let dur_ns = abs_dur.total_nanoseconds();
+        match floored_ns.checked_add(dur_ns) {
             Some(total_ns) => Self::from_total_nanoseconds(total_ns),
             None => Self::MAX,
         }
