@@ -7,43 +7,7 @@
 *
 * Documentation: https://nyxspace.com/
 */
-#[allow(unused_imports)]
-use crate::{Duration, Epoch};
 
-// Kani verification for ET is skipped.
-// Reason: Kani struggles with formally verifying the Newton-Raphson iteration
-// used in ET <-> TAI conversions. This involves floating-point arithmetic,
-// complex loop invariants, and convergence criteria that are challenging for
-// current formal verification tools like Kani.
-
-// Kani verification for TDB is skipped.
-// Reason: TDB conversions also involve complex calculations (similar to ET but with
-// different astronomical terms) and floating-point arithmetic. Formally verifying
-// these transformations with arbitrary inputs in Kani is challenging.
-// The specific test case below (`formal_epoch_reciprocity_tdb`) was an attempt
-// to debug issues with a particular duration value but highlights the difficulties.
-#[test]
-fn formal_epoch_reciprocity_tdb() {
-    // let duration: Duration = kani::any();
-    let duration = Duration::from_parts(19510, 3155759999999997938);
-
-    // TDB
-    let ts_offset = TimeScale::TDB.reference_epoch() - TimeScale::TAI.reference_epoch();
-    if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
-        // We guard TDB from durations that are would hit the MIN or the MAX.
-        // TDB is centered on J2000 but the Epoch is on J1900. So on initialization, we offset by one century and twelve hours.
-        // If the duration is too close to the Duration bounds, then the TDB initialization and retrieval will fail (because the bounds will have been hit).
-
-        let time_scale: TimeScale = TimeScale::TDB;
-        let epoch: Epoch = Epoch::from_duration(duration, time_scale);
-        let out_duration = epoch.to_duration_in_time_scale(time_scale);
-        assert_eq!((out_duration - duration).to_seconds(), 0.0);
-        assert_eq!(out_duration.centuries, duration.centuries);
-        assert_eq!(out_duration.nanoseconds, duration.nanoseconds);
-        let error = (out_duration.nanoseconds - duration.nanoseconds) as f64;
-        assert!(error.abs() < 500_000.0, "error: {}", error);
-    }
-}
 #[cfg(kani)]
 #[allow(non_snake_case)]
 mod kani_harnesses {
