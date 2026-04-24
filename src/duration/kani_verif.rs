@@ -312,6 +312,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
+    #[kani::stub_verified(Unit::const_multiply)]
     fn kani_harness_decompose() {
         let callee: Duration = kani::any();
         let _ = callee.decompose();
