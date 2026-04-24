@@ -1,4 +1,3 @@
-#[allow(unused_imports)]
 /*
 * Hifitime
 * Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
@@ -29,6 +28,7 @@ pub mod ut1;
 pub mod leap_seconds;
 
 use crate::duration::{Duration, Unit};
+#[allow(unused_imports)]
 use crate::errors::{DurationError, ParseSnafu};
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
 use crate::{
@@ -36,14 +36,17 @@ use crate::{
     GST_REF_EPOCH, MJD_J1900, MJD_OFFSET, QZSST_REF_EPOCH, UNIX_REF_EPOCH,
 };
 use core::cmp::Eq;
+#[allow(unused_imports)]
 use core::str::FromStr;
 pub use gregorian::is_gregorian_valid;
+#[allow(unused_imports)]
 use snafu::ResultExt;
 
 #[cfg(not(kani))]
 use crate::ParsingError;
 
 #[cfg(kani)]
+#[allow(unused_imports)]
 use kani::assert;
 
 #[cfg(feature = "python")]

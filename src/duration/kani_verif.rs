@@ -215,9 +215,15 @@ mod kani_harnesses {
         let milliseconds: f64 = kani::any();
         let microseconds: f64 = kani::any();
         let nanoseconds: f64 = kani::any();
-        kani::assume(days.is_finite() && hours.is_finite() && minutes.is_finite()
-            && seconds.is_finite() && milliseconds.is_finite()
-            && microseconds.is_finite() && nanoseconds.is_finite());
+        kani::assume(
+            days.is_finite()
+                && hours.is_finite()
+                && minutes.is_finite()
+                && seconds.is_finite()
+                && milliseconds.is_finite()
+                && microseconds.is_finite()
+                && nanoseconds.is_finite(),
+        );
         let _ = Duration::compose_f64(
             sign,
             days,

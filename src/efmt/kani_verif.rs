@@ -1,4 +1,3 @@
-#[allow(unused_imports)]
 /*
 * Hifitime
 * Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
@@ -13,8 +12,6 @@ use super::{
     formatter::{Formatter, Item},
 };
 use crate::parser::Token;
-use crate::Epoch;
-use crate::{duration::Duration, TimeScale};
 
 #[cfg(kani)]
 #[allow(non_snake_case)]
