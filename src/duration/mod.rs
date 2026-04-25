@@ -619,11 +619,6 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
-    #[cfg_attr(kani, kani::ensures(|result: &Self| {
-        result.nanoseconds < NANOSECONDS_PER_CENTURY
-            || result.parts_are_equal(Self::MAX)
-            || result.parts_are_equal(Self::MIN)
-    }))]
     pub fn floor(&self, duration: Self) -> Self {
         Self::from_total_nanoseconds(if duration.total_nanoseconds() == 0 {
             0

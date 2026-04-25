@@ -952,59 +952,6 @@ mod kani_harnesses {
         let __dur: Duration = kani::any();
         let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.with_hms_strict_from(other);
-
-        // Kani verification for UTC is skipped.
-        // Reason: Kani struggles with the leap second counting logic. This involves:
-        // 1. Accessing an external, dynamically sized list of leap seconds (LATEST_LEAP_SECONDS).
-        // 2. Complex conditional paths and iteration when determining the applicable number of leap seconds.
-        // These aspects are challenging to model and verify exhaustively with Kani.
-
-        #[cfg(kani)]
-        #[allow(non_snake_case)]
-        /// Stub for duration_since_unix_epoch: returns a bounded non-deterministic
-        /// Duration representing a valid Unix timestamp (1970-01-01 to ~2100).
-        #[allow(dead_code)]
-        fn stub_duration_since_unix_epoch() -> Result<Duration, crate::HifitimeError> {
-            let dur: Duration = kani::any();
-            // Constrain to a plausible Unix timestamp range (0 to ~130 years in seconds)
-            let secs = dur.to_seconds();
-            kani::assume(secs >= 0.0 && secs < 4_102_444_800.0 && secs.is_finite());
-            Ok(dur)
-        }
-
-        /// Stub for Epoch::leap_seconds: returns bounded non-deterministic leap seconds.
-        /// Over-approximates the real function (which looks up a specific value from
-        /// the 42-entry leap second table) with any value in [0, 37].
-        #[cfg(kani)]
-        #[allow(dead_code)]
-        #[allow(dead_code)]
-        fn stub_leap_seconds(_epoch: &Epoch, _iers_only: bool) -> Option<f64> {
-            if kani::any() {
-                let delta: f64 = kani::any();
-                kani::assume(delta >= 0.0 && delta <= 37.0);
-                Some(delta)
-            } else {
-                None
-            }
-        }
-
-        /// Stub for delta_et_tai: over-approximates with bounded non-deterministic value.
-        /// Real function returns TT_OFFSET + NAIF_K * sin(e) ≈ 32.184 ± 0.002.
-        #[allow(dead_code)]
-        fn stub_delta_et_tai(_seconds: f64) -> f64 {
-            let result: f64 = kani::any();
-            kani::assume(result > 32.0 && result < 33.0);
-            result
-        }
-
-        /// Stub for inner_g: over-approximates with bounded non-deterministic value.
-        /// Real function returns 1.658e-3 * sin(...), bounded by [-0.002, 0.002].
-        #[allow(dead_code)]
-        fn stub_inner_g(_seconds: f64) -> f64 {
-            let result: f64 = kani::any();
-            kani::assume(result > -0.002 && result < 0.002);
-            result
-        }
     }
 
     // Kani verification for UTC is skipped.
@@ -1030,7 +977,6 @@ mod kani_harnesses {
     /// Over-approximates the real function (which looks up a specific value from
     /// the 42-entry leap second table) with any value in [0, 37].
     #[cfg(kani)]
-    #[allow(dead_code)]
     #[allow(dead_code)]
     fn stub_leap_seconds(_epoch: &Epoch, _iers_only: bool) -> Option<f64> {
         if kani::any() {
