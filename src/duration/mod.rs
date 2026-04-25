@@ -438,38 +438,17 @@ impl Duration {
 
     /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.
     pub fn try_truncated_nanoseconds(&self) -> Result<i64, HifitimeError> {
-        // If it fits, we know that the nanoseconds also fit. Negative and positive
-        // overflows are split to return the correct DurationError variant.
-        if self.centuries == i16::MIN || self.centuries <= -3 {
-            Err(HifitimeError::Duration {
-                source: DurationError::Underflow,
-            })
-        } else if self.centuries >= 3 {
+        let total = self.total_nanoseconds();
+        if total > i64::MAX as i128 {
             Err(HifitimeError::Duration {
                 source: DurationError::Overflow,
             })
-        } else if self.centuries == -1 {
-            Ok(-((NANOSECONDS_PER_CENTURY - self.nanoseconds) as i64))
-        } else if self.centuries >= 0 {
-            match i64::from(self.centuries).checked_mul(NANOSECONDS_PER_CENTURY as i64) {
-                Some(centuries_as_ns) => {
-                    match centuries_as_ns.checked_add(self.nanoseconds as i64) {
-                        Some(truncated_ns) => Ok(truncated_ns),
-                        None => Err(HifitimeError::Duration {
-                            source: DurationError::Overflow,
-                        }),
-                    }
-                }
-                None => Err(HifitimeError::Duration {
-                    source: DurationError::Underflow,
-                }),
-            }
+        } else if total < i64::MIN as i128 {
+            Err(HifitimeError::Duration {
+                source: DurationError::Underflow,
+            })
         } else {
-            // Centuries negative by a decent amount
-            Ok(
-                i64::from(self.centuries + 1) * NANOSECONDS_PER_CENTURY as i64
-                    + self.nanoseconds as i64,
-            )
+            Ok(total as i64)
         }
     }
 

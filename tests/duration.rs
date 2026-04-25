@@ -721,6 +721,14 @@ fn regression_test_gh_475() {
             source: DurationError::Underflow,
         })
     );
+    assert_eq!(
+        Duration::from_truncated_nanoseconds(i64::MIN).try_truncated_nanoseconds(),
+        Ok(i64::MIN)
+    );
+    assert_eq!(
+        Duration::from_truncated_nanoseconds(i64::MAX).try_truncated_nanoseconds(),
+        Ok(i64::MAX)
+    );
     assert!(Duration::from_parts(2, 0)
         .try_truncated_nanoseconds()
         .is_ok());

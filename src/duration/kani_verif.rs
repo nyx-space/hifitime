@@ -10,7 +10,7 @@
 
 // Here lives all of the formal verification for Duration.
 
-use super::{Duration, DurationError, HifitimeError};
+use super::Duration;
 use crate::NANOSECONDS_PER_CENTURY;
 
 use kani::Arbitrary;
@@ -36,45 +36,8 @@ fn formal_duration_normalize_any() {
 fn formal_duration_truncated_ns_reciprocity() {
     let nanoseconds: i64 = kani::any();
     let dur_from_part = Duration::from_truncated_nanoseconds(nanoseconds);
-
-    let u_ns = dur_from_part.nanoseconds;
-    let centuries = dur_from_part.centuries;
-    if centuries <= -3 {
-        // Then it does not fit on a i64, so this function should return an Underflow error
-        assert_eq!(
-            dur_from_part.try_truncated_nanoseconds(),
-            Err(HifitimeError::Duration {
-                source: DurationError::Underflow,
-            })
-        );
-    } else if centuries >= 3 {
-        // Then it does not fit on a i64, so this function should return an Overflow error
-        assert_eq!(
-            dur_from_part.try_truncated_nanoseconds(),
-            Err(HifitimeError::Duration {
-                source: DurationError::Overflow
-            })
-        );
-    } else if centuries == -1 {
-        // If we are negative by just enough that the centuries is negative, then the truncated seconds
-        // should be the unsigned nanoseconds wrapped by the number of nanoseconds per century.
-
-        let expect_rslt = -((NANOSECONDS_PER_CENTURY - u_ns) as i64);
-
-        let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
-        assert_eq!(recip_ns, expect_rslt);
-    } else if centuries < 0 {
-        // Centuries negative by more than -1: formula is (centuries + 1) * NPC + nanoseconds
-        let expect_rslt = i64::from(centuries + 1) * NANOSECONDS_PER_CENTURY as i64 + u_ns as i64;
-
-        let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
-        assert_eq!(recip_ns, expect_rslt);
-    } else {
-        // Positive duration but enough to fit on an i64.
-        let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
-
-        assert_eq!(recip_ns, nanoseconds);
-    }
+    let recip_ns = dur_from_part.try_truncated_nanoseconds().unwrap();
+    assert_eq!(recip_ns, nanoseconds);
 }
 
 mod tests {
