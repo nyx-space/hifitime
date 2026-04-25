@@ -121,13 +121,6 @@ mod tests {
     // repeat_test!(test_dur_f64_recip_6, [1e5, 1e6]);
 }
 
-// Stub for Duration::round — no ensures contract, so kani::stub works.
-// Returns a non-deterministic normalized Duration.
-#[cfg(kani)]
-fn stub_round(_self: &Duration, _duration: Duration) -> Duration {
-    kani::any()
-}
-
 #[cfg(kani)]
 #[allow(non_snake_case)]
 mod kani_harnesses {
