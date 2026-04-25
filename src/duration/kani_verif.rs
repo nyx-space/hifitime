@@ -26,6 +26,7 @@ impl Arbitrary for Duration {
 }
 
 #[kani::proof]
+#[kani::stub_verified(Duration::decompose)]
 fn formal_duration_normalize_any() {
     let dur: Duration = kani::any();
     // Check that decompose never fails
