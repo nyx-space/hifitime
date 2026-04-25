@@ -529,6 +529,16 @@ impl Duration {
 
     /// Decomposes a Duration in its sign, days, hours, minutes, seconds, ms, us, ns
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result: &(i8, u64, u64, u64, u64, u64, u64, u64)| {
+        let (sign, _days, hours, minutes, seconds, ms, us, ns) = *result;
+        (sign == -1 || sign == 0 || sign == 1)
+            && hours < 24
+            && minutes < 60
+            && seconds < 60
+            && ms < 1000
+            && us < 1000
+            && ns < 1000
+    }))]
     pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
         let mut me = *self;
         let sign = me.signum();

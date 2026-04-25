@@ -311,7 +311,7 @@ mod kani_harnesses {
         let _ = callee.signum();
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(Duration::decompose)]
     #[kani::stub_verified(Unit::const_multiply)]
     fn kani_harness_decompose() {
         let callee: Duration = kani::any();
