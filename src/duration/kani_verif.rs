@@ -39,12 +39,20 @@ fn formal_duration_truncated_ns_reciprocity() {
 
     let u_ns = dur_from_part.nanoseconds;
     let centuries = dur_from_part.centuries;
-    if centuries <= -3 || centuries >= 3 {
-        // Then it does not fit on a i64, so this function should return an error
+    if centuries <= -3 {
+        // Then it does not fit on a i64, so this function should return an Underflow error
         assert_eq!(
             dur_from_part.try_truncated_nanoseconds(),
             Err(HifitimeError::Duration {
                 source: DurationError::Underflow,
+            })
+        );
+    } else if centuries >= 3 {
+        // Then it does not fit on a i64, so this function should return an Overflow error
+        assert_eq!(
+            dur_from_part.try_truncated_nanoseconds(),
+            Err(HifitimeError::Duration {
+                source: DurationError::Overflow
             })
         );
     } else if centuries == -1 {

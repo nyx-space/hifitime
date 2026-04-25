@@ -1,5 +1,6 @@
 use hifitime::{
-    Duration, Freq, Frequencies, TimeUnits, Unit, NANOSECONDS_PER_CENTURY, NANOSECONDS_PER_MINUTE,
+    Duration, DurationError, Freq, Frequencies, HifitimeError, TimeUnits, Unit,
+    NANOSECONDS_PER_CENTURY, NANOSECONDS_PER_MINUTE,
 };
 
 #[test]
@@ -692,4 +693,35 @@ fn regression_test_gh_244() {
     assert_eq!(non_zero.ceil(zero), zero);
     // Test that the ceil of a zero duration by a non-zero is non-zero duration.
     assert_eq!(zero.ceil(non_zero), non_zero);
+}
+
+#[test]
+fn regression_test_gh_475() {
+    assert_eq!(
+        Duration::from_parts(3, 0).try_truncated_nanoseconds(),
+        Err(HifitimeError::Duration {
+            source: DurationError::Overflow,
+        })
+    );
+    assert_eq!(
+        Duration::from_parts(i16::MIN, 0).try_truncated_nanoseconds(),
+        Err(HifitimeError::Duration {
+            source: DurationError::Underflow,
+        })
+    );
+    assert_eq!(
+        Duration::from_parts(i16::MAX, 0).try_truncated_nanoseconds(),
+        Err(HifitimeError::Duration {
+            source: DurationError::Overflow,
+        })
+    );
+    assert_eq!(
+        Duration::from_parts(-3, 0).try_truncated_nanoseconds(),
+        Err(HifitimeError::Duration {
+            source: DurationError::Underflow,
+        })
+    );
+    assert!(Duration::from_parts(2, 0)
+        .try_truncated_nanoseconds()
+        .is_ok());
 }
