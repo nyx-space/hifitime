@@ -118,7 +118,8 @@ impl Mul<f64> for Duration {
         //   - floor check: breaks when new_val is an integer (precision found)
         //   - p < 19: breaks when f64's ~17 significant digits are exhausted
         #[cfg_attr(kani, kani::loop_invariant(p >= 0 && p <= 19))]
-        #[cfg_attr(kani, kani::loop_decreases(19i32.wrapping_sub(p)))]
+        // TODO: enable when Kani supports loop_decreases (PR #4564)
+        // #[cfg_attr(kani, kani::loop_decreases(19i32.wrapping_sub(p)))]
         while new_val.is_finite() && (new_val.floor() - new_val).abs() >= f64::EPSILON && p < 19 {
             p += 1;
             new_val = q * ten.powi(p);
