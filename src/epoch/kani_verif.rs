@@ -218,19 +218,22 @@ mod kani_harnesses {
     #[kani::proof]
     fn kani_harness_to_gregorian_str() {
         let time_scale: TimeScale = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.to_gregorian_str(time_scale);
     }
 
     #[kani::proof]
     fn kani_harness_to_gregorian_utc() {
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.to_gregorian_utc();
     }
 
     #[kani::proof]
     fn kani_harness_to_gregorian_tai() {
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.to_gregorian_tai();
     }
 
@@ -419,7 +422,8 @@ mod kani_harnesses {
     #[kani::stub_verified(crate::epoch::Epoch::to_time_scale)]
     fn kani_harness_to_time_scale() {
         let ts: TimeScale = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.to_time_scale(ts);
     }
 
@@ -441,7 +445,8 @@ mod kani_harnesses {
     #[kani::stub(crate::epoch::Epoch::inner_g, stub_inner_g)]
     #[kani::stub(crate::epoch::Epoch::leap_seconds, stub_leap_seconds)]
     fn kani_harness_to_duration_since_j1900() {
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.to_duration_since_j1900();
     }
 
@@ -773,7 +778,8 @@ mod kani_harnesses {
     #[kani::stub_verified(crate::epoch::Epoch::to_time_scale)]
     fn kani_harness_min() {
         let other: Epoch = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.min(other);
     }
 
@@ -781,95 +787,108 @@ mod kani_harnesses {
     #[kani::stub_verified(crate::epoch::Epoch::to_time_scale)]
     fn kani_harness_max() {
         let other: Epoch = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.max(other);
     }
 
     #[kani::proof]
     fn kani_harness_floor() {
         let duration: Duration = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.floor(duration);
     }
 
     #[kani::proof]
     fn kani_harness_ceil() {
         let duration: Duration = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.ceil(duration);
     }
 
     #[kani::proof]
     fn kani_harness_round() {
         let duration: Duration = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.round(duration);
     }
 
     #[kani::proof]
     fn kani_harness_to_time_of_week() {
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.to_time_of_week();
     }
 
     #[kani::proof]
     fn kani_harness_weekday_in_time_scale() {
-        let time_scale: TimeScale = kani::any();
-        let callee: Epoch = kani::any();
-        let _ = callee.weekday_in_time_scale(time_scale);
+        let dur: Duration = kani::any();
+        let callee = Epoch::from_duration(dur, TimeScale::TAI);
+        let _ = callee.weekday_in_time_scale(TimeScale::TAI);
     }
 
     #[kani::proof]
     fn kani_harness_weekday() {
-        let callee: Epoch = kani::any();
+        let dur: Duration = kani::any();
+        let callee = Epoch::from_duration(dur, TimeScale::TAI);
         let _ = callee.weekday();
     }
 
     #[kani::proof]
     fn kani_harness_weekday_utc() {
-        let callee: Epoch = kani::any();
+        let dur: Duration = kani::any();
+        let callee = Epoch::from_duration(dur, TimeScale::UTC);
         let _ = callee.weekday_utc();
     }
 
     #[kani::proof]
     fn kani_harness_next() {
         let weekday: Weekday = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.next(weekday);
     }
 
     #[kani::proof]
     fn kani_harness_next_weekday_at_midnight() {
         let weekday: Weekday = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.next_weekday_at_midnight(weekday);
     }
 
     #[kani::proof]
     fn kani_harness_next_weekday_at_noon() {
         let weekday: Weekday = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.next_weekday_at_noon(weekday);
     }
 
     #[kani::proof]
     fn kani_harness_previous() {
         let weekday: Weekday = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.previous(weekday);
     }
 
     #[kani::proof]
     fn kani_harness_previous_weekday_at_midnight() {
         let weekday: Weekday = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.previous_weekday_at_midnight(weekday);
     }
 
     #[kani::proof]
     fn kani_harness_previous_weekday_at_noon() {
         let weekday: Weekday = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.previous_weekday_at_noon(weekday);
     }
 
@@ -896,21 +915,24 @@ mod kani_harnesses {
         let hours: u64 = kani::any();
         let minutes: u64 = kani::any();
         let seconds: u64 = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.with_hms(hours, minutes, seconds);
     }
 
     #[kani::proof]
     fn kani_harness_with_hms_from() {
         let other: Epoch = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.with_hms_from(other);
     }
 
     #[kani::proof]
     fn kani_harness_with_time_from() {
         let other: Epoch = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.with_time_from(other);
     }
 
@@ -919,14 +941,16 @@ mod kani_harnesses {
         let hours: u64 = kani::any();
         let minutes: u64 = kani::any();
         let seconds: u64 = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.with_hms_strict(hours, minutes, seconds);
     }
 
     #[kani::proof]
     fn kani_harness_with_hms_strict_from() {
         let other: Epoch = kani::any();
-        let callee: Epoch = kani::any();
+        let __dur: Duration = kani::any();
+        let callee = Epoch::from_duration(__dur, TimeScale::TAI);
         let _ = callee.with_hms_strict_from(other);
 
         // Kani verification for UTC is skipped.
