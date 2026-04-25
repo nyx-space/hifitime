@@ -160,6 +160,7 @@ mod kani_harnesses {
     /// Fixed by making both use total_nanoseconds() as the canonical scalar.
     /// No assumptions needed — the property holds for all Duration values.
     #[kani::proof]
+    #[kani::stub_verified(crate::epoch::Epoch::to_time_scale)]
     fn verify_epoch_eq_ord_consistent() {
         let c1: i16 = kani::any();
         let n1: u64 = kani::any();
