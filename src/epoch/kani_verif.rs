@@ -48,6 +48,103 @@ fn verify_with_hms_strict() {
     let _ = epoch.with_hms_strict(12, 0, 0);
 }
 
+#[kani::proof]
+#[kani::stub_verified(crate::epoch::Epoch::weekday)]
+#[kani::stub_verified(crate::duration::Duration::decompose)]
+#[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
+fn verify_next_weekday_at_midnight() {
+    use crate::{Duration, Epoch, TimeScale, Weekday};
+    let dur: Duration = kani::any();
+    let epoch = Epoch::from_duration(dur, TimeScale::TAI);
+    let weekday: Weekday = kani::any();
+    let _ = epoch.next_weekday_at_midnight(weekday);
+}
+
+#[kani::proof]
+#[kani::stub_verified(crate::epoch::Epoch::weekday)]
+#[kani::stub_verified(crate::duration::Duration::decompose)]
+#[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
+fn verify_next_weekday_at_noon() {
+    use crate::{Duration, Epoch, TimeScale, Weekday};
+    let dur: Duration = kani::any();
+    let epoch = Epoch::from_duration(dur, TimeScale::TAI);
+    let weekday: Weekday = kani::any();
+    let _ = epoch.next_weekday_at_noon(weekday);
+}
+
+#[kani::proof]
+#[kani::stub_verified(crate::epoch::Epoch::weekday)]
+#[kani::stub_verified(crate::duration::Duration::decompose)]
+#[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
+fn verify_previous_weekday_at_midnight() {
+    use crate::{Duration, Epoch, TimeScale, Weekday};
+    let dur: Duration = kani::any();
+    let epoch = Epoch::from_duration(dur, TimeScale::TAI);
+    let weekday: Weekday = kani::any();
+    let _ = epoch.previous_weekday_at_midnight(weekday);
+}
+
+#[kani::proof]
+#[kani::stub_verified(crate::epoch::Epoch::weekday)]
+#[kani::stub_verified(crate::duration::Duration::decompose)]
+#[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
+fn verify_previous_weekday_at_noon() {
+    use crate::{Duration, Epoch, TimeScale, Weekday};
+    let dur: Duration = kani::any();
+    let epoch = Epoch::from_duration(dur, TimeScale::TAI);
+    let weekday: Weekday = kani::any();
+    let _ = epoch.previous_weekday_at_noon(weekday);
+}
+
+#[kani::proof]
+#[kani::stub_verified(crate::duration::Duration::decompose)]
+#[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
+fn verify_with_hms() {
+    use crate::{Duration, Epoch, TimeScale};
+    let dur: Duration = kani::any();
+    let epoch = Epoch::from_duration(dur, TimeScale::TAI);
+    let hours: u64 = kani::any();
+    let minutes: u64 = kani::any();
+    let seconds: u64 = kani::any();
+    let _ = epoch.with_hms(hours, minutes, seconds);
+}
+
+#[kani::proof]
+#[kani::stub_verified(crate::duration::Duration::decompose)]
+#[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
+fn verify_with_hms_from() {
+    use crate::{Duration, Epoch, TimeScale};
+    let d1: Duration = kani::any();
+    let d2: Duration = kani::any();
+    let epoch = Epoch::from_duration(d1, TimeScale::TAI);
+    let other = Epoch::from_duration(d2, TimeScale::TAI);
+    let _ = epoch.with_hms_from(other);
+}
+
+#[kani::proof]
+#[kani::stub_verified(crate::duration::Duration::decompose)]
+#[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
+fn verify_with_time_from() {
+    use crate::{Duration, Epoch, TimeScale};
+    let d1: Duration = kani::any();
+    let d2: Duration = kani::any();
+    let epoch = Epoch::from_duration(d1, TimeScale::TAI);
+    let other = Epoch::from_duration(d2, TimeScale::TAI);
+    let _ = epoch.with_time_from(other);
+}
+
+#[kani::proof]
+#[kani::stub_verified(crate::duration::Duration::decompose)]
+#[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
+fn verify_with_hms_strict_from() {
+    use crate::{Duration, Epoch, TimeScale};
+    let d1: Duration = kani::any();
+    let d2: Duration = kani::any();
+    let epoch = Epoch::from_duration(d1, TimeScale::TAI);
+    let other = Epoch::from_duration(d2, TimeScale::TAI);
+    let _ = epoch.with_hms_strict_from(other);
+}
+
 #[cfg(kani)]
 #[allow(non_snake_case)]
 mod kani_harnesses {
