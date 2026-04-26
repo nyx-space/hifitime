@@ -7,7 +7,6 @@
 *
 * Documentation: https://nyxspace.com/
 */
-
 #[cfg(kani)]
 #[allow(non_snake_case)]
 mod kani_harnesses {
