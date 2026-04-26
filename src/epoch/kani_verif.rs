@@ -38,6 +38,16 @@ fn verify_epoch_next() {
     let _ = epoch.next(weekday);
 }
 
+#[kani::proof]
+#[kani::stub_verified(crate::duration::Duration::decompose)]
+#[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
+fn verify_with_hms_strict() {
+    use crate::{Duration, Epoch, TimeScale};
+    let dur: Duration = kani::any();
+    let epoch = Epoch::from_duration(dur, TimeScale::TAI);
+    let _ = epoch.with_hms_strict(12, 0, 0);
+}
+
 #[cfg(kani)]
 #[allow(non_snake_case)]
 mod kani_harnesses {
