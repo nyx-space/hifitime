@@ -104,22 +104,25 @@ impl Mul<f64> for Duration {
     fn mul(self, q: f64) -> Self::Output {
         // Make sure that we don't trim the number by finding its precision
         let mut p: i32 = 0;
-        let mut new_val = q;
+        let mut new_val: f64 = q;
         let ten: f64 = 10.0;
 
+        // Loop invariant: p stays in [0, 19] across all iterations.
+        // Decreases clause: 19 - p strictly decreases each iteration (p increments by 1),
+        // proving termination. Together they establish total correctness:
+        // the loop terminates with p ∈ [0, 19] for all f64 inputs.
+        //
+        // The while condition consolidates the two break conditions from the original
+        // loop { if ... break; ... if p >= 19 break; } into a single guard:
+        //   - !new_val.is_finite(): breaks when q * 10^p overflows to infinity/NaN
+        //   - floor check: breaks when new_val is an integer (precision found)
+        //   - p < 19: breaks when f64's ~17 significant digits are exhausted
         #[cfg_attr(kani, kani::loop_invariant(p >= 0 && p <= 19))]
-        loop {
-            if !new_val.is_finite() || (new_val.floor() - new_val).abs() < f64::EPSILON {
-                // Found the precision, or value is no longer finite
-                break;
-            }
+        // TODO: enable when Kani supports loop_decreases (PR #4564)
+        // #[cfg_attr(kani, kani::loop_decreases(19i32.wrapping_sub(p)))]
+        while new_val.is_finite() && (new_val.floor() - new_val).abs() >= f64::EPSILON && p < 19 {
             p += 1;
             new_val = q * ten.powi(p);
-            if p >= 19 {
-                // f64 has at most ~17 significant decimal digits.
-                // If we haven't converged by p=19, we never will (subnormals, etc.).
-                break;
-            }
         }
 
         // If new_val overflowed to infinity (e.g., very large q), the cast

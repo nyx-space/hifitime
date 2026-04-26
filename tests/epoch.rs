@@ -2493,3 +2493,27 @@ fn test_gh_450() {
         "2023-12-31T23:59:59.999999933 UTC"
     );
 }
+
+/// Regression test for TDB reciprocity with a specific duration value.
+/// Originally in src/epoch/kani_verif.rs but never ran because that file
+/// is gated behind #[cfg(kani)].
+#[test]
+fn formal_epoch_reciprocity_tdb() {
+    use hifitime::prelude::*;
+
+    let duration = Duration::from_parts(19510, 3155759999999997938);
+
+    let ts_offset = TimeScale::TDB.reference_epoch() - TimeScale::TAI.reference_epoch();
+    if duration > Duration::MIN + ts_offset && duration < Duration::MAX - ts_offset {
+        let time_scale: TimeScale = TimeScale::TDB;
+        let epoch: Epoch = Epoch::from_duration(duration, time_scale);
+        let out_duration = epoch.to_duration_in_time_scale(time_scale);
+        assert_eq!((out_duration - duration).to_seconds(), 0.0);
+        let (out_c, out_n) = out_duration.to_parts();
+        let (in_c, in_n) = duration.to_parts();
+        assert_eq!(out_c, in_c);
+        assert_eq!(out_n, in_n);
+        let error = (out_n as i64 - in_n as i64) as f64;
+        assert!(error.abs() < 500_000.0, "error: {}", error);
+    }
+}

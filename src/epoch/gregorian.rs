@@ -9,12 +9,15 @@
 * Documentation: https://nyxspace.com/
 */
 use crate::errors::DurationError;
+#[allow(unused_imports)]
 use crate::parser::Token;
+#[allow(unused_imports)]
 use crate::{
     Duration, Epoch, HifitimeError, ParsingError, TimeScale, Unit, DAYS_PER_YEAR_NLD,
     HIFITIME_REF_YEAR, NANOSECONDS_PER_DAY, NANOSECONDS_PER_HOUR, NANOSECONDS_PER_MINUTE,
     NANOSECONDS_PER_SECOND, NANOSECONDS_PER_SECOND_U32,
 };
+#[allow(unused_imports)]
 use core::str::FromStr;
 
 impl Epoch {
