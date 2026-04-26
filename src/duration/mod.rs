@@ -573,6 +573,7 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.subdivision(Unit::Week), None);
     /// ```
     #[must_use]
+    ///#[cfg_attr(kani, kani::ensures(|result| /* we need to add a condition here to prove this function using contracts. */))]
     pub fn subdivision(&self, unit: Unit) -> Option<Duration> {
         let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
             self.decompose();

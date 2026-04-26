@@ -353,7 +353,7 @@ mod kani_harnesses {
         let _ = Epoch::from_gregorian_utc_hms(year, month, day, hour, minute, second);
     }
 
-    #[kani::proof]
+    #[kani::proof_for_contract(epoch::gregorian::Epoch::from_gregorian)]
     fn kani_harness_Epoch_from_gregorian() {
         let year: i32 = kani::any();
         let month: u8 = kani::any();
@@ -767,6 +767,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
+    #[kani::stub_verified(epoch::gregorian::Epoch::from_gregorian)]
     fn kani_harness_Epoch_from_day_of_year() {
         let year: i32 = kani::any();
         let days: f64 = kani::any();

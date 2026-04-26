@@ -272,6 +272,8 @@ impl Epoch {
         // Now add the leap days for all the years prior to the current year
         if year >= HIFITIME_REF_YEAR {
             // Add days until, but not including, current year.
+            // we need a loop invariant for this loop, so we can prove this function using function contracts
+            // Proving termination of this loop should also be trivial
             for y in HIFITIME_REF_YEAR..year {
                 if is_leap_year(y) {
                     duration_wrt_ref += Unit::Day;

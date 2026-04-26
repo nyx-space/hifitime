@@ -119,30 +119,34 @@ pub struct Format {
 
 impl Format {
     pub(crate) fn need_gregorian(&self) -> bool {
-        for item in self.items.iter().take(self.num_items) {
-            match item.as_ref().unwrap().token {
-                Token::Year
-                | Token::YearShort
-                | Token::Month
-                | Token::MonthName
-                | Token::MonthNameShort
-                | Token::Day
-                | Token::Hour
-                | Token::Minute
-                | Token::Second
-                | Token::Subsecond
-                | Token::OffsetHours
-                | Token::OffsetMinutes => return true,
-                Token::Timescale
-                | Token::DayOfYearInteger
-                | Token::DayOfYear
-                | Token::Weekday
-                | Token::WeekdayShort
-                | Token::WeekdayDecimal => {
-                    // These tokens don't need the gregorian, but other tokens in the list of tokens might.
-                    // Hence, we don't return anything here and continue the loop.
+        let mut i: usize = 0;
+        #[cfg_attr(kani, kani::loop_invariant(i <= self.num_items && i <= MAX_TOKENS))]
+        while i < self.num_items && i < MAX_TOKENS {
+            if let Some(item) = self.items[i].as_ref() {
+                match item.token {
+                    Token::Year
+                    | Token::YearShort
+                    | Token::Month
+                    | Token::MonthName
+                    | Token::MonthNameShort
+                    | Token::Day
+                    | Token::Hour
+                    | Token::Minute
+                    | Token::Second
+                    | Token::Subsecond
+                    | Token::OffsetHours
+                    | Token::OffsetMinutes => return true,
+                    Token::Timescale
+                    | Token::DayOfYearInteger
+                    | Token::DayOfYear
+                    | Token::Weekday
+                    | Token::WeekdayShort
+                    | Token::WeekdayDecimal => {
+                        // These tokens don't need the gregorian, but other tokens in the list of tokens might.
+                    }
                 }
             }
+            i += 1;
         }
         false
     }
