@@ -244,6 +244,11 @@ impl Duration {
             || result.parts_are_equal(Self::MIN)
     }))]
     #[cfg_attr(kani, kani::requires(value.is_finite()))]
+    #[cfg_attr(kani, kani::ensures(|result: &Self| {
+        result.nanoseconds < NANOSECONDS_PER_CENTURY
+            || result.parts_are_equal(Self::MAX)
+            || result.parts_are_equal(Self::MIN)
+    }))]
     pub const fn from_seconds(value: f64) -> Self {
         Unit::Second.const_multiply(value)
     }
@@ -472,6 +477,7 @@ impl Duration {
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result: &f64| result.is_finite()))]
     pub fn to_seconds(&self) -> f64 {
         // Compute the seconds and nanoseconds that we know this fits on a 64bit float
         let seconds = self.nanoseconds.div_euclid(NANOSECONDS_PER_SECOND);

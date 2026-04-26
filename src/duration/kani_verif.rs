@@ -101,6 +101,18 @@ fn kani_harness_subdivision() {
     let _ = callee.subdivision(unit);
 }
 
+#[kani::proof_for_contract(Duration::to_seconds)]
+fn verify_to_seconds_contract() {
+    let dur: Duration = kani::any();
+    let _ = dur.to_seconds();
+}
+
+#[kani::proof_for_contract(Duration::from_seconds)]
+fn verify_from_seconds_contract() {
+    let value: f64 = kani::any();
+    let _ = Duration::from_seconds(value);
+}
+
 #[cfg(kani)]
 #[allow(non_snake_case)]
 mod kani_harnesses {
