@@ -93,6 +93,14 @@ mod tests {
     // repeat_test!(test_dur_f64_recip_6, [1e5, 1e6]);
 }
 
+#[kani::proof]
+#[kani::stub_verified(Duration::decompose)]
+fn kani_harness_subdivision() {
+    let unit: crate::Unit = kani::any();
+    let callee: Duration = kani::any();
+    let _ = callee.subdivision(unit);
+}
+
 #[cfg(kani)]
 #[allow(non_snake_case)]
 mod kani_harnesses {
@@ -283,12 +291,7 @@ mod kani_harnesses {
         let _ = callee.decompose();
     }
 
-    #[kani::proof]
-    fn kani_harness_subdivision() {
-        let unit: Unit = kani::any();
-        let callee: Duration = kani::any();
-        let _ = callee.subdivision(unit);
-    }
+    // kani_harness_subdivision moved to top-level for stub_verified compatibility
 
     #[kani::proof_for_contract(Duration::floor)]
     fn kani_harness_floor() {
