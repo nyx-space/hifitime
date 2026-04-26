@@ -282,6 +282,7 @@ impl Epoch {
     #[must_use]
     /// Returns weekday (uses the TAI representation for this calculation).
     /// :rtype: Weekday
+    #[cfg_attr(kani, kani::ensures(|result: &Weekday| (*result as u8) < 7))]
     pub fn weekday(&self) -> Weekday {
         // J1900 was a Monday so we just have to modulo the number of days by the number of days per week.
         // The function call will be optimized away.

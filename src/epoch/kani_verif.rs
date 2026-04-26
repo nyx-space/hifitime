@@ -7,6 +7,37 @@
 *
 * Documentation: https://nyxspace.com/
 */
+
+#[kani::proof_for_contract(crate::epoch::Epoch::weekday)]
+fn kani_harness_weekday() {
+    use crate::{Duration, Epoch, TimeScale};
+    let dur: Duration = kani::any();
+    let callee = Epoch::from_duration(dur, TimeScale::TAI);
+    let _ = callee.weekday();
+}
+
+#[kani::proof]
+#[kani::stub_verified(crate::epoch::Epoch::weekday)]
+#[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
+fn verify_epoch_previous() {
+    use crate::{Duration, Epoch, TimeScale, Weekday};
+    let dur: Duration = kani::any();
+    let epoch = Epoch::from_duration(dur, TimeScale::TAI);
+    let weekday: Weekday = kani::any();
+    let _ = epoch.previous(weekday);
+}
+
+#[kani::proof]
+#[kani::stub_verified(crate::epoch::Epoch::weekday)]
+#[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
+fn verify_epoch_next() {
+    use crate::{Duration, Epoch, TimeScale, Weekday};
+    let dur: Duration = kani::any();
+    let epoch = Epoch::from_duration(dur, TimeScale::TAI);
+    let weekday: Weekday = kani::any();
+    let _ = epoch.next(weekday);
+}
+
 #[cfg(kani)]
 #[allow(non_snake_case)]
 mod kani_harnesses {
@@ -830,12 +861,7 @@ mod kani_harnesses {
         let _ = callee.weekday_in_time_scale(TimeScale::TAI);
     }
 
-    #[kani::proof]
-    fn kani_harness_weekday() {
-        let dur: Duration = kani::any();
-        let callee = Epoch::from_duration(dur, TimeScale::TAI);
-        let _ = callee.weekday();
-    }
+    // kani_harness_weekday moved to top-level
 
     #[kani::proof]
     fn kani_harness_weekday_utc() {
