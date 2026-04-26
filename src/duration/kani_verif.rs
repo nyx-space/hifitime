@@ -93,7 +93,7 @@ mod tests {
     // repeat_test!(test_dur_f64_recip_6, [1e5, 1e6]);
 }
 
-#[kani::proof]
+#[kani::proof_for_contract(Duration::subdivision)]
 #[kani::stub_verified(Duration::decompose)]
 fn kani_harness_subdivision() {
     let unit: crate::Unit = kani::any();
@@ -174,7 +174,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof_for_contract(Duration::compose)]
-    #[kani::stub_verified(Unit::const_multiply)]
+    #[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
     fn kani_harness_Duration_compose() {
         let sign: i8 = kani::any();
         let days: u64 = kani::any();
@@ -197,7 +197,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
-    #[kani::stub_verified(Unit::const_multiply)]
+    #[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
     fn kani_harness_Duration_compose_f64() {
         let sign: i8 = kani::any();
         let days: f64 = kani::any();
@@ -297,7 +297,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof_for_contract(Duration::decompose)]
-    #[kani::stub_verified(Unit::const_multiply)]
+    #[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
     fn kani_harness_decompose() {
         let callee: Duration = kani::any();
         let _ = callee.decompose();
