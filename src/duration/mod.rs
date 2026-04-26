@@ -477,7 +477,7 @@ impl Duration {
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     #[must_use]
-    #[cfg_attr(kani, kani::ensures(|result: &f64| result.is_finite()))]
+    #[cfg_attr(kani, kani::ensures(|result: &f64| result.is_finite() && result.abs() < 1.1e14))]
     pub fn to_seconds(&self) -> f64 {
         // Compute the seconds and nanoseconds that we know this fits on a 64bit float
         let seconds = self.nanoseconds.div_euclid(NANOSECONDS_PER_SECOND);
