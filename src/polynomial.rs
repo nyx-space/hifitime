@@ -220,9 +220,9 @@ mod kani_verif {
         // Constrain centuries to small range so to_seconds() produces
         // values that won't overflow in polynomial evaluation a0+a1*dt+a2*dt^2
         kani::assume(constant.to_parts().0 > -1 && constant.to_parts().0 < 1);
-        kani::assume(rate.to_parts().0 > -1 && constant.to_parts().0 < 1);
-        kani::assume(accel.to_parts().0 > -1 && constant.to_parts().0 < 1);
-        kani::assume(interval.to_parts().0 > -1 && constant.to_parts().0 < 1);
+        kani::assume(rate.to_parts().0 > -1 && rate.to_parts().0 < 1);
+        kani::assume(accel.to_parts().0 > -1 && accel.to_parts().0 < 1);
+        kani::assume(interval.to_parts().0 > -1 && interval.to_parts().0 < 1);
         let poly = Polynomial {
             constant,
             rate,

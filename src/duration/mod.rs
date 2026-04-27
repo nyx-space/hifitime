@@ -238,11 +238,6 @@ impl Duration {
 
     /// Creates a new duration from the provided number of seconds
     #[must_use]
-    #[cfg_attr(kani, kani::ensures(|result: &Self| {
-        result.nanoseconds < NANOSECONDS_PER_CENTURY
-            || result.parts_are_equal(Self::MAX)
-            || result.parts_are_equal(Self::MIN)
-    }))]
     #[cfg_attr(kani, kani::requires(value.is_finite()))]
     #[cfg_attr(kani, kani::ensures(|result: &Self| {
         result.nanoseconds < NANOSECONDS_PER_CENTURY

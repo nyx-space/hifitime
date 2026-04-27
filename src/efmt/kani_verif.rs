@@ -22,7 +22,6 @@ mod kani_harnesses {
     #[kani::unwind(17)]
     fn kani_harness_need_gregorian() {
         let callee: Format = kani::any();
-        kani::assume(callee.num_items < 2);
         let _ = callee.need_gregorian();
     }
 
