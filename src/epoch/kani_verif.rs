@@ -144,7 +144,6 @@ fn verify_with_hms_strict_from() {
     let other = Epoch::from_duration(d2, TimeScale::TAI);
     let _ = epoch.with_hms_strict_from(other);
 }
-
 #[cfg(kani)]
 #[allow(non_snake_case)]
 mod kani_harnesses {
