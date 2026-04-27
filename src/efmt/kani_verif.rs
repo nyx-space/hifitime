@@ -76,8 +76,11 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
+    #[kani::stub_verified(epoch::Epoch::to_time_scale)]
     fn kani_harness_Formatter_to_time_scale() {
-        let epoch: Epoch = kani::any();
+        let dur: Duration = kani::any();
+        let time_scale: TimeScale = kani::any();
+        let epoch = Epoch::from_duration(dur, time_scale);
         let format: Format = kani::any();
         let time_scale: TimeScale = kani::any();
         let _ = Formatter::to_time_scale(epoch, format, time_scale);

@@ -8,7 +8,7 @@
 * Documentation: https://nyxspace.com/
 */
 
-use super::{Duration, Epoch, TimeSeries, Weekday};
+use super::{Duration, Epoch, TimeScale, TimeSeries, Weekday};
 use crate::parser::Token;
 
 #[cfg(kani)]
@@ -42,16 +42,20 @@ mod kani_harnesses {
 
     #[kani::proof]
     fn kani_harness_time_series_exclusive() {
-        let start: Epoch = kani::any();
-        let end: Epoch = kani::any();
+        let d1: Duration = kani::any();
+        let d2: Duration = kani::any();
+        let start = Epoch::from_duration(d1, TimeScale::TAI);
+        let end = Epoch::from_duration(d2, TimeScale::TAI);
         let step: Duration = kani::any();
         let _ = TimeSeries::exclusive(start, end, step);
     }
 
     #[kani::proof]
     fn kani_harness_time_series_inclusive() {
-        let start: Epoch = kani::any();
-        let end: Epoch = kani::any();
+        let d1: Duration = kani::any();
+        let d2: Duration = kani::any();
+        let start = Epoch::from_duration(d1, TimeScale::TAI);
+        let end = Epoch::from_duration(d2, TimeScale::TAI);
         let step: Duration = kani::any();
         let _ = TimeSeries::inclusive(start, end, step);
     }

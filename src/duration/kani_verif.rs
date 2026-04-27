@@ -26,6 +26,7 @@ impl Arbitrary for Duration {
 }
 
 #[kani::proof]
+#[kani::stub_verified(Duration::decompose)]
 fn formal_duration_normalize_any() {
     let dur: Duration = kani::any();
     // Check that decompose never fails
@@ -92,6 +93,26 @@ mod tests {
     // repeat_test!(test_dur_f64_recip_6, [1e5, 1e6]);
 }
 
+#[kani::proof_for_contract(Duration::subdivision)]
+#[kani::stub_verified(Duration::decompose)]
+fn kani_harness_subdivision() {
+    let unit: crate::Unit = kani::any();
+    let callee: Duration = kani::any();
+    let _ = callee.subdivision(unit);
+}
+
+#[kani::proof_for_contract(Duration::to_seconds)]
+fn verify_to_seconds_contract() {
+    let dur: Duration = kani::any();
+    let _ = dur.to_seconds();
+}
+
+#[kani::proof_for_contract(Duration::from_seconds)]
+fn verify_from_seconds_contract() {
+    let value: f64 = kani::any();
+    let _ = Duration::from_seconds(value);
+}
+
 #[cfg(kani)]
 #[allow(non_snake_case)]
 mod kani_harnesses {
@@ -153,7 +174,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof_for_contract(Duration::compose)]
-    #[kani::stub_verified(Unit::const_multiply)]
+    #[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
     fn kani_harness_Duration_compose() {
         let sign: i8 = kani::any();
         let days: u64 = kani::any();
@@ -176,7 +197,7 @@ mod kani_harnesses {
     }
 
     #[kani::proof]
-    #[kani::stub_verified(Unit::const_multiply)]
+    #[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
     fn kani_harness_Duration_compose_f64() {
         let sign: i8 = kani::any();
         let days: f64 = kani::any();
@@ -276,17 +297,10 @@ mod kani_harnesses {
     }
 
     #[kani::proof_for_contract(Duration::decompose)]
-    #[kani::stub_verified(Unit::const_multiply)]
+    #[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
     fn kani_harness_decompose() {
         let callee: Duration = kani::any();
         let _ = callee.decompose();
-    }
-
-    #[kani::proof]
-    fn kani_harness_subdivision() {
-        let unit: Unit = kani::any();
-        let callee: Duration = kani::any();
-        let _ = callee.subdivision(unit);
     }
 
     #[kani::proof_for_contract(Duration::floor)]

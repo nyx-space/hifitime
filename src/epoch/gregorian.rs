@@ -272,17 +272,23 @@ impl Epoch {
         // Now add the leap days for all the years prior to the current year
         if year >= HIFITIME_REF_YEAR {
             // Add days until, but not including, current year.
-            for y in HIFITIME_REF_YEAR..year {
+            let mut y = HIFITIME_REF_YEAR;
+            #[cfg_attr(kani, kani::loop_invariant(y >= HIFITIME_REF_YEAR && y <= year))]
+            while y < year {
                 if is_leap_year(y) {
                     duration_wrt_ref += Unit::Day;
                 }
+                y += 1;
             }
         } else {
             // Remove days
-            for y in year..HIFITIME_REF_YEAR {
+            let mut y = year;
+            #[cfg_attr(kani, kani::loop_invariant(y >= year && y <= HIFITIME_REF_YEAR))]
+            while y < HIFITIME_REF_YEAR {
                 if is_leap_year(y) {
                     duration_wrt_ref -= Unit::Day;
                 }
+                y += 1;
             }
         }
 

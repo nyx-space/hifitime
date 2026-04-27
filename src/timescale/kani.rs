@@ -24,6 +24,13 @@ fn formal_time_scale() {
     let _time_scale: TimeScale = kani::any();
 }
 
+#[kani::proof]
+#[kani::stub_verified(crate::duration::Duration::decompose)]
+fn kani_harness_gregorian_epoch_offset() {
+    let callee: crate::TimeScale = kani::any();
+    let _ = callee.gregorian_epoch_offset();
+}
+
 #[cfg(kani)]
 mod kani_harnesses {
     use super::*;
@@ -49,11 +56,5 @@ mod kani_harnesses {
     fn kani_harness_prime_epoch_offset() {
         let callee: TimeScale = kani::any();
         let _ = callee.prime_epoch_offset();
-    }
-
-    #[kani::proof]
-    fn kani_harness_gregorian_epoch_offset() {
-        let callee: TimeScale = kani::any();
-        let _ = callee.gregorian_epoch_offset();
     }
 }

@@ -238,12 +238,12 @@ impl Duration {
 
     /// Creates a new duration from the provided number of seconds
     #[must_use]
+    #[cfg_attr(kani, kani::requires(value.is_finite()))]
     #[cfg_attr(kani, kani::ensures(|result: &Self| {
         result.nanoseconds < NANOSECONDS_PER_CENTURY
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
-    #[cfg_attr(kani, kani::requires(value.is_finite()))]
     pub const fn from_seconds(value: f64) -> Self {
         Unit::Second.const_multiply(value)
     }
@@ -472,6 +472,7 @@ impl Duration {
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result: &f64| result.is_finite() && result.abs() < 1.1e14))]
     pub fn to_seconds(&self) -> f64 {
         // Compute the seconds and nanoseconds that we know this fits on a 64bit float
         let seconds = self.nanoseconds.div_euclid(NANOSECONDS_PER_SECOND);
@@ -567,6 +568,16 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.subdivision(Unit::Week), None);
     /// ```
     #[must_use]
+    #[cfg_attr(kani, kani::ensures(|result: &Option<Duration>| {
+        match result {
+            Some(d) => {
+                d.nanoseconds < NANOSECONDS_PER_CENTURY
+                    || d.parts_are_equal(Self::MAX)
+                    || d.parts_are_equal(Self::MIN)
+            }
+            None => true,
+        }
+    }))]
     pub fn subdivision(&self, unit: Unit) -> Option<Duration> {
         let (_, days, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
             self.decompose();
