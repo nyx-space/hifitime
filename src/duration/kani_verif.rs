@@ -113,6 +113,20 @@ fn verify_from_seconds_contract() {
     let _ = Duration::from_seconds(value);
 }
 
+// Stub for Duration::round — no ensures contract, so kani::stub works.
+#[cfg(kani)]
+fn stub_round(_self: &Duration, _duration: Duration) -> Duration {
+    kani::any()
+}
+
+#[kani::proof]
+#[kani::stub_verified(Duration::decompose)]
+#[kani::stub(Duration::round, stub_round)]
+fn verify_approx() {
+    let callee: Duration = kani::any();
+    let _ = callee.approx();
+}
+
 #[cfg(kani)]
 #[allow(non_snake_case)]
 mod kani_harnesses {
