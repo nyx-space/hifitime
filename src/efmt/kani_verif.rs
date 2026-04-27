@@ -19,7 +19,6 @@ mod kani_harnesses {
     use super::*;
     use crate::*;
     #[kani::proof]
-    #[kani::unwind(17)]
     fn kani_harness_need_gregorian() {
         let callee: Format = kani::any();
         let _ = callee.need_gregorian();

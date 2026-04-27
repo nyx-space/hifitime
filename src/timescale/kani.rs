@@ -57,6 +57,4 @@ mod kani_harnesses {
         let callee: TimeScale = kani::any();
         let _ = callee.prime_epoch_offset();
     }
-
-    // kani_harness_gregorian_epoch_offset moved to top-level for stub_verified
 }

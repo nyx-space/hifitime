@@ -303,8 +303,6 @@ mod kani_harnesses {
         let _ = callee.decompose();
     }
 
-    // kani_harness_subdivision moved to top-level for stub_verified compatibility
-
     #[kani::proof_for_contract(Duration::floor)]
     fn kani_harness_floor() {
         let duration: Duration = kani::any();

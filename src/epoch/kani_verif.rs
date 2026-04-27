@@ -968,8 +968,6 @@ mod kani_harnesses {
         let _ = callee.weekday_in_time_scale(TimeScale::TAI);
     }
 
-    // kani_harness_weekday moved to top-level
-
     #[kani::proof]
     fn kani_harness_weekday_utc() {
         let dur: Duration = kani::any();
