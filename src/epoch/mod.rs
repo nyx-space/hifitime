@@ -66,6 +66,16 @@ use num_traits::Float;
 pub(crate) const TT_OFFSET_MS: i64 = 32_184;
 pub(crate) const ET_OFFSET_US: i64 = 32_184_935;
 
+/// L_G = 1 - d(TT)/d(TCG)
+pub const LG: f64 = 6.969_290_134e-10;
+/// L_B = 1 - d(TDB)/d(TCB)
+pub const LB: f64 = 1.550_519_768e-8;
+/// TDB0 is the TDB offset at TAI 1977-01-01 00:00:00 (s)
+pub const TDB0_S: f64 = -6.55e-5;
+/// Duration of the 1977-01-01 00:00:00 TAI epoch in J1900 TAI duration.
+/// This corresponds to 1977-01-01 00:00:32.184 TT.
+pub(crate) const T77_TAI_NS: u64 = 2_429_913_600_000_000_000;
+
 /// NAIF leap second kernel data for M_0 used to calculate the mean anomaly of the heliocentric orbit of the Earth-Moon barycenter.
 pub const NAIF_M0: f64 = 6.239996;
 /// NAIF leap second kernel data for M_1 used to calculate the mean anomaly of the heliocentric orbit of the Earth-Moon barycenter.
@@ -220,6 +230,29 @@ impl Epoch {
                 TimeScale::GST => self.duration + GST_REF_EPOCH.to_tai_duration(),
                 TimeScale::BDT => self.duration + BDT_REF_EPOCH.to_tai_duration(),
                 TimeScale::QZSST => self.duration + QZSST_REF_EPOCH.to_tai_duration(),
+                TimeScale::TCG => {
+                    // TT = TCG - (TCG - T77) * LG
+                    // (TCG - T77) = self.duration - (T77 - prime_offset)
+                    let t77_tcg_duration = Duration::from_nanoseconds(T77_TAI_NS as f64)
+                        - self.time_scale.prime_epoch_offset();
+                    let dt_tcg = (self.duration - t77_tcg_duration).to_seconds();
+                    let tt_seconds = self.duration.to_seconds() - dt_tcg * LG;
+                    tt_seconds.seconds() - TT_OFFSET_MS.milliseconds()
+                }
+                TimeScale::TCB => {
+                    let t77_tai_since_j1900 = Duration::from_nanoseconds(T77_TAI_NS as f64);
+                    let t77_tt_since_j2k = (t77_tai_since_j1900 - TimeScale::TDB.prime_epoch_offset()).to_seconds() + TT_OFFSET_MS as f64 / 1000.0;
+
+                    // our self.duration is TCB since J2000.
+                    let dt_tcb = self.duration.to_seconds() - t77_tt_since_j2k;
+                    let tdb_seconds = self.duration.to_seconds() + TDB0_S - dt_tcb * LB;
+
+                    // Now we have TDB seconds since J2000.
+                    // Convert TDB to TAI using existing TDB logic.
+                    let gamma = Self::inner_g(tdb_seconds);
+                    let delta_tdb_tai = gamma * Unit::Second + TT_OFFSET_MS * Unit::Millisecond;
+                    tdb_seconds.seconds() - delta_tdb_tai + self.time_scale.prime_epoch_offset()
+                }
             };
 
             // Convert to the desired time scale from the TAI duration
@@ -287,6 +320,33 @@ impl Epoch {
                 TimeScale::GST => prime_epoch_offset - GST_REF_EPOCH.to_tai_duration(),
                 TimeScale::BDT => prime_epoch_offset - BDT_REF_EPOCH.to_tai_duration(),
                 TimeScale::QZSST => prime_epoch_offset - QZSST_REF_EPOCH.to_tai_duration(),
+                TimeScale::TCG => {
+                    // TCG = TT + (TT - T77) * LG / (1 - LG)
+                    let tt_tai_duration = prime_epoch_offset + TT_OFFSET_MS.milliseconds();
+                    let dt_tt = (tt_tai_duration - Duration::from_nanoseconds(T77_TAI_NS as f64))
+                        .to_seconds();
+                    let tcg_seconds = tt_tai_duration.to_seconds() + dt_tt * LG / (1.0 - LG);
+                    tcg_seconds.seconds() - ts.prime_epoch_offset()
+                }
+                TimeScale::TCB => {
+                    // First, get TDB from TAI.
+                    let mut seconds = (prime_epoch_offset - TimeScale::TDB.prime_epoch_offset()).to_seconds();
+                    let mut delta = 1e8;
+                    for _ in 0..5 {
+                        let next = seconds - Self::inner_g(seconds);
+                        let new_delta = (next - seconds).abs();
+                        if (new_delta - delta).abs() < 1e-9 {
+                            break;
+                        }
+                        seconds = next;
+                        delta = new_delta;
+                    }
+                    // `seconds` is TDB seconds since J2000.
+                    let t77_tai_since_j1900 = Duration::from_nanoseconds(T77_TAI_NS as f64);
+                    let t77_tt_since_j2k = (t77_tai_since_j1900 - TimeScale::TDB.prime_epoch_offset()).to_seconds() + TT_OFFSET_MS as f64 / 1000.0;
+                    let tcb_seconds = seconds - TDB0_S + (seconds - t77_tt_since_j2k - TDB0_S) * LB / (1.0 - LB);
+                    tcb_seconds.seconds()
+                }
             };
 
             Self {
@@ -754,6 +814,34 @@ impl Epoch {
     }
 
     #[must_use]
+    /// Returns the Geocentric Coordinate Time (TCG) as a Duration since J1900
+    /// :rtype: Duration
+    pub fn to_tcg_duration(&self) -> Duration {
+        self.to_time_scale(TimeScale::TCG).duration
+    }
+
+    #[must_use]
+    /// Returns the Geocentric Coordinate Time (TCG) as seconds since J1900
+    /// :rtype: float
+    pub fn to_tcg_seconds(&self) -> f64 {
+        self.to_tcg_duration().to_seconds()
+    }
+
+    #[must_use]
+    /// Returns the Barycentric Coordinate Time (TCB) as a Duration since J2000
+    /// :rtype: Duration
+    pub fn to_tcb_duration(&self) -> Duration {
+        self.to_time_scale(TimeScale::TCB).duration
+    }
+
+    #[must_use]
+    /// Returns the Barycentric Coordinate Time (TCB) as seconds since J2000
+    /// :rtype: float
+    pub fn to_tcb_seconds(&self) -> f64 {
+        self.to_tcb_duration().to_seconds()
+    }
+
+    #[must_use]
     /// Returns the Dynamics Barycentric Time (TDB) as a high precision Duration since J2000
     ///
     /// ## Algorithm
@@ -1082,6 +1170,60 @@ mod ut_epoch {
         let centuries_t = e.to_et_centuries_since_j2000();
         assert!((days_d - 8369.000800729873).abs() < f64::EPSILON);
         assert!((centuries_t - 0.2291307542978747).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_tcg_tcb() {
+        use crate::{TimeScale, TimeUnits, LG, T77_TAI_NS};
+
+        // 1. TCG to TT
+        // At T77, TT and TCG should be the same as per definition?
+        // Actually SOFA says: tt2 = tcg2 - ( ( tcg1 - DJM0 ) + ( tcg2 - t77t ) ) * ELG;
+        // if tcg = t77t, then (tcg2 - t77t) = 0, and (tcg1 - DJM0) is the MJD of T77.
+        // T77 is MJD 43144.0 + 32.184s.
+        // So TT = TCG - MJD_T77 * ELG.
+        // Let's use a known value.
+        let epoch = Epoch::from_gregorian_tai(1977, 1, 1, 0, 0, 0, 0);
+        let tcg = epoch.to_time_scale(TimeScale::TCG);
+        let tt = tcg.to_time_scale(TimeScale::TT);
+        // They should be very close but differ by the LG drift.
+        assert!((tt.to_tai_seconds() - epoch.to_tai_seconds()).abs() < 1e-9);
+
+        // 2. Test round trip
+        let e = Epoch::from_gregorian_utc_at_midnight(2023, 1, 1);
+        let tcg = e.to_time_scale(TimeScale::TCG);
+        let e_back = tcg.to_time_scale(TimeScale::UTC);
+        println!("e: {:?} ({} TAI s)", e, e.to_tai_seconds());
+        println!("tcg: {:?}", tcg);
+        println!("e_back: {:?} ({} TAI s)", e_back, e_back.to_tai_seconds());
+        assert!(
+            (e.to_tai_seconds() - e_back.to_tai_seconds()).abs() < 1e-9,
+            "TCG round trip failed: e={}, e_back={}",
+            e.to_tai_seconds(),
+            e_back.to_tai_seconds()
+        );
+
+        let tcb = e.to_time_scale(TimeScale::TCB);
+        let e_back = tcb.to_time_scale(TimeScale::UTC);
+        assert!(
+            (e.to_tai_seconds() - e_back.to_tai_seconds()).abs() < 1e-9,
+            "TCB round trip failed: e={}, e_back={}",
+            e.to_tai_seconds(),
+            e_back.to_tai_seconds()
+        );
+
+        // 3. Known values from SOFA (if I had them, but let's check internal consistency)
+        // TCG - TT = (TT - T77) * LG / (1-LG)
+        let e = Epoch::from_gregorian_tai(2000, 1, 1, 12, 0, 0, 0);
+        let tcg = e.to_time_scale(TimeScale::TCG);
+        let tt = e.to_time_scale(TimeScale::TT);
+        let diff = tcg.to_duration_in_time_scale(TimeScale::TCG)
+            - tt.to_duration_in_time_scale(TimeScale::TT);
+        let dt_tt = (tt.to_tai_duration() + 32184.milliseconds()
+            - Duration::from_nanoseconds(T77_TAI_NS as f64))
+        .to_seconds();
+        let expected_diff = dt_tt * LG / (1.0 - LG);
+        assert!((diff.to_seconds() - expected_diff).abs() < 1e-9);
     }
 
     #[test]
