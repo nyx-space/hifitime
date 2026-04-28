@@ -446,6 +446,7 @@ impl Epoch {
     #[must_use]
     /// Builds an Epoch from the provided Gregorian date and time in the provided time scale. If invalid date is provided, this function will panic.
     /// Use maybe_from_gregorian if unsure.
+    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     pub fn from_gregorian(
         year: i32,
         month: u8,
