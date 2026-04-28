@@ -127,16 +127,14 @@ fn verify_approx() {
     let _ = callee.approx();
 }
 
-// Duration::decompose — proof_for_contract exceeds time budget (>10min).
-// The ensures contract is verified indirectly: formal_duration_normalize_any
-// uses stub_verified(decompose) which requires a proof_for_contract to exist.
-// The contract was verified at 524s in an earlier session with cvc5.
-// Keeping as commented-out for documentation.
-// #[kani::proof_for_contract(Duration::decompose)]
-// fn kani_harness_decompose() {
-//     let callee: Duration = kani::any();
-//     let _ = callee.decompose();
-// }
+// Duration::decompose proof_for_contract — verified at 524s with cvc5.
+// Required by stub_verified(decompose) callers.
+#[kani::proof_for_contract(Duration::decompose)]
+#[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
+fn kani_harness_decompose() {
+    let callee: Duration = kani::any();
+    let _ = callee.decompose();
+}
 
 #[cfg(kani)]
 #[allow(non_snake_case)]
