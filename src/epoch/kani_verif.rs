@@ -811,7 +811,6 @@ mod kani_harnesses {
         let _ = callee.weekday_utc();
     }
 
-    // kani_harness_next — replaced by top-level harness with stub_verified
     // #[kani::proof]
     // fn kani_harness_next() {
     // let weekday: Weekday = kani::any();
@@ -820,7 +819,6 @@ mod kani_harnesses {
     // let _ = callee.next(weekday);
     // }
 
-    // kani_harness_next_weekday_at_midnight — replaced by top-level harness with stub_verified
     // #[kani::proof]
     // fn kani_harness_next_weekday_at_midnight() {
     // let weekday: Weekday = kani::any();
@@ -829,7 +827,6 @@ mod kani_harnesses {
     // let _ = callee.next_weekday_at_midnight(weekday);
     // }
 
-    // kani_harness_next_weekday_at_noon — replaced by top-level harness with stub_verified
     // #[kani::proof]
     // fn kani_harness_next_weekday_at_noon() {
     // let weekday: Weekday = kani::any();
@@ -838,7 +835,6 @@ mod kani_harnesses {
     // let _ = callee.next_weekday_at_noon(weekday);
     // }
 
-    // kani_harness_previous — replaced by top-level harness with stub_verified
     // #[kani::proof]
     // fn kani_harness_previous() {
     // let weekday: Weekday = kani::any();
@@ -847,7 +843,6 @@ mod kani_harnesses {
     // let _ = callee.previous(weekday);
     // }
 
-    // kani_harness_previous_weekday_at_midnight — replaced by top-level harness with stub_verified
     // #[kani::proof]
     // fn kani_harness_previous_weekday_at_midnight() {
     // let weekday: Weekday = kani::any();
@@ -856,7 +851,6 @@ mod kani_harnesses {
     // let _ = callee.previous_weekday_at_midnight(weekday);
     // }
 
-    // kani_harness_previous_weekday_at_noon — replaced by top-level harness with stub_verified
     // #[kani::proof]
     // fn kani_harness_previous_weekday_at_noon() {
     // let weekday: Weekday = kani::any();
@@ -883,7 +877,6 @@ mod kani_harnesses {
         let _ = Epoch::now();
     }
 
-    // kani_harness_with_hms — replaced by top-level harness with stub_verified
     // #[kani::proof]
     // fn kani_harness_with_hms() {
     // let hours: u64 = kani::any();
@@ -894,7 +887,6 @@ mod kani_harnesses {
     // let _ = callee.with_hms(hours, minutes, seconds);
     // }
 
-    // kani_harness_with_hms_from — replaced by top-level harness with stub_verified
     // #[kani::proof]
     // fn kani_harness_with_hms_from() {
     // let other: Epoch = kani::any();
@@ -903,7 +895,6 @@ mod kani_harnesses {
     // let _ = callee.with_hms_from(other);
     // }
 
-    // kani_harness_with_time_from — replaced by top-level harness with stub_verified
     // #[kani::proof]
     // fn kani_harness_with_time_from() {
     // let other: Epoch = kani::any();
@@ -912,7 +903,6 @@ mod kani_harnesses {
     // let _ = callee.with_time_from(other);
     // }
 
-    // kani_harness_with_hms_strict — replaced by top-level harness with stub_verified
     // #[kani::proof]
     // fn kani_harness_with_hms_strict() {
     // let hours: u64 = kani::any();
@@ -923,7 +913,6 @@ mod kani_harnesses {
     // let _ = callee.with_hms_strict(hours, minutes, seconds);
     // }
 
-    // kani_harness_with_hms_strict_from — replaced by top-level harness with stub_verified
     // #[kani::proof]
     // fn kani_harness_with_hms_strict_from() {
     // let other: Epoch = kani::any();

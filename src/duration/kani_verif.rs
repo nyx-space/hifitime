@@ -319,8 +319,6 @@ mod kani_harnesses {
         let _ = callee.signum();
     }
 
-    // kani_harness_decompose — moved to top-level for performance
-
     #[kani::proof_for_contract(Duration::floor)]
     fn kani_harness_floor() {
         let duration: Duration = kani::any();
@@ -353,8 +351,6 @@ mod kani_harnesses {
     //     let callee: Duration = kani::any();
     //     let _ = callee.round(duration);
     // }
-
-    // kani_harness_approx — replaced by top-level verify_approx with stub_verified
 
     #[kani::proof_for_contract(Duration::min)]
     fn kani_harness_min() {
