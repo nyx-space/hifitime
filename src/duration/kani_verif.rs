@@ -350,11 +350,7 @@ mod kani_harnesses {
     //     let _ = callee.round(duration);
     // }
 
-    #[kani::proof]
-    fn kani_harness_approx() {
-        let callee: Duration = kani::any();
-        let _ = callee.approx();
-    }
+    // kani_harness_approx — replaced by top-level verify_approx with stub_verified
 
     #[kani::proof_for_contract(Duration::min)]
     fn kani_harness_min() {
