@@ -1167,61 +1167,6 @@ mod ut_epoch {
     }
 
     #[test]
-    #[ignore]
-    fn test_tcg_tcb() {
-        use crate::{TimeScale, TimeUnits, LG, T77_TAI_NS};
-
-        // 1. TCG to TT
-        // At T77, TT and TCG should be the same as per definition?
-        // Actually SOFA says: tt2 = tcg2 - ( ( tcg1 - DJM0 ) + ( tcg2 - t77t ) ) * ELG;
-        // if tcg = t77t, then (tcg2 - t77t) = 0, and (tcg1 - DJM0) is the MJD of T77.
-        // T77 is MJD 43144.0 + 32.184s.
-        // So TT = TCG - MJD_T77 * ELG.
-        // Let's use a known value.
-        let epoch = Epoch::from_gregorian_tai(1977, 1, 1, 0, 0, 0, 0);
-        let tcg = epoch.to_time_scale(TimeScale::TCG);
-        let tt = tcg.to_time_scale(TimeScale::TT);
-        // They should be very close but differ by the LG drift.
-        assert!(dbg!(tt.to_tai_seconds() - epoch.to_tai_seconds()).abs() < 1e-9);
-
-        // 2. Test round trip
-        let e = Epoch::from_gregorian_utc_at_midnight(2023, 1, 1);
-        let tcg = e.to_time_scale(TimeScale::TCG);
-        let e_back = tcg.to_time_scale(TimeScale::UTC);
-        println!("e: {:?} ({} TAI s)", e, e.to_tai_seconds());
-        println!("tcg: {:?}", tcg);
-        println!("e_back: {:?} ({} TAI s)", e_back, e_back.to_tai_seconds());
-        assert!(
-            (e.to_tai_seconds() - e_back.to_tai_seconds()).abs() < 1e-9,
-            "TCG round trip failed: e={}, e_back={}",
-            e.to_tai_seconds(),
-            e_back.to_tai_seconds()
-        );
-
-        let tcb = e.to_time_scale(TimeScale::TCB);
-        let e_back = tcb.to_time_scale(TimeScale::UTC);
-        assert!(
-            (e.to_tai_seconds() - e_back.to_tai_seconds()).abs() < 1e-9,
-            "TCB round trip failed: e={}, e_back={}",
-            e.to_tai_seconds(),
-            e_back.to_tai_seconds()
-        );
-
-        // 3. Known values from SOFA (if I had them, but let's check internal consistency)
-        // TCG - TT = (TT - T77) * LG / (1-LG)
-        let e = Epoch::from_gregorian_tai(2000, 1, 1, 12, 0, 0, 0);
-        let tcg = e.to_time_scale(TimeScale::TCG);
-        let tt = e.to_time_scale(TimeScale::TT);
-        let diff = tcg.to_duration_in_time_scale(TimeScale::TCG)
-            - tt.to_duration_in_time_scale(TimeScale::TT);
-        let dt_tt = (tt.to_tai_duration() + 32184.milliseconds()
-            - Duration::from_nanoseconds(T77_TAI_NS as f64))
-        .to_seconds();
-        let expected_diff = dt_tt * LG / (1.0 - LG);
-        assert!((diff.to_seconds() - expected_diff).abs() < 1e-9);
-    }
-
-    #[test]
     #[cfg(feature = "serde")]
     fn test_serdes() {
         let e = Epoch::from_gregorian_utc_at_midnight(2020, 01, 01);

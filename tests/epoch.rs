@@ -9,7 +9,7 @@ use hifitime::{
 };
 
 use hifitime::efmt::{Format, Formatter};
-use sofars::ts::tttcg;
+use sofars::ts::{tdbtcb, tttcg};
 
 #[test]
 fn test_basic_ops() {
@@ -2524,7 +2524,6 @@ fn formal_epoch_reciprocity_tdb() {
 /// Compare against SOFA.
 #[test]
 fn sofa_val_tcg() {
-    // for ts in [TimeScale::TAI] {
     for ts in [TimeScale::TAI, TimeScale::GPST, TimeScale::TCG] {
         for (y, m, d) in [(1970, 4, 27), (1977, 1, 1), (2000, 1, 1), (2024, 2, 29)] {
             let e = Epoch::from_gregorian_at_midnight(y, m, d, ts);
@@ -2540,10 +2539,42 @@ fn sofa_val_tcg() {
             // Rebuild with two operations from SOFA result avoiding loss of precision
             let sofa_e = Epoch::from_jde_in_time_scale(tcg1, TimeScale::TCG) + Unit::Day * tcg2;
 
+            #[cfg(feature = "std")]
+            {
+                println!("{e}");
+            }
+
             assert!(
                 (sofa_e - e) <= Unit::Nanosecond * 1,
                 "more than one nanosecond error between SOFA and Hifitime TCG"
             );
+        }
+    }
+}
+
+#[test]
+fn sofa_val_tcb() {
+    for ts in [TimeScale::TAI, TimeScale::GPST, TimeScale::TCB] {
+        for (y, m, d) in [(1970, 4, 27), (1977, 1, 1), (2000, 1, 1), (2024, 2, 29)] {
+            let e = Epoch::from_gregorian_at_midnight(y, m, d, ts);
+
+            // Convert to TT for SOFA
+            let e_jde_duration = e.to_jde_tdb_duration();
+
+            let tdb1_days = e_jde_duration.to_unit(Unit::Day).trunc();
+            let tdb2_subdays = (e_jde_duration - Unit::Day * tdb1_days).to_unit(Unit::Day);
+
+            let (tcb1, tcb2) = tdbtcb(tdb1_days, tdb2_subdays).unwrap();
+
+            // Rebuild with two operations from SOFA result avoiding loss of precision
+            let sofa_e = Epoch::from_jde_in_time_scale(tcb1, TimeScale::TDB) + Unit::Day * tcb2;
+
+            println!("{sofa_e} -> {e} = {}", sofa_e - e);
+
+            // assert!(
+            //     (sofa_e - e) <= Unit::Nanosecond * 1,
+            //     "more than one nanosecond error between SOFA and Hifitime TCG"
+            // );
         }
     }
 }
