@@ -165,7 +165,7 @@ impl Epoch {
     #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
         Self {
-            duration: (days - MJD_J1900 - MJD_OFFSET) * Unit::Day,
+            duration: (days - MJD_J1900 - MJD_OFFSET) * Unit::Day - time_scale.prime_epoch_offset(),
             time_scale,
         }
     }

@@ -121,13 +121,7 @@ impl TimeScale {
         match &self {
             Self::QZSST => 5,
             Self::GPST => 4,
-            Self::TAI
-            | Self::TDB
-            | Self::UTC
-            | Self::GST
-            | Self::BDT
-            | Self::TCG
-            | Self::TCB => 3,
+            Self::TAI | Self::TDB | Self::UTC | Self::GST | Self::BDT | Self::TCG | Self::TCB => 3,
             Self::ET | Self::TT => 2,
         }
     }
@@ -170,6 +164,13 @@ impl TimeScale {
                 centuries: 1,
                 nanoseconds: 189_302_433_000_000_000,
             },
+            TimeScale::TCG => {
+                // TCG reference epoch is 1977-01-01 00:00:32.184 TT.
+                Duration {
+                    centuries: 0,
+                    nanoseconds: 2429913632184000000,
+                }
+            }
             _ => Duration::ZERO,
         }
     }

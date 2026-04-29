@@ -9,6 +9,7 @@ use hifitime::{
 };
 
 use hifitime::efmt::{Format, Formatter};
+use sofars::ts::tttcg;
 
 #[test]
 fn test_basic_ops() {
@@ -2515,5 +2516,34 @@ fn formal_epoch_reciprocity_tdb() {
         assert_eq!(out_n, in_n);
         let error = (out_n as i64 - in_n as i64) as f64;
         assert!(error.abs() < 500_000.0, "error: {}", error);
+    }
+}
+
+/// Initialize four arbitrary epochs before leap seconds, at TCG ref epoch, near J2000, and at a modern time,
+/// initialized from TAI, TT, and TCG, to exercise all of the code paths relative to TCG in the to_time_scale function.
+/// Compare against SOFA.
+#[test]
+fn sofa_val_tcg() {
+    // for ts in [TimeScale::TAI] {
+    for ts in [TimeScale::TAI, TimeScale::GPST, TimeScale::TCG] {
+        for (y, m, d) in [(1970, 4, 27), (1977, 1, 1), (2000, 1, 1), (2024, 2, 29)] {
+            let e = Epoch::from_gregorian_at_midnight(y, m, d, ts);
+
+            // Convert to TT for SOFA
+            let e_jde_duration = e.to_jde_tt_duration();
+
+            let tt1_days = e_jde_duration.to_unit(Unit::Day).trunc();
+            let tt2_subdays = (e_jde_duration - Unit::Day * tt1_days).to_unit(Unit::Day);
+
+            let (tcg1, tcg2) = tttcg(tt1_days, tt2_subdays).unwrap();
+
+            // Rebuild with two operations from SOFA result avoiding loss of precision
+            let sofa_e = Epoch::from_jde_in_time_scale(tcg1, TimeScale::TCG) + Unit::Day * tcg2;
+
+            assert!(
+                (sofa_e - e) <= Unit::Nanosecond * 1,
+                "more than one nanosecond error between SOFA and Hifitime TCG"
+            );
+        }
     }
 }
