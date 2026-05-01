@@ -2545,7 +2545,7 @@ fn sofa_val_tcg() {
             }
 
             assert!(
-                (sofa_e - e) <= Unit::Nanosecond * 1,
+                (sofa_e - e).abs() <= Unit::Nanosecond * 1,
                 "more than one nanosecond error between SOFA and Hifitime TCG"
             );
         }
@@ -2558,7 +2558,7 @@ fn sofa_val_tcb() {
         for (y, m, d) in [(1970, 4, 27), (1977, 1, 1), (2000, 1, 1), (2024, 2, 29)] {
             let e = Epoch::from_gregorian_at_midnight(y, m, d, ts);
 
-            // Convert to TT for SOFA
+            // Convert to TDB for SOFA
             let e_jde_duration = e.to_jde_tdb_duration();
 
             let tdb1_days = e_jde_duration.to_unit(Unit::Day).trunc();
@@ -2567,14 +2567,12 @@ fn sofa_val_tcb() {
             let (tcb1, tcb2) = tdbtcb(tdb1_days, tdb2_subdays).unwrap();
 
             // Rebuild with two operations from SOFA result avoiding loss of precision
-            let sofa_e = Epoch::from_jde_in_time_scale(tcb1, TimeScale::TDB) + Unit::Day * tcb2;
+            let sofa_e = Epoch::from_jde_in_time_scale(tcb1, TimeScale::TCB) + Unit::Day * tcb2;
 
-            println!("{sofa_e} -> {e} = {}", sofa_e - e);
-
-            // assert!(
-            //     (sofa_e - e) <= Unit::Nanosecond * 1,
-            //     "more than one nanosecond error between SOFA and Hifitime TCG"
-            // );
+            assert!(
+                (sofa_e - e).abs() <= Unit::Nanosecond * 1,
+                "more than one nanosecond error between SOFA and Hifitime TCG"
+            );
         }
     }
 }

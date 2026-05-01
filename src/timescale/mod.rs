@@ -144,7 +144,7 @@ impl TimeScale {
     /// This is used to compute the Gregorian date representations in any time scale.
     pub(crate) const fn prime_epoch_offset(self) -> Duration {
         match self {
-            TimeScale::ET | TimeScale::TDB | TimeScale::TCB => {
+            TimeScale::ET | TimeScale::TDB => {
                 // Both ET and TDB are defined at J2000, which is 2000-01-01 12:00:00 and there were only 36524 days in the 20th century.
                 // Hence, this math is the output of (Unit.Century*1 + Unit.Hour*12 - Unit.Day*1).to_parts() via Hifitime in Python.
                 Duration {
@@ -169,6 +169,13 @@ impl TimeScale {
                 Duration {
                     centuries: 0,
                     nanoseconds: 2429913632184000000,
+                }
+            }
+            TimeScale::TCB => {
+                // TCG reference epoch is 1977-01-01 00:00:32.184 TT.
+                Duration {
+                    centuries: 0,
+                    nanoseconds: 2429913632184065500,
                 }
             }
             _ => Duration::ZERO,
