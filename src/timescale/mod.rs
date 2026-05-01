@@ -270,7 +270,7 @@ impl From<u8> for TimeScale {
 }
 
 #[cfg(test)]
-mod unit_test_timescale {
+mod ut_timescale {
     use super::TimeScale;
 
     #[test]
@@ -289,7 +289,7 @@ mod unit_test_timescale {
             let ts = TimeScale::from(ts_u8);
             let ts_u8_back: u8 = ts.into();
             // If the u8 is greater than 10, it isn't valid and necessarily encoded as TAI.
-            if ts_u8 < 11 {
+            if ts_u8 < 13 {
                 assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
             } else {
                 assert_eq!(ts, TimeScale::TAI);
