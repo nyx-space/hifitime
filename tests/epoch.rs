@@ -2559,7 +2559,7 @@ fn sofa_val_tcg() {
             );
 
             #[cfg(feature = "std")]
-            if ts == TimeScale::TCB {
+            if ts == TimeScale::TCG {
                 println!("{e}");
                 assert_eq!(Epoch::from_str(&format!("{e}")).unwrap(), e);
             }
