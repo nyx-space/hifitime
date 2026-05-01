@@ -19,6 +19,9 @@ use serde_derive::{Deserialize, Serialize};
 
 mod fmt;
 
+/// EXPERIMENTAL Temps Lunaire Coordonnee / Lunar Coordinated Time
+pub(crate) mod tcl;
+
 use crate::{Duration, Epoch, Unit, SECONDS_PER_DAY};
 
 /// The J1900 reference epoch (1900-01-01 at noon) TAI.
@@ -95,7 +98,8 @@ pub enum TimeScale {
     TDB,
     /// Universal Coordinated Time
     UTC,
-    /// GPS Time scale whose reference epoch is UTC midnight between 05 January and 06 January 1980; cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>. |UTC - TAI| = 19 Leap Seconds on that day.
+    /// GPS Time scale whose reference epoch is UTC midnight between 05 January and 06 January 1980;
+    /// cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>. |UTC - TAI| = 19 Leap Seconds on that day.
     GPST,
     /// Galileo Time scale
     GST,
@@ -107,6 +111,22 @@ pub enum TimeScale {
     TCG,
     /// Barycentric Coordinate Time
     TCB,
+    /// Experimental Lunar Time, option (iii) from the Lunar Reference Timescale paper,  A Bourgoin*, P Defraigne and F Meynadier
+    ///
+    /// TL is defined as a linear scaling of TCL such that TL has no secular drift
+    /// with respect to TT. Since this implementation omits the bounded periodic
+    /// TCL-TT terms, TL is equivalent to TT after the common 1977 reference epoch.
+    TL,
+    /// Experimental mean Lunar Coordinate Time of Lunar reference timescale, A Bourgoin*, P Defraigne and F Meynadier
+    ///
+    /// This is not a full IAU-quality TCL realization. It models only the
+    /// conventional secular mean rate between TCL and TT:
+    /// ```text
+    ///     d(TCL - TT) / dTT ≈ 6.8e-10
+    /// ```
+    /// The bounded periodic TCL-TT terms and ephemeris-dependent relativistic
+    /// integral are intentionally omitted
+    TCL,
 }
 
 impl Default for TimeScale {
@@ -121,8 +141,15 @@ impl TimeScale {
         match &self {
             Self::QZSST => 5,
             Self::GPST => 4,
-            Self::TAI | Self::TDB | Self::UTC | Self::GST | Self::BDT | Self::TCG | Self::TCB => 3,
-            Self::ET | Self::TT => 2,
+            Self::TAI
+            | Self::TDB
+            | Self::UTC
+            | Self::GST
+            | Self::BDT
+            | Self::TCG
+            | Self::TCB
+            | Self::TCL => 3,
+            Self::ET | Self::TT | Self::TL => 2,
         }
     }
 
@@ -164,7 +191,7 @@ impl TimeScale {
                 centuries: 1,
                 nanoseconds: 189_302_433_000_000_000,
             },
-            TimeScale::TCG => {
+            TimeScale::TCG | TimeScale::TL | TimeScale::TCL => {
                 // TCG reference epoch is 1977-01-01 00:00:32.184 TT.
                 Duration {
                     centuries: 0,
@@ -214,6 +241,8 @@ impl From<TimeScale> for u8 {
             TimeScale::QZSST => 8,
             TimeScale::TCG => 9,
             TimeScale::TCB => 10,
+            TimeScale::TL => 11,
+            TimeScale::TCL => 12,
         }
     }
 }
@@ -233,13 +262,15 @@ impl From<u8> for TimeScale {
             8 => Self::QZSST,
             9 => Self::TCG,
             10 => Self::TCB,
+            11 => Self::TL,
+            12 => Self::TCL,
             _ => Self::TAI,
         }
     }
 }
 
 #[cfg(test)]
-mod unit_test_timescale {
+mod ut_timescale {
     use super::TimeScale;
 
     #[test]
@@ -258,7 +289,7 @@ mod unit_test_timescale {
             let ts = TimeScale::from(ts_u8);
             let ts_u8_back: u8 = ts.into();
             // If the u8 is greater than 10, it isn't valid and necessarily encoded as TAI.
-            if ts_u8 < 11 {
+            if ts_u8 < 13 {
                 assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
             } else {
                 assert_eq!(ts, TimeScale::TAI);

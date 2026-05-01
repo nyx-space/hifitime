@@ -30,6 +30,8 @@ impl fmt::Display for TimeScale {
             Self::QZSST => write!(f, "QZSST"),
             Self::TCG => write!(f, "TCG"),
             Self::TCB => write!(f, "TCB"),
+            Self::TL => write!(f, "TL"),
+            Self::TCL => write!(f, "TCL"),
         }
     }
 }
@@ -75,6 +77,10 @@ impl FromStr for TimeScale {
             Ok(Self::TCG)
         } else if val == "TCB" {
             Ok(Self::TCB)
+        } else if val == "TL" {
+            Ok(Self::TL)
+        } else if val == "TCL" {
+            Ok(Self::TCL)
         } else {
             Err(ParsingError::TimeSystem)
         }
