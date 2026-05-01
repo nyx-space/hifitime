@@ -1,79 +1,6 @@
+from __future__ import annotations
 import datetime
 import typing
-
-__author__: str
-__version__: str
-
-JD_J1900: float
-JD_J2000: float
-MJD_J1900: float
-MJD_J2000: float
-ET_EPOCH_S: int
-MJD_OFFSET: float
-DAYS_PER_YEAR: float
-DAYS_PER_YEAR_NLD: float
-DAYS_PER_CENTURY: float
-DAYS_IN_CENTURY: float
-DAYS_PER_WEEK: float
-SECONDS_PER_MINUTE: float
-SECONDS_PER_HOUR: float
-SECONDS_PER_DAY: float
-SECONDS_PER_CENTURY: float
-SECONDS_PER_YEAR: float
-SECONDS_PER_TROPICAL_YEAR: float
-SECONDS_PER_SIDEREAL_YEAR: float
-NANOSECONDS_PER_MICROSECOND: int
-NANOSECONDS_PER_MILLISECOND: int
-NANOSECONDS_PER_SECOND: int
-NANOSECONDS_PER_MINUTE: int
-NANOSECONDS_PER_HOUR: int
-NANOSECONDS_PER_DAY: int
-NANOSECONDS_PER_CENTURY: int
-
-__all__ = [
-    "Duration",
-    "DurationError",
-    "Epoch",
-    "HifitimeError",
-    "LatestLeapSeconds",
-    "LeapSecondsFile",
-    "MonthName",
-    "ParsingError",
-    "Polynomial",
-    "TimeScale",
-    "TimeSeries",
-    "Unit",
-    "Ut1Provider",
-    "Weekday",
-    "__author__",
-    "__doc__",
-    "__version__",
-    "JD_J1900",
-    "JD_J2000",
-    "MJD_J1900",
-    "MJD_J2000",
-    "ET_EPOCH_S",
-    "MJD_OFFSET",
-    "DAYS_PER_YEAR",
-    "DAYS_PER_YEAR_NLD",
-    "DAYS_PER_CENTURY",
-    "DAYS_IN_CENTURY",
-    "DAYS_PER_WEEK",
-    "SECONDS_PER_MINUTE",
-    "SECONDS_PER_HOUR",
-    "SECONDS_PER_DAY",
-    "SECONDS_PER_CENTURY",
-    "SECONDS_PER_YEAR",
-    "SECONDS_PER_TROPICAL_YEAR",
-    "SECONDS_PER_SIDEREAL_YEAR",
-    "NANOSECONDS_PER_MICROSECOND",
-    "NANOSECONDS_PER_MILLISECOND",
-    "NANOSECONDS_PER_SECOND",
-    "NANOSECONDS_PER_MINUTE",
-    "NANOSECONDS_PER_HOUR",
-    "NANOSECONDS_PER_DAY",
-    "NANOSECONDS_PER_CENTURY",
-]
 
 @typing.final
 class Duration:
@@ -86,12 +13,24 @@ class Duration:
     Duration zero minus one nanosecond returns a century of -1 and a nanosecond set to the number of nanoseconds in one century minus one.
     That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
     As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
-    2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
+    2. Negative and positive durations are distinct: -15 minutes != 15 minutes. Use the signum function to check the sign, and abs() to get the absolute value."""
 
-    (Python documentation hints)"""
+    @staticmethod
+    def EPSILON() -> typing.Any: ...
+    @staticmethod
+    def MAX() -> typing.Any: ...
+    @staticmethod
+    def MIN() -> typing.Any: ...
+    @staticmethod
+    def MIN_NEGATIVE() -> typing.Any: ...
+    @staticmethod
+    def MIN_POSITIVE() -> typing.Any: ...
+    @staticmethod
+    def ZERO() -> typing.Any: ...
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature."""
 
-    def __new__(cls, string_repr: str) -> Duration: ...
-    def __init__(self) -> None:
+    def __new__(cls, string_repr: str) -> Duration:
         """Defines generally usable durations for nanosecond precision valid for 32,768 centuries in either direction, and only on 80 bits / 10 octets.
 
         **Important conventions:**
@@ -101,22 +40,8 @@ class Duration:
         Duration zero minus one nanosecond returns a century of -1 and a nanosecond set to the number of nanoseconds in one century minus one.
         That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
         As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
-        2. It was also decided that opposite durations are equal, e.g. -15 minutes == 15 minutes. If the direction of time matters, use the signum function.
+        2. Negative and positive durations are distinct: -15 minutes != 15 minutes. Use the signum function to check the sign, and abs() to get the absolute value."""
 
-        (Python documentation hints)"""
-
-    @classmethod
-    def EPSILON(cls): ...
-    @classmethod
-    def MAX(cls): ...
-    @classmethod
-    def MIN(cls): ...
-    @classmethod
-    def MIN_NEGATIVE(cls): ...
-    @classmethod
-    def MIN_POSITIVE(cls): ...
-    @classmethod
-    def ZERO(cls): ...
     def abs(self) -> Duration:
         """Returns the absolute value of this duration"""
 
@@ -178,9 +103,8 @@ class Duration:
         assert_eq!(two_hours_three_min.floor(1.hours() + 5.minutes()), 1.hours() + 5.minutes());
         ```"""
 
-    @classmethod
+    @staticmethod
     def from_all_parts(
-        cls,
         sign: int,
         days: int,
         hours: int,
@@ -192,40 +116,40 @@ class Duration:
     ) -> Duration:
         """Creates a new duration from its parts"""
 
-    @classmethod
-    def from_days(cls, value: float) -> Duration:
+    @staticmethod
+    def from_days(value: float) -> Duration:
         """Creates a new duration from the provided number of days"""
 
-    @classmethod
-    def from_hours(cls, value: float) -> Duration:
+    @staticmethod
+    def from_hours(value: float) -> Duration:
         """Creates a new duration from the provided number of hours"""
 
-    @classmethod
-    def from_microseconds(cls, value: float) -> Duration:
+    @staticmethod
+    def from_microseconds(value: float) -> Duration:
         """Creates a new duration from the provided number of microseconds"""
 
-    @classmethod
-    def from_milliseconds(cls, value: float) -> Duration:
+    @staticmethod
+    def from_milliseconds(value: float) -> Duration:
         """Creates a new duration from the provided number of milliseconds"""
 
-    @classmethod
-    def from_minutes(cls, value: float) -> Duration:
+    @staticmethod
+    def from_minutes(value: float) -> Duration:
         """Creates a new duration from the provided number of minutes"""
 
-    @classmethod
-    def from_nanoseconds(cls, value: float) -> Duration:
+    @staticmethod
+    def from_nanoseconds(value: float) -> Duration:
         """Creates a new duration from the provided number of nanoseconds"""
 
-    @classmethod
-    def from_parts(cls, centuries: int, nanoseconds: int) -> Duration:
+    @staticmethod
+    def from_parts(centuries: int, nanoseconds: int) -> Duration:
         """Create a normalized duration from its parts"""
 
-    @classmethod
-    def from_seconds(cls, value: float) -> Duration:
+    @staticmethod
+    def from_seconds(value: float) -> Duration:
         """Creates a new duration from the provided number of seconds"""
 
-    @classmethod
-    def from_total_nanoseconds(cls, nanos: int) -> Duration:
+    @staticmethod
+    def from_total_nanoseconds(nanos: int) -> Duration:
         """Creates a new Duration from its full nanoseconds"""
 
     def is_negative(self) -> bool:
@@ -291,17 +215,17 @@ class Duration:
     def total_nanoseconds(self) -> int:
         """Returns the total nanoseconds in a signed 128 bit integer"""
 
-    def __add__(self, other: Duration):
+    def __add__(self, value: typing.Any):
         """Return self+value."""
 
-    def __div__(self, other: Duration): ...
+    def __div__(self, other: float): ...
     def __eq__(self, value: typing.Any) -> bool:
         """Return self==value."""
 
     def __ge__(self, value: typing.Any) -> bool:
         """Return self>=value."""
 
-    def __getnewargs__(self): ...
+    def __getnewargs__(self) -> typing.Tuple: ...
     def __gt__(self, value: typing.Any) -> bool:
         """Return self>value."""
 
@@ -311,28 +235,28 @@ class Duration:
     def __lt__(self, value: typing.Any) -> bool:
         """Return self<value."""
 
-    def __mul__(self, other: Duration):
+    def __mul__(self, value: typing.Any):
         """Return self*value."""
 
     def __ne__(self, value: typing.Any) -> bool:
         """Return self!=value."""
 
-    def __radd__(self, other: Duration):
+    def __radd__(self, value: typing.Any):
         """Return value+self."""
 
     def __repr__(self) -> str:
         """Return repr(self)."""
 
-    def __rmul__(self, other: Duration):
+    def __rmul__(self, value: typing.Any):
         """Return value*self."""
 
-    def __rsub__(self, other: Duration):
+    def __rsub__(self, value: typing.Any):
         """Return value-self."""
 
     def __str__(self) -> str:
         """Return str(self)."""
 
-    def __sub__(self, other: Duration):
+    def __sub__(self, value: typing.Any):
         """Return self-value."""
 
 @typing.final
@@ -343,26 +267,25 @@ class DurationError:
     __traceback__: typing.Any
     args: typing.Any
 
-    def add_note(self, note, /):
+    def add_note():
         """Exception.add_note(note) --
         add a note to the exception"""
 
-    def with_traceback(self, tb, /):
+    def with_traceback():
         """Exception.with_traceback(tb) --
         set self.__traceback__ to tb and return self."""
 
-    def __getattribute__(self, name):
+    def __getattribute__():
         """Return getattr(self, name)."""
 
-    def __new__(cls, *args, **kwargs): ...
-    def __init__(self, *args, **kwargs):
+    def __init__():
         """Initialize self.  See help(type(self)) for accurate signature."""
 
-    def __repr__(self):
+    def __repr__():
         """Return repr(self)."""
 
-    def __setstate__(self, object): ...
-    def __str__(self):
+    def __setstate__(): ...
+    def __str__():
         """Return str(self)."""
 
 @typing.final
@@ -376,8 +299,10 @@ class Epoch:
     duration: Duration
     time_scale: TimeScale
 
-    def __new__(cls, string_repr: str) -> Epoch: ...
-    def __init__(self) -> None:
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature."""
+
+    def __new__(cls, string_repr: str) -> Epoch:
         """Defines a nanosecond-precision Epoch.
 
         Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
@@ -441,53 +366,52 @@ class Epoch:
         );
         ```"""
 
-    @classmethod
-    def from_bdt_days(cls, days: float) -> Epoch:
+    @staticmethod
+    def from_bdt_days(days: float) -> Epoch:
         """Initialize an Epoch from the number of days since the BeiDou Time Epoch,
         defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
 
-    @classmethod
-    def from_bdt_nanoseconds(cls, nanoseconds: float) -> Epoch:
+    @staticmethod
+    def from_bdt_nanoseconds(nanoseconds: float) -> Epoch:
         """Initialize an Epoch from the number of days since the BeiDou Time Epoch,
         defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
         This may be useful for time keeping devices that use BDT as a time source."""
 
-    @classmethod
-    def from_bdt_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def from_bdt_seconds(seconds: float) -> Epoch:
         """Initialize an Epoch from the number of seconds since the BeiDou Time Epoch,
         defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
 
-    @classmethod
-    def from_datetime(cls, dt: datetime.datetime) -> Epoch:
+    @staticmethod
+    def from_datetime(dt: datetime.datetime) -> Epoch:
         """Builds an Epoch in UTC from the provided datetime after timezone correction if any is present."""
 
-    @classmethod
-    def from_et_duration(cls, duration_since_j2000: Duration) -> Epoch:
+    @staticmethod
+    def from_et_duration(duration_since_j2000: Duration) -> Epoch:
         """Initialize an Epoch from the Ephemeris Time duration past 2000 JAN 01 (J2000 reference)"""
 
-    @classmethod
-    def from_et_seconds(cls, seconds_since_j2000: float) -> Epoch:
+    @staticmethod
+    def from_et_seconds(seconds_since_j2000: float) -> Epoch:
         """Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)"""
 
-    @classmethod
-    def from_gpst_days(cls, days: float) -> Epoch:
+    @staticmethod
+    def from_gpst_days(days: float) -> Epoch:
         """Initialize an Epoch from the number of days since the GPS Time Epoch,
         defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
-    @classmethod
-    def from_gpst_nanoseconds(cls, nanoseconds: float) -> Epoch:
+    @staticmethod
+    def from_gpst_nanoseconds(nanoseconds: float) -> Epoch:
         """Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
         defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
         This may be useful for time keeping devices that use GPS as a time source."""
 
-    @classmethod
-    def from_gpst_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def from_gpst_seconds(seconds: float) -> Epoch:
         """Initialize an Epoch from the number of seconds since the GPS Time Epoch,
         defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
-    @classmethod
+    @staticmethod
     def from_gregorian(
-        cls,
         year: int,
         month: int,
         day: int,
@@ -499,218 +423,210 @@ class Epoch:
     ) -> Epoch:
         """Initialize from the Gregorian parts"""
 
-    @classmethod
+    @staticmethod
     def from_gregorian_at_midnight(
-        cls, year: int, month: int, day: int, time_scale: TimeScale
+        year: int, month: int, day: int, time_scale: TimeScale
     ) -> Epoch:
         """Initialize from the Gregorian parts, time set to midnight"""
 
-    @classmethod
+    @staticmethod
     def from_gregorian_at_noon(
-        cls, year: int, month: int, day: int, time_scale: TimeScale
+        year: int, month: int, day: int, time_scale: TimeScale
     ) -> Epoch:
         """Initialize from the Gregorian parts, time set to noon"""
 
-    @classmethod
+    @staticmethod
     def from_gregorian_utc(
-        cls,
-        year: int,
-        month: int,
-        day: int,
-        hour: int,
-        minute: int,
-        second: int,
-        nanos: int,
+        year: int, month: int, day: int, hour: int, minute: int, second: int, nanos: int
     ) -> Epoch:
         """Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
         Use maybe_from_gregorian_tai if unsure."""
 
-    @classmethod
-    def from_gst_days(cls, days: float) -> Epoch:
+    @staticmethod
+    def from_gst_days(days: float) -> Epoch:
         """Initialize an Epoch from the number of days since the Galileo Time Epoch,
         starting on August 21st 1999 Midnight UT,
         (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
 
-    @classmethod
-    def from_gst_nanoseconds(cls, nanoseconds: float) -> Epoch:
+    @staticmethod
+    def from_gst_nanoseconds(nanoseconds: float) -> Epoch:
         """Initialize an Epoch from the number of nanoseconds since the Galileo Time Epoch,
         starting on August 21st 1999 Midnight UT,
         (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
         This may be useful for time keeping devices that use GST as a time source."""
 
-    @classmethod
-    def from_gst_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def from_gst_seconds(seconds: float) -> Epoch:
         """Initialize an Epoch from the number of seconds since the Galileo Time Epoch,
         starting on August 21st 1999 Midnight UT,
         (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
 
-    @classmethod
-    def from_jde_et(cls, days: float) -> Epoch:
+    @staticmethod
+    def from_jde_et(days: float) -> Epoch:
         """Initialize from the JDE days"""
 
-    @classmethod
-    def from_jde_tai(cls, days: float) -> Epoch:
+    @staticmethod
+    def from_jde_tai(days: float) -> Epoch:
         """Initialize an Epoch from given JDE in TAI time scale"""
 
-    @classmethod
-    def from_jde_tdb(cls, days: float) -> Epoch:
+    @staticmethod
+    def from_jde_tdb(days: float) -> Epoch:
         """Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days"""
 
-    @classmethod
-    def from_jde_utc(cls, days: float) -> Epoch:
+    @staticmethod
+    def from_jde_utc(days: float) -> Epoch:
         """Initialize an Epoch from given JDE in UTC time scale"""
 
-    @classmethod
-    def from_mjd_tai(cls, days: float) -> Epoch:
+    @staticmethod
+    def from_mjd_tai(days: float) -> Epoch:
         """Initialize an Epoch from given MJD in TAI time scale"""
 
-    @classmethod
-    def from_mjd_utc(cls, days: float) -> Epoch:
+    @staticmethod
+    def from_mjd_utc(days: float) -> Epoch:
         """Initialize an Epoch from given MJD in UTC time scale"""
 
-    @classmethod
-    def from_ptp_duration(cls, duration: Duration) -> Epoch:
+    @staticmethod
+    def from_ptp_duration(duration: Duration) -> Epoch:
         """Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) duration since TAI midnight 1970 January 01.
         PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems."""
 
-    @classmethod
-    def from_ptp_nanoseconds(cls, nanoseconds: int) -> Epoch:
+    @staticmethod
+    def from_ptp_nanoseconds(nanoseconds: int) -> Epoch:
         """Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) nanoseconds timestamp since TAI midnight 1970 January 01.
         PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems."""
 
-    @classmethod
-    def from_ptp_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def from_ptp_seconds(seconds: float) -> Epoch:
         """Initialize an Epoch from the provided IEEE 1588-2008 (PTPv2) second timestamp since TAI midnight 1970 January 01.
         PTP uses the TAI timescale but with the Unix Epoch for compatibility with unix systems."""
 
-    @classmethod
-    def from_qzsst_days(cls, days: float) -> Epoch:
+    @staticmethod
+    def from_qzsst_days(days: float) -> Epoch:
         """Initialize an Epoch from the number of days since the QZSS Time Epoch,
         defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
-    @classmethod
-    def from_qzsst_nanoseconds(cls, nanoseconds: int) -> Epoch:
+    @staticmethod
+    def from_qzsst_nanoseconds(nanoseconds: int) -> Epoch:
         """Initialize an Epoch from the number of nanoseconds since the QZSS Time Epoch,
         defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
         This may be useful for time keeping devices that use QZSS as a time source."""
 
-    @classmethod
-    def from_qzsst_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def from_qzsst_seconds(seconds: float) -> Epoch:
         """Initialize an Epoch from the number of seconds since the QZSS Time Epoch,
         defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
-    @classmethod
-    def from_tai_days(cls, days: float) -> Epoch:
+    @staticmethod
+    def from_tai_days(days: float) -> Epoch:
         """Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight"""
 
-    @classmethod
-    def from_tai_duration(cls, duration: Duration) -> Epoch:
+    @staticmethod
+    def from_tai_duration(duration: Duration) -> Epoch:
         """Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch."""
 
-    @classmethod
-    def from_tai_parts(cls, centuries: int, nanoseconds: int) -> Epoch:
+    @staticmethod
+    def from_tai_parts(centuries: int, nanoseconds: int) -> Epoch:
         """Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch."""
 
-    @classmethod
-    def from_tai_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def from_tai_seconds(seconds: float) -> Epoch:
         """Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight"""
 
-    @classmethod
-    def from_tdb_duration(cls, duration_since_j2000: Duration) -> Epoch:
+    @staticmethod
+    def from_tdb_duration(duration_since_j2000: Duration) -> Epoch:
         """Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI."""
 
-    @classmethod
-    def from_tdb_seconds(cls, seconds_j2000: float) -> Epoch:
+    @staticmethod
+    def from_tdb_seconds(seconds_j2000: float) -> Epoch:
         """Initialize an Epoch from Dynamic Barycentric Time (TDB) seconds past 2000 JAN 01 midnight (difference than SPICE)
         NOTE: This uses the ESA algorithm, which is a notch more complicated than the SPICE algorithm, but more precise.
         In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ESA algorithm should be exactly correct."""
 
-    @classmethod
-    def from_tt_duration(cls, duration: Duration) -> Epoch:
+    @staticmethod
+    def from_tt_duration(duration: Duration) -> Epoch:
         """Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)"""
 
-    @classmethod
-    def from_tt_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def from_tt_seconds(seconds: float) -> Epoch:
         """Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)"""
 
-    @classmethod
-    def from_unix_milliseconds(cls, milliseconds: float) -> Epoch:
+    @staticmethod
+    def from_unix_milliseconds(milliseconds: float) -> Epoch:
         """Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01."""
 
-    @classmethod
-    def from_unix_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def from_unix_seconds(seconds: float) -> Epoch:
         """Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01."""
 
-    @classmethod
-    def from_ut1_duration(cls, duration: Duration, provider: Ut1Provider) -> Epoch:
+    @staticmethod
+    def from_ut1_duration(duration: Duration, provider: Ut1Provider) -> Epoch:
         """Initialize a new Epoch from a duration in UT1"""
 
-    @classmethod
-    def from_utc_days(cls, days: float) -> Epoch:
+    @staticmethod
+    def from_utc_days(days: float) -> Epoch:
         """Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight"""
 
-    @classmethod
-    def from_utc_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def from_utc_seconds(seconds: float) -> Epoch:
         """Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight"""
 
-    @classmethod
-    def fromdatetime(cls, dt: datetime.datetime) -> Epoch:
+    @staticmethod
+    def fromdatetime(dt: datetime.datetime) -> Epoch:
         """Builds an Epoch in UTC from the provided datetime. Datetime must either NOT have any timezone, or timezone MUST be UTC."""
 
     def hours(self) -> int:
         """Returns the hours of the Gregorian representation  of this epoch in the time scale it was initialized in."""
 
-    @classmethod
-    def init_from_bdt_days(cls, days: float) -> Epoch:
+    @staticmethod
+    def init_from_bdt_days(days: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_bdt_days` instead
         Initialize an Epoch from the number of days since the BeiDou Time Epoch,
         defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
 
-    @classmethod
-    def init_from_bdt_nanoseconds(cls, nanoseconds: float) -> Epoch:
+    @staticmethod
+    def init_from_bdt_nanoseconds(nanoseconds: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_bdt_nanoseconds` instead
         Initialize an Epoch from the number of days since the BeiDou Time Epoch,
         defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
         This may be useful for time keeping devices that use BDT as a time source."""
 
-    @classmethod
-    def init_from_bdt_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def init_from_bdt_seconds(seconds: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_bdt_seconds` instead
         Initialize an Epoch from the number of seconds since the BeiDou Time Epoch,
         defined as January 1st 2006 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
 
-    @classmethod
-    def init_from_et_duration(cls, duration_since_j2000: Duration) -> Epoch:
+    @staticmethod
+    def init_from_et_duration(duration_since_j2000: Duration) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_et_duration` instead
         Initialize an Epoch from the Ephemeris Time duration past 2000 JAN 01 (J2000 reference)"""
 
-    @classmethod
-    def init_from_et_seconds(cls, seconds_since_j2000: float) -> Epoch:
+    @staticmethod
+    def init_from_et_seconds(seconds_since_j2000: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_et_seconds` instead
         Initialize an Epoch from the Ephemeris Time seconds past 2000 JAN 01 (J2000 reference)"""
 
-    @classmethod
-    def init_from_gpst_days(cls, days: float) -> Epoch:
+    @staticmethod
+    def init_from_gpst_days(days: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gpst_days` instead
         Initialize an Epoch from the number of days since the GPS Time Epoch,
         defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
-    @classmethod
-    def init_from_gpst_nanoseconds(cls, nanoseconds: float) -> Epoch:
+    @staticmethod
+    def init_from_gpst_nanoseconds(nanoseconds: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gpst_nanoseconds` instead
         Initialize an Epoch from the number of nanoseconds since the GPS Time Epoch,
         defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
         This may be useful for time keeping devices that use GPS as a time source."""
 
-    @classmethod
-    def init_from_gpst_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def init_from_gpst_seconds(seconds: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gpst_seconds` instead
         Initialize an Epoch from the number of seconds since the GPS Time Epoch,
         defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
-    @classmethod
+    @staticmethod
     def init_from_gregorian(
-        cls,
         year: int,
         month: int,
         day: int,
@@ -723,165 +639,158 @@ class Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gregorian` instead
         Initialize from the Gregorian parts"""
 
-    @classmethod
+    @staticmethod
     def init_from_gregorian_at_midnight(
-        cls, year: int, month: int, day: int, time_scale: TimeScale
+        year: int, month: int, day: int, time_scale: TimeScale
     ) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gregorian_at_midnight` instead
         Initialize from the Gregorian parts, time set to midnight"""
 
-    @classmethod
+    @staticmethod
     def init_from_gregorian_at_noon(
-        cls, year: int, month: int, day: int, time_scale: TimeScale
+        year: int, month: int, day: int, time_scale: TimeScale
     ) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gregorian_at_noon` instead
         Initialize from the Gregorian parts, time set to noon"""
 
-    @classmethod
+    @staticmethod
     def init_from_gregorian_utc(
-        cls,
-        year: int,
-        month: int,
-        day: int,
-        hour: int,
-        minute: int,
-        second: int,
-        nanos: int,
+        year: int, month: int, day: int, hour: int, minute: int, second: int, nanos: int
     ) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gregorian_utc` instead
         Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
         Use maybe_from_gregorian_tai if unsure."""
 
-    @classmethod
-    def init_from_gst_days(cls, days: float) -> Epoch:
+    @staticmethod
+    def init_from_gst_days(days: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gst_days` instead
         Initialize an Epoch from the number of days since the Galileo Time Epoch,
         starting on August 21st 1999 Midnight UT,
         (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
 
-    @classmethod
-    def init_from_gst_nanoseconds(cls, nanoseconds: float) -> Epoch:
+    @staticmethod
+    def init_from_gst_nanoseconds(nanoseconds: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gst_nanoseconds` instead
         Initialize an Epoch from the number of nanoseconds since the Galileo Time Epoch,
         starting on August 21st 1999 Midnight UT,
         (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>).
         This may be useful for time keeping devices that use GST as a time source."""
 
-    @classmethod
-    def init_from_gst_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def init_from_gst_seconds(seconds: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gst_seconds` instead
         Initialize an Epoch from the number of seconds since the Galileo Time Epoch,
         starting on August 21st 1999 Midnight UT,
         (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS>)."""
 
-    @classmethod
-    def init_from_jde_et(cls, days: float) -> Epoch:
+    @staticmethod
+    def init_from_jde_et(days: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_jde_et` instead
         Initialize from the JDE days"""
 
-    @classmethod
-    def init_from_jde_tai(cls, days: float) -> Epoch:
+    @staticmethod
+    def init_from_jde_tai(days: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_jde_tai` instead
         Initialize an Epoch from given JDE in TAI time scale"""
 
-    @classmethod
-    def init_from_jde_tdb(cls, days: float) -> Epoch:
+    @staticmethod
+    def init_from_jde_tdb(days: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_jde_tdb` instead
         Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) in JD days"""
 
-    @classmethod
-    def init_from_jde_utc(cls, days: float) -> Epoch:
+    @staticmethod
+    def init_from_jde_utc(days: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_jde_utc` instead
         Initialize an Epoch from given JDE in UTC time scale"""
 
-    @classmethod
-    def init_from_mjd_tai(cls, days: float) -> Epoch:
+    @staticmethod
+    def init_from_mjd_tai(days: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_mjd_tai` instead
         Initialize an Epoch from given MJD in TAI time scale"""
 
-    @classmethod
-    def init_from_mjd_utc(cls, days: float) -> Epoch:
+    @staticmethod
+    def init_from_mjd_utc(days: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_mjd_utc` instead
         Initialize an Epoch from given MJD in UTC time scale"""
 
-    @classmethod
-    def init_from_qzsst_days(cls, days: float) -> Epoch:
+    @staticmethod
+    def init_from_qzsst_days(days: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_qzsst_days` instead
         Initialize an Epoch from the number of days since the QZSS Time Epoch,
         defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
-    @classmethod
-    def init_from_qzsst_nanoseconds(cls, nanoseconds: int) -> Epoch:
+    @staticmethod
+    def init_from_qzsst_nanoseconds(nanoseconds: int) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_qzsst_nanoseconds` instead
         Initialize an Epoch from the number of nanoseconds since the QZSS Time Epoch,
         defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>).
         This may be useful for time keeping devices that use QZSS as a time source."""
 
-    @classmethod
-    def init_from_qzsst_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def init_from_qzsst_seconds(seconds: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_qzsst_seconds` instead
         Initialize an Epoch from the number of seconds since the QZSS Time Epoch,
         defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
-    @classmethod
-    def init_from_tai_days(cls, days: float) -> Epoch:
+    @staticmethod
+    def init_from_tai_days(days: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_tai_days` instead
         Initialize an Epoch from the provided TAI days since 1900 January 01 at midnight"""
 
-    @classmethod
-    def init_from_tai_duration(cls, duration: Duration) -> Epoch:
+    @staticmethod
+    def init_from_tai_duration(duration: Duration) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_tai_duration` instead
         Creates a new Epoch from a Duration as the time difference between this epoch and TAI reference epoch."""
 
-    @classmethod
-    def init_from_tai_parts(cls, centuries: int, nanoseconds: int) -> Epoch:
+    @staticmethod
+    def init_from_tai_parts(centuries: int, nanoseconds: int) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_tai_parts` instead
         Creates a new Epoch from its centuries and nanosecond since the TAI reference epoch."""
 
-    @classmethod
-    def init_from_tai_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def init_from_tai_seconds(seconds: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_tai_seconds` instead
         Initialize an Epoch from the provided TAI seconds since 1900 January 01 at midnight"""
 
-    @classmethod
-    def init_from_tdb_duration(cls, duration_since_j2000: Duration) -> Epoch:
+    @staticmethod
+    def init_from_tdb_duration(duration_since_j2000: Duration) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_tdb_duration` instead
         Initialize from Dynamic Barycentric Time (TDB) (same as SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI."""
 
-    @classmethod
-    def init_from_tdb_seconds(cls, seconds_j2000: float) -> Epoch:
+    @staticmethod
+    def init_from_tdb_seconds(seconds_j2000: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_tdb_seconds` instead
         Initialize an Epoch from Dynamic Barycentric Time (TDB) seconds past 2000 JAN 01 midnight (difference than SPICE)
         NOTE: This uses the ESA algorithm, which is a notch more complicated than the SPICE algorithm, but more precise.
         In fact, SPICE algorithm is precise +/- 30 microseconds for a century whereas ESA algorithm should be exactly correct."""
 
-    @classmethod
-    def init_from_tt_duration(cls, duration: Duration) -> Epoch:
+    @staticmethod
+    def init_from_tt_duration(duration: Duration) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_tt_duration` instead
         Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)"""
 
-    @classmethod
-    def init_from_tt_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def init_from_tt_seconds(seconds: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_tt_seconds` instead
         Initialize an Epoch from the provided TT seconds (approximated to 32.184s delta from TAI)"""
 
-    @classmethod
-    def init_from_unix_milliseconds(cls, milliseconds: float) -> Epoch:
+    @staticmethod
+    def init_from_unix_milliseconds(milliseconds: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_unix_milliseconds` instead
         Initialize an Epoch from the provided UNIX millisecond timestamp since UTC midnight 1970 January 01."""
 
-    @classmethod
-    def init_from_unix_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def init_from_unix_seconds(seconds: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_unix_seconds` instead
         Initialize an Epoch from the provided UNIX second timestamp since UTC midnight 1970 January 01."""
 
-    @classmethod
-    def init_from_utc_days(cls, days: float) -> Epoch:
+    @staticmethod
+    def init_from_utc_days(days: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_utc_days` instead
         Initialize an Epoch from the provided UTC days since 1900 January 01 at midnight"""
 
-    @classmethod
-    def init_from_utc_seconds(cls, seconds: float) -> Epoch:
+    @staticmethod
+    def init_from_utc_seconds(seconds: float) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_utc_seconds` instead
         Initialize an Epoch from the provided UTC seconds since 1900 January 01 at midnight"""
 
@@ -1079,12 +988,12 @@ class Epoch:
     def strftime(self, format_str: str) -> str:
         """Formats the epoch according to the given format string. Supports a subset of C89 and hifitime-specific format codes. Refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for available format options."""
 
-    @classmethod
-    def strptime(cls, epoch_str: str, format_str: str) -> Epoch:
+    @staticmethod
+    def strptime(epoch_str: str, format_str: str) -> Epoch:
         """Equivalent to `datetime.strptime`, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options"""
 
-    @classmethod
-    def system_now(cls) -> Epoch:
+    @staticmethod
+    def system_now() -> Epoch:
         """Returns the computer clock in UTC"""
 
     def timedelta(self, other: Duration) -> Duration:
@@ -1105,7 +1014,9 @@ class Epoch:
     def to_bdt_seconds(self) -> float:
         """Returns seconds past BDT (BeiDou) Time Epoch"""
 
-    def to_datetime(self, set_tz: bool | None = None) -> datetime.datetime:
+    def to_datetime(
+        self, set_tz: typing.Optional[bool | None] = None
+    ) -> datetime.datetime:
         """Returns a Python datetime object from this Epoch (truncating the nanoseconds away)
         If set_tz is True, then this will return a time zone aware datetime object"""
 
@@ -1146,7 +1057,7 @@ class Epoch:
         """Returns seconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
     def to_gregorian(
-        self, time_scale: TimeScale | None = None
+        self, time_scale: typing.Optional[TimeScale] = None
     ) -> tuple[int, int, int, int, int, int, int]:
         """Converts the Epoch to the Gregorian parts in the (optionally) provided time scale as (year, month, day, hour, minute, second)."""
 
@@ -1265,6 +1176,18 @@ class Epoch:
     def to_tai_seconds(self) -> float:
         """Returns the number of TAI seconds since J1900"""
 
+    def to_tcb_duration(self) -> Duration:
+        """Returns the Barycentric Coordinate Time (TCB) as a Duration its reference epoch (1977-01-01 + 65.5 µs)"""
+
+    def to_tcb_seconds(self) -> float:
+        """Returns the Barycentric Coordinate Time (TCB) as seconds its reference epoch (1977-01-01 + 65.5 µs)"""
+
+    def to_tcg_duration(self) -> Duration:
+        """Returns the Geocentric Coordinate Time (TCG) as a Duration its reference epoch (1977-01-01)"""
+
+    def to_tcg_seconds(self) -> float:
+        """Returns the Geocentric Coordinate Time (TCG) as seconds its reference epoch (1977-01-01)"""
+
     def to_tdb_centuries_since_j2000(self) -> float:
         """Returns the number of centuries since Dynamic Barycentric Time (TDB) J2000 (used for Archinal et al. rotations)"""
 
@@ -1349,7 +1272,9 @@ class Epoch:
     def to_utc_seconds(self) -> float:
         """Returns the number of UTC seconds since the TAI epoch"""
 
-    def todatetime(self, set_tz: bool | None = None) -> datetime.datetime:
+    def todatetime(
+        self, set_tz: typing.Optional[bool | None] = None
+    ) -> datetime.datetime:
         """Returns a Python datetime object from this Epoch (truncating the nanoseconds away).
         If set_tz is True, then this will return a time zone aware datetime object"""
 
@@ -1433,7 +1358,7 @@ class Epoch:
     def year_days_of_year(self) -> tuple:
         """Returns the year and the days in the year so far (days of year)."""
 
-    def __add__(self, other: Duration):
+    def __add__(self, value: typing.Any):
         """Return self+value."""
 
     def __eq__(self, value: typing.Any) -> bool:
@@ -1442,7 +1367,7 @@ class Epoch:
     def __ge__(self, value: typing.Any) -> bool:
         """Return self>=value."""
 
-    def __getnewargs__(self): ...
+    def __getnewargs__(self) -> typing.Tuple: ...
     def __gt__(self, value: typing.Any) -> bool:
         """Return self>value."""
 
@@ -1455,19 +1380,19 @@ class Epoch:
     def __ne__(self, value: typing.Any) -> bool:
         """Return self!=value."""
 
-    def __radd__(self, other: Duration):
+    def __radd__(self, value: typing.Any):
         """Return value+self."""
 
     def __repr__(self) -> str:
         """Return repr(self)."""
 
-    def __rsub__(self, other: Duration):
+    def __rsub__(self, value: typing.Any):
         """Return value-self."""
 
     def __str__(self) -> str:
         """Return str(self)."""
 
-    def __sub__(self, other: Duration):
+    def __sub__(self, value: typing.Any):
         """Return self-value."""
 
 @typing.final
@@ -1478,26 +1403,25 @@ class HifitimeError:
     __traceback__: typing.Any
     args: typing.Any
 
-    def add_note(self, note, /):
+    def add_note():
         """Exception.add_note(note) --
         add a note to the exception"""
 
-    def with_traceback(self, tb, /):
+    def with_traceback():
         """Exception.with_traceback(tb) --
         set self.__traceback__ to tb and return self."""
 
-    def __getattribute__(self, name):
+    def __getattribute__():
         """Return getattr(self, name)."""
 
-    def __new__(cls, *args, **kwargs): ...
-    def __init__(self, *args, **kwargs):
+    def __init__():
         """Initialize self.  See help(type(self)) for accurate signature."""
 
-    def __repr__(self):
+    def __repr__():
         """Return repr(self)."""
 
-    def __setstate__(self, object): ...
-    def __str__(self):
+    def __setstate__(): ...
+    def __str__():
         """Return str(self)."""
 
 @typing.final
@@ -1506,8 +1430,10 @@ class LatestLeapSeconds:
     This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
     The unannoucned leap seconds come from dat.c in the SOFA library."""
 
-    def __new__(cls) -> LatestLeapSeconds: ...
-    def __init__(self) -> None:
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature."""
+
+    def __new__(cls) -> LatestLeapSeconds:
         """List of leap seconds from <https://data.iana.org/time-zones/data/leap-seconds.list>.
         This list corresponds the number of seconds in TAI to the UTC offset and to whether it was an announced leap second or not.
         The unannoucned leap seconds come from dat.c in the SOFA library."""
@@ -1528,8 +1454,10 @@ class LatestLeapSeconds:
 class LeapSecondsFile:
     """A leap second provider that uses an IERS formatted leap seconds file."""
 
-    def __new__(cls, path: str) -> LeapSecondsFile: ...
-    def __init__(self) -> None:
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature."""
+
+    def __new__(cls, path: str) -> LeapSecondsFile:
         """A leap second provider that uses an IERS formatted leap seconds file."""
 
     def __repr__(self) -> str:
@@ -1539,8 +1467,10 @@ class LeapSecondsFile:
 class MonthName:
     """Defines Month names, can be initialized either from its variant or its integer (1 for January)."""
 
-    def __new__(cls, month: int) -> MonthName: ...
-    def __init__(self) -> None:
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature."""
+
+    def __new__(cls, month: int) -> MonthName:
         """Defines Month names, can be initialized either from its variant or its integer (1 for January)."""
 
     def __eq__(self, value: typing.Any) -> bool:
@@ -1587,26 +1517,25 @@ class ParsingError:
     __traceback__: typing.Any
     args: typing.Any
 
-    def add_note(self, note, /):
+    def add_note():
         """Exception.add_note(note) --
         add a note to the exception"""
 
-    def with_traceback(self, tb, /):
+    def with_traceback():
         """Exception.with_traceback(tb) --
         set self.__traceback__ to tb and return self."""
 
-    def __getattribute__(self, name):
+    def __getattribute__():
         """Return getattr(self, name)."""
 
-    def __new__(cls, *args, **kwargs): ...
-    def __init__(self, *args, **kwargs):
+    def __init__():
         """Initialize self.  See help(type(self)) for accurate signature."""
 
-    def __repr__(self):
+    def __repr__():
         """Return repr(self)."""
 
-    def __setstate__(self, object): ...
-    def __str__(self):
+    def __setstate__(): ...
+    def __str__():
         """Return str(self)."""
 
 @typing.final
@@ -1614,8 +1543,10 @@ class Polynomial:
     """Interpolation [Polynomial] used for example in [TimeScale]
     maintenance, precise monitoring or conversions."""
 
-    def __new__(cls) -> Polynomial: ...
-    def __init__(self) -> None:
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature."""
+
+    def __new__(cls) -> Polynomial:
         """Interpolation [Polynomial] used for example in [TimeScale]
         maintenance, precise monitoring or conversions."""
 
@@ -1623,22 +1554,20 @@ class Polynomial:
         """Calculate the correction (as [Duration] once again) from [Self] and given
         the interpolation time interval"""
 
-    @classmethod
-    def from_constant_offset(cls, constant: Duration) -> Polynomial:
+    @staticmethod
+    def from_constant_offset(constant: Duration) -> Polynomial:
         """Create a [Polynomial] structure that is only made of a static offset"""
 
-    @classmethod
-    def from_constant_offset_nanoseconds(cls, nanos: float) -> Polynomial:
+    @staticmethod
+    def from_constant_offset_nanoseconds(nanos: float) -> Polynomial:
         """Create a [Polynomial] structure from a static offset expressed in nanoseconds"""
 
-    @classmethod
-    def from_offset_and_rate(cls, constant: Duration, rate: Duration) -> Polynomial:
+    @staticmethod
+    def from_offset_and_rate(constant: Duration, rate: Duration) -> Polynomial:
         """Create a [Polynomial] structure from both static offset and rate of change:"""
 
-    @classmethod
-    def from_offset_rate_nanoseconds(
-        cls, offset_ns: float, drift_ns_s: float
-    ) -> Polynomial:
+    @staticmethod
+    def from_offset_rate_nanoseconds(offset_ns: float, drift_ns_s: float) -> Polynomial:
         """Create a [Polynomial] structure from a static offset and drift, in nanoseconds and nanoseconds.s⁻¹"""
 
     def __eq__(self, value: typing.Any) -> bool:
@@ -1666,8 +1595,10 @@ class Polynomial:
 class TimeScale:
     """Enum of the different time systems available"""
 
-    def __new__(cls) -> TimeScale: ...
-    def __init__(self) -> None:
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature."""
+
+    def __new__(cls) -> TimeScale:
         """Enum of the different time systems available"""
 
     def uses_leap_seconds(self) -> bool:
@@ -1702,6 +1633,8 @@ class TimeScale:
     GST: TimeScale = ...
     QZSST: TimeScale = ...
     TAI: TimeScale = ...
+    TCB: TimeScale = ...
+    TCG: TimeScale = ...
     TDB: TimeScale = ...
     TT: TimeScale = ...
     UTC: TimeScale = ...
@@ -1712,10 +1645,12 @@ class TimeSeries:
 
     (Python documentation hints)"""
 
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature."""
+
     def __new__(
         cls, start: Epoch, end: Epoch, step: Duration, inclusive: bool
-    ) -> TimeSeries: ...
-    def __init__(self) -> None:
+    ) -> TimeSeries:
         """An iterator of a sequence of evenly spaced Epochs.
 
         (Python documentation hints)"""
@@ -1726,7 +1661,7 @@ class TimeSeries:
     def __ge__(self, value: typing.Any) -> bool:
         """Return self>=value."""
 
-    def __getnewargs__(self): ...
+    def __getnewargs__(self) -> typing.Tuple: ...
     def __gt__(self, value: typing.Any) -> bool:
         """Return self>value."""
 
@@ -1755,13 +1690,15 @@ class TimeSeries:
 class Unit:
     """An Enum to perform time unit conversions."""
 
-    def __new__(cls) -> Unit: ...
-    def __init__(self) -> None:
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature."""
+
+    def __new__(cls) -> Unit:
         """An Enum to perform time unit conversions."""
 
-    def from_seconds(self): ...
-    def in_seconds(self): ...
-    def __add__(self, other: Duration):
+    def from_seconds(self) -> typing.Any: ...
+    def in_seconds(self) -> typing.Any: ...
+    def __add__(self, value: typing.Any):
         """Return self+value."""
 
     def __eq__(self, value: typing.Any) -> bool:
@@ -1782,25 +1719,25 @@ class Unit:
     def __lt__(self, value: typing.Any) -> bool:
         """Return self<value."""
 
-    def __mul__(self, other: Duration):
+    def __mul__(self, value: typing.Any):
         """Return self*value."""
 
     def __ne__(self, value: typing.Any) -> bool:
         """Return self!=value."""
 
-    def __radd__(self, other: Duration):
+    def __radd__(self, value: typing.Any):
         """Return value+self."""
 
     def __repr__(self) -> str:
         """Return repr(self)."""
 
-    def __rmul__(self, other: Duration):
+    def __rmul__(self, value: typing.Any):
         """Return value*self."""
 
-    def __rsub__(self, other: Duration):
+    def __rsub__(self, value: typing.Any):
         """Return value-self."""
 
-    def __sub__(self, other: Duration):
+    def __sub__(self, value: typing.Any):
         """Return self-value."""
     Century: Unit = ...
     Day: Unit = ...
@@ -1819,15 +1756,17 @@ class Ut1Provider:
     data: list
     iter_pos: int
 
-    def __new__(cls) -> Ut1Provider: ...
-    def __init__(self) -> None:
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature."""
+
+    def __new__(cls) -> Ut1Provider:
         """A structure storing all of the TAI-UT1 data"""
 
     def as_list(self) -> list:
         """Returns the list of Delta TAI-UT1 values"""
 
-    @classmethod
-    def from_eop_file(cls, path: str) -> Ut1Provider:
+    @staticmethod
+    def from_eop_file(path: str) -> Ut1Provider:
         """Builds a UT1 provider from the provided path to an EOP file."""
 
     def __repr__(self) -> str:
@@ -1835,8 +1774,10 @@ class Ut1Provider:
 
 @typing.final
 class Weekday:
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        """Initialize self.  See help(type(self)) for accurate signature."""
+
     def __new__(cls) -> Weekday: ...
-    def __init__(self): ...
     def __eq__(self, value: typing.Any) -> bool:
         """Return self==value."""
 
@@ -1867,3 +1808,6 @@ class Weekday:
     Thursday: Weekday = ...
     Tuesday: Weekday = ...
     Wednesday: Weekday = ...
+
+__author__: str = "Christopher Rabotin <christopher.rabotin@gmail.com>"
+__version__: str = "4.3.0"
