@@ -813,28 +813,28 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Returns the Geocentric Coordinate Time (TCG) as a Duration since J1900
+    /// Returns the Geocentric Coordinate Time (TCG) as a Duration its reference epoch (1977-01-01)
     /// :rtype: Duration
     pub fn to_tcg_duration(&self) -> Duration {
         self.to_time_scale(TimeScale::TCG).duration
     }
 
     #[must_use]
-    /// Returns the Geocentric Coordinate Time (TCG) as seconds since J1900
+    /// Returns the Geocentric Coordinate Time (TCG) as seconds its reference epoch (1977-01-01)
     /// :rtype: float
     pub fn to_tcg_seconds(&self) -> f64 {
         self.to_tcg_duration().to_seconds()
     }
 
     #[must_use]
-    /// Returns the Barycentric Coordinate Time (TCB) as a Duration since J2000
+    /// Returns the Barycentric Coordinate Time (TCB) as a Duration its reference epoch (1977-01-01 + 65.5 µs)
     /// :rtype: Duration
     pub fn to_tcb_duration(&self) -> Duration {
         self.to_time_scale(TimeScale::TCB).duration
     }
 
     #[must_use]
-    /// Returns the Barycentric Coordinate Time (TCB) as seconds since J2000
+    /// Returns the Barycentric Coordinate Time (TCB) as seconds its reference epoch (1977-01-01 + 65.5 µs)
     /// :rtype: float
     pub fn to_tcb_seconds(&self) -> f64 {
         self.to_tcb_duration().to_seconds()

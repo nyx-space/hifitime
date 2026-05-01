@@ -172,7 +172,7 @@ impl TimeScale {
                 }
             }
             TimeScale::TCB => {
-                // TCG reference epoch is 1977-01-01 00:00:32.184 TT.
+                // TCB reference epoch is 1977-01-01 00:00:32.184 TT + 65.5 µs.
                 Duration {
                     centuries: 0,
                     nanoseconds: 2429913632184065500,

@@ -2548,6 +2548,14 @@ fn sofa_val_tcg() {
                 (sofa_e - e).abs() <= Unit::Nanosecond * 1,
                 "more than one nanosecond error between SOFA and Hifitime TCG"
             );
+
+            // Reciprocity test
+            let rt = e.to_time_scale(TimeScale::TCG).to_time_scale(ts);
+            assert!(
+                (rt - e).abs() <= Unit::Nanosecond,
+                "{ts} {e}: got {rt}, error {}",
+                rt - e
+            );
         }
     }
 }
@@ -2571,8 +2579,22 @@ fn sofa_val_tcb() {
 
             assert!(
                 (sofa_e - e).abs() <= Unit::Nanosecond * 1,
-                "more than one nanosecond error between SOFA and Hifitime TCG"
+                "more than one nanosecond error between SOFA and Hifitime TCB"
+            );
+
+            // Reciprocity test
+            let rt = e.to_time_scale(TimeScale::TCB).to_time_scale(ts);
+            assert!(
+                (rt - e).abs() <= Unit::Nanosecond,
+                "{ts} {e}: got {rt}, error {}",
+                rt - e
             );
         }
     }
+}
+
+#[test]
+fn from_jde_tdb_j2000_is_zero_duration() {
+    let e = Epoch::from_jde_in_time_scale(MJD_J2000 + MJD_OFFSET, TimeScale::TDB);
+    assert_eq!(e.duration, Duration::ZERO);
 }
