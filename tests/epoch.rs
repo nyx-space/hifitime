@@ -2524,6 +2524,7 @@ fn formal_epoch_reciprocity_tdb() {
 /// Compare against SOFA.
 #[test]
 fn sofa_val_tcg() {
+    use core::str::FromStr;
     for ts in [TimeScale::TAI, TimeScale::GPST, TimeScale::TCG] {
         for (y, m, d) in [(1970, 4, 27), (1977, 1, 1), (2000, 1, 1), (2024, 2, 29)] {
             let e = Epoch::from_gregorian_at_midnight(y, m, d, ts);
@@ -2556,12 +2557,19 @@ fn sofa_val_tcg() {
                 "{ts} {e}: got {rt}, error {}",
                 rt - e
             );
+
+            #[cfg(feature = "std")]
+            if ts == TimeScale::TCB {
+                println!("{e}");
+                assert_eq!(Epoch::from_str(&format!("{e}")).unwrap(), e);
+            }
         }
     }
 }
 
 #[test]
 fn sofa_val_tcb() {
+    use core::str::FromStr;
     for ts in [TimeScale::TAI, TimeScale::GPST, TimeScale::TCB] {
         for (y, m, d) in [(1970, 4, 27), (1977, 1, 1), (2000, 1, 1), (2024, 2, 29)] {
             let e = Epoch::from_gregorian_at_midnight(y, m, d, ts);
@@ -2589,6 +2597,12 @@ fn sofa_val_tcb() {
                 "{ts} {e}: got {rt}, error {}",
                 rt - e
             );
+
+            #[cfg(feature = "std")]
+            if ts == TimeScale::TCB {
+                println!("{e}");
+                assert_eq!(Epoch::from_str(&format!("{e}")).unwrap(), e);
+            }
         }
     }
 }
@@ -2597,4 +2611,43 @@ fn sofa_val_tcb() {
 fn from_jde_tdb_j2000_is_zero_duration() {
     let e = Epoch::from_jde_in_time_scale(MJD_J2000 + MJD_OFFSET, TimeScale::TDB);
     assert_eq!(e.duration, Duration::ZERO);
+}
+
+#[test]
+fn tl_option_iii_matches_tt_mean_model() {
+    for (y, m, d) in [(1977, 1, 1), (2000, 1, 1), (2024, 2, 29), (2050, 1, 1)] {
+        let tt = Epoch::from_gregorian_at_midnight(y, m, d, TimeScale::TT);
+        let tl = tt.to_time_scale(TimeScale::TL);
+        let back = tl.to_time_scale(TimeScale::TT);
+
+        assert_eq!(back.time_scale, TimeScale::TT);
+
+        // Pick the existing hifitime near-equality assertion style here.
+        assert!(
+            (back.duration - tt.duration).abs() <= 1.nanoseconds(),
+            "{tt} -> {tl} -> {back}"
+        );
+    }
+}
+
+#[test]
+fn tcl_tl_round_trip() {
+    use core::str::FromStr;
+    for (y, m, d) in [(1977, 1, 1), (2000, 1, 1), (2024, 2, 29), (2050, 1, 1)] {
+        let tcl = Epoch::from_gregorian_at_midnight(y, m, d, TimeScale::TCL);
+        let tl = tcl.to_time_scale(TimeScale::TL);
+        let back = tl.to_time_scale(TimeScale::TCL);
+
+        assert!(
+            (back.duration - tcl.duration).abs() <= 1.nanoseconds(),
+            "{tcl} -> {tl} -> {back}"
+        );
+
+        #[cfg(feature = "std")]
+        {
+            println!("{tl} <=> {tcl}");
+            assert_eq!(Epoch::from_str(&format!("{tl}")).unwrap(), tl);
+            assert_eq!(Epoch::from_str(&format!("{tcl}")).unwrap(), tcl);
+        }
+    }
 }

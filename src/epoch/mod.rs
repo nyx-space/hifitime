@@ -31,6 +31,10 @@ use crate::duration::{Duration, Unit};
 #[allow(unused_imports)]
 use crate::errors::{DurationError, ParseSnafu};
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
+use crate::timescale::tcl::{
+    tcl_since_t77_to_tl_since_t77, tcl_since_t77_to_tt_since_t77, tl_since_t77_to_tcl_since_t77,
+    tt_since_t77_to_tcl_since_t77,
+};
 use crate::{
     HifitimeError, MonthName, TimeScale, TimeUnits, BDT_REF_EPOCH, ET_EPOCH_S, GPST_REF_EPOCH,
     GST_REF_EPOCH, MJD_J1900, MJD_OFFSET, QZSST_REF_EPOCH, UNIX_REF_EPOCH,
@@ -257,6 +261,42 @@ impl Epoch {
 
                     tdb_since_t77 - delta_tdb_tai + TimeScale::TCB.prime_epoch_offset()
                 }
+                TimeScale::TCL => {
+                    // self.duration is mean TCL duration since T0.
+                    //
+                    // Exact TCL would require the LCRS/BCRS relativistic integral using the
+                    // Moon center-of-mass state and external potentials. This experimental
+                    // implementation keeps only the conventional mean TCL-TT secular rate.
+                    let tcl_since_t77 = self.duration;
+
+                    // TCL -> TT
+                    let tt_since_t77 = tcl_since_t77_to_tt_since_t77(tcl_since_t77);
+
+                    // Add the TT absolute reference epoch, then TT -> TAI.
+                    let tt_duration = self.time_scale.prime_epoch_offset() + tt_since_t77;
+                    tt_duration - TT_OFFSET_MS.milliseconds()
+                }
+
+                TimeScale::TL => {
+                    // self.duration is TL option-iii duration since T0.
+                    //
+                    // TL option iii removes the secular TCL-TT drift. With bounded periodic
+                    // TCL-TT terms intentionally omitted, TL is equal to TT in this
+                    // experimental implementation.
+                    //
+                    // Keep the path TL -> TCL -> TT explicit so the relationship to
+                    // equation 47 remains visible and testable.
+                    let tl_since_t77 = self.duration;
+
+                    // TL -> TCL -> TT
+                    let tcl_since_t77 = tl_since_t77_to_tcl_since_t77(tl_since_t77);
+                    let tt_since_t77 = tcl_since_t77_to_tt_since_t77(tcl_since_t77);
+
+                    // TT -> TAI
+                    // NOTE: This whole branch can collapse to a simple TT offset because this is option (iii) of the paper
+                    let tt_duration = self.time_scale.prime_epoch_offset() + tt_since_t77;
+                    tt_duration - TT_OFFSET_MS.milliseconds()
+                }
             };
 
             // Convert to the desired time scale from the TAI duration
@@ -345,6 +385,29 @@ impl Epoch {
                     // Apply the relativistic correction rate and the TDB0 65.5 microseconds offset of the timescales
                     let relativistic_delta = t77_duration - TDB0_S.seconds();
                     t77_duration + relativistic_delta * ELB - TDB0_S.seconds()
+                }
+                TimeScale::TCL => {
+                    // TAI -> TT
+                    let tt_duration = prime_epoch_offset + TT_OFFSET_MS.milliseconds();
+
+                    // TT absolute duration -> TT duration since T0
+                    let tt_since_t77 = tt_duration - ts.prime_epoch_offset();
+
+                    // TT -> mean TCL
+                    tt_since_t77_to_tcl_since_t77(tt_since_t77)
+                }
+
+                TimeScale::TL => {
+                    // TAI -> TT
+                    let tt_duration = prime_epoch_offset + TT_OFFSET_MS.milliseconds();
+
+                    // TT absolute duration -> TT duration since T0
+                    let tt_since_t77 = tt_duration - ts.prime_epoch_offset();
+
+                    // TT -> TCL -> TL, keeping equation 47 explicit.
+                    // NOTE: This whole branch can collapse to a simple TT offset because this is option (iii) of the paper
+                    let tcl_since_t77 = tt_since_t77_to_tcl_since_t77(tt_since_t77);
+                    tcl_since_t77_to_tl_since_t77(tcl_since_t77)
                 }
             };
 
