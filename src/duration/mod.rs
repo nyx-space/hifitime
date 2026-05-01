@@ -61,7 +61,6 @@ pub mod ops;
 ///    As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
 /// 2. Negative and positive durations are distinct: -15 minutes != 15 minutes. Use the signum function to check the sign, and abs() to get the absolute value.
 ///
-/// (Python documentation hints)
 /// :type string_repr: str
 #[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
 #[repr(C)]

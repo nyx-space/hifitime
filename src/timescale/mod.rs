@@ -103,6 +103,10 @@ pub enum TimeScale {
     BDT,
     /// QZSS Time scale has the same properties as GPST but with dedicated clocks
     QZSST,
+    /// Geocentric Coordinate Time
+    TCG,
+    /// Barycentric Coordinate Time
+    TCB,
 }
 
 impl Default for TimeScale {
@@ -117,7 +121,7 @@ impl TimeScale {
         match &self {
             Self::QZSST => 5,
             Self::GPST => 4,
-            Self::TAI | Self::TDB | Self::UTC | Self::GST | Self::BDT => 3,
+            Self::TAI | Self::TDB | Self::UTC | Self::GST | Self::BDT | Self::TCG | Self::TCB => 3,
             Self::ET | Self::TT => 2,
         }
     }
@@ -160,6 +164,20 @@ impl TimeScale {
                 centuries: 1,
                 nanoseconds: 189_302_433_000_000_000,
             },
+            TimeScale::TCG => {
+                // TCG reference epoch is 1977-01-01 00:00:32.184 TT.
+                Duration {
+                    centuries: 0,
+                    nanoseconds: 2429913632184000000,
+                }
+            }
+            TimeScale::TCB => {
+                // TCB reference epoch is 1977-01-01 00:00:32.184 TT + 65.5 µs.
+                Duration {
+                    centuries: 0,
+                    nanoseconds: 2429913632184065500,
+                }
+            }
             _ => Duration::ZERO,
         }
     }
@@ -181,7 +199,7 @@ impl TimeScale {
 }
 
 /// Allows conversion of a TimeSystem into a u8
-/// Mapping: TAI: 0; TT: 1; ET: 2; TDB: 3; UTC: 4; GPST: 5; GST: 6; BDT: 7; QZSST: 8;
+/// Mapping: TAI: 0; TT: 1; ET: 2; TDB: 3; UTC: 4; GPST: 5; GST: 6; BDT: 7; QZSST: 8; TCG: 9; TCB: 10;
 impl From<TimeScale> for u8 {
     fn from(ts: TimeScale) -> Self {
         match ts {
@@ -194,12 +212,14 @@ impl From<TimeScale> for u8 {
             TimeScale::GST => 6,
             TimeScale::BDT => 7,
             TimeScale::QZSST => 8,
+            TimeScale::TCG => 9,
+            TimeScale::TCB => 10,
         }
     }
 }
 
 /// Allows conversion of a u8 into a TimeSystem.
-/// Mapping: 1: TT; 2: ET; 3: TDB; 4: UTC; 5: GPST; 6: GST; 7: BDT; 8: QZSST; anything else: TAI
+/// Mapping: 1: TT; 2: ET; 3: TDB; 4: UTC; 5: GPST; 6: GST; 7: BDT; 8: QZSST; 9: TCG; 10: TCB; anything else: TAI
 impl From<u8> for TimeScale {
     fn from(val: u8) -> Self {
         match val {
@@ -211,6 +231,8 @@ impl From<u8> for TimeScale {
             6 => Self::GST,
             7 => Self::BDT,
             8 => Self::QZSST,
+            9 => Self::TCG,
+            10 => Self::TCB,
             _ => Self::TAI,
         }
     }
@@ -235,8 +257,8 @@ mod unit_test_timescale {
         for ts_u8 in 0..u8::MAX {
             let ts = TimeScale::from(ts_u8);
             let ts_u8_back: u8 = ts.into();
-            // If the u8 is greater than 5, it isn't valid and necessarily encoded as TAI.
-            if ts_u8 < 9 {
+            // If the u8 is greater than 10, it isn't valid and necessarily encoded as TAI.
+            if ts_u8 < 11 {
                 assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
             } else {
                 assert_eq!(ts, TimeScale::TAI);

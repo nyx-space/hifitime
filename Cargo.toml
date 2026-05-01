@@ -1,6 +1,6 @@
 [package]
 name = "hifitime"
-version = "4.2.6"
+version = "4.3.0"
 authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
 description = "Ultra-precise date and time handling in Rust for scientific applications with leap second support"
 homepage = "https://nyxspace.com/"
@@ -57,6 +57,7 @@ lts = ["std", "ureq", "ut1"]
 serde_json = "1.0.91"
 criterion = "0.7.0"
 iai = "0.1"
+sofars = "0.6.1"
 
 [target.wasm32-unknown-unknown.dependencies]
 js-sys = { version = "0.3" }

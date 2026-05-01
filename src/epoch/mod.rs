@@ -75,6 +75,14 @@ pub const NAIF_EB: f64 = 1.671e-2;
 /// NAIF leap second kernel data used to calculate the difference between ET and TAI.
 pub const NAIF_K: f64 = 1.657e-3;
 
+/// L_G = 1 - d(TT)/d(TCG)
+pub const LG: f64 = 6.969_290_134e-10;
+/// L_B = 1 - d(TDB)/d(TCB)
+pub const LB: f64 = 1.550_519_768e-8;
+pub const ELB: f64 = LB / (1.0 - LB);
+/// TDB0 is the TDB offset at TAI 1977-01-01 00:00:00 (s)
+pub const TDB0_S: f64 = -6.55e-5;
+
 /// Defines a nanosecond-precision Epoch.
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
@@ -220,6 +228,35 @@ impl Epoch {
                 TimeScale::GST => self.duration + GST_REF_EPOCH.to_tai_duration(),
                 TimeScale::BDT => self.duration + BDT_REF_EPOCH.to_tai_duration(),
                 TimeScale::QZSST => self.duration + QZSST_REF_EPOCH.to_tai_duration(),
+                TimeScale::TCG => {
+                    // self.duration is TCG duration since the TCG/TT reference epoch.
+                    let tcg_since_t77 = self.duration;
+                    // NOTE: We do _not_ factor here because it will cause a few nanoseconds of rounding error.
+                    let tt_since_t77 = tcg_since_t77 - tcg_since_t77 * LG;
+                    // Add the ~77 years of the TCG to TT prime epoch difference.
+                    let tt_duration = self.time_scale.prime_epoch_offset() + tt_since_t77;
+                    // Subtract out the TT offset to TAI
+                    tt_duration - TT_OFFSET_MS.milliseconds()
+                }
+                TimeScale::TCB => {
+                    // self.duration is TCB duration since the TCB reference epoch. Apply the offset to TDB time scale.
+                    let tcb_minus_tdb0 = self.duration + TDB0_S.seconds();
+                    // Reduce the relativistic correction, i.e. scale back to the TDB rate.
+                    // NOTE: We do _not_ factor here because it will cause a few nanoseconds of rounding error.
+                    let tdb_since_t77 = tcb_minus_tdb0 - tcb_minus_tdb0 * LB;
+
+                    // Convert TDB Duration to TDB Seconds since J2000 for the inner_g function
+                    // We need the absolute time for the planetary ephemeris (gamma).
+                    let tdb_at_t77_j2k =
+                        TimeScale::TCB.prime_epoch_offset() - TimeScale::TDB.prime_epoch_offset();
+                    let tdb_j2k_sec = (tdb_since_t77 + tdb_at_t77_j2k).to_seconds();
+
+                    // Calculate relativistic periodic variations (gamma)
+                    let gamma = Self::inner_g(tdb_j2k_sec);
+                    let delta_tdb_tai = gamma.seconds() + TT_OFFSET_MS.milliseconds();
+
+                    tdb_since_t77 - delta_tdb_tai + TimeScale::TCB.prime_epoch_offset()
+                }
             };
 
             // Convert to the desired time scale from the TAI duration
@@ -253,17 +290,10 @@ impl Epoch {
                     prime_epoch_offset + delta_et_tai.seconds() - ts.prime_epoch_offset()
                 }
                 TimeScale::TDB => {
-                    // Iterate to convert find the correct value of the
+                    // Iterate to convert find the correct value of the correction. Well behaved, so fixed number of iterations.
                     let mut seconds = (prime_epoch_offset - ts.prime_epoch_offset()).to_seconds();
-                    let mut delta = 1e8; // Arbitrary large number, greater than first step of Newton Raphson.
-                    for _ in 0..5 {
-                        let next = seconds - Self::inner_g(seconds);
-                        let new_delta = (next - seconds).abs();
-                        if (new_delta - delta).abs() < 1e-9 {
-                            break;
-                        }
-                        seconds = next; // Loop
-                        delta = new_delta;
+                    for _ in 0..3 {
+                        seconds -= Self::inner_g(seconds);
                     }
 
                     // At this point, we have a good estimate of the number of seconds of this epoch.
@@ -287,6 +317,35 @@ impl Epoch {
                 TimeScale::GST => prime_epoch_offset - GST_REF_EPOCH.to_tai_duration(),
                 TimeScale::BDT => prime_epoch_offset - BDT_REF_EPOCH.to_tai_duration(),
                 TimeScale::QZSST => prime_epoch_offset - QZSST_REF_EPOCH.to_tai_duration(),
+                TimeScale::TCG => {
+                    // First convert TAI to TT
+                    let tt_duration = prime_epoch_offset + TT_OFFSET_MS.milliseconds();
+                    // TCG = TT + (TT - T77) * LG / (1 - LG)
+                    let relativistic_delta = tt_duration - ts.prime_epoch_offset();
+                    let tcg_duration = tt_duration + relativistic_delta * (LG / (1.0 - LG));
+                    tcg_duration - ts.prime_epoch_offset()
+                }
+                TimeScale::TCB => {
+                    // First convert TDB from TAI.
+                    let mut seconds =
+                        (prime_epoch_offset - TimeScale::TDB.prime_epoch_offset()).to_seconds();
+                    // Iterate to convert find the correct value of the correction. Well behaved, so fixed number of iterations.
+                    for _ in 0..3 {
+                        seconds -= Self::inner_g(seconds);
+                    }
+                    // At this point, we have a good estimate of the number of seconds of this epoch.
+                    // Reverse the TDB algorithm
+                    let gamma =
+                        Self::inner_g(seconds + (TT_OFFSET_MS * Unit::Millisecond).to_seconds());
+                    let delta_tdb_tai = gamma.seconds() + TT_OFFSET_MS.milliseconds();
+
+                    // Apply the offset to the 1977 reference epoch of TCB.
+                    let t77_duration =
+                        prime_epoch_offset + delta_tdb_tai - TimeScale::TCB.prime_epoch_offset();
+                    // Apply the relativistic correction rate and the TDB0 65.5 microseconds offset of the timescales
+                    let relativistic_delta = t77_duration - TDB0_S.seconds();
+                    t77_duration + relativistic_delta * ELB - TDB0_S.seconds()
+                }
             };
 
             Self {
@@ -751,6 +810,34 @@ impl Epoch {
     /// :rtype: Duration
     pub fn to_et_duration(&self) -> Duration {
         self.to_time_scale(TimeScale::ET).duration
+    }
+
+    #[must_use]
+    /// Returns the Geocentric Coordinate Time (TCG) as a Duration its reference epoch (1977-01-01)
+    /// :rtype: Duration
+    pub fn to_tcg_duration(&self) -> Duration {
+        self.to_time_scale(TimeScale::TCG).duration
+    }
+
+    #[must_use]
+    /// Returns the Geocentric Coordinate Time (TCG) as seconds its reference epoch (1977-01-01)
+    /// :rtype: float
+    pub fn to_tcg_seconds(&self) -> f64 {
+        self.to_tcg_duration().to_seconds()
+    }
+
+    #[must_use]
+    /// Returns the Barycentric Coordinate Time (TCB) as a Duration its reference epoch (1977-01-01 + 65.5 µs)
+    /// :rtype: Duration
+    pub fn to_tcb_duration(&self) -> Duration {
+        self.to_time_scale(TimeScale::TCB).duration
+    }
+
+    #[must_use]
+    /// Returns the Barycentric Coordinate Time (TCB) as seconds its reference epoch (1977-01-01 + 65.5 µs)
+    /// :rtype: float
+    pub fn to_tcb_seconds(&self) -> f64 {
+        self.to_tcb_duration().to_seconds()
     }
 
     #[must_use]
