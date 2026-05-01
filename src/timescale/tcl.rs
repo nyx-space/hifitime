@@ -18,31 +18,33 @@ pub(crate) const TCL_MINUS_TT_MEAN_RATE: f64 = 6.8e-10;
 
 /// TL option iii:
 ///
+/// ```text
 ///     TL = TCL + Δf * (TCL - TCL0) + const0
-///
+/// ```
 /// If:
-///
+/// ```text
 ///     dTCL / dTT = 1 + k
-///
+/// ```
 /// then choosing:
-///
+/// ```text
 ///     1 + Δf = 1 / (1 + k)
 ///
 /// gives:
-///
+/// ```text
 ///     dTL / dTT = 1
-///
+/// ```
 /// so TL has no secular drift relative to TT.
 pub(crate) const TL_DELTA_F: f64 = -TCL_MINUS_TT_MEAN_RATE / (1.0 + TCL_MINUS_TT_MEAN_RATE);
 
 /// Recommended experimental convention:
-///
+/// ```text
 ///     TL = TCL = TT at T0
-///
+/// ```
 /// with:
-///
+/// ```text
 ///     T0 = 1977-01-01T00:00:00 TAI
 ///        = 1977-01-01T00:00:32.184 TT
+/// ```
 pub(crate) const TL_CONST0_S: f64 = 0.0;
 
 #[inline]

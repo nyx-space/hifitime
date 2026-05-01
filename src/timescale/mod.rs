@@ -121,9 +121,9 @@ pub enum TimeScale {
     ///
     /// This is not a full IAU-quality TCL realization. It models only the
     /// conventional secular mean rate between TCL and TT:
-    ///
+    /// ```text
     ///     d(TCL - TT) / dTT ≈ 6.8e-10
-    ///
+    /// ```
     /// The bounded periodic TCL-TT terms and ephemeris-dependent relativistic
     /// integral are intentionally omitted
     TCL,
