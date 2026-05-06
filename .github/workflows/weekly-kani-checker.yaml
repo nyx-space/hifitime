@@ -7,8 +7,139 @@ on:
 
 jobs:
   kani-formal-model-checker:
-    name: Formal Verification
+    name: Kani (${{ matrix.module }})
     runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Epoch proof_for_contract (48 harnesses, all <14s each)
+          - module: epoch-contracts
+            kani_args: >-
+              --harness kani_harness_Epoch_from_bdt
+              --harness kani_harness_Epoch_from_gpst
+              --harness kani_harness_Epoch_from_gst
+              --harness kani_harness_Epoch_from_qzsst
+              --harness kani_harness_Epoch_from_tai
+              --harness kani_harness_Epoch_from_tdb
+              --harness kani_harness_Epoch_from_tt
+              --harness kani_harness_Epoch_from_utc
+              --harness kani_harness_Epoch_from_et
+              --harness kani_harness_Epoch_from_jde
+              --harness kani_harness_Epoch_from_mjd
+              --harness kani_harness_Epoch_from_duration
+              --harness kani_harness_Epoch_from_time_of_week
+              --harness kani_harness_weekday
+              --harness verify_to_time_scale_contract_tai
+
+          # Epoch proofs — light (<25s each)
+          - module: epoch-proofs-light
+            kani_args: >-
+              --harness formal_epoch_reciprocity
+              --harness kani_harness_Epoch_delta_et_tai
+              --harness kani_harness_Epoch_from_day_of_year
+              --harness kani_harness_Epoch_from_jde_et
+              --harness kani_harness_Epoch_from_jde_tdb
+              --harness kani_harness_Epoch_from_unix
+              --harness kani_harness_Epoch_inner_g
+              --harness kani_harness_Epoch_now
+              --harness kani_harness_LeapSecond_new
+              --harness kani_harness_duration_since_unix_epoch
+              --harness kani_harness_is_gregorian_valid
+              --harness kani_harness_is_leap_year
+              --harness kani_harness_january_years
+              --harness kani_harness_july_years
+              --harness kani_harness_rem_euclid_f64
+              --harness kani_harness_to_duration_since_j1900
+              --harness kani_harness_to_time_of_week
+              --harness kani_harness_to_time_scale
+              --harness kani_harness_usual_days_per_month
+              --harness kani_harness_weekday_in_time_scale
+              --harness kani_harness_weekday_utc
+              --harness verify_epoch_next
+              --harness verify_epoch_previous
+              --harness verify_from_ptp_seconds_contract
+
+          # Epoch proofs — medium (79s)
+          - module: epoch-eq-ord
+            kani_args: "--harness verify_epoch_eq_ord_consistent"
+
+          # Epoch proofs — heavy (100-266s each)
+          - module: epoch-proofs-heavy
+            kani_args: >-
+              --harness verify_next_weekday_at_midnight
+              --harness verify_next_weekday_at_noon
+              --harness verify_previous_weekday_at_midnight
+              --harness verify_previous_weekday_at_noon
+              --harness verify_with_hms_strict_from
+              --harness formal_epoch_julian
+              --harness verify_with_time_from
+              --harness verify_with_hms
+              --harness verify_with_hms_strict
+              --harness verify_with_hms_from
+
+          # Duration: fast harnesses (<45s each)
+          - module: duration-fast
+            kani_args: >-
+              --harness kani_harness_Duration_from_days
+              --harness kani_harness_Duration_from_hours
+              --harness kani_harness_Duration_from_microseconds
+              --harness kani_harness_Duration_from_milliseconds
+              --harness kani_harness_Duration_from_nanoseconds
+              --harness kani_harness_Duration_from_parts
+              --harness kani_harness_Duration_from_seconds
+              --harness kani_harness_Duration_from_total_nanoseconds
+              --harness kani_harness_Duration_from_truncated_nanoseconds
+              --harness kani_harness_abs
+              --harness kani_harness_is_negative
+              --harness kani_harness_max
+              --harness kani_harness_min
+              --harness kani_harness_normalize
+              --harness kani_harness_signum
+              --harness kani_harness_to_parts
+              --harness verify_from_seconds_contract
+              --harness verify_to_seconds_contract
+              --harness verify_total_nanoseconds_contract
+              --harness verify_unit_const_multiply_contract
+              --harness formal_duration_normalize_any
+              --harness formal_duration_truncated_ns_reciprocity
+              --harness kani_harness_to_seconds
+              --harness kani_harness_to_unit
+              --harness kani_harness_total_nanoseconds
+              --harness kani_harness_truncated_nanoseconds
+              --harness kani_harness_try_truncated_nanoseconds
+              --harness test_dur_f64_recip_0
+              --harness verify_approx
+              --harness verify_duration_eq_ord_consistent
+              --harness verify_mul_f64_terminates
+              --harness verify_mul_i64_no_panic
+
+          # Duration: compose (124s + 82s)
+          - module: duration-compose
+            kani_args: "--harness kani_harness_Duration_compose --harness kani_harness_Duration_compose_f64"
+
+          # Duration: from_tz_offset (153s)
+          - module: duration-tz-offset
+            kani_args: "--harness kani_harness_Duration_from_tz_offset"
+
+          # Duration: floor (293s)
+          - module: duration-floor
+            kani_args: "--harness kani_harness_floor"
+
+          # Duration: subdivision (350s)
+          - module: duration-subdivision
+            kani_args: "--harness kani_harness_subdivision"
+
+          # Duration: decompose (524s)
+          - module: duration-decompose
+            kani_args: "--harness kani_harness_decompose"
+
+          # Other: efmt + timescale + top-level + polynomial
+          - module: other
+            kani_args: "--harness efmt:: --harness timescale:: --harness kani_verif:: --harness polynomial::"
+
     steps:
       - name: Checkout sources
         uses: actions/checkout@v4
@@ -22,4 +153,4 @@ jobs:
       - name: Kani Rust Verifier
         uses: model-checking/kani-github-action@v1.1
         with:
-          args: --fail-fast -j 8 --output-format=terse -Z function-contracts -Z loop-contracts -Z stubbing
+          args: -j 1 --output-format=terse -Z function-contracts -Z loop-contracts -Z stubbing ${{ matrix.kani_args }}
