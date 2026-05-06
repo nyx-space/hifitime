@@ -115,6 +115,7 @@ fn verify_from_seconds_contract() {
 
 // Stub for Duration::round — no ensures contract, so kani::stub works.
 #[cfg(kani)]
+#[allow(dead_code)]
 fn stub_round(_self: &Duration, _duration: Duration) -> Duration {
     kani::any()
 }
