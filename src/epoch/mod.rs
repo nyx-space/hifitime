@@ -821,7 +821,7 @@ impl Epoch {
     #[must_use]
     /// Returns the Duration since the UNIX epoch UTC midnight 01 Jan 1970.
     /// :rtype: Duration
-    fn to_unix_duration(&self) -> Duration {
+    pub fn to_unix_duration(&self) -> Duration {
         self.to_duration_in_time_scale(TimeScale::UTC) - UNIX_REF_EPOCH.to_utc_duration()
     }
 
