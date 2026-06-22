@@ -2,6 +2,7 @@ from __future__ import annotations
 import datetime
 import typing
 
+
 @typing.final
 class Duration:
     """Defines generally usable durations for nanosecond precision valid for 32,768 centuries in either direction, and only on 80 bits / 10 octets.
@@ -16,22 +17,28 @@ As such, the largest negative duration that can be represented sets the centurie
 2. Negative and positive durations are distinct: -15 minutes != 15 minutes. Use the signum function to check the sign, and abs() to get the absolute value."""
 
     @staticmethod
-    def EPSILON() -> typing.Any:...
+    def EPSILON() -> typing.Any:
+        ...
 
     @staticmethod
-    def MAX() -> typing.Any:...
+    def MAX() -> typing.Any:
+        ...
 
     @staticmethod
-    def MIN() -> typing.Any:...
+    def MIN() -> typing.Any:
+        ...
 
     @staticmethod
-    def MIN_NEGATIVE() -> typing.Any:...
+    def MIN_NEGATIVE() -> typing.Any:
+        ...
 
     @staticmethod
-    def MIN_POSITIVE() -> typing.Any:...
+    def MIN_POSITIVE() -> typing.Any:
+        ...
 
     @staticmethod
-    def ZERO() -> typing.Any:...
+    def ZERO() -> typing.Any:
+        ...
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         """Initialize self.  See help(type(self)) for accurate signature."""
@@ -110,7 +117,8 @@ assert_eq!(two_hours_three_min.floor(1.hours() + 5.minutes()), 1.hours() + 5.min
 ```"""
 
     @staticmethod
-    def from_all_parts(sign: int, days: int, hours: int, minutes: int, seconds: int, milliseconds: int, microseconds: int, nanoseconds: int) -> Duration:
+    def from_all_parts(sign: int, days: int, hours: int, minutes: int, seconds: int,
+                       milliseconds: int, microseconds: int, nanoseconds: int) -> Duration:
         """Creates a new duration from its parts"""
 
     @staticmethod
@@ -208,7 +216,8 @@ NOTE: These items are not public to prevent incorrect durations from being creat
         """Returns this duration in seconds f64.
 For high fidelity comparisons, it is recommended to keep using the Duration structure."""
 
-    def to_unit(self, unit: Unit) -> float:...
+    def to_unit(self, unit: Unit) -> float:
+        ...
 
     def total_nanoseconds(self) -> int:
         """Returns the total nanoseconds in a signed 128 bit integer"""
@@ -216,7 +225,8 @@ For high fidelity comparisons, it is recommended to keep using the Duration stru
     def __add__(self, value: typing.Any):
         """Return self+value."""
 
-    def __div__(self, other: float):...
+    def __div__(self, other: float):
+        ...
 
     def __eq__(self, value: typing.Any) -> bool:
         """Return self==value."""
@@ -224,7 +234,8 @@ For high fidelity comparisons, it is recommended to keep using the Duration stru
     def __ge__(self, value: typing.Any) -> bool:
         """Return self>=value."""
 
-    def __getnewargs__(self) -> typing.Tuple:...
+    def __getnewargs__(self) -> typing.Tuple:
+        ...
 
     def __gt__(self, value: typing.Any) -> bool:
         """Return self>value."""
@@ -259,6 +270,7 @@ For high fidelity comparisons, it is recommended to keep using the Duration stru
     def __sub__(self, value: typing.Any):
         """Return self-value."""
 
+
 @typing.final
 class DurationError:
     __cause__: typing.Any
@@ -290,10 +302,12 @@ set self.__traceback__ to tb and return self."""
     def __setattr__():
         """Implement setattr(self, name, value)."""
 
-    def __setstate__():...
+    def __setstate__():
+        ...
 
     def __str__():
         """Return str(self)."""
+
 
 @typing.final
 class Epoch:
@@ -417,7 +431,8 @@ This may be useful for time keeping devices that use GPS as a time source."""
 defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
     @staticmethod
-    def from_gregorian(year: int, month: int, day: int, hour: int, minute: int, second: int, nanos: int, time_scale: TimeScale) -> Epoch:
+    def from_gregorian(year: int, month: int, day: int, hour: int, minute: int, second: int,
+                       nanos: int, time_scale: TimeScale) -> Epoch:
         """Initialize from the Gregorian parts"""
 
     @staticmethod
@@ -429,7 +444,8 @@ defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/na
         """Initialize from the Gregorian parts, time set to noon"""
 
     @staticmethod
-    def from_gregorian_utc(year: int, month: int, day: int, hour: int, minute: int, second: int, nanos: int) -> Epoch:
+    def from_gregorian_utc(year: int, month: int, day: int, hour: int, minute: int, second: int,
+                           nanos: int) -> Epoch:
         """Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
 Use maybe_from_gregorian_tai if unsure."""
 
@@ -617,22 +633,26 @@ Initialize an Epoch from the number of seconds since the GPS Time Epoch,
 defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
     @staticmethod
-    def init_from_gregorian(year: int, month: int, day: int, hour: int, minute: int, second: int, nanos: int, time_scale: TimeScale) -> Epoch:
+    def init_from_gregorian(year: int, month: int, day: int, hour: int, minute: int, second: int,
+                            nanos: int, time_scale: TimeScale) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gregorian` instead
 Initialize from the Gregorian parts"""
 
     @staticmethod
-    def init_from_gregorian_at_midnight(year: int, month: int, day: int, time_scale: TimeScale) -> Epoch:
+    def init_from_gregorian_at_midnight(year: int, month: int, day: int,
+                                        time_scale: TimeScale) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gregorian_at_midnight` instead
 Initialize from the Gregorian parts, time set to midnight"""
 
     @staticmethod
-    def init_from_gregorian_at_noon(year: int, month: int, day: int, time_scale: TimeScale) -> Epoch:
+    def init_from_gregorian_at_noon(year: int, month: int, day: int,
+                                    time_scale: TimeScale) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gregorian_at_noon` instead
 Initialize from the Gregorian parts, time set to noon"""
 
     @staticmethod
-    def init_from_gregorian_utc(year: int, month: int, day: int, hour: int, minute: int, second: int, nanos: int) -> Epoch:
+    def init_from_gregorian_utc(year: int, month: int, day: int, hour: int, minute: int,
+                                second: int, nanos: int) -> Epoch:
         """WARNING: Deprecated since 4.1.1; Use `from_gregorian_utc` instead
 Builds an Epoch from the provided Gregorian date and time in TAI. If invalid date is provided, this function will panic.
 Use maybe_from_gregorian_tai if unsure."""
@@ -829,7 +849,8 @@ _Note:_ this uses a pointer to `self` which will be copied immediately because P
     def minutes(self) -> int:
         """Returns the minutes of the Gregorian representation  of this epoch in the time scale it was initialized in."""
 
-    def month_name(self) -> MonthName:...
+    def month_name(self) -> MonthName:
+        ...
 
     def nanoseconds(self) -> int:
         """Returns the nanoseconds of the Gregorian representation  of this epoch in the time scale it was initialized in."""
@@ -851,11 +872,14 @@ assert_eq!(epoch.next(Weekday::Friday), Epoch::from_gregorian_utc_at_midnight(19
 assert_eq!(epoch.next(Weekday::Saturday), Epoch::from_gregorian_utc_at_midnight(1988, 1, 9));
 ```"""
 
-    def next_weekday_at_midnight(self, weekday: Weekday) -> Epoch:...
+    def next_weekday_at_midnight(self, weekday: Weekday) -> Epoch:
+        ...
 
-    def next_weekday_at_noon(self, weekday: Weekday) -> Epoch:...
+    def next_weekday_at_noon(self, weekday: Weekday) -> Epoch:
+        ...
 
-    def precise_timescale_conversion(self, forward: bool, reference_epoch: Epoch, polynomial: Polynomial, target: TimeScale) -> Epoch:
+    def precise_timescale_conversion(self, forward: bool, reference_epoch: Epoch,
+                                     polynomial: Polynomial, target: TimeScale) -> Epoch:
         """Converts this [Epoch] into targeted [TimeScale] using provided [Polynomial].
 
 ## Input
@@ -937,9 +961,11 @@ assert_eq!(epoch.previous(Weekday::Sunday), Epoch::from_gregorian_utc_at_midnigh
 assert_eq!(epoch.previous(Weekday::Saturday), Epoch::from_gregorian_utc_at_midnight(1987, 12, 26));
 ```"""
 
-    def previous_weekday_at_midnight(self, weekday: Weekday) -> Epoch:...
+    def previous_weekday_at_midnight(self, weekday: Weekday) -> Epoch:
+        ...
 
-    def previous_weekday_at_noon(self, weekday: Weekday) -> Epoch:...
+    def previous_weekday_at_noon(self, weekday: Weekday) -> Epoch:
+        ...
 
     def round(self, duration: Duration) -> Epoch:
         """Rounds this epoch to the closest provided duration in TAI
@@ -987,7 +1013,7 @@ NOTE: This function will return an error if the centuries past GST time are not 
     def to_bdt_seconds(self) -> float:
         """Returns seconds past BDT (BeiDou) Time Epoch"""
 
-    def to_datetime(self, set_tz: typing.Optional[bool | None]=None) -> datetime.datetime:
+    def to_datetime(self, set_tz: typing.Optional[bool | None] = None) -> datetime.datetime:
         """Returns a Python datetime object from this Epoch (truncating the nanoseconds away)
 If set_tz is True, then this will return a time zone aware datetime object"""
 
@@ -1027,7 +1053,10 @@ NOTE: This function will return an error if the centuries past GPST time are not
     def to_gpst_seconds(self) -> float:
         """Returns seconds past GPS Time Epoch, defined as UTC midnight of January 5th to 6th 1980 (cf. <https://gssc.esa.int/navipedia/index.php/Time_References_in_GNSS#GPS_Time_.28GPST.29>)."""
 
-    def to_gregorian(self, time_scale: typing.Optional[TimeScale]=None) -> tuple[int, int, int, int, int, int, int]:
+    def to_gregorian(
+            self,
+            time_scale: typing.Optional[TimeScale] = None
+    ) -> tuple[int, int, int, int, int, int, int]:
         """Converts the Epoch to the Gregorian parts in the (optionally) provided time scale as (year, month, day, hour, minute, second)."""
 
     def to_gst_days(self) -> float:
@@ -1049,12 +1078,14 @@ NOTE: This function will return an error if the centuries past GST time are not 
     def to_isoformat(self) -> str:
         """The standard ISO format of this epoch (six digits of subseconds) in the _current_ time scale, refer to <https://docs.rs/hifitime/latest/hifitime/efmt/format/struct.Format.html> for format options."""
 
-    def to_jde_et(self, unit: Unit) -> float:...
+    def to_jde_et(self, unit: Unit) -> float:
+        ...
 
     def to_jde_et_days(self) -> float:
         """Returns the Ephemeris Time JDE past epoch"""
 
-    def to_jde_et_duration(self) -> Duration:...
+    def to_jde_et_duration(self) -> Duration:
+        ...
 
     def to_jde_tai(self, unit: Unit) -> float:
         """Returns the Julian Days from epoch 01 Jan -4713 12:00 (noon) in desired Duration::Unit"""
@@ -1073,12 +1104,14 @@ as explained in "Fundamentals of astrodynamics and applications", Vallado et al.
     def to_jde_tdb_days(self) -> float:
         """Returns the Dynamic Barycentric Time (TDB) (higher fidelity SPICE ephemeris time) whose epoch is 2000 JAN 01 noon TAI (cf. <https://gssc.esa.int/navipedia/index.php/Transformations_between_Time_Systems#TDT_-_TDB.2C_TCB>)"""
 
-    def to_jde_tdb_duration(self) -> Duration:...
+    def to_jde_tdb_duration(self) -> Duration:
+        ...
 
     def to_jde_tt_days(self) -> float:
         """Returns days past Julian epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))"""
 
-    def to_jde_tt_duration(self) -> Duration:...
+    def to_jde_tt_duration(self) -> Duration:
+        ...
 
     def to_jde_utc_days(self) -> float:
         """Returns the Julian days in UTC."""
@@ -1102,7 +1135,8 @@ as explained in "Fundamentals of astrodynamics and applications", Vallado et al.
     def to_mjd_tt_days(self) -> float:
         """Returns days past Modified Julian epoch in Terrestrial Time (TT) (previously called Terrestrial Dynamical Time (TDT))"""
 
-    def to_mjd_tt_duration(self) -> Duration:...
+    def to_mjd_tt_duration(self) -> Duration:
+        ...
 
     def to_mjd_utc(self, unit: Unit) -> float:
         """Returns the Modified Julian Date in the provided unit in UTC."""
@@ -1246,7 +1280,7 @@ this borrows an Epoch and returns an owned Epoch."""
     def to_utc_seconds(self) -> float:
         """Returns the number of UTC seconds since the TAI epoch"""
 
-    def todatetime(self, set_tz: typing.Optional[bool | None]=None) -> datetime.datetime:
+    def todatetime(self, set_tz: typing.Optional[bool | None] = None) -> datetime.datetime:
         """Returns a Python datetime object from this Epoch (truncating the nanoseconds away).
 If set_tz is True, then this will return a time zone aware datetime object"""
 
@@ -1339,7 +1373,8 @@ Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 23)
     def __ge__(self, value: typing.Any) -> bool:
         """Return self>=value."""
 
-    def __getnewargs__(self) -> typing.Tuple:...
+    def __getnewargs__(self) -> typing.Tuple:
+        ...
 
     def __gt__(self, value: typing.Any) -> bool:
         """Return self>value."""
@@ -1367,6 +1402,7 @@ Epoch::from_gregorian_utc(2022, 12, 01, 20, 21, 22, 23)
 
     def __sub__(self, value: typing.Any):
         """Return self-value."""
+
 
 @typing.final
 class HifitimeError:
@@ -1399,10 +1435,12 @@ set self.__traceback__ to tb and return self."""
     def __setattr__():
         """Implement setattr(self, name, value)."""
 
-    def __setstate__():...
+    def __setstate__():
+        ...
 
     def __str__():
         """Return str(self)."""
+
 
 @typing.final
 class LatestLeapSeconds:
@@ -1430,6 +1468,7 @@ assert!(LatestLeapSeconds::default().is_up_to_date().unwrap(), "Hifitime needs t
     def __repr__(self) -> str:
         """Return repr(self)."""
 
+
 @typing.final
 class LeapSecondsFile:
     """A leap second provider that uses an IERS formatted leap seconds file."""
@@ -1442,6 +1481,7 @@ class LeapSecondsFile:
 
     def __repr__(self) -> str:
         """Return repr(self)."""
+
 
 @typing.final
 class MonthName:
@@ -1476,6 +1516,7 @@ class MonthName:
 
     def __repr__(self) -> str:
         """Return repr(self)."""
+
     April: MonthName = ...
     August: MonthName = ...
     December: MonthName = ...
@@ -1488,6 +1529,7 @@ class MonthName:
     November: MonthName = ...
     October: MonthName = ...
     September: MonthName = ...
+
 
 @typing.final
 class ParsingError:
@@ -1520,10 +1562,12 @@ set self.__traceback__ to tb and return self."""
     def __setattr__():
         """Implement setattr(self, name, value)."""
 
-    def __setstate__():...
+    def __setstate__():
+        ...
 
     def __str__():
         """Return str(self)."""
+
 
 @typing.final
 class Polynomial:
@@ -1578,6 +1622,7 @@ the interpolation time interval"""
     def __str__(self) -> str:
         """Return str(self)."""
 
+
 @typing.final
 class TimeScale:
     """Enum of the different time systems available"""
@@ -1614,6 +1659,7 @@ class TimeScale:
 
     def __repr__(self) -> str:
         """Return repr(self)."""
+
     BDT: TimeScale = ...
     ET: TimeScale = ...
     GPST: TimeScale = ...
@@ -1627,6 +1673,7 @@ class TimeScale:
     TL: TimeScale = ...
     TT: TimeScale = ...
     UTC: TimeScale = ...
+
 
 @typing.final
 class TimeSeries:
@@ -1648,7 +1695,8 @@ class TimeSeries:
     def __ge__(self, value: typing.Any) -> bool:
         """Return self>=value."""
 
-    def __getnewargs__(self) -> typing.Tuple:...
+    def __getnewargs__(self) -> typing.Tuple:
+        ...
 
     def __gt__(self, value: typing.Any) -> bool:
         """Return self>value."""
@@ -1674,6 +1722,7 @@ class TimeSeries:
     def __str__(self) -> str:
         """Return str(self)."""
 
+
 @typing.final
 class Unit:
     """An Enum to perform time unit conversions."""
@@ -1684,9 +1733,11 @@ class Unit:
     def __new__(cls) -> Unit:
         """An Enum to perform time unit conversions."""
 
-    def from_seconds(self) -> typing.Any:...
+    def from_seconds(self) -> typing.Any:
+        ...
 
-    def in_seconds(self) -> typing.Any:...
+    def in_seconds(self) -> typing.Any:
+        ...
 
     def __add__(self, value: typing.Any):
         """Return self+value."""
@@ -1729,6 +1780,7 @@ class Unit:
 
     def __sub__(self, value: typing.Any):
         """Return self-value."""
+
     Century: Unit = ...
     Day: Unit = ...
     Hour: Unit = ...
@@ -1738,6 +1790,7 @@ class Unit:
     Nanosecond: Unit = ...
     Second: Unit = ...
     Week: Unit = ...
+
 
 @typing.final
 class Ut1Provider:
@@ -1761,13 +1814,15 @@ class Ut1Provider:
     def __repr__(self) -> str:
         """Return repr(self)."""
 
+
 @typing.final
 class Weekday:
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         """Initialize self.  See help(type(self)) for accurate signature."""
 
-    def __new__(cls) -> Weekday:...
+    def __new__(cls) -> Weekday:
+        ...
 
     def __eq__(self, value: typing.Any) -> bool:
         """Return self==value."""
@@ -1792,6 +1847,7 @@ class Weekday:
 
     def __repr__(self) -> str:
         """Return repr(self)."""
+
     Friday: Weekday = ...
     Monday: Weekday = ...
     Saturday: Weekday = ...
@@ -1799,5 +1855,7 @@ class Weekday:
     Thursday: Weekday = ...
     Tuesday: Weekday = ...
     Wednesday: Weekday = ...
+
+
 __author__: str = 'Christopher Rabotin <christopher.rabotin@gmail.com>'
 __version__: str = '4.3.0'
