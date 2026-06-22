@@ -966,8 +966,8 @@ impl Epoch {
         )))
     }
 
-    /// Differences between two epochs
-    /// :type other: Duration
+    /// Difference between two epochs
+    /// :type other: Epoch
     /// :rtype: Duration
     fn timedelta(&self, other: Self) -> Duration {
         *self - other
