@@ -275,6 +275,9 @@ class DurationError:
         """Exception.with_traceback(tb) --
         set self.__traceback__ to tb and return self."""
 
+    def __delattr__():
+        """Implement delattr(self, name)."""
+
     def __getattribute__():
         """Return getattr(self, name)."""
 
@@ -283,6 +286,9 @@ class DurationError:
 
     def __repr__():
         """Return repr(self)."""
+
+    def __setattr__():
+        """Implement setattr(self, name, value)."""
 
     def __setstate__(): ...
     def __str__():
@@ -996,8 +1002,8 @@ class Epoch:
     def system_now() -> Epoch:
         """Returns the computer clock in UTC"""
 
-    def timedelta(self, other: Duration) -> Duration:
-        """Differences between two epochs"""
+    def timedelta(self, other: Epoch) -> Duration:
+        """Difference between two epochs"""
 
     def to_bdt_days(self) -> float:
         """Returns days past BDT (BeiDou) Time Epoch, defined as Jan 01 2006 UTC
@@ -1411,6 +1417,9 @@ class HifitimeError:
         """Exception.with_traceback(tb) --
         set self.__traceback__ to tb and return self."""
 
+    def __delattr__():
+        """Implement delattr(self, name)."""
+
     def __getattribute__():
         """Return getattr(self, name)."""
 
@@ -1419,6 +1428,9 @@ class HifitimeError:
 
     def __repr__():
         """Return repr(self)."""
+
+    def __setattr__():
+        """Implement setattr(self, name, value)."""
 
     def __setstate__(): ...
     def __str__():
@@ -1525,6 +1537,9 @@ class ParsingError:
         """Exception.with_traceback(tb) --
         set self.__traceback__ to tb and return self."""
 
+    def __delattr__():
+        """Implement delattr(self, name)."""
+
     def __getattribute__():
         """Return getattr(self, name)."""
 
@@ -1533,6 +1548,9 @@ class ParsingError:
 
     def __repr__():
         """Return repr(self)."""
+
+    def __setattr__():
+        """Implement setattr(self, name, value)."""
 
     def __setstate__(): ...
     def __str__():
