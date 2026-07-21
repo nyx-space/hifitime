@@ -62,19 +62,13 @@ pub mod ops;
 /// 2. Negative and positive durations are distinct: -15 minutes != 15 minutes. Use the signum function to check the sign, and abs() to get the absolute value.
 ///
 /// :type string_repr: str
-#[derive(Clone, Copy, Debug, PartialOrd, Eq, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord)]
 #[repr(C)]
 #[cfg_attr(feature = "python", pyclass)]
 #[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
 pub struct Duration {
     pub(crate) centuries: i16,
     pub(crate) nanoseconds: u64,
-}
-
-impl PartialEq for Duration {
-    fn eq(&self, other: &Self) -> bool {
-        self.centuries == other.centuries && self.nanoseconds == other.nanoseconds
-    }
 }
 
 impl Hash for Duration {
