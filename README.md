@@ -287,9 +287,11 @@ Disadvantages:
     | `Duration::from_seconds()` | `Duration::from_seconds` | ~3 ns |
     | round trip | `f64 -> Duration -> f64 round trip` | ~7 ns |
     | `Duration * f64` | `Duration * f64 (scaling)` | ~16 ns |
-    | `Duration / f64` | `Duration / f64 (scaling)` | ~38 ns |
+    | `Duration / f64` | `Duration / f64 (scaling)` | ~40 ns |
+    | `Duration * f64`, power-of-two factor | `Duration * f64 (power of two)` | ~14 ns |
+    | `Duration / f64`, power-of-two factor | `Duration / f64 (power of two)` | ~12 ns |
 
-    Division costs more than multiplication because it needs a 128-bit division, which is a compiler-runtime call rather than a hardware instruction.
+    Division costs more than multiplication because it needs a 128-bit division, which is a compiler-runtime call rather than a hardware instruction. Scaling by a power of two (`2.0`, `0.5`, `0.25`, ...) is special-cased to a shift, which avoids that division entirely.
 
 
 ### Scaling a `Duration` by an `f64`

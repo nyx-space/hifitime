@@ -90,6 +90,27 @@ impl Mul<i64> for Duration {
 
 // Shared by Duration's Mul<f64> and Div<f64> below.
 
+/// Bit width of `Duration::MAX.total_nanoseconds()`. Any magnitude needing this
+/// many bits is out of range.
+const MAX_TOTAL_NANOSECONDS_BITS: u32 = 77;
+
+/// `a * 2^shift`, truncating toward zero when `shift` is negative. `None` if
+/// the result does not fit in a `u128`.
+#[inline]
+fn shift_magnitude(a: u128, shift: i32) -> Option<u128> {
+    if shift >= 0 {
+        let shift = shift as u32;
+        if shift >= 128 || a > (u128::MAX >> shift) {
+            None
+        } else {
+            Some(a << shift)
+        }
+    } else {
+        let shift = shift.unsigned_abs();
+        Some(if shift >= 128 { 0 } else { a >> shift })
+    }
+}
+
 /// Decomposes a finite, nonzero f64's magnitude into `mantissa * 2^exponent`
 /// (`mantissa` fits in 53 bits). Sign is not included; use `q.is_sign_negative()`.
 #[inline]
@@ -213,6 +234,14 @@ impl Mul<f64> for Duration {
         let (mantissa, exponent) = decompose_f64(q);
         let a = numerator.unsigned_abs();
 
+        // A power-of-two `q` has a mantissa of 1, so the scaling is just a shift.
+        if mantissa.is_power_of_two() {
+            return match shift_magnitude(a, exponent + mantissa.trailing_zeros() as i32) {
+                Some(magnitude) => duration_from_magnitude(magnitude, result_negative),
+                None => saturate(),
+            };
+        }
+
         // Widening multiply of a * mantissa, as `hi * 2^128 + lo`.
         let a_lo = a as u64 as u128;
         let a_hi = a >> 64;
@@ -291,6 +320,20 @@ impl Div<f64> for Duration {
         let (divisor, exponent) = decompose_f64(q);
         let a = numerator.unsigned_abs();
 
+        // A power-of-two divisor is just a shift, skipping the 128-bit division.
+        if divisor.is_power_of_two() {
+            return match shift_magnitude(a, -(exponent + divisor.trailing_zeros() as i32)) {
+                Some(magnitude) => duration_from_magnitude(magnitude, result_negative),
+                None => {
+                    if result_negative {
+                        Duration::MIN
+                    } else {
+                        Duration::MAX
+                    }
+                }
+            };
+        }
+
         let magnitude = if exponent >= 0 {
             let shift = exponent as u32;
             (if shift >= 128 { 0 } else { a >> shift }) / (divisor as u128)
@@ -298,7 +341,9 @@ impl Div<f64> for Duration {
             let shift = (-exponent) as u32;
             let bits_needed = (u128::BITS - a.leading_zeros()) + shift;
             let divisor_bits = u64::BITS - divisor.leading_zeros();
-            if bits_needed > divisor_bits + 126 {
+            // The quotient needs at least `bits_needed - 1 - divisor_bits` bits.
+            // Bailing out here also keeps `hi` below 2^2 for `divide_wide`.
+            if bits_needed > divisor_bits + MAX_TOTAL_NANOSECONDS_BITS {
                 return if result_negative {
                     Duration::MIN
                 } else {
