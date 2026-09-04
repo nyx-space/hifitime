@@ -460,6 +460,65 @@ impl Duration {
         }
     }
 
+    /// Scales this duration by `q`, reporting the cases where
+    /// [`Mul<f64>`](Duration::mul) would substitute [`Duration::ZERO`]: a NaN
+    /// `q`, and the indeterminate `0 × ∞`.
+    ///
+    /// Saturating at [`Duration::MAX`] / [`Duration::MIN`] is not an error.
+    ///
+    /// ```
+    /// use hifitime::{Duration, TimeUnits};
+    ///
+    /// assert_eq!(1.hours().try_mul_f64(2.0).unwrap(), 2.hours());
+    /// assert!(1.hours().try_mul_f64(f64::NAN).is_err());
+    /// assert!(Duration::ZERO.try_mul_f64(f64::INFINITY).is_err());
+    /// // Saturation is a defined result, not an error.
+    /// assert_eq!(1.hours().try_mul_f64(f64::INFINITY).unwrap(), Duration::MAX);
+    /// ```
+    pub fn try_mul_f64(self, q: f64) -> Result<Self, HifitimeError> {
+        if q.is_nan() {
+            return Err(HifitimeError::Duration {
+                source: DurationError::NonFinite,
+            });
+        }
+        if q.is_infinite() && self == Self::ZERO {
+            return Err(HifitimeError::Duration {
+                source: DurationError::Indeterminate,
+            });
+        }
+        Ok(self * q)
+    }
+
+    /// Divides this duration by `q`, reporting the cases where
+    /// [`Div<f64>`](Duration::div) would substitute [`Duration::ZERO`]: a NaN
+    /// `q`, and the indeterminate `0 / 0`.
+    ///
+    /// Dividing a nonzero duration by zero saturates rather than erroring, and
+    /// dividing by an infinity gives [`Duration::ZERO`], which is the limit.
+    ///
+    /// ```
+    /// use hifitime::{Duration, TimeUnits};
+    ///
+    /// assert_eq!(1.hours().try_div_f64(2.0).unwrap(), 30.minutes());
+    /// assert!(1.hours().try_div_f64(f64::NAN).is_err());
+    /// assert!(Duration::ZERO.try_div_f64(0.0).is_err());
+    /// assert_eq!(1.hours().try_div_f64(0.0).unwrap(), Duration::MAX);
+    /// assert_eq!(1.hours().try_div_f64(f64::INFINITY).unwrap(), Duration::ZERO);
+    /// ```
+    pub fn try_div_f64(self, q: f64) -> Result<Self, HifitimeError> {
+        if q.is_nan() {
+            return Err(HifitimeError::Duration {
+                source: DurationError::NonFinite,
+            });
+        }
+        if q == 0.0 && self == Self::ZERO {
+            return Err(HifitimeError::Duration {
+                source: DurationError::Indeterminate,
+            });
+        }
+        Ok(self / q)
+    }
+
     /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.
     /// WARNING: This function will NOT fail and will return the i64::MIN or i64::MAX depending on
     /// the sign of the centuries if the Duration does not fit on aa i64

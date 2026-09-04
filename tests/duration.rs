@@ -439,6 +439,84 @@ fn test_int_and_float_ops_agree() {
     }
 }
 
+/// The `try_*` forms report exactly the cases where the operators substitute a
+/// sentinel, and nothing else.
+#[test]
+fn test_try_mul_div_f64() {
+    // Ordinary values pass straight through.
+    assert_eq!(1.hours().try_mul_f64(2.0).unwrap(), 2.hours());
+    assert_eq!(1.hours().try_div_f64(2.0).unwrap(), 30.minutes());
+    assert_eq!((-1).hours().try_mul_f64(0.0).unwrap(), Duration::ZERO);
+
+    // A NaN is never a determined result, in either direction.
+    for d in [
+        1.hours(),
+        (-1).hours(),
+        Duration::ZERO,
+        Duration::MAX,
+        Duration::MIN,
+    ] {
+        assert_eq!(
+            d.try_mul_f64(f64::NAN).unwrap_err(),
+            HifitimeError::Duration {
+                source: DurationError::NonFinite
+            },
+            "{d} * NaN"
+        );
+        assert_eq!(
+            d.try_div_f64(f64::NAN).unwrap_err(),
+            HifitimeError::Duration {
+                source: DurationError::NonFinite
+            },
+            "{d} / NaN"
+        );
+    }
+
+    // The indeterminate forms.
+    for q in [f64::INFINITY, f64::NEG_INFINITY] {
+        assert_eq!(
+            Duration::ZERO.try_mul_f64(q).unwrap_err(),
+            HifitimeError::Duration {
+                source: DurationError::Indeterminate
+            }
+        );
+    }
+    for q in [0.0, -0.0] {
+        assert_eq!(
+            Duration::ZERO.try_div_f64(q).unwrap_err(),
+            HifitimeError::Duration {
+                source: DurationError::Indeterminate
+            }
+        );
+    }
+
+    // Saturation and the limits are results, not errors.
+    assert_eq!(1.hours().try_mul_f64(f64::INFINITY).unwrap(), Duration::MAX);
+    assert_eq!(
+        1.hours().try_mul_f64(f64::NEG_INFINITY).unwrap(),
+        Duration::MIN
+    );
+    assert_eq!(1.hours().try_div_f64(0.0).unwrap(), Duration::MAX);
+    assert_eq!(1.hours().try_div_f64(-0.0).unwrap(), Duration::MIN);
+    assert_eq!(
+        1.hours().try_div_f64(f64::INFINITY).unwrap(),
+        Duration::ZERO
+    );
+    assert_eq!(
+        Duration::ZERO.try_div_f64(f64::INFINITY).unwrap(),
+        Duration::ZERO
+    );
+    assert_eq!(Duration::ZERO.try_mul_f64(0.0).unwrap(), Duration::ZERO);
+
+    // Where try_* succeeds it must agree with the operator.
+    for q in [2.0, -2.5, 0.1, 1e300, 1e-300, f64::INFINITY, 0.0] {
+        for d in [1.hours(), (-1).hours(), Duration::MAX, Duration::MIN] {
+            assert_eq!(d.try_mul_f64(q).unwrap(), d * q, "{d} * {q}");
+            assert_eq!(d.try_div_f64(q).unwrap(), d / q, "{d} / {q}");
+        }
+    }
+}
+
 #[test]
 fn test_mul_div_assign_ops() {
     let mut d = 1.hours();

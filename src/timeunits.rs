@@ -287,6 +287,10 @@ impl Mul<f64> for Unit {
     /// ## Limitations
     /// 1. If the input value times the unit does not fit on a Duration, then Duration::MAX or Duration::MIN will be returned depending on whether the value would have overflowed or underflowed (respectively).
     /// 2. Floating point operations may round differently on different processors. It's advised to use integer initialization of Durations whenever possible.
+    ///
+    /// ## Panics
+    /// Panics if `q` is not finite. Scaling an existing [`Duration`] by an `f64`
+    /// saturates instead; see [`Duration::mul`] and [`Duration::try_mul_f64`].
     #[inline]
     fn mul(self, q: f64) -> Duration {
         self.const_multiply(q)

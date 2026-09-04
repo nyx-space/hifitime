@@ -304,7 +304,23 @@ Disadvantages:
 | `±0.0` | `Duration::ZERO` | saturates by sign |
 | `NaN` | `Duration::ZERO` | `Duration::ZERO` |
 
-The infinity and zero rows are the mathematical limits. A `Duration` cannot represent NaN, and a NaN has no meaningful sign to saturate towards, so a NaN scale factor gives `Duration::ZERO`. The `f64` constructors (`Duration::from_seconds` and friends, `Unit * f64`) are `const fn` and panic on non-finite input instead.
+The infinity and zero rows are the mathematical limits. A `Duration` cannot represent NaN, and a NaN has no meaningful sign to saturate towards, so a NaN scale factor gives `Duration::ZERO`.
+
+Since `Duration::ZERO` is itself a plausible duration, `Duration::try_mul_f64` and `Duration::try_div_f64` return a `Result` instead, reporting the cases where the operators substitute a sentinel: a NaN operand, and the indeterminate forms `0 x infinity` and `0 / 0`. Saturation is not an error there.
+
+### Non-finite `f64` inputs elsewhere
+
+Everything that *constructs* a `Duration` or an `Epoch` from an `f64` panics on non-finite input, since those are `const fn`:
+
+| API | non-finite `f64` |
+|---|---|
+| `Duration * f64`, `Duration / f64` | saturates, or `Duration::ZERO` (above) |
+| `Freq * f64` | same policy as `Duration / f64` |
+| `Duration::from_seconds` and friends, `Unit * f64` | **panics** |
+| `Epoch + f64` | **panics** |
+| `Polynomial::from((f64, f64, f64))`, `Polynomial::from_*_nanoseconds` | **panics** |
+
+Guard with `f64::is_finite` before calling those if the value comes from a computation that can produce a NaN or an infinity. `Polynomial::correction_duration` is safe: its coefficients are stored as `Duration`s, so the polynomial it evaluates cannot leave `f64` range.
 
 ## Epoch
 The Epoch stores a duration with respect to the reference of a time scale, and that time scale itself. For monotonic time on th Earth, [Standard of Fundamental Astronomy (SOFA)](https://www.iausofa.org/) recommends of opting for a glitch-free time scale like TAI (i.e. without discontinuities like leap seconds or non-uniform seconds like TDB).

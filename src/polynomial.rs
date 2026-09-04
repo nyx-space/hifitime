@@ -38,6 +38,10 @@ impl From<(f64, f64, f64)> for Polynomial {
     /// Converts (f64, f64, f64) triplet, oftentimes
     /// noted (a0, a1, a2) as (offset (s), drift (s.s⁻¹), drift change (s.s⁻²))
     /// to [Polynomial] structure, that allows precise [TimeScale] translation.
+    ///
+    /// # Panics
+    /// Panics if any coefficient is not finite, since each is built with
+    /// [`Duration::from_seconds`].
     fn from(triplet: (f64, f64, f64)) -> Self {
         Self {
             constant: Duration::from_seconds(triplet.0),
@@ -63,6 +67,11 @@ impl From<Polynomial> for (f64, f64, f64) {
 impl Polynomial {
     /// Calculate the correction (as [Duration] once again) from [Self] and given
     /// the interpolation time interval
+    ///
+    /// Cannot panic: every coefficient is stored as a [Duration], so `a0`, `a1`,
+    /// `a2` and `dt` are bounded by about 1.1e14 seconds and the polynomial stays
+    /// inside `f64` range.
+    ///
     /// :type time_interval: Duration
     /// :rtype: Duration
     pub fn correction_duration(&self, time_interval: Duration) -> Duration {
@@ -87,6 +96,10 @@ impl Polynomial {
     }
 
     /// Create a [Polynomial] structure from a static offset expressed in nanoseconds
+    ///
+    /// # Panics
+    /// Panics if `nanos` is not finite, since it is built with
+    /// [`Duration::from_nanoseconds`].
     pub fn from_constant_offset_nanoseconds(nanos: f64) -> Self {
         Self {
             constant: Duration::from_nanoseconds(nanos),
@@ -106,6 +119,10 @@ impl Polynomial {
 
     /// Create a [Polynomial] structure from a static offset and drift,
     /// in nanoseconds and nanoseconds.s⁻¹
+    ///
+    /// # Panics
+    /// Panics if either argument is not finite, since both are built with
+    /// [`Duration::from_nanoseconds`].
     pub fn from_offset_rate_nanoseconds(offset_ns: f64, drift_ns_s: f64) -> Self {
         Self {
             constant: Duration::from_nanoseconds(offset_ns),
