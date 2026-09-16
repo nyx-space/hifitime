@@ -437,10 +437,12 @@ def arguments_stub(
         "__add__",
         "__sub__",
         "__div__",
+        "__truediv__",
         "__mul__",
         "__radd__",
         "__rsub__",
         "__rdiv__",
+        "__rtruediv__",
         "__rmul__",
     ]:
         return ast.arguments(posonlyargs=[], args=[], defaults=[], kwonlyargs=[])
@@ -530,10 +532,12 @@ def returns_stub(
         "__add__",
         "__sub__",
         "__div__",
+        "__truediv__",
         "__mul__",
         "__radd__",
         "__rsub__",
         "__rdiv__",
+        "__rtruediv__",
         "__rmul__",
     ]:
         return

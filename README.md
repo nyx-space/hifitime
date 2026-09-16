@@ -279,7 +279,48 @@ Advantages:
 3. Duration arithmetics are exact, e.g. one third of an hour is exactly twenty minutes and not "0.33333 hours."
 
 Disadvantages:
-1. Most astrodynamics applications require the computation of a duration in floating point values such as when querying an ephemeris. This design leads to an overhead of about 5.2 nanoseconds according to the benchmarks (`Duration to f64 seconds` benchmark). You may run the benchmarks with `cargo bench`.
+1. Most astrodynamics applications require the computation of a duration in floating point values such as when querying an ephemeris. Converting to and from `f64` seconds is cheap; scaling a `Duration` by an `f64` costs more, since it works in wide integer arithmetic to stay exact. Indicative figures from `cargo bench`:
+
+    | operation | benchmark | cost |
+    |---|---|---|
+    | `Duration::to_seconds()` | `Duration to f64 seconds (conversion only)` | ~2 ns |
+    | `Duration::from_seconds()` | `Duration::from_seconds` | ~3 ns |
+    | round trip | `f64 -> Duration -> f64 round trip` | ~7 ns |
+    | `Duration * f64` | `Duration * f64 (scaling)` | ~16 ns |
+    | `Duration / f64` | `Duration / f64 (scaling)` | ~40 ns |
+    | `Duration * f64`, power-of-two factor | `Duration * f64 (power of two)` | ~14 ns |
+    | `Duration / f64`, power-of-two factor | `Duration / f64 (power of two)` | ~12 ns |
+
+    Division costs more than multiplication because it needs a 128-bit division, which is a compiler-runtime call rather than a hardware instruction. Scaling by a power of two (`2.0`, `0.5`, `0.25`, ...) is special-cased to a shift, which avoids that division entirely.
+
+
+### Scaling a `Duration` by an `f64`
+
+`Mul<f64>` and `Div<f64>` are exact: the `f64` is decomposed into its `mantissa * 2^exponent` form and applied in wide integer arithmetic. The only rounding is the final truncation toward zero to whole nanoseconds. Neither panics; both saturate at `Duration::MAX` / `Duration::MIN`:
+
+| `q` | `duration * q` | `duration / q` |
+|---|---|---|
+| `±∞` | saturates by sign | `Duration::ZERO` |
+| `±0.0` | `Duration::ZERO` | saturates by sign |
+| `NaN` | `Duration::ZERO` | `Duration::ZERO` |
+
+The infinity and zero rows are the mathematical limits. A `Duration` cannot represent NaN, and a NaN has no meaningful sign to saturate towards, so a NaN scale factor gives `Duration::ZERO`.
+
+Since `Duration::ZERO` is itself a plausible duration, `Duration::try_mul_f64` and `Duration::try_div_f64` return a `Result` instead, reporting the cases where the operators substitute a sentinel: a NaN operand, and the indeterminate forms `0 x infinity` and `0 / 0`. Saturation is not an error there.
+
+### Non-finite `f64` inputs elsewhere
+
+Everything that *constructs* a `Duration` or an `Epoch` from an `f64` panics on non-finite input, since those are `const fn`:
+
+| API | non-finite `f64` |
+|---|---|
+| `Duration * f64`, `Duration / f64` | saturates, or `Duration::ZERO` (above) |
+| `Freq * f64` | same policy as `Duration / f64` |
+| `Duration::from_seconds` and friends, `Unit * f64` | **panics** |
+| `Epoch + f64` | **panics** |
+| `Polynomial::from((f64, f64, f64))`, `Polynomial::from_*_nanoseconds` | **panics** |
+
+Guard with `f64::is_finite` before calling those if the value comes from a computation that can produce a NaN or an infinity. `Polynomial::correction_duration` is safe: its coefficients are stored as `Duration`s, so the polynomial it evaluates cannot leave `f64` range.
 
 ## Epoch
 The Epoch stores a duration with respect to the reference of a time scale, and that time scale itself. For monotonic time on th Earth, [Standard of Fundamental Astronomy (SOFA)](https://www.iausofa.org/) recommends of opting for a glitch-free time scale like TAI (i.e. without discontinuities like leap seconds or non-uniform seconds like TDB).
@@ -309,7 +350,7 @@ Hifitime uses the [Kani model checker](https://model-checking.github.io/kani/) f
 
 **Functional correctness contracts (`#[kani::ensures]` + `#[kani::proof_for_contract]`):** Selected functions have [formal specifications](https://model-checking.github.io/kani/reference/experimental/contracts.html) attached directly to the function signature. These contracts express postconditions that the function must satisfy, for example, that `total_nanoseconds()` returns `centuries * NPC + nanoseconds`, or that `Duration::min` returns a value no greater than either input. The `proof_for_contract` harnesses verify these contracts for all inputs, enabling compositional verification: callers can rely on the contract without re-verifying the implementation.
 
-**Loop contracts (`#[kani::loop_invariant]`):** The `Duration::Mul<f64>` precision-finding loop is annotated with a loop invariant that bounds the iteration variable, enabling Kani to verify termination inductively rather than by unrolling.
+**Loop contracts (`#[kani::loop_invariant]`):** Some harnesses, e.g. the Gregorian year-search loops in `epoch/gregorian.rs`, are annotated with loop invariants that bound the iteration variable, enabling Kani to verify termination inductively rather than by unrolling.
 
 # Important Update on Versioning Strategy
 

@@ -57,6 +57,12 @@ impl From<pyo3::PyErr> for HifitimeError {
 pub enum DurationError {
     Overflow,
     Underflow,
+    /// A NaN was supplied where a real number was required.
+    #[snafu(display("not a number"))]
+    NonFinite,
+    /// No defined result for these operands, e.g. `0 x infinity` or `0 / 0`.
+    #[snafu(display("indeterminate form"))]
+    Indeterminate,
 }
 
 #[non_exhaustive]
