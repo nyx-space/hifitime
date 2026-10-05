@@ -27,20 +27,20 @@ use crate::{Duration, Epoch, Unit, SECONDS_PER_DAY};
 /// The J1900 reference epoch (1900-01-01 at noon) TAI.
 pub const J1900_REF_EPOCH: Epoch = Epoch {
     duration: Duration {
-        centuries: 0,
-        nanoseconds: 43200000000000,
+        centuries: -1,
+        nanoseconds: 3155716800000000000,
     },
-    time_scale: TimeScale::TAI,
+    time_scale: TimeScale::TT,
 };
 
-/// The J2000 reference epoch (2000-01-01 at midnight) TAI.
+/// The J2000 reference epoch (2000-01-01 at noon) TAI.
 /// |UTC - TAI| = XX Leap Seconds on that day.
 pub const J2000_REF_EPOCH: Epoch = Epoch {
     duration: Duration {
-        centuries: 1,
-        nanoseconds: 43200000000000,
+        centuries: 0,
+        nanoseconds: 3155716800000000000,
     },
-    time_scale: TimeScale::TAI,
+    time_scale: TimeScale::TT,
 };
 
 pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
