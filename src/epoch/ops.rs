@@ -13,12 +13,12 @@ use core::hash::{Hash, Hasher};
 use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 use crate::{
-    errors::HifitimeError, Duration, Epoch, Polynomial, TimeScale, Unit, Weekday,
-    NANOSECONDS_PER_DAY,
+    errors::HifitimeError, Duration, DurationTrait, GenericEpoch, Polynomial, PreciseEpoch,
+    TimeScale, Unit, Weekday, NANOSECONDS_PER_DAY,
 };
 
-#[cfg(feature = "python")]
-use pyo3::prelude::*;
+#[cfg(doc)]
+use crate::Epoch;
 
 #[cfg(not(feature = "std"))]
 #[allow(unused_imports)] // Import is indeed used.
@@ -26,8 +26,7 @@ use num_traits::Float;
 
 use super::rem_euclid_f64;
 
-#[cfg_attr(feature = "python", pymethods)]
-impl Epoch {
+impl<D: DurationTrait> GenericEpoch<D> {
     /// Returns the minimum of the two epochs.
     ///
     /// ```
@@ -95,7 +94,7 @@ impl Epoch {
     /// ```
     /// :type duration: Duration
     /// :rtype: Epoch
-    pub fn floor(&self, duration: Duration) -> Self {
+    pub fn floor(&self, duration: D) -> Self {
         Self::from_duration(self.duration.floor(duration), self.time_scale)
     }
 
@@ -121,7 +120,7 @@ impl Epoch {
     /// ```
     /// :type duration: Duration
     /// :rtype: Epoch
-    pub fn ceil(&self, duration: Duration) -> Self {
+    pub fn ceil(&self, duration: D) -> Self {
         Self::from_duration(self.duration.ceil(duration), self.time_scale)
     }
 
@@ -140,7 +139,7 @@ impl Epoch {
     /// ```
     /// :type duration: Duration
     /// :rtype: Epoch
-    pub fn round(&self, duration: Duration) -> Self {
+    pub fn round(&self, duration: D) -> Self {
         Self::from_duration(self.duration.round(duration), self.time_scale)
     }
 
@@ -150,7 +149,7 @@ impl Epoch {
     /// This is usually how GNSS receivers describe a timestamp.
     /// :rtype: tuple
     pub fn to_time_of_week(&self) -> (u32, u64) {
-        let total_nanoseconds = self.duration.total_nanoseconds();
+        let total_nanoseconds = self.duration.to_duration().total_nanoseconds();
         let weeks = total_nanoseconds / NANOSECONDS_PER_DAY as i128 / Weekday::DAYS_PER_WEEK_I128;
         // elapsed nanoseconds in current week:
         //   remove previously determined nb of weeks
@@ -246,7 +245,13 @@ impl Epoch {
         // supports any interpolation gap. But applications should remain within
         // current week (to the very least..)
         let dt = *self - reference_epoch;
-        let correction = polynomial.correction_duration(dt);
+        // Same as `Polynomial::correction_duration`, but evaluated in this precision.
+        let dt_s = dt.to_seconds();
+        let correction = D::from_seconds(
+            polynomial.constant.to_seconds()
+                + polynomial.rate.to_seconds() * dt_s
+                + polynomial.accel.to_seconds() * dt_s.powi(2),
+        );
 
         // coarse conversion
         let converted = self.to_time_scale(target);
@@ -317,9 +322,9 @@ impl Epoch {
     pub fn next(&self, weekday: Weekday) -> Self {
         let delta_days = self.weekday() - weekday;
         if delta_days == Duration::ZERO {
-            *self + 7 * Unit::Day
+            *self + D::from(7 * Unit::Day)
         } else {
-            *self + delta_days
+            *self + D::from(delta_days)
         }
     }
 
@@ -357,9 +362,9 @@ impl Epoch {
     pub fn previous(&self, weekday: Weekday) -> Self {
         let delta_days = weekday - self.weekday();
         if delta_days == Duration::ZERO {
-            *self - 7 * Unit::Day
+            *self - D::from(7 * Unit::Day)
         } else {
-            *self - delta_days
+            *self - D::from(delta_days)
         }
     }
 
@@ -378,24 +383,24 @@ impl Epoch {
     }
 }
 
-impl Sub for Epoch {
-    type Output = Duration;
+impl<D: DurationTrait> Sub for GenericEpoch<D> {
+    type Output = D;
 
-    fn sub(self, other: Self) -> Duration {
+    fn sub(self, other: Self) -> D {
         self.duration - other.to_time_scale(self.time_scale).duration
     }
 }
 
-impl SubAssign<Duration> for Epoch {
-    fn sub_assign(&mut self, duration: Duration) {
+impl<D: DurationTrait> SubAssign<D> for GenericEpoch<D> {
+    fn sub_assign(&mut self, duration: D) {
         *self = *self - duration;
     }
 }
 
-impl Sub<Duration> for Epoch {
+impl<D: DurationTrait> Sub<D> for GenericEpoch<D> {
     type Output = Self;
 
-    fn sub(self, duration: Duration) -> Self {
+    fn sub(self, duration: D) -> Self {
         Self {
             duration: self.duration - duration,
             time_scale: self.time_scale,
@@ -405,21 +410,21 @@ impl Sub<Duration> for Epoch {
 
 /// WARNING: For speed, there is a possibility to add seconds directly to an Epoch. These will be added in the time scale the Epoch was initialized in.
 /// Using this is _discouraged_ and should only be used if you have facing bottlenecks with the units.
-impl Add<f64> for Epoch {
+impl<D: DurationTrait> Add<f64> for GenericEpoch<D> {
     type Output = Self;
 
     fn add(self, seconds: f64) -> Self {
         Self {
-            duration: self.duration + seconds * Unit::Second,
+            duration: self.duration + D::from_seconds(seconds),
             time_scale: self.time_scale,
         }
     }
 }
 
-impl Add<Duration> for Epoch {
+impl<D: DurationTrait> Add<D> for GenericEpoch<D> {
     type Output = Self;
 
-    fn add(self, duration: Duration) -> Self {
+    fn add(self, duration: D) -> Self {
         Self {
             duration: self.duration + duration,
             time_scale: self.time_scale,
@@ -427,90 +432,117 @@ impl Add<Duration> for Epoch {
     }
 }
 
-impl AddAssign<Unit> for Epoch {
+impl<D: DurationTrait> AddAssign<Unit> for GenericEpoch<D> {
     #[allow(clippy::identity_op)]
     fn add_assign(&mut self, unit: Unit) {
-        *self = *self + unit * 1;
+        *self = *self + unit;
     }
 }
 
-impl SubAssign<Unit> for Epoch {
+impl<D: DurationTrait> SubAssign<Unit> for GenericEpoch<D> {
     #[allow(clippy::identity_op)]
     fn sub_assign(&mut self, unit: Unit) {
-        *self = *self - unit * 1;
+        *self = *self - unit;
     }
 }
 
-impl Sub<Unit> for Epoch {
+impl<D: DurationTrait> Sub<Unit> for GenericEpoch<D> {
     type Output = Self;
 
     #[allow(clippy::identity_op)]
     fn sub(self, unit: Unit) -> Self {
         Self {
-            duration: self.duration - unit * 1,
+            duration: self.duration - D::from(unit * 1),
             time_scale: self.time_scale,
         }
     }
 }
 
-impl Add<Unit> for Epoch {
+impl<D: DurationTrait> Add<Unit> for GenericEpoch<D> {
     type Output = Self;
 
     #[allow(clippy::identity_op)]
     fn add(self, unit: Unit) -> Self {
         Self {
-            duration: self.duration + unit * 1,
+            duration: self.duration + D::from(unit * 1),
             time_scale: self.time_scale,
         }
     }
 }
 
-impl AddAssign<Duration> for Epoch {
+impl<D: DurationTrait> AddAssign<D> for GenericEpoch<D> {
+    fn add_assign(&mut self, duration: D) {
+        *self = *self + duration;
+    }
+}
+
+// Mixed precision arithmetic: a nanosecond Duration is losslessly promoted when applied to a PreciseEpoch.
+
+impl Add<Duration> for PreciseEpoch {
+    type Output = Self;
+
+    fn add(self, duration: Duration) -> Self {
+        self + crate::PreciseDuration::from(duration)
+    }
+}
+
+impl Sub<Duration> for PreciseEpoch {
+    type Output = Self;
+
+    fn sub(self, duration: Duration) -> Self {
+        self - crate::PreciseDuration::from(duration)
+    }
+}
+
+impl AddAssign<Duration> for PreciseEpoch {
     fn add_assign(&mut self, duration: Duration) {
         *self = *self + duration;
     }
 }
 
+impl SubAssign<Duration> for PreciseEpoch {
+    fn sub_assign(&mut self, duration: Duration) {
+        *self = *self - duration;
+    }
+}
+
 /// Equality only checks the duration since J1900 match in TAI, because this is how all of the epochs are referenced.
 /// Equality compares epochs as points in time.
-/// Uses field comparison via to_parts() to bypass Duration::PartialEq's
-/// zero-crossing special case (which treats opposite-sign durations as equal).
-impl PartialEq for Epoch {
+impl<D: DurationTrait> PartialEq for GenericEpoch<D> {
     fn eq(&self, other: &Self) -> bool {
         if self.time_scale == other.time_scale {
-            self.duration.to_parts() == other.duration.to_parts()
+            self.duration == other.duration
         } else if self.time_scale.uses_leap_seconds() != other.time_scale.uses_leap_seconds() {
             // If one of the two time scales includes leap seconds,
             // we always convert the time scale with leap seconds into the
             // time scale that does NOT have leap seconds.
             if self.time_scale.uses_leap_seconds() {
-                self.to_time_scale(other.time_scale).duration.to_parts()
-                    == other.duration.to_parts()
+                self.to_time_scale(other.time_scale).duration == other.duration
             } else {
-                self.duration.to_parts() == other.to_time_scale(self.time_scale).duration.to_parts()
+                self.duration == other.to_time_scale(self.time_scale).duration
             }
         } else {
             // Otherwise it does not matter
-            self.duration.to_parts() == other.to_time_scale(self.time_scale).duration.to_parts()
+            self.duration == other.to_time_scale(self.time_scale).duration
         }
     }
 }
 
-impl PartialOrd for Epoch {
+impl<D: DurationTrait> Eq for GenericEpoch<D> {}
+
+impl<D: DurationTrait> PartialOrd for GenericEpoch<D> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for Epoch {
+impl<D: DurationTrait> Ord for GenericEpoch<D> {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.to_tai_duration()
-            .to_parts()
-            .cmp(&other.to_tai_duration().to_parts())
+        self.to_tai_duration().cmp(&other.to_tai_duration())
     }
 }
 
-impl Hash for Epoch {
+impl<D: DurationTrait> Hash for GenericEpoch<D> {
     /// Hash normalizes to TAI for consistency with PartialEq.
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.to_tai_duration().hash(state);

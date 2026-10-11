@@ -8,13 +8,9 @@
 * Documentation: https://nyxspace.com/
 */
 
-#[cfg(feature = "python")]
-use pyo3::prelude::*;
+use crate::{Duration, DurationTrait, GenericEpoch};
 
-use crate::{Duration, Epoch};
-
-#[cfg_attr(feature = "python", pymethods)]
-impl Epoch {
+impl<D: DurationTrait> GenericEpoch<D> {
     /// Returns a copy of self where the time is set to the provided hours, minutes, seconds
     /// Invalid number of hours, minutes, and seconds will overflow into their higher unit.
     /// Warning: this does _not_ set the subdivisions of second to zero.
@@ -24,9 +20,9 @@ impl Epoch {
     /// :rtype: Epoch
     pub fn with_hms(&self, hours: u64, minutes: u64, seconds: u64) -> Self {
         let (sign, days, _, _, _, milliseconds, microseconds, nanoseconds) =
-            self.duration.decompose();
+            self.duration.to_duration().decompose();
         Self::from_duration(
-            Duration::compose(
+            D::from(Duration::compose(
                 sign,
                 days,
                 hours,
@@ -35,7 +31,8 @@ impl Epoch {
                 milliseconds,
                 microseconds,
                 nanoseconds,
-            ),
+            ))
+            .add_subnanoseconds(self.subnanoseconds()),
             self.time_scale,
         )
     }
@@ -59,11 +56,11 @@ impl Epoch {
     /// ```
     pub fn with_hms_from(&self, other: Self) -> Self {
         let (sign, days, _, _, _, milliseconds, microseconds, nanoseconds) =
-            self.duration.decompose();
+            self.duration.to_duration().decompose();
         // Shadow other with the provided other epoch but in the correct time scale.
         let other = other.to_time_scale(self.time_scale);
         Self::from_duration(
-            Duration::compose(
+            D::from(Duration::compose(
                 sign,
                 days,
                 other.hours(),
@@ -72,7 +69,8 @@ impl Epoch {
                 milliseconds,
                 microseconds,
                 nanoseconds,
-            ),
+            ))
+            .add_subnanoseconds(self.subnanoseconds()),
             self.time_scale,
         )
     }
@@ -96,14 +94,17 @@ impl Epoch {
     /// ```
     pub fn with_time_from(&self, other: Self) -> Self {
         // Grab days from self
-        let (sign, days, _, _, _, _, _, _) = self.duration.decompose();
+        let (sign, days, _, _, _, _, _, _) = self.duration.to_duration().decompose();
 
         // Grab everything else from other
-        let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) =
-            other.to_duration_in_time_scale(self.time_scale).decompose();
+        let (_, _, hours, minutes, seconds, milliseconds, microseconds, nanoseconds) = other
+            .to_duration_in_time_scale(self.time_scale)
+            .to_duration()
+            .decompose();
+        let other_subns = other.to_time_scale(self.time_scale).subnanoseconds();
 
         Self::from_duration(
-            Duration::compose(
+            D::from(Duration::compose(
                 sign,
                 days,
                 hours,
@@ -112,7 +113,8 @@ impl Epoch {
                 milliseconds,
                 microseconds,
                 nanoseconds,
-            ),
+            ))
+            .add_subnanoseconds(other_subns),
             self.time_scale,
         )
     }
@@ -125,9 +127,11 @@ impl Epoch {
     /// :type seconds: int
     /// :rtype: Epoch
     pub fn with_hms_strict(&self, hours: u64, minutes: u64, seconds: u64) -> Self {
-        let (sign, days, _, _, _, _, _, _) = self.duration.decompose();
+        let (sign, days, _, _, _, _, _, _) = self.duration.to_duration().decompose();
         Self::from_duration(
-            Duration::compose(sign, days, hours, minutes, seconds, 0, 0, 0),
+            D::from(Duration::compose(
+                sign, days, hours, minutes, seconds, 0, 0, 0,
+            )),
             self.time_scale,
         )
     }
@@ -149,10 +153,10 @@ impl Epoch {
     /// );
     /// ```
     pub fn with_hms_strict_from(&self, other: Self) -> Self {
-        let (sign, days, _, _, _, _, _, _) = self.duration.decompose();
+        let (sign, days, _, _, _, _, _, _) = self.duration.to_duration().decompose();
         let other = other.to_time_scale(self.time_scale);
         Self::from_duration(
-            Duration::compose(
+            D::from(Duration::compose(
                 sign,
                 days,
                 other.hours(),
@@ -161,7 +165,7 @@ impl Epoch {
                 0,
                 0,
                 0,
-            ),
+            )),
             self.time_scale,
         )
     }

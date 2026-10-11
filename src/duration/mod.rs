@@ -25,6 +25,12 @@ use core::str::FromStr;
 
 pub mod parse;
 
+mod precise;
+pub use precise::{PreciseDuration, ZEPTOSECONDS_PER_NANOSECOND, ZEPTOSECONDS_PER_SECOND};
+
+mod traits;
+pub use traits::DurationTrait;
+
 #[cfg(feature = "python")]
 mod python;
 

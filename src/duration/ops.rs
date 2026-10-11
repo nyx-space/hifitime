@@ -154,7 +154,7 @@ impl Add for Duration {
     /// + `Duration { centuries: 0, nanoseconds: 1 }` is a positive duration of zero centuries and one nanosecond.
     /// + `Duration { centuries: -1, nanoseconds: 1 }` is a negative duration representing "one century before zero minus one nanosecond"
     #[allow(clippy::absurd_extreme_comparisons)]
-    fn add(mut self, mut rhs: Self) -> Duration {
+    fn add(mut self, mut rhs: Self) -> Self {
         // Ensure that the durations are normalized to avoid extra logic to handle under/overflows
         self.normalize();
         rhs.normalize();
