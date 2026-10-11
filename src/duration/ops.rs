@@ -15,7 +15,7 @@ use crate::{
     NANOSECONDS_PER_SECOND,
 };
 
-use super::{Duration, Freq, Frequencies, TimeUnits, Unit};
+use super::{Duration, Freq, Frequencies, PreciseDuration, TimeUnits, Unit};
 
 use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
@@ -154,7 +154,7 @@ impl Add for Duration {
     /// + `Duration { centuries: 0, nanoseconds: 1 }` is a positive duration of zero centuries and one nanosecond.
     /// + `Duration { centuries: -1, nanoseconds: 1 }` is a negative duration representing "one century before zero minus one nanosecond"
     #[allow(clippy::absurd_extreme_comparisons)]
-    fn add(mut self, mut rhs: Self) -> Duration {
+    fn add(mut self, mut rhs: Self) -> Self {
         // Ensure that the durations are normalized to avoid extra logic to handle under/overflows
         self.normalize();
         rhs.normalize();
@@ -211,8 +211,25 @@ impl Add for Duration {
     }
 }
 
+impl Add for PreciseDuration {
+    type Output = PreciseDuration;
+
+    #[allow(clippy::absurd_extreme_comparisons)]
+    fn add(self, rhs: Self) -> Self {
+        Self {
+            zeptoseconds: self.zeptoseconds + rhs.zeptoseconds,
+        }
+    }
+}
+
 impl AddAssign for Duration {
     fn add_assign(&mut self, rhs: Duration) {
+        *self = *self + rhs;
+    }
+}
+
+impl AddAssign for PreciseDuration {
+    fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs;
     }
 }

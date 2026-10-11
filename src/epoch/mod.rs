@@ -27,7 +27,8 @@ pub mod ut1;
 
 pub mod leap_seconds;
 
-use crate::duration::{Duration, Unit};
+use crate::duration::{Duration, DurationTrait, PreciseDuration, Unit};
+
 #[allow(unused_imports)]
 use crate::errors::{DurationError, ParseSnafu};
 use crate::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
@@ -87,23 +88,40 @@ pub const ELB: f64 = LB / (1.0 - LB);
 /// TDB0 is the TDB offset at TAI 1977-01-01 00:00:00 (s)
 pub const TDB0_S: f64 = -6.55e-5;
 
+/// Defines an Epoch with custom precision (in said timescale).
+/// We propose two implementations, nanosecond-precision [Epoch]
+/// and zeptosecond-precision [PreciseEpoch].
+/// An Epoch is always stored as the duration since the beginning of its time scale
+#[cfg_attr(kani, derive(kani::Arbitrary))]
+#[derive(Copy, Clone, Default, PartialEq, Eq)]
+#[repr(C)]
+#[cfg_attr(feature = "python", pyclass)]
+#[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
+struct GenericEpoch<D: DurationTrait> {
+    /// Custom [D]uration
+    pub duration: D,
+
+    /// Reference [TimeScale]
+    /// Time scale used during the initialization of this Epoch
+    /// and used to reference the associated [D]uration.
+    pub time_scale: TimeScale,
+}
+
 /// Defines a nanosecond-precision Epoch.
 ///
 /// Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
 ///
 /// (Python documentation hints)
 /// :type string_repr: str
-#[cfg_attr(kani, derive(kani::Arbitrary))]
-#[derive(Copy, Clone, Default, Eq)]
-#[repr(C)]
-#[cfg_attr(feature = "python", pyclass)]
-#[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
-pub struct Epoch {
-    /// An Epoch is always stored as the duration since the beginning of its time scale
-    pub duration: Duration,
-    /// Time scale used during the initialization of this Epoch.
-    pub time_scale: TimeScale,
-}
+pub type Epoch = GenericEpoch<Duration>;
+
+/// Defines a zeptosecond-precision Epoch.
+///
+/// Refer to the appropriate functions for initializing this Epoch from different time scales or representations.
+///
+/// (Python documentation hints)
+/// :type string_repr: str
+pub type PreciseEpoch = GenericEpoch<PreciseDuration>;
 
 #[cfg(not(kani))]
 #[cfg(feature = "serde")]
