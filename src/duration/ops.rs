@@ -15,7 +15,7 @@ use crate::{
     NANOSECONDS_PER_SECOND,
 };
 
-use super::{Duration, Freq, Frequencies, PreciseDuration, TimeUnits, Unit};
+use super::{Duration, Freq, Frequencies, TimeUnits, Unit};
 
 use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
 
@@ -211,25 +211,8 @@ impl Add for Duration {
     }
 }
 
-impl Add for PreciseDuration {
-    type Output = PreciseDuration;
-
-    #[allow(clippy::absurd_extreme_comparisons)]
-    fn add(self, rhs: Self) -> Self {
-        Self {
-            zeptoseconds: self.zeptoseconds + rhs.zeptoseconds,
-        }
-    }
-}
-
 impl AddAssign for Duration {
     fn add_assign(&mut self, rhs: Duration) {
-        *self = *self + rhs;
-    }
-}
-
-impl AddAssign for PreciseDuration {
-    fn add_assign(&mut self, rhs: Self) {
         *self = *self + rhs;
     }
 }

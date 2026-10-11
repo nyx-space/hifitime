@@ -87,8 +87,9 @@ pub use polynomial::Polynomial;
 pub mod prelude {
     pub use crate::efmt::{Format, Formatter};
     pub use crate::{
-        Duration, DurationError, Epoch, Freq, Frequencies, HifitimeError, ParsingError, TimeScale,
-        TimeSeries, TimeUnits, Unit, Weekday,
+        Duration, DurationError, DurationTrait, Epoch, Freq, Frequencies, GenericEpoch,
+        HifitimeError, ParsingError, PreciseDuration, PreciseEpoch, TimeScale, TimeSeries,
+        TimeUnits, Unit, Weekday,
     };
 }
 

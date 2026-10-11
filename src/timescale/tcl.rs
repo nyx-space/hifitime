@@ -8,7 +8,7 @@
 * Documentation: https://nyxspace.com/
 */
 
-use crate::{Duration, TimeUnits};
+use crate::DurationTrait;
 
 /// Mean fractional rate of TCL relative to TT.
 ///
@@ -48,18 +48,18 @@ pub(crate) const TL_DELTA_F: f64 = -TCL_MINUS_TT_MEAN_RATE / (1.0 + TCL_MINUS_TT
 pub(crate) const TL_CONST0_S: f64 = 0.0;
 
 #[inline]
-pub fn tt_since_t77_to_tcl_since_t77(tt_since_t77: Duration) -> Duration {
+pub fn tt_since_t77_to_tcl_since_t77<D: DurationTrait>(tt_since_t77: D) -> D {
     // Mean TCL model:
     //
     //     TCL - TCL0 = (TT - TT0) * (1 + k)
     //
     // Do not factor this into tt_since_t77 * (1.0 + k), matching the
     // style used for TCG/TCB to reduce avoidable rounding noise.
-    tt_since_t77 + tt_since_t77 * TCL_MINUS_TT_MEAN_RATE
+    tt_since_t77 + tt_since_t77.mul_f64(TCL_MINUS_TT_MEAN_RATE)
 }
 
 #[inline]
-pub fn tcl_since_t77_to_tt_since_t77(tcl_since_t77: Duration) -> Duration {
+pub fn tcl_since_t77_to_tt_since_t77<D: DurationTrait>(tcl_since_t77: D) -> D {
     // Inverse of:
     //
     //     TCL = TT * (1 + k)
@@ -68,28 +68,28 @@ pub fn tcl_since_t77_to_tt_since_t77(tcl_since_t77: Duration) -> Duration {
     //
     //     TT = TCL / (1 + k)
     //        = TCL * (1 - k / (1 + k))
-    tcl_since_t77 - tcl_since_t77 * (TCL_MINUS_TT_MEAN_RATE / (1.0 + TCL_MINUS_TT_MEAN_RATE))
+    tcl_since_t77 - tcl_since_t77.mul_f64(TCL_MINUS_TT_MEAN_RATE / (1.0 + TCL_MINUS_TT_MEAN_RATE))
 }
 
 #[inline]
-pub fn tcl_since_t77_to_tl_since_t77(tcl_since_t77: Duration) -> Duration {
+pub fn tcl_since_t77_to_tl_since_t77<D: DurationTrait>(tcl_since_t77: D) -> D {
     // Option iii:
     //
     //     TL = TCL + Δf * (TCL - TCL0) + const0
     //
     // with const0 = 0 and TCL0 = T0.
-    tcl_since_t77 + tcl_since_t77 * TL_DELTA_F + TL_CONST0_S.seconds()
+    tcl_since_t77 + tcl_since_t77.mul_f64(TL_DELTA_F) + D::from_seconds(TL_CONST0_S)
 }
 
 #[inline]
-pub fn tl_since_t77_to_tcl_since_t77(tl_since_t77: Duration) -> Duration {
+pub fn tl_since_t77_to_tcl_since_t77<D: DurationTrait>(tl_since_t77: D) -> D {
     // Since TL = TCL / (1 + k), the inverse is:
     //
     //     TCL = TL * (1 + k)
     //
     // const0 is zero in this convention.
-    let tl_minus_const0 = tl_since_t77 - TL_CONST0_S.seconds();
-    tl_minus_const0 + tl_minus_const0 * TCL_MINUS_TT_MEAN_RATE
+    let tl_minus_const0 = tl_since_t77 - D::from_seconds(TL_CONST0_S);
+    tl_minus_const0 + tl_minus_const0.mul_f64(TCL_MINUS_TT_MEAN_RATE)
 }
 
 #[cfg(test)]

@@ -13,12 +13,14 @@ use crate::errors::DurationError;
 use crate::parser::Token;
 #[allow(unused_imports)]
 use crate::{
-    Duration, Epoch, HifitimeError, ParsingError, TimeScale, Unit, DAYS_PER_YEAR_NLD,
-    HIFITIME_REF_YEAR, NANOSECONDS_PER_DAY, NANOSECONDS_PER_HOUR, NANOSECONDS_PER_MINUTE,
-    NANOSECONDS_PER_SECOND, NANOSECONDS_PER_SECOND_U32,
+    Duration, DurationTrait, Epoch, GenericEpoch, HifitimeError, ParsingError, TimeScale, Unit,
+    DAYS_PER_YEAR_NLD, HIFITIME_REF_YEAR, NANOSECONDS_PER_DAY, NANOSECONDS_PER_HOUR,
+    NANOSECONDS_PER_MINUTE, NANOSECONDS_PER_SECOND, NANOSECONDS_PER_SECOND_U32,
 };
 #[allow(unused_imports)]
 use core::str::FromStr;
+
+use crate::epoch::formatting::FractionalDigits;
 
 impl Epoch {
     const DAYS_FROM_J1900_TO_UNIX_EPOCH: i128 = 25_567;
@@ -109,19 +111,38 @@ impl Epoch {
             nanos as u32,
         )
     }
+}
 
+impl<D: DurationTrait> GenericEpoch<D> {
     #[cfg(feature = "std")]
     #[must_use]
-    /// Converts the Epoch to Gregorian in the provided time scale and in the ISO8601 format with the time scale appended to the string
+    /// Converts the Epoch to Gregorian in the provided time scale and in the ISO8601 format with the time scale appended to the string.
+    /// The sub-nanosecond digits of a [crate::PreciseEpoch] are printed if they are not zero.
     pub fn to_gregorian_str(&self, time_scale: TimeScale) -> String {
-        let (y, mm, dd, hh, min, s, nanos) =
-            Self::compute_gregorian(self.to_duration_in_time_scale(time_scale), time_scale);
+        let (y, mm, dd, hh, min, s, nanos, subns) = self.to_gregorian_precise(time_scale);
 
-        if nanos == 0 {
+        if nanos == 0 && subns == 0 {
             format!("{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02} {time_scale}")
         } else {
-            format!("{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02}.{nanos:09} {time_scale}")
+            format!(
+                "{y:04}-{mm:02}-{dd:02}T{hh:02}:{min:02}:{s:02}.{} {time_scale}",
+                FractionalDigits::new(nanos, subns)
+            )
         }
+    }
+
+    #[must_use]
+    /// Converts the Epoch to the Gregorian in the provided time scale as
+    /// (year, month, day, hour, minute, second, nanoseconds, zeptoseconds within the nanosecond).
+    /// The last item is always zero for an [Epoch].
+    pub fn to_gregorian_precise(
+        &self,
+        time_scale: TimeScale,
+    ) -> (i32, u8, u8, u8, u8, u8, u32, u64) {
+        let duration = self.to_duration_in_time_scale(time_scale);
+        let (y, mm, dd, hh, min, s, nanos) =
+            Epoch::compute_gregorian(duration.to_duration(), time_scale);
+        (y, mm, dd, hh, min, s, nanos, duration.subnanoseconds())
     }
 
     #[must_use]
@@ -154,7 +175,7 @@ impl Epoch {
     /// ```
     pub fn to_gregorian_utc(&self) -> (i32, u8, u8, u8, u8, u8, u32) {
         let ts = TimeScale::UTC;
-        Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts)
+        Epoch::compute_gregorian(self.to_duration_in_time_scale(ts).to_duration(), ts)
     }
 
     #[must_use]
@@ -174,7 +195,7 @@ impl Epoch {
     /// ```
     pub fn to_gregorian_tai(&self) -> (i32, u8, u8, u8, u8, u8, u32) {
         let ts = TimeScale::TAI;
-        Self::compute_gregorian(self.to_duration_in_time_scale(ts), ts)
+        Epoch::compute_gregorian(self.to_duration_in_time_scale(ts).to_duration(), ts)
     }
 
     #[must_use]
@@ -204,7 +225,10 @@ impl Epoch {
     /// assert_eq!(n, 0);
     /// ```
     pub fn to_gregorian(&self, time_scale: TimeScale) -> (i32, u8, u8, u8, u8, u8, u32) {
-        Self::compute_gregorian(self.to_duration_in_time_scale(time_scale), time_scale)
+        Epoch::compute_gregorian(
+            self.to_duration_in_time_scale(time_scale).to_duration(),
+            time_scale,
+        )
     }
 
     /// Attempts to build an Epoch from the provided Gregorian date and time in TAI.
@@ -319,7 +343,7 @@ impl Epoch {
         duration_wrt_ref -= time_scale.gregorian_epoch_offset();
 
         Ok(Self {
-            duration: duration_wrt_ref,
+            duration: D::from(duration_wrt_ref),
             time_scale,
         })
     }
@@ -546,8 +570,57 @@ impl Epoch {
     ///     Epoch::from_gregorian_str("1994-11-05T08:15:30-05:00").unwrap()
     /// );
     /// ```
+    ///
+    /// When parsing a [crate::PreciseEpoch], up to 21 digits of subseconds are supported (down to the zeptosecond).
     #[cfg(not(kani))]
     pub fn from_gregorian_str(s_in: &str) -> Result<Self, HifitimeError> {
+        if D::SUBNANOSECOND_DIGITS > 0 {
+            if let Some((digits_start, digits_end)) = subnanosecond_digits(s_in) {
+                // Parse the sub-nanosecond digits separately, then parse the rest as usual.
+                let extra = &s_in[digits_start..digits_end];
+                let ndigits = extra.len() as u32;
+                if ndigits > D::SUBNANOSECOND_DIGITS {
+                    return Err(HifitimeError::Parse {
+                        source: ParsingError::ValueError,
+                        details: "too many subsecond digits",
+                    });
+                }
+                let value: u64 =
+                    lexical_core::parse(extra.as_bytes()).map_err(|err| HifitimeError::Parse {
+                        source: ParsingError::Lexical { err },
+                        details: "parsing subnanoseconds",
+                    })?;
+                let zeptoseconds = value * 10_u64.pow(D::SUBNANOSECOND_DIGITS - ndigits);
+                // Rebuild the string without the extra digits, on the stack to remain no-std compatible.
+                let (head, tail) = (&s_in[..digits_start], &s_in[digits_end..]);
+                let mut buf = [0_u8; 128];
+                if head.len() + tail.len() > buf.len() {
+                    return Err(HifitimeError::Parse {
+                        source: ParsingError::ISO8601,
+                        details: "string too long",
+                    });
+                }
+                buf[..head.len()].copy_from_slice(head.as_bytes());
+                buf[head.len()..head.len() + tail.len()].copy_from_slice(tail.as_bytes());
+                // Both parts are valid UTF-8 and were split on ASCII digits boundaries.
+                let trimmed =
+                    core::str::from_utf8(&buf[..head.len() + tail.len()]).map_err(|_| {
+                        HifitimeError::Parse {
+                            source: ParsingError::ISO8601,
+                            details: "invalid UTF-8",
+                        }
+                    })?;
+                let mut epoch = Self::from_gregorian_str_ns(trimmed)?;
+                epoch.duration = epoch.duration.add_subnanoseconds(zeptoseconds);
+                return Ok(epoch);
+            }
+        }
+        Self::from_gregorian_str_ns(s_in)
+    }
+
+    /// Nanosecond-level Gregorian parser, cf. [Self::from_gregorian_str].
+    #[cfg(not(kani))]
+    fn from_gregorian_str_ns(s_in: &str) -> Result<Self, HifitimeError> {
         // All of the integers in a date: year, month, day, hour, minute, second, subsecond, offset hours, offset minutes
 
         use snafu::ResultExt;
@@ -649,8 +722,38 @@ impl Epoch {
             ts,
         )?;
 
-        Ok(epoch + tz)
+        Ok(epoch + D::from(tz))
     }
+}
+
+/// Locates the subsecond digits beyond the ninth one (i.e. below the nanosecond) in a Gregorian string,
+/// e.g. `2020-01-01T00:00:00.123456789012 UTC` returns the range of `012`.
+#[cfg(not(kani))]
+fn subnanosecond_digits(s: &str) -> Option<(usize, usize)> {
+    let bytes = s.as_bytes();
+    // The subseconds follow the first '.' that is after a 'HH:MM:SS' pattern.
+    let mut idx = 0;
+    while idx < bytes.len() {
+        if bytes[idx] == b'.'
+            && idx >= 3
+            && bytes[idx - 1].is_ascii_digit()
+            && bytes[idx - 2].is_ascii_digit()
+            && bytes[idx - 3] == b':'
+        {
+            let start = idx + 1;
+            let mut end = start;
+            while end < bytes.len() && bytes[end].is_ascii_digit() {
+                end += 1;
+            }
+            return if end - start > 9 {
+                Some((start + 9, end))
+            } else {
+                None
+            };
+        }
+        idx += 1;
+    }
+    None
 }
 
 #[must_use]

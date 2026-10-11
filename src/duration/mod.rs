@@ -25,6 +25,12 @@ use core::str::FromStr;
 
 pub mod parse;
 
+mod precise;
+pub use precise::{PreciseDuration, ZEPTOSECONDS_PER_NANOSECOND, ZEPTOSECONDS_PER_SECOND};
+
+mod traits;
+pub use traits::DurationTrait;
+
 #[cfg(feature = "python")]
 mod python;
 
@@ -38,9 +44,6 @@ use num_traits::Float;
 #[cfg(kani)]
 mod kani_verif;
 
-#[cfg(doc)]
-use crate::prelude::PreciseEpoch;
-
 pub const DAYS_PER_CENTURY_U64: u64 = 36_525;
 pub const NANOSECONDS_PER_MICROSECOND: u64 = 1_000;
 pub const NANOSECONDS_PER_MILLISECOND: u64 = 1_000 * NANOSECONDS_PER_MICROSECOND;
@@ -52,8 +55,6 @@ pub const NANOSECONDS_PER_DAY: u64 = 24 * NANOSECONDS_PER_HOUR;
 pub const NANOSECONDS_PER_CENTURY: u64 = DAYS_PER_CENTURY_U64 * NANOSECONDS_PER_DAY;
 
 pub mod ops;
-
-pub trait DurationTrait: core::ops::Add<Self> + PartialEq + Sized {}
 
 /// Defines generally usable durations for nanosecond precision valid for 32,768 centuries in either direction, and only on 80 bits / 10 octets.
 ///
@@ -75,20 +76,6 @@ pub struct Duration {
     pub(crate) centuries: i16,
     pub(crate) nanoseconds: u64,
 }
-
-impl DurationTrait for Duration {}
-
-/// Defines durations with utter preciseion (2**-21s), valid for 32,768 centuries in either direction,
-/// using 128 bits. Used by applications that require most accuracy. Used by [PreciseEpoch].
-#[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord)]
-#[repr(C)]
-#[cfg_attr(feature = "python", pyclass)]
-#[cfg_attr(feature = "python", pyo3(module = "hifitime"))]
-pub struct PreciseDuration {
-    pub(crate) zeptoseconds: i128,
-}
-
-impl DurationTrait for PreciseDuration {}
 
 impl Hash for Duration {
     fn hash<H: Hasher>(&self, hasher: &mut H) {
