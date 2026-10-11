@@ -45,6 +45,10 @@ impl fmt::Display for FractionalDigits {
 
 impl<D: DurationTrait> GenericEpoch<D> {
     /// Writes the Gregorian representation of this epoch in the provided time scale.
+    ///
+    /// Format is
+    /// - YYYY-MM-DDTHH:MM:SS when nanoseconds (subsecond) is null
+    /// - YYYY-MM-DDTHH:MM:SS.000000000 (9 digits) when nanoseconds (subsecond is not null)
     fn fmt_gregorian(&self, f: &mut fmt::Formatter, ts: TimeScale) -> fmt::Result {
         let (y, mm, dd, hh, min, s, nanos, subns) = self.to_gregorian_precise(ts);
         if nanos == 0 && subns == 0 {

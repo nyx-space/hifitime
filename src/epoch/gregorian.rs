@@ -133,8 +133,8 @@ impl<D: DurationTrait> GenericEpoch<D> {
 
     #[must_use]
     /// Converts the Epoch to the Gregorian in the provided time scale as
-    /// (year, month, day, hour, minute, second, nanoseconds, zeptoseconds within the nanosecond).
-    /// The last item is always zero for an [Epoch].
+    /// (year, month, day, hour, minute, second, nanoseconds, and zeptoseconds within the nanosecond).
+    /// Zeptoseconds (last item) is always zero for an [Epoch] which is limited to a nanosecond.
     pub fn to_gregorian_precise(
         &self,
         time_scale: TimeScale,

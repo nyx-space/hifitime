@@ -170,7 +170,77 @@ fn initializers() {
     assert_eq!(p, PreciseEpoch::from(Epoch::from_mjd_tai(60_000.25)));
 }
 
-#[cfg(feature = "std")]
+/// Same tests as 1nanosecond epoch, applied to the zeptosecond epoch
+#[test]
+fn test_precise_to_epoch_formatter() {
+    use core::str::FromStr;
+    use hifitime::efmt::consts::*;
+
+    let bday = PreciseEpoch::from_gregorian_utc(2000, 2, 29, 14, 57, 29, 37).to_epoch();
+
+    let fmt_iso_ord = Formatter::new(bday, ISO8601_ORDINAL);
+    assert_eq!(format!("{fmt_iso_ord}"), "2000-060");
+
+    let fmt_iso_ord = Formatter::new(bday, Format::from_str("%j").unwrap());
+    assert_eq!(format!("{fmt_iso_ord}"), "060");
+
+    let fmt_iso = Formatter::new(bday, ISO8601);
+    assert_eq!(format!("{fmt_iso}"), format!("{bday}"));
+
+    let fmt = Formatter::new(bday, ISO8601_DATE);
+    assert_eq!(format!("{fmt}"), format!("2000-02-29"));
+
+    let fmt = Formatter::new(bday, RFC2822);
+    assert_eq!(format!("{fmt}"), format!("Tue, 29 Feb 2000 14:57:29"));
+
+    let fmt = Formatter::new(bday, RFC2822_LONG);
+    assert_eq!(
+        format!("{fmt}"),
+        format!("Tuesday, 29 February 2000 14:57:29")
+    );
+
+    // Decimal week day starts counting at zero ... it's dumb.
+    let fmt = Formatter::new(bday, Format::from_str("%w").unwrap());
+    assert_eq!(format!("{fmt}"), format!("2"));
+
+    let init_str = "1994-11-05T08:15:30-05:00";
+    let e = Epoch::from_str(init_str).unwrap();
+
+    let fmt = Format::from_str("%Y-%m-%dT%H:%M:%S.%f%z").unwrap();
+    assert_eq!(fmt, RFC3339);
+
+    let fmtd = Formatter::with_timezone(e, Duration::from_str("-05:00").unwrap(), RFC3339_FLEX);
+
+    assert_eq!(init_str, format!("{fmtd}"));
+
+    let init_str = "1994-11-05T08:15:30+05:00";
+    let e = Epoch::from_str(init_str).unwrap();
+
+    let fmtd = Formatter::with_timezone(e, Duration::from_str("+05:00").unwrap(), RFC3339_FLEX);
+
+    assert_eq!(init_str, format!("{fmtd}"));
+
+    assert_eq!(
+        format!("{:?}", Format::from_str("%A, ").unwrap()),
+        "EpochFormat:`Weekday, `"
+    );
+    assert_eq!(
+        format!("{:?}", Format::from_str("%A,?").unwrap()),
+        "EpochFormat:`Weekday,?`"
+    );
+
+    assert_eq!(
+        format!("{:?}", Format::from_str("%y,?").unwrap()),
+        "EpochFormat:`YearShort,?`"
+    );
+
+    // Test an invalid token
+    assert_eq!(
+        Format::from_str("%p"),
+        Err(hifitime::ParsingError::UnknownToken { token: 'p' })
+    );
+}
+
 #[test]
 fn display_and_parsing() {
     let e = Epoch::from_gregorian_utc(2026, 10, 11, 12, 34, 56, 123_456_789);
