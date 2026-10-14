@@ -2262,6 +2262,31 @@ fn regression_test_gh_317() {
     );
 }
 
+#[test]
+fn mjd_calendar_reference() {
+    let constructors: [(TimeScale, fn(f64) -> Epoch); 6] = [
+        (TimeScale::TAI, Epoch::from_mjd_tai),
+        (TimeScale::UTC, Epoch::from_mjd_utc),
+        (TimeScale::GPST, Epoch::from_mjd_gpst),
+        (TimeScale::QZSST, Epoch::from_mjd_qzsst),
+        (TimeScale::GST, Epoch::from_mjd_gst),
+        (TimeScale::BDT, Epoch::from_mjd_bdt),
+    ];
+
+    for (time_scale, from_mjd) in constructors {
+        for (days, year, month, day, hour) in [
+            (60_310.0, 2024, 1, 1, 0),
+            (60_310.5, 2024, 1, 1, 12),
+            (44_244.0, 1980, 1, 6, 0),
+            (0.0, 1858, 11, 17, 0),
+        ] {
+            let expected = Epoch::from_gregorian(year, month, day, hour, 0, 0, 0, time_scale);
+            assert_eq!(from_mjd(days), expected, "{time_scale} MJD {days}");
+            assert_eq!(Epoch::from_mjd_in_time_scale(days, time_scale), expected);
+        }
+    }
+}
+
 #[cfg(feature = "std")]
 #[test]
 fn regression_test_gh_302() {
