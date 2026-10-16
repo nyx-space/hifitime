@@ -408,6 +408,9 @@ impl Sub<Duration> for Epoch {
 impl Add<f64> for Epoch {
     type Output = Self;
 
+    /// # Panics
+    /// Panics if `seconds` is not finite, since the offset is built with
+    /// `Unit::Second * seconds`.
     fn add(self, seconds: f64) -> Self {
         Self {
             duration: self.duration + seconds * Unit::Second,

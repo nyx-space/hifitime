@@ -113,8 +113,14 @@ jobs:
               --harness test_dur_f64_recip_0
               --harness verify_approx
               --harness verify_duration_eq_ord_consistent
-              --harness verify_mul_f64_terminates
+              --harness verify_mul_f64_no_panic
+
+          # Duration: scaling operators (370s + 66s + 45s)
+          - module: duration-scaling
+            kani_args: >-
+              --harness verify_div_f64_no_panic
               --harness verify_mul_i64_no_panic
+              --harness verify_div_i64_no_panic
 
           # Duration: compose (124s + 82s)
           - module: duration-compose

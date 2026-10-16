@@ -421,35 +421,47 @@ fn verify_mul_i64_no_panic() {
     );
 }
 
-/// Verifies Duration::Mul<f64> terminates and produces a normalized result.
+/// Verifies Duration::Mul<f64> does not panic and produces a normalized result,
+/// for every Duration and every f64 including NaN and the infinities.
 ///
-/// This caught a bug where q * 10^p overflowing to infinity caused
-/// floor(inf) - inf = NaN, and NaN < EPSILON = false, so the loop
-/// never broke. Fixed by adding !is_finite() guard and p >= 19 bound.
-///
-/// The loop is annotated with #[kani::loop_invariant(p >= 0 && p <= 19)]
-/// which Kani verifies inductively — proving the bound holds for all
-/// iterations without unrolling.
-///
-/// Note: Cannot use #[kani::ensures] / #[kani::proof_for_contract] on Mul<f64>
-/// because Kani does not support contracts on generic trait methods (issue #1997).
-///
-/// The function is correct for ALL f64 inputs after the fix. The assumptions
-/// below restrict the input range solely to keep CBMC's f64 symbolic execution
-/// tractable within the verification time budget — they are NOT preconditions
-/// of the function:
-/// - is_finite: CBMC's bit-level f64 model for NaN/inf creates intractable SAT formulas
-/// - |q| < 1e15: keeps q * 10^19 within f64 range, reducing SAT formula size
-/// - |q| > 1e-18: avoids subnormal f64 representation which multiplies CBMC's case splits
+/// Note: Cannot use #[kani::proof_for_contract] because Mul<f64> is a generic
+/// trait method and Kani does not support contracts on those (issue #1997).
 #[kani::proof]
-fn verify_mul_f64_terminates() {
+fn verify_mul_f64_no_panic() {
     let dur: Duration = kani::any();
     let q: f64 = kani::any();
-    // Verification budget constraints (not function preconditions):
-    kani::assume(q.is_finite());
-    kani::assume(q.abs() < 1e15);
-    kani::assume(q.abs() > 1e-18 || q == 0.0);
     let result = dur * q;
+    let (c, n) = result.to_parts();
+    assert!(
+        n < NANOSECONDS_PER_CENTURY
+            || (c == i16::MAX && n == NANOSECONDS_PER_CENTURY)
+            || (c == i16::MIN && n == 0)
+    );
+}
+
+/// Verifies Duration::Div<i64> does not panic and produces a normalized result.
+#[kani::proof]
+fn verify_div_i64_no_panic() {
+    let dur: Duration = kani::any();
+    let q: i64 = kani::any();
+    let result = dur / q;
+    let (c, n) = result.to_parts();
+    assert!(
+        n < NANOSECONDS_PER_CENTURY
+            || (c == i16::MAX && n == NANOSECONDS_PER_CENTURY)
+            || (c == i16::MIN && n == 0)
+    );
+}
+
+/// Verifies Duration::Div<f64> does not panic and produces a normalized result,
+/// for every Duration and every f64 including NaN, the infinities and zero.
+///
+/// Also discharges the debug assertions in `widening_shl` and `divide_wide`.
+#[kani::proof]
+fn verify_div_f64_no_panic() {
+    let dur: Duration = kani::any();
+    let q: f64 = kani::any();
+    let result = dur / q;
     let (c, n) = result.to_parts();
     assert!(
         n < NANOSECONDS_PER_CENTURY

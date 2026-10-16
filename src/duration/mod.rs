@@ -60,6 +60,11 @@ pub mod ops;
 ///    That difference is exactly 1 nanoseconds, where the former duration is "closer to zero" than the latter.
 ///    As such, the largest negative duration that can be represented sets the centuries to i16::MAX and its nanoseconds to NANOSECONDS_PER_CENTURY.
 /// 2. Negative and positive durations are distinct: -15 minutes != 15 minutes. Use the signum function to check the sign, and abs() to get the absolute value.
+/// 3. Scaling by an `f64` (`Mul<f64>` / `Div<f64>`) is exact, never panics, and saturates at
+///    [`Duration::MAX`] / [`Duration::MIN`]. Multiplying or dividing by NaN yields [`Duration::ZERO`].
+///    See [`Mul<f64>`](Duration::mul) and [`Div<f64>`](Duration::div) for the non-finite tables. The `f64`
+///    constructors ([`Duration::from_seconds`] and friends, `Unit * f64`) are `const fn` and instead panic
+///    on non-finite input.
 ///
 /// :type string_repr: str
 #[derive(Clone, Copy, Debug, PartialEq, PartialOrd, Eq, Ord)]
@@ -148,6 +153,7 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
+    #[inline]
     pub const fn from_parts(centuries: i16, nanoseconds: u64) -> Self {
         Self {
             centuries,
@@ -163,6 +169,7 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
+    #[inline]
     pub const fn from_total_nanoseconds(nanos: i128) -> Self {
         // In this function, we simply check that the input data can be casted. The `normalize` function will check whether more work needs to be done.
         if nanos == 0 {
@@ -190,6 +197,7 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
+    #[inline]
     pub const fn from_truncated_nanoseconds(nanos: i64) -> Self {
         if nanos < 0 {
             let ns = nanos.unsigned_abs();
@@ -213,6 +221,7 @@ impl Duration {
             || result.parts_are_equal(Self::MIN)
     }))]
     #[cfg_attr(kani, kani::requires(value.is_finite()))]
+    #[inline]
     pub const fn from_days(value: f64) -> Self {
         Unit::Day.const_multiply(value)
     }
@@ -225,6 +234,7 @@ impl Duration {
             || result.parts_are_equal(Self::MIN)
     }))]
     #[cfg_attr(kani, kani::requires(value.is_finite()))]
+    #[inline]
     pub const fn from_hours(value: f64) -> Self {
         Unit::Hour.const_multiply(value)
     }
@@ -237,6 +247,7 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
+    #[inline]
     pub const fn from_seconds(value: f64) -> Self {
         Unit::Second.const_multiply(value)
     }
@@ -249,6 +260,7 @@ impl Duration {
             || result.parts_are_equal(Self::MIN)
     }))]
     #[cfg_attr(kani, kani::requires(value.is_finite()))]
+    #[inline]
     pub const fn from_milliseconds(value: f64) -> Self {
         Unit::Millisecond.const_multiply(value)
     }
@@ -261,6 +273,7 @@ impl Duration {
             || result.parts_are_equal(Self::MIN)
     }))]
     #[cfg_attr(kani, kani::requires(value.is_finite()))]
+    #[inline]
     pub const fn from_microseconds(value: f64) -> Self {
         Unit::Microsecond.const_multiply(value)
     }
@@ -273,6 +286,7 @@ impl Duration {
             || result.parts_are_equal(Self::MIN)
     }))]
     #[cfg_attr(kani, kani::requires(value.is_finite()))]
+    #[inline]
     pub const fn from_nanoseconds(value: f64) -> Self {
         Unit::Nanosecond.const_multiply(value)
     }
@@ -363,6 +377,7 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
+    #[inline]
     const fn as_normalized(self) -> Self {
         let mut normalized_self = self;
 
@@ -445,6 +460,65 @@ impl Duration {
         }
     }
 
+    /// Scales this duration by `q`, reporting the cases where
+    /// [`Mul<f64>`](Duration::mul) would substitute [`Duration::ZERO`]: a NaN
+    /// `q`, and the indeterminate `0 × ∞`.
+    ///
+    /// Saturating at [`Duration::MAX`] / [`Duration::MIN`] is not an error.
+    ///
+    /// ```
+    /// use hifitime::{Duration, TimeUnits};
+    ///
+    /// assert_eq!(1.hours().try_mul_f64(2.0).unwrap(), 2.hours());
+    /// assert!(1.hours().try_mul_f64(f64::NAN).is_err());
+    /// assert!(Duration::ZERO.try_mul_f64(f64::INFINITY).is_err());
+    /// // Saturation is a defined result, not an error.
+    /// assert_eq!(1.hours().try_mul_f64(f64::INFINITY).unwrap(), Duration::MAX);
+    /// ```
+    pub fn try_mul_f64(self, q: f64) -> Result<Self, HifitimeError> {
+        if q.is_nan() {
+            return Err(HifitimeError::Duration {
+                source: DurationError::NonFinite,
+            });
+        }
+        if q.is_infinite() && self == Self::ZERO {
+            return Err(HifitimeError::Duration {
+                source: DurationError::Indeterminate,
+            });
+        }
+        Ok(self * q)
+    }
+
+    /// Divides this duration by `q`, reporting the cases where
+    /// [`Div<f64>`](Duration::div) would substitute [`Duration::ZERO`]: a NaN
+    /// `q`, and the indeterminate `0 / 0`.
+    ///
+    /// Dividing a nonzero duration by zero saturates rather than erroring, and
+    /// dividing by an infinity gives [`Duration::ZERO`], which is the limit.
+    ///
+    /// ```
+    /// use hifitime::{Duration, TimeUnits};
+    ///
+    /// assert_eq!(1.hours().try_div_f64(2.0).unwrap(), 30.minutes());
+    /// assert!(1.hours().try_div_f64(f64::NAN).is_err());
+    /// assert!(Duration::ZERO.try_div_f64(0.0).is_err());
+    /// assert_eq!(1.hours().try_div_f64(0.0).unwrap(), Duration::MAX);
+    /// assert_eq!(1.hours().try_div_f64(f64::INFINITY).unwrap(), Duration::ZERO);
+    /// ```
+    pub fn try_div_f64(self, q: f64) -> Result<Self, HifitimeError> {
+        if q.is_nan() {
+            return Err(HifitimeError::Duration {
+                source: DurationError::NonFinite,
+            });
+        }
+        if q == 0.0 && self == Self::ZERO {
+            return Err(HifitimeError::Duration {
+                source: DurationError::Indeterminate,
+            });
+        }
+        Ok(self / q)
+    }
+
     /// Returns the truncated nanoseconds in a signed 64 bit integer, if the duration fits.
     /// WARNING: This function will NOT fail and will return the i64::MIN or i64::MAX depending on
     /// the sign of the centuries if the Duration does not fit on aa i64
@@ -465,6 +539,7 @@ impl Duration {
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     #[must_use]
+    #[inline]
     #[cfg_attr(kani, kani::ensures(|result: &f64| result.is_finite() && result.abs() < 1.1e14))]
     pub fn to_seconds(&self) -> f64 {
         // Compute the seconds and nanoseconds that we know this fits on a 64bit float
@@ -480,6 +555,7 @@ impl Duration {
     }
 
     #[must_use]
+    #[inline]
     pub fn to_unit(&self, unit: Unit) -> f64 {
         self.to_seconds() * unit.from_seconds()
     }
