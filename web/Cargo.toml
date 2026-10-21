@@ -1,0 +1,40 @@
+[package]
+name = "hifitime-wasm"
+# No version: build.rs reads it from the root hifitime crate, and
+# scripts/build-inline.mjs writes it into the npm package.
+authors = ["Christopher Rabotin <christopher.rabotin@gmail.com>"]
+description = "WebAssembly and TypeScript bindings for hifitime: ultra-precise date and time handling for scientific applications"
+keywords = ["date", "time", "wasm", "typescript", "leap-second"]
+readme = "README.md"
+homepage = "https://nyxspace.com/"
+repository = "https://github.com/nyx-space/hifitime"
+license = "MPL-2.0"
+edition = "2021"
+publish = false
+
+# This crate is not a member of a workspace. The empty table stops cargo from a
+# search of the parent directory.
+[workspace]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+# The `ut1` and `lts` features download files over TCP, which no WebAssembly
+# host provides. The leap seconds of the IERS are built in.
+hifitime = { path = "..", default-features = false, features = ["std"] }
+wasm-bindgen = "=0.2.127"
+js-sys = "0.3.104"
+console_error_panic_hook = "0.1.7"
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.77"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-Oz", "--enable-bulk-memory", "--enable-nontrapping-float-to-int"]
