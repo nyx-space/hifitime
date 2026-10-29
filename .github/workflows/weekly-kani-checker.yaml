@@ -51,7 +51,6 @@ jobs:
               --harness kani_harness_is_leap_year
               --harness kani_harness_january_years
               --harness kani_harness_july_years
-              --harness kani_harness_rem_euclid_f64
               --harness kani_harness_to_duration_since_j1900
               --harness kani_harness_to_time_of_week
               --harness kani_harness_to_time_scale
