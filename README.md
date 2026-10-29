@@ -41,16 +41,18 @@ In Python:
 ```python
 >>> from hifitime import *
 >>> epoch = Epoch("2000-02-29T14:57:29.000000037 UTC")
->>> epoch
+>>> print(epoch)
 2000-02-29T14:57:29.000000037 UTC
->>> epoch_tai = Epoch.init_from_gregorian_tai(2000, 2, 29, 14, 57, 29, 37)
->>> epoch_tai
+>>> epoch_tai = Epoch.from_gregorian(2000, 2, 29, 14, 57, 29, 37, TimeScale.TAI)
+>>> print(epoch_tai)
 2000-02-29T14:57:29.000000037 TAI
->>> epoch.timedelta(epoch_tai)
+>>> epoch_tai  # repr always shows the epoch in UTC
+2000-02-29T14:56:57.000000037 UTC @ 0x7f587e15d570
+>>> print(epoch.timedelta(epoch_tai))
 32 s
 >>> epoch.to_gpst_days()
 7359.623402777777
->>> epoch.to_mjd_tt_duration()
+>>> print(epoch.to_mjd_tt_duration())
 51603 days 14 h 58 min 33 s 184 ms 37 ns
 >>>
 ```
@@ -141,7 +143,7 @@ assert_eq!(cnt, 7)
 In Python:
 ```python
 >>> from hifitime import *
->>> start = Epoch.init_from_gregorian_utc_at_midnight(2017, 1, 14)
+>>> start = Epoch.from_gregorian_at_midnight(2017, 1, 14, TimeScale.UTC)
 >>> end = start + Unit.Hour*12
 >>> iterator = TimeSeries(start, end, step=Unit.Hour*2, inclusive=True)
 >>> for epoch in iterator:
@@ -205,9 +207,9 @@ In Python:
 ```python
 >>> from hifitime import *
 >>> d = Duration("12 min 32 ns")
->>> d.round(Unit.Minute*1)
+>>> print(d.round(Unit.Minute*1))
 12 min
->>> d
+>>> print(d)
 12 min 32 ns
 >>>
 ```
