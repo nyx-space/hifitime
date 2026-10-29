@@ -128,10 +128,9 @@ fn verify_approx() {
     let _ = callee.approx();
 }
 
-// Duration::decompose proof_for_contract — verified at 524s with cvc5.
+// Duration::decompose proof_for_contract.
 // Required by stub_verified(decompose) callers.
 #[kani::proof_for_contract(Duration::decompose)]
-#[kani::stub_verified(crate::timeunits::Unit::const_multiply)]
 fn kani_harness_decompose() {
     let callee: Duration = kani::any();
     let _ = callee.decompose();
