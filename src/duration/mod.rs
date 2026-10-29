@@ -418,7 +418,7 @@ impl Duration {
         (self.centuries, self.nanoseconds)
     }
 
-    /// Returns the number of whole days in this duration, rounded toward negative infinity.
+    /// Returns the number of whole days in this duration, rounded toward negative infinity (because self.nanoseconds is a u64).
     pub(crate) const fn whole_days(&self) -> i64 {
         self.centuries as i64 * DAYS_PER_CENTURY_U64 as i64
             + (self.nanoseconds / NANOSECONDS_PER_DAY) as i64
