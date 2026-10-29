@@ -14,7 +14,7 @@ use core::ops::{Add, AddAssign, Sub, SubAssign};
 
 use crate::{
     errors::HifitimeError, Duration, Epoch, Polynomial, TimeScale, Unit, Weekday,
-    NANOSECONDS_PER_DAY,
+    DAYS_PER_WEEK_I64, NANOSECONDS_PER_DAY,
 };
 
 #[cfg(feature = "python")]
@@ -23,8 +23,6 @@ use pyo3::prelude::*;
 #[cfg(not(feature = "std"))]
 #[allow(unused_imports)] // Import is indeed used.
 use num_traits::Float;
-
-use super::rem_euclid_f64;
 
 #[cfg_attr(feature = "python", pymethods)]
 impl Epoch {
@@ -270,13 +268,9 @@ impl Epoch {
     /// :type time_scale: TimeScale
     /// :rtype: Weekday
     pub fn weekday_in_time_scale(&self, time_scale: TimeScale) -> Weekday {
-        (rem_euclid_f64(
-            self.to_duration_in_time_scale(time_scale)
-                .to_unit(Unit::Day),
-            Weekday::DAYS_PER_WEEK,
-        )
-        .floor() as u8)
-            .into()
+        // Count whole days with integers: in f64, the last nanoseconds of a day round up to the next day.
+        let days = self.to_duration_in_time_scale(time_scale).whole_days();
+        (days.rem_euclid(DAYS_PER_WEEK_I64) as u8).into()
     }
 
     #[must_use]

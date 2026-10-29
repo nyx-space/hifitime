@@ -1212,15 +1212,6 @@ impl FromStr for Epoch {
     }
 }
 
-fn rem_euclid_f64(lhs: f64, rhs: f64) -> f64 {
-    let r = lhs % rhs;
-    if r < 0.0 {
-        r + rhs.abs()
-    } else {
-        r
-    }
-}
-
 #[cfg(test)]
 mod ut_epoch {
 
@@ -1257,19 +1248,5 @@ mod ut_epoch {
         assert_eq!(content, serde_json::to_string(&e).unwrap());
         let parsed: Epoch = serde_json::from_str(content).unwrap();
         assert_eq!(e, parsed);
-    }
-}
-
-#[cfg(kani)]
-#[allow(non_snake_case)]
-mod kani_harnesses {
-    use super::*;
-
-    #[kani::proof]
-    fn kani_harness_rem_euclid_f64() {
-        let lhs: f64 = kani::any();
-        let rhs: f64 = kani::any();
-        kani::assume(lhs.is_finite() && rhs.is_finite() && rhs != 0.0);
-        let _ = rem_euclid_f64(lhs, rhs);
     }
 }

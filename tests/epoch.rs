@@ -1621,6 +1621,30 @@ fn test_weekday() {
 }
 
 #[test]
+fn test_weekday_near_midnight() {
+    // 2026-10-25 was a Sunday: in its last nanoseconds, the f64 day count rounded up to Monday.
+    let monday = Epoch::from_gregorian_tai_at_midnight(2026, 10, 26);
+    for ns in [1, 100, 1_000] {
+        let sunday = monday - ns * Unit::Nanosecond;
+        assert_eq!(sunday.weekday(), Weekday::Sunday, "{sunday}");
+        assert_eq!(sunday.next(Weekday::Monday), sunday + 1 * Unit::Day);
+    }
+    assert_eq!(monday.weekday(), Weekday::Monday);
+
+    let monday = Epoch::from_gregorian_utc_at_midnight(2026, 10, 26);
+    assert_eq!(
+        (monday - 1 * Unit::Nanosecond).weekday_utc(),
+        Weekday::Sunday
+    );
+    assert_eq!(monday.weekday_utc(), Weekday::Monday);
+
+    // Before 1900-01-01 (a Monday), the duration is negative.
+    let monday = Epoch::from_gregorian_tai_at_midnight(1900, 1, 1);
+    assert_eq!((monday - 1 * Unit::Nanosecond).weekday(), Weekday::Sunday);
+    assert_eq!((monday - 7 * Unit::Day).weekday(), Weekday::Monday);
+}
+
+#[test]
 fn test_get_time() {
     let epoch = Epoch::from_gregorian_utc(2022, 12, 01, 10, 11, 12, 13);
     assert_eq!(epoch.hours(), 10);
@@ -1955,6 +1979,13 @@ fn test_epoch_formatter() {
 
     let fmt_iso_ord = Formatter::new(bday, Format::from_str("%j").unwrap());
     assert_eq!(format!("{fmt_iso_ord}"), "060");
+
+    // The last nanosecond of a day stays on that day.
+    let new_years_eve = Epoch::from_gregorian_utc(2026, 12, 31, 23, 59, 59, 999_999_999);
+    let fmt_iso_ord = Formatter::new(new_years_eve, ISO8601_ORDINAL);
+    assert_eq!(format!("{fmt_iso_ord}"), "2026-365");
+    let fmt_iso_ord = Formatter::new(new_years_eve - 1 * Unit::Day, ISO8601_ORDINAL);
+    assert_eq!(format!("{fmt_iso_ord}"), "2026-364");
 
     let fmt_iso = Formatter::new(bday, ISO8601);
     assert_eq!(format!("{fmt_iso}"), format!("{bday}"));

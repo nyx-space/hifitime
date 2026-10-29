@@ -209,7 +209,7 @@ impl fmt::Display for Formatter {
                     }
                     Token::DayOfYearInteger => {
                         write_sep(f, i, &self.format)?;
-                        write!(f, "{:03}", self.epoch.day_of_year().floor() as u16)?
+                        write!(f, "{:03}", self.epoch.duration_in_year().whole_days() + 1)?
                     }
                     Token::DayOfYear => {
                         write_sep(f, i, &self.format)?;
@@ -280,7 +280,7 @@ impl fmt::Display for Formatter {
                     }
                     Token::DayOfYearInteger => {
                         write_sep(f, i, &self.format)?;
-                        write!(f, "{:03}", self.epoch.day_of_year().floor() as u16)?
+                        write!(f, "{:03}", self.epoch.duration_in_year().whole_days() + 1)?
                     }
                     Token::DayOfYear => {
                         write_sep(f, i, &self.format)?;
