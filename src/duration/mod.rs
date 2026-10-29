@@ -523,13 +523,13 @@ impl Duration {
         // e.g. 195 days minus 1 ns becomes exactly 195.0 days.
         let (centuries, nanoseconds) = if self.centuries >= 0 {
             (self.centuries as u64, self.nanoseconds)
-        } else if self.nanoseconds == 0 {
-            (u64::from(self.centuries.unsigned_abs()), 0)
         } else {
-            // centuries * C + ns == -((|centuries| - 1) * C + (C - ns))
+            // centuries * C + ns == -(|centuries| * C - ns), and 0 <= ns < C fits in an i64.
+            let neg_ns = -(self.nanoseconds as i64);
+            let per_century = NANOSECONDS_PER_CENTURY as i64;
             (
-                u64::from(self.centuries.unsigned_abs()) - 1,
-                NANOSECONDS_PER_CENTURY - self.nanoseconds,
+                (i64::from(self.centuries.unsigned_abs()) + neg_ns.div_euclid(per_century)) as u64,
+                neg_ns.rem_euclid(per_century) as u64,
             )
         };
 
