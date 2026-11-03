@@ -1,0 +1,8 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "wasm-pack build --target web --out-dir pkg --out-name hifitime --release && node scripts/build-inline.mjs",
+    "test": "npm run build && node --test test/api.test.mjs && wasm-pack test --node"
+  }
+}
