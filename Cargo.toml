@@ -55,7 +55,7 @@ lts = ["std", "ureq", "ut1"]
 
 [dev-dependencies]
 serde_json = "1.0.91"
-criterion = "0.7.0"
+criterion = "0.8.2"
 iai = "0.1"
 sofars = "0.6.1"
 
