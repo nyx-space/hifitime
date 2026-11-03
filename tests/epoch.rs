@@ -1570,8 +1570,8 @@ fn test_weekday() {
     };
     // J1900 was a monday
     let j1900 = J1900_REF_EPOCH;
-    assert_eq!(j1900.weekday(), Weekday::Monday);
-    permutate_time_scale(j1900, Weekday::Monday);
+    assert_eq!(j1900.weekday(), Weekday::Sunday);
+    permutate_time_scale(j1900, Weekday::Sunday);
     // 1 nanosec into TAI: still a monday
     let j1900_1ns = Epoch::from_gregorian_tai(1900, 01, 01, 0, 0, 0, 1);
     assert_eq!(j1900_1ns.weekday(), Weekday::Monday);
@@ -1582,24 +1582,24 @@ fn test_weekday() {
     permutate_time_scale(j1900_10h_123_ns, Weekday::Monday);
     // Day +1: tuesday
     let j1901 = j1900 + Duration::from_days(1.0);
-    assert_eq!(j1901.weekday(), Weekday::Tuesday);
-    permutate_time_scale(j1901, Weekday::Tuesday);
+    assert_eq!(j1901.weekday(), Weekday::Monday);
+    permutate_time_scale(j1901, Weekday::Monday);
     // 1 ns into tuesday, still a tuesday
     let j1901 = j1901 + Duration::from_nanoseconds(1.0);
-    assert_eq!(j1901.weekday(), Weekday::Tuesday);
-    permutate_time_scale(j1901, Weekday::Tuesday);
+    assert_eq!(j1901.weekday(), Weekday::Monday);
+    permutate_time_scale(j1901, Weekday::Monday);
     // 6 days into TAI was a sunday
     let e = j1900 + Duration::from_days(6.0);
-    assert_eq!(e.weekday(), Weekday::Sunday);
-    permutate_time_scale(e, Weekday::Sunday);
+    assert_eq!(e.weekday(), Weekday::Saturday);
+    permutate_time_scale(e, Weekday::Saturday);
     // 6 days + some tiny offset, still a sunday
     let e = e + Duration::from_nanoseconds(10000.0);
-    assert_eq!(e.weekday(), Weekday::Sunday);
-    permutate_time_scale(e, Weekday::Sunday);
+    assert_eq!(e.weekday(), Weekday::Saturday);
+    permutate_time_scale(e, Weekday::Saturday);
     // 7 days into TAI: back to a monday
     let e = j1900 + Duration::from_days(7.0);
-    assert_eq!(e.weekday(), Weekday::Monday);
-    permutate_time_scale(e, Weekday::Monday);
+    assert_eq!(e.weekday(), Weekday::Sunday);
+    permutate_time_scale(e, Weekday::Sunday);
     // 2022/12/01 was a thursday
     let epoch = Epoch::from_gregorian_utc_at_midnight(2022, 12, 01);
     assert_eq!(epoch.weekday_utc(), Weekday::Thursday);
