@@ -65,10 +65,20 @@ macro_rules! impl_ops_for_type {
         impl Div<$type> for Duration {
             type Output = Duration;
             fn div(self, q: $type) -> Self::Output {
-                Duration::from_total_nanoseconds(
-                    self.total_nanoseconds()
-                        .saturating_div((q * Unit::Nanosecond).total_nanoseconds()),
-                )
+                let divisor = (q * Unit::Nanosecond).total_nanoseconds();
+                if divisor == 0 {
+                    // Division by zero saturates like the other operators,
+                    // matching the sign of the dividend.
+                    let nanos = self.total_nanoseconds();
+                    return if nanos > 0 {
+                        Self::MAX
+                    } else if nanos < 0 {
+                        Self::MIN
+                    } else {
+                        Self::ZERO
+                    };
+                }
+                Duration::from_total_nanoseconds(self.total_nanoseconds().saturating_div(divisor))
             }
         }
 

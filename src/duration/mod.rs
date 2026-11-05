@@ -1020,4 +1020,16 @@ mod ut_duration {
         let core_d: core::time::Duration = d.into();
         assert_eq!(core_d, core::time::Duration::from_secs(103407943680000));
     }
+
+    #[test]
+    fn test_div_by_zero() {
+        // Division by zero saturates like the other operators, matching the
+        // sign of the dividend.
+        assert_eq!(1.hours() / 0_i64, Duration::MAX);
+        assert_eq!((-1).hours() / 0_i64, Duration::MIN);
+        assert_eq!(Duration::ZERO / 0_i64, Duration::ZERO);
+        assert_eq!(1.hours() / 0.0_f64, Duration::MAX);
+        assert_eq!((-1).hours() / 0.0_f64, Duration::MIN);
+        assert_eq!(Duration::ZERO / 0.0_f64, Duration::ZERO);
+    }
 }
