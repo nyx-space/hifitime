@@ -1020,4 +1020,32 @@ mod ut_duration {
         let core_d: core::time::Duration = d.into();
         assert_eq!(core_d, core::time::Duration::from_secs(103407943680000));
     }
+
+    #[test]
+    fn test_add_saturates_exactly() {
+        // Issue #516: `Duration + Duration` saturated to MIN too early, before
+        // carrying the nanoseconds into the century sum.
+        let a = Duration::from_parts(-32768, 5); // MIN + 5 ns
+        let b = Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - 1); // -1 ns
+        assert_eq!((a + b).to_parts(), (-32768, 4)); // MIN + 4 ns
+
+        // Symmetric near-MAX case: MAX - 1 ns stays representable.
+        let a = Duration::from_parts(i16::MAX, NANOSECONDS_PER_CENTURY - 5);
+        let b = Duration::from_parts(0, 4);
+        assert_eq!((a + b).to_parts(), (i16::MAX, NANOSECONDS_PER_CENTURY - 1));
+
+        // A sum just above MAX still saturates to MAX.
+        assert_eq!(Duration::MAX + Duration::from_parts(0, 1), Duration::MAX);
+
+        // A sum just below MIN still saturates to MIN.
+        assert_eq!(Duration::MIN + Duration::MIN_NEGATIVE, Duration::MIN);
+
+        // Large Kani-found example: the exact sum is representable.
+        let a = Duration::from_parts(-21562, 3428233558449258498);
+        let b = Duration::from_parts(-11209, 6075075161288605694);
+        assert_eq!(
+            (a + b).total_nanoseconds(),
+            -103_407_907_651_280_262_135_808_i128
+        );
+    }
 }
