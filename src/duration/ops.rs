@@ -125,6 +125,13 @@ impl Mul<f64> for Duration {
             new_val = q * ten.powi(p);
         }
 
+        // NaN carries no meaningful sign: the sign bit of a NaN is an artifact
+        // of the float operation that produced it, not a value, so the result
+        // must not depend on it. Return a neutral zero instead of a bound.
+        if new_val.is_nan() {
+            return Duration::ZERO;
+        }
+
         // If new_val overflowed to infinity (e.g., very large q), the cast
         // `inf as i128` is undefined behavior. Handle it explicitly.
         if !new_val.is_finite() {

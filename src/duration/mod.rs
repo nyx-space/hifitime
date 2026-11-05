@@ -1020,4 +1020,18 @@ mod ut_duration {
         let core_d: core::time::Duration = d.into();
         assert_eq!(core_d, core::time::Duration::from_secs(103407943680000));
     }
+
+    #[test]
+    fn test_mul_nan() {
+        // Scaling by NaN has no meaningful answer, so the result must not be
+        // selected by the (meaningless) sign bit of the NaN. Return zero.
+        assert_eq!(1.hours() * f64::NAN, Duration::ZERO);
+        assert_eq!((-1).hours() * f64::NAN, Duration::ZERO);
+        assert_eq!(1.hours() * -f64::NAN, Duration::ZERO);
+        assert_eq!(Duration::ZERO * f64::NAN, Duration::ZERO);
+
+        // Infinity still saturates, and its sign is meaningful.
+        assert_eq!(1.hours() * f64::INFINITY, Duration::MAX);
+        assert_eq!(1.hours() * f64::NEG_INFINITY, Duration::MIN);
+    }
 }
