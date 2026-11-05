@@ -1032,4 +1032,16 @@ mod ut_duration {
         assert_eq!((-1).hours() / 0.0_f64, Duration::MIN);
         assert_eq!(Duration::ZERO / 0.0_f64, Duration::ZERO);
     }
+
+    #[test]
+    fn test_div_f64_non_integral() {
+        // Fractional divisors must not be truncated to whole nanoseconds.
+        assert_eq!(1.hours() / 2.5, 24.minutes());
+        assert_eq!(1.hours() / 1.5, 40.minutes());
+        assert_eq!(1.hours() / 0.5, 2.hours());
+        assert_eq!(1.hours() / 0.1, 10.hours());
+        // Negative and integral divisors keep working.
+        assert_eq!((-1).hours() / 2.5, -24.minutes());
+        assert_eq!(1.hours() / 2.0, 30.minutes());
+    }
 }

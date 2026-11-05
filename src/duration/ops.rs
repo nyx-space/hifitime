@@ -61,27 +61,6 @@ macro_rules! impl_ops_for_type {
             }
         }
 
-        #[allow(clippy::suspicious_arithmetic_impl)]
-        impl Div<$type> for Duration {
-            type Output = Duration;
-            fn div(self, q: $type) -> Self::Output {
-                let divisor = (q * Unit::Nanosecond).total_nanoseconds();
-                if divisor == 0 {
-                    // Division by zero saturates like the other operators,
-                    // matching the sign of the dividend.
-                    let nanos = self.total_nanoseconds();
-                    return if nanos > 0 {
-                        Self::MAX
-                    } else if nanos < 0 {
-                        Self::MIN
-                    } else {
-                        Self::ZERO
-                    };
-                }
-                Duration::from_total_nanoseconds(self.total_nanoseconds().saturating_div(divisor))
-            }
-        }
-
         impl Mul<Duration> for $type {
             type Output = Duration;
             fn mul(self, q: Self::Output) -> Self::Output {
@@ -149,6 +128,72 @@ impl Mul<f64> for Duration {
             self.total_nanoseconds()
                 .saturating_mul(new_val as i128)
                 .saturating_div(10_i128.pow(p.try_into().unwrap())),
+        )
+    }
+}
+
+#[allow(clippy::suspicious_arithmetic_impl)]
+impl Div<i64> for Duration {
+    type Output = Duration;
+    fn div(self, q: i64) -> Self::Output {
+        let divisor = (q * Unit::Nanosecond).total_nanoseconds();
+        if divisor == 0 {
+            // Division by zero saturates like the other operators, matching
+            // the sign of the dividend.
+            let nanos = self.total_nanoseconds();
+            return if nanos > 0 {
+                Self::MAX
+            } else if nanos < 0 {
+                Self::MIN
+            } else {
+                Self::ZERO
+            };
+        }
+        Duration::from_total_nanoseconds(self.total_nanoseconds().saturating_div(divisor))
+    }
+}
+
+#[allow(clippy::suspicious_arithmetic_impl)]
+impl Div<f64> for Duration {
+    type Output = Duration;
+    fn div(self, q: f64) -> Self::Output {
+        // Make sure that we don't trim the divisor by finding its precision,
+        // so that fractional divisors (e.g. 2.5) are not truncated to whole
+        // nanoseconds.
+        let mut p: i32 = 0;
+        let mut new_val: f64 = q;
+        let ten: f64 = 10.0;
+
+        #[cfg_attr(kani, kani::loop_invariant(p >= 0 && p <= 19))]
+        // TODO: enable when Kani supports loop_decreases (PR #4564)
+        // #[cfg_attr(kani, kani::loop_decreases(19i32.wrapping_sub(p)))]
+        while new_val.is_finite() && (new_val.floor() - new_val).abs() >= f64::EPSILON && p < 19 {
+            p += 1;
+            new_val = q * ten.powi(p);
+        }
+
+        // The divisor cast saturates: infinity maps to i128::MAX (so the
+        // quotient collapses to zero) and NaN maps to zero (handled below).
+        let divisor = new_val as i128;
+        if divisor == 0 {
+            // A zero divisor (or one smaller than a nanosecond) saturates like
+            // the other operators, matching the sign of the dividend.
+            let nanos = self.total_nanoseconds();
+            return if nanos > 0 {
+                Self::MAX
+            } else if nanos < 0 {
+                Self::MIN
+            } else {
+                Self::ZERO
+            };
+        }
+
+        // self / q == self * 10^p / (q * 10^p), computed in integer arithmetic
+        // to preserve nanosecond precision.
+        Duration::from_total_nanoseconds(
+            self.total_nanoseconds()
+                .saturating_mul(10_i128.pow(p.try_into().unwrap()))
+                .saturating_div(divisor),
         )
     }
 }
