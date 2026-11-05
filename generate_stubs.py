@@ -436,7 +436,7 @@ def arguments_stub(
     elif callable_name in [
         "__add__",
         "__sub__",
-        "__div__",
+        "__truediv__",
         "__mul__",
         "__radd__",
         "__rsub__",
@@ -529,7 +529,7 @@ def returns_stub(
     if callable_name in [
         "__add__",
         "__sub__",
-        "__div__",
+        "__truediv__",
         "__mul__",
         "__radd__",
         "__rsub__",

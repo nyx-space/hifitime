@@ -44,3 +44,11 @@ def test_constructors():
         print(f"caught {e}")
     else:
         raise AssertionError("failed to catch as exception")
+
+
+def test_truediv():
+    from hifitime import Unit
+
+    d = Unit.Hour * 1.0
+    # The `/` operator must be wired to __truediv__ (gh-507).
+    assert d / 2.0 == Unit.Minute * 30.0
