@@ -57,6 +57,8 @@ impl From<pyo3::PyErr> for HifitimeError {
 pub enum DurationError {
     Overflow,
     Underflow,
+    #[snafu(display("attempted to create a duration from a non-finite value"))]
+    NonFinite,
 }
 
 #[non_exhaustive]

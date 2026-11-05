@@ -287,6 +287,9 @@ impl Mul<f64> for Unit {
     /// ## Limitations
     /// 1. If the input value times the unit does not fit on a Duration, then Duration::MAX or Duration::MIN will be returned depending on whether the value would have overflowed or underflowed (respectively).
     /// 2. Floating point operations may round differently on different processors. It's advised to use integer initialization of Durations whenever possible.
+    ///
+    /// # Panics
+    /// Panics if `q` is not finite (NaN or infinite).
     fn mul(self, q: f64) -> Duration {
         self.const_multiply(q)
     }
@@ -294,6 +297,9 @@ impl Mul<f64> for Unit {
 
 impl Unit {
     /// `const`-compatible copy of [Self::mul].
+    ///
+    /// # Panics
+    /// Panics if `q` is not finite (NaN or infinite).
     #[cfg_attr(kani, kani::ensures(|result: &Duration| {
         let (c, n) = result.to_parts();
         n < NANOSECONDS_PER_CENTURY

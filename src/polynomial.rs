@@ -38,6 +38,9 @@ impl From<(f64, f64, f64)> for Polynomial {
     /// Converts (f64, f64, f64) triplet, oftentimes
     /// noted (a0, a1, a2) as (offset (s), drift (s.s⁻¹), drift change (s.s⁻²))
     /// to [Polynomial] structure, that allows precise [TimeScale] translation.
+    ///
+    /// # Panics
+    /// Panics if any of the triplet values is not finite (NaN or infinite).
     fn from(triplet: (f64, f64, f64)) -> Self {
         Self {
             constant: Duration::from_seconds(triplet.0),

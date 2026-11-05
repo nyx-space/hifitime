@@ -402,6 +402,10 @@ impl Sub<Duration> for Epoch {
 impl Add<f64> for Epoch {
     type Output = Self;
 
+    /// Adds `seconds` to the epoch in its initialized time scale.
+    ///
+    /// # Panics
+    /// Panics if `seconds` is not finite (NaN or infinite).
     fn add(self, seconds: f64) -> Self {
         Self {
             duration: self.duration + seconds * Unit::Second,

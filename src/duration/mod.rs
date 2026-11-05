@@ -206,6 +206,9 @@ impl Duration {
     }
 
     /// Creates a new duration from the provided number of days
+    ///
+    /// # Panics
+    /// Panics if `value` is not finite (NaN or infinite).
     #[must_use]
     #[cfg_attr(kani, kani::ensures(|result: &Self| {
         result.nanoseconds < NANOSECONDS_PER_CENTURY
@@ -218,6 +221,9 @@ impl Duration {
     }
 
     /// Creates a new duration from the provided number of hours
+    ///
+    /// # Panics
+    /// Panics if `value` is not finite (NaN or infinite).
     #[must_use]
     #[cfg_attr(kani, kani::ensures(|result: &Self| {
         result.nanoseconds < NANOSECONDS_PER_CENTURY
@@ -230,6 +236,10 @@ impl Duration {
     }
 
     /// Creates a new duration from the provided number of seconds
+    ///
+    /// # Panics
+    /// Panics if `value` is not finite (NaN or infinite). Use
+    /// [`Self::try_from_seconds`] for a fallible alternative.
     #[must_use]
     #[cfg_attr(kani, kani::requires(value.is_finite()))]
     #[cfg_attr(kani, kani::ensures(|result: &Self| {
@@ -241,7 +251,23 @@ impl Duration {
         Unit::Second.const_multiply(value)
     }
 
+    /// Attempts to create a new duration from the provided number of seconds.
+    ///
+    /// Returns [`DurationError::NonFinite`] if `value` is not finite (NaN or
+    /// infinite) instead of panicking like [`Self::from_seconds`]. This mirrors
+    /// how the standard library pairs `from_secs_f64` with `try_from_secs_f64`.
+    pub fn try_from_seconds(value: f64) -> Result<Self, DurationError> {
+        if value.is_finite() {
+            Ok(Self::from_seconds(value))
+        } else {
+            Err(DurationError::NonFinite)
+        }
+    }
+
     /// Creates a new duration from the provided number of milliseconds
+    ///
+    /// # Panics
+    /// Panics if `value` is not finite (NaN or infinite).
     #[must_use]
     #[cfg_attr(kani, kani::ensures(|result: &Self| {
         result.nanoseconds < NANOSECONDS_PER_CENTURY
@@ -254,6 +280,9 @@ impl Duration {
     }
 
     /// Creates a new duration from the provided number of microsecond
+    ///
+    /// # Panics
+    /// Panics if `value` is not finite (NaN or infinite).
     #[must_use]
     #[cfg_attr(kani, kani::ensures(|result: &Self| {
         result.nanoseconds < NANOSECONDS_PER_CENTURY
@@ -266,6 +295,9 @@ impl Duration {
     }
 
     /// Creates a new duration from the provided number of nanoseconds
+    ///
+    /// # Panics
+    /// Panics if `value` is not finite (NaN or infinite).
     #[must_use]
     #[cfg_attr(kani, kani::ensures(|result: &Self| {
         result.nanoseconds < NANOSECONDS_PER_CENTURY
@@ -1019,5 +1051,19 @@ mod ut_duration {
         let d = Duration::MAX;
         let core_d: core::time::Duration = d.into();
         assert_eq!(core_d, core::time::Duration::from_secs(103407943680000));
+    }
+
+    #[test]
+    fn test_try_from_seconds() {
+        use crate::errors::DurationError;
+
+        assert_eq!(Duration::try_from_seconds(2.5), Ok(2.5.seconds()));
+
+        for value in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            assert_eq!(
+                Duration::try_from_seconds(value),
+                Err(DurationError::NonFinite)
+            );
+        }
     }
 }
