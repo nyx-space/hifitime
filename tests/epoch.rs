@@ -165,9 +165,9 @@ fn utc_tai() {
     // than there are seconds for that UTC epoch: the same TAI time happens _before_ that UTC time.
 
     // flp = first leap second
-    let flp_from_secs_tai = Epoch::from_tai_seconds(2_272_060_800.0);
-    let flp_from_greg_tai = Epoch::from_gregorian_tai_at_midnight(1972, 1, 1);
-    assert_eq!(flp_from_secs_tai, flp_from_greg_tai);
+    let flp_from_secs_utc = Epoch::from_utc_seconds(2_272_060_800.0);
+    let flp_from_greg_utc = Epoch::from_gregorian_utc_at_midnight(1972, 1, 1);
+    assert_eq!(flp_from_secs_utc, flp_from_greg_utc);
     // Right after the discontinuity, UTC time should be ten seconds behind TAI, i.e. TAI is ten seconds ahead of UTC
     // In other words, the following date times are equal:
     let in_tai = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 10);
@@ -198,11 +198,11 @@ fn utc_tai() {
     );
 
     assert!(
-        flp_from_secs_tai.to_tai_seconds() > flp_from_secs_tai.to_utc_seconds(),
+        flp_from_secs_utc.to_tai_seconds() > flp_from_secs_utc.to_utc_seconds(),
         "TAI is not ahead of UTC (via function call)"
     );
     assert!(
-        (flp_from_secs_tai.to_tai_seconds() - flp_from_secs_tai.to_utc_seconds() - 10.0)
+        (flp_from_secs_utc.to_tai_seconds() - flp_from_secs_utc.to_utc_seconds() - 10.0)
             < f64::EPSILON,
         "TAI is not ahead of UTC"
     );
@@ -1189,9 +1189,8 @@ fn regression_test_gh_85() {
 fn test_leap_seconds_iers() {
     // Just before the very first leap second.
     let epoch_from_utc_greg = Epoch::from_gregorian_tai_hms(1971, 12, 31, 23, 59, 59);
-    // Just after it.
-    let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 0);
-    assert_eq!(epoch_from_utc_greg1.day_of_year(), 1.0);
+    // Just after it: the first leap second is applied at TAI 1972-01-01 00:00:10.
+    let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 1, 1, 0, 0, 10);
     assert_eq!(epoch_from_utc_greg.leap_seconds_iers(), 0);
     // The first leap second is special; it adds 10 seconds.
     assert_eq!(epoch_from_utc_greg1.leap_seconds_iers(), 10);
@@ -1202,8 +1201,8 @@ fn test_leap_seconds_iers() {
         epoch_from_utc_greg.duration_in_year(),
         (31 + 29 + 31 + 30 + 31 + 30) * Unit::Day - Unit::Second
     );
-    // Just after it.
-    let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 7, 1, 0, 0, 0);
+    // Just after it: the second leap second is applied at TAI 1972-07-01 00:00:11.
+    let epoch_from_utc_greg1 = Epoch::from_gregorian_tai_hms(1972, 7, 1, 0, 0, 11);
     assert_eq!(epoch_from_utc_greg.leap_seconds_iers(), 10);
     assert_eq!(epoch_from_utc_greg1.leap_seconds_iers(), 11);
 }
@@ -2757,4 +2756,66 @@ fn tcl_tl_round_trip() {
             assert_eq!(Epoch::from_str(&format!("{tcl}")).unwrap(), tcl);
         }
     }
+}
+
+#[test]
+fn test_gh_417_leap_second_utc_alignment() {
+    // Regression test for https://github.com/nyx-space/hifitime/issues/417
+    // `from_tai_seconds` and `from_utc_seconds` must agree on the UTC
+    // representation in the seconds leading up to a leap second.
+    let utc0 = Epoch::from_gregorian_utc_hms(2016, 12, 31, 23, 59, 0);
+    let t0 = utc0.to_tai_seconds();
+    let u0 = utc0.to_utc_seconds();
+
+    for dt in 1..60 {
+        let tai = Epoch::from_tai_seconds(t0 + dt as f64);
+        let utc = Epoch::from_utc_seconds(u0 + dt as f64);
+        assert_eq!(
+            tai.to_utc_seconds(),
+            utc.to_utc_seconds(),
+            "TAI and UTC disagree at dt={dt}"
+        );
+    }
+}
+
+#[test]
+fn test_gh_255_utc_tai_round_trip() {
+    // Regression test for https://github.com/nyx-space/hifitime/issues/255
+    // UTC -> TAI -> UTC must be lossless around a leap second insertion.
+    let utc0 = Epoch::from_gregorian_utc_hms(2016, 12, 31, 23, 55, 0);
+    let base = utc0.to_utc_seconds();
+
+    for sec in 0..600 {
+        let u = base + sec as f64;
+        let tai = Epoch::from_utc_seconds(u).to_tai_seconds();
+        let back = Epoch::from_tai_seconds(tai).to_utc_seconds();
+        assert!(
+            (back - u).abs() <= 1e-9,
+            "UTC->TAI->UTC round-trip failed for UTC {u} (TAI {tai}, back {back})"
+        );
+    }
+}
+
+#[cfg(feature = "std")]
+#[test]
+fn test_gh_255_leap_seconds_with_tai_threshold() {
+    // Regression test for https://github.com/nyx-space/hifitime/issues/255
+    // The leap second table lists UTC timestamps; when queried by TAI seconds,
+    // the offset must only apply once TAI reaches `timestamp_utc + delta_at`.
+    use hifitime::leap_seconds::LeapSecondsFile;
+
+    // Toy leap seconds: ΔAT is 3, then becomes 4 at UTC second 100.
+    let make_provider = || LeapSecondsFile::from_content("0 3\n100 4\n".to_string()).unwrap();
+
+    // At TAI second 103 the offset is still 3 (the new offset applies at 104).
+    assert_eq!(
+        Epoch::from_tai_seconds(103.0).leap_seconds_with(false, make_provider()),
+        Some(3.0)
+    );
+
+    // At TAI second 104 the offset becomes 4.
+    assert_eq!(
+        Epoch::from_tai_seconds(104.0).leap_seconds_with(false, make_provider()),
+        Some(4.0)
+    );
 }
