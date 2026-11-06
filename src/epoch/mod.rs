@@ -36,8 +36,8 @@ use crate::timescale::tcl::{
     tt_since_t77_to_tcl_since_t77,
 };
 use crate::{
-    HifitimeError, MonthName, TimeScale, TimeUnits, BDT_REF_EPOCH, ET_EPOCH_S, GPST_REF_EPOCH,
-    GST_REF_EPOCH, MJD_J1900, MJD_OFFSET, QZSST_REF_EPOCH, UNIX_REF_EPOCH,
+    HifitimeError, MonthName, TimeScale, TimeUnits, ET_EPOCH_S, MJD_J1900, MJD_OFFSET,
+    UNIX_REF_EPOCH,
 };
 use core::cmp::Eq;
 #[allow(unused_imports)]
@@ -228,10 +228,10 @@ impl Epoch {
                     tai_assumption.time_scale = TimeScale::TAI;
                     self.duration + tai_assumption.leap_seconds(true).unwrap_or(0.0).seconds()
                 }
-                TimeScale::GPST => self.duration + GPST_REF_EPOCH.to_tai_duration(),
-                TimeScale::GST => self.duration + GST_REF_EPOCH.to_tai_duration(),
-                TimeScale::BDT => self.duration + BDT_REF_EPOCH.to_tai_duration(),
-                TimeScale::QZSST => self.duration + QZSST_REF_EPOCH.to_tai_duration(),
+                TimeScale::GPST => self.duration + TimeScale::GPST.reference_epoch_tai().duration,
+                TimeScale::GST => self.duration + TimeScale::GST.reference_epoch_tai().duration,
+                TimeScale::BDT => self.duration + TimeScale::BDT.reference_epoch_tai().duration,
+                TimeScale::QZSST => self.duration + TimeScale::QZSST.reference_epoch_tai().duration,
                 TimeScale::TCG => {
                     // self.duration is TCG duration since the TCG/TT reference epoch.
                     let tcg_since_t77 = self.duration;
@@ -353,10 +353,18 @@ impl Epoch {
                     // TAI = UTC + leap_seconds <=> UTC = TAI - leap_seconds
                     prime_epoch_offset - epoch.leap_seconds(true).unwrap_or(0.0).seconds()
                 }
-                TimeScale::GPST => prime_epoch_offset - GPST_REF_EPOCH.to_tai_duration(),
-                TimeScale::GST => prime_epoch_offset - GST_REF_EPOCH.to_tai_duration(),
-                TimeScale::BDT => prime_epoch_offset - BDT_REF_EPOCH.to_tai_duration(),
-                TimeScale::QZSST => prime_epoch_offset - QZSST_REF_EPOCH.to_tai_duration(),
+                TimeScale::GPST => {
+                    prime_epoch_offset - TimeScale::GPST.reference_epoch_tai().duration
+                }
+                TimeScale::GST => {
+                    prime_epoch_offset - TimeScale::GST.reference_epoch_tai().duration
+                }
+                TimeScale::BDT => {
+                    prime_epoch_offset - TimeScale::BDT.reference_epoch_tai().duration
+                }
+                TimeScale::QZSST => {
+                    prime_epoch_offset - TimeScale::QZSST.reference_epoch_tai().duration
+                }
                 TimeScale::TCG => {
                     // First convert TAI to TT
                     let tt_duration = prime_epoch_offset + TT_OFFSET_MS.milliseconds();
@@ -798,7 +806,7 @@ impl Epoch {
     /// Returns `Duration` past BDT (BeiDou) time Epoch.
     /// :rtype: Duration
     pub fn to_bdt_duration(&self) -> Duration {
-        self.to_tai_duration() - BDT_REF_EPOCH.to_tai_duration()
+        self.to_tai_duration() - TimeScale::BDT.reference_epoch_tai().duration
     }
 
     #[must_use]
