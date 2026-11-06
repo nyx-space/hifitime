@@ -1048,4 +1048,38 @@ mod ut_duration {
             -103_407_907_651_280_262_135_808_i128
         );
     }
+
+    #[test]
+    fn test_assign_ops() {
+        // Integer assign operators.
+        let mut d = 3.hours();
+        d *= 4;
+        assert_eq!(d, 12.hours());
+        d /= 4;
+        assert_eq!(d, 3.hours());
+
+        // Float assign operators with integral values to avoid float precision noise.
+        let mut d = 3.hours();
+        d *= 2.0;
+        assert_eq!(d, 6.hours());
+        d /= 2.0;
+        assert_eq!(d, 3.hours());
+
+        // Non-integral multiplication is exact because Mul<f64> tracks precision.
+        let mut d = 2.hours();
+        d *= 2.5;
+        assert_eq!(d, 5.hours());
+
+        // Negative durations behave like the binary operators.
+        let mut d = -3.hours();
+        d *= 2;
+        assert_eq!(d, -6.hours());
+        d /= 2.0;
+        assert_eq!(d, -3.hours());
+
+        // The assign operators agree with the binary operators on a non-integral divisor.
+        let mut d = 5.hours();
+        d /= 2.5;
+        assert_eq!(d, 5.hours() / 2.5);
+    }
 }

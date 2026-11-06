@@ -17,7 +17,7 @@ use crate::{
 
 use super::{Duration, Freq, Frequencies, TimeUnits, Unit};
 
-use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[cfg(not(feature = "std"))]
 #[allow(unused_imports)] // Import is indeed used.
@@ -140,6 +140,30 @@ impl Mul<f64> for Duration {
                 .saturating_mul(new_val as i128)
                 .saturating_div(10_i128.pow(p.try_into().unwrap())),
         )
+    }
+}
+
+impl MulAssign<i64> for Duration {
+    fn mul_assign(&mut self, rhs: i64) {
+        *self = *self * rhs;
+    }
+}
+
+impl DivAssign<i64> for Duration {
+    fn div_assign(&mut self, rhs: i64) {
+        *self = *self / rhs;
+    }
+}
+
+impl MulAssign<f64> for Duration {
+    fn mul_assign(&mut self, rhs: f64) {
+        *self = *self * rhs;
+    }
+}
+
+impl DivAssign<f64> for Duration {
+    fn div_assign(&mut self, rhs: f64) {
+        *self = *self / rhs;
     }
 }
 
