@@ -218,7 +218,6 @@ class Duration:
     def __add__(self, value: typing.Any):
         """Return self+value."""
 
-    def __div__(self, other: float): ...
     def __eq__(self, value: typing.Any) -> bool:
         """Return self==value."""
 
@@ -258,6 +257,8 @@ class Duration:
 
     def __sub__(self, value: typing.Any):
         """Return self-value."""
+
+    def __truediv__(self, other: float): ...
 
 @typing.final
 class DurationError:

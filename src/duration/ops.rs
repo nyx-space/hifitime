@@ -17,7 +17,7 @@ use crate::{
 
 use super::{Duration, Freq, Frequencies, TimeUnits, Unit};
 
-use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[cfg(not(feature = "std"))]
 #[allow(unused_imports)] // Import is indeed used.
@@ -61,17 +61,6 @@ macro_rules! impl_ops_for_type {
             }
         }
 
-        #[allow(clippy::suspicious_arithmetic_impl)]
-        impl Div<$type> for Duration {
-            type Output = Duration;
-            fn div(self, q: $type) -> Self::Output {
-                Duration::from_total_nanoseconds(
-                    self.total_nanoseconds()
-                        .saturating_div((q * Unit::Nanosecond).total_nanoseconds()),
-                )
-            }
-        }
-
         impl Mul<Duration> for $type {
             type Output = Duration;
             fn mul(self, q: Self::Output) -> Self::Output {
@@ -91,55 +80,329 @@ impl_ops_for_type!(i64);
 
 impl Mul<i64> for Duration {
     type Output = Duration;
+
+    /// Scales this duration by `q`, saturating at [`Duration::MIN`] /
+    /// [`Duration::MAX`].
     fn mul(self, q: i64) -> Self::Output {
-        Duration::from_total_nanoseconds(
-            self.total_nanoseconds()
-                .saturating_mul((q * Unit::Nanosecond).total_nanoseconds()),
-        )
+        Duration::from_total_nanoseconds(self.total_nanoseconds().saturating_mul(i128::from(q)))
     }
+}
+
+// Shared by Duration's Mul<f64> and Div<f64> below.
+
+/// Bit width of `Duration::MAX.total_nanoseconds()`. Any magnitude needing this
+/// many bits is out of range.
+const MAX_TOTAL_NANOSECONDS_BITS: u32 = 77;
+
+/// `a * 2^shift`, truncating toward zero when `shift` is negative. `None` if
+/// the result does not fit in a `u128`.
+#[inline]
+fn shift_magnitude(a: u128, shift: i32) -> Option<u128> {
+    if shift >= 0 {
+        let shift = shift as u32;
+        if shift >= 128 || a > (u128::MAX >> shift) {
+            None
+        } else {
+            Some(a << shift)
+        }
+    } else {
+        let shift = shift.unsigned_abs();
+        Some(if shift >= 128 { 0 } else { a >> shift })
+    }
+}
+
+/// Decomposes a finite, nonzero f64's magnitude into `mantissa * 2^exponent`
+/// (`mantissa` fits in 53 bits). Sign is not included; use `q.is_sign_negative()`.
+#[inline]
+fn decompose_f64(q: f64) -> (u64, i32) {
+    let bits = q.to_bits();
+    let raw_exponent = ((bits >> 52) & 0x7FF) as i32;
+    let raw_mantissa = bits & 0x000F_FFFF_FFFF_FFFF;
+    if raw_exponent == 0 {
+        (raw_mantissa, 1 - 1023 - 52) // subnormal: no implicit leading bit
+    } else {
+        (raw_mantissa | (1 << 52), raw_exponent - 1023 - 52) // normal
+    }
+}
+
+/// Builds a `Duration` from an unsigned nanosecond magnitude and a sign,
+/// saturating if it doesn't fit.
+#[inline]
+fn duration_from_magnitude(magnitude: u128, negative: bool) -> Duration {
+    if magnitude < NANOSECONDS_PER_CENTURY as u128 {
+        let ns = magnitude as u64;
+        return if !negative {
+            Duration::from_parts(0, ns)
+        } else if ns == 0 {
+            Duration::ZERO
+        } else {
+            Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - ns)
+        };
+    }
+    if magnitude > i128::MAX as u128 {
+        return if negative {
+            Duration::MIN
+        } else {
+            Duration::MAX
+        };
+    }
+    let signed = magnitude as i128;
+    Duration::from_total_nanoseconds(if negative { -signed } else { signed })
+}
+
+/// `a << shift` as `(hi, lo)`, i.e. `hi * 2^128 + lo`. `shift` must be < 256.
+#[inline]
+fn widening_shl(a: u128, shift: u32) -> (u128, u128) {
+    debug_assert!(shift < 256, "shift past 256 bits");
+    if shift == 0 {
+        (0, a)
+    } else if shift < 128 {
+        (a >> (128 - shift), a << shift)
+    } else {
+        (a << (shift - 128), 0)
+    }
+}
+
+/// Divides `hi * 2^128 + lo` by `divisor`, truncating. Long division 64 bits at
+/// a time, so each step's working value fits in a `u128`.
+///
+/// The quotient must fit in a `u128`, i.e. `hi < divisor`; the accumulator shift
+/// drops high bits silently otherwise.
+#[inline]
+fn divide_wide(hi: u128, lo: u128, divisor: u64) -> u128 {
+    debug_assert!(divisor != 0, "divide by zero");
+    debug_assert!(hi < divisor as u128, "quotient exceeds u128");
+    let divisor = divisor as u128;
+    let mut remainder = 0u128;
+    let mut quotient = 0u128;
+    for word in [(hi >> 64) as u64, hi as u64, (lo >> 64) as u64, lo as u64] {
+        let chunk = (remainder << 64) | word as u128;
+        quotient = (quotient << 64) | (chunk / divisor);
+        remainder = chunk % divisor;
+    }
+    quotient
 }
 
 impl Mul<f64> for Duration {
     type Output = Duration;
+
+    /// Scales this duration by `q`.
+    ///
+    /// `q` is decomposed into its exact `mantissa * 2^exponent` form and applied
+    /// in wide integer arithmetic, so the scaling is exact. Only the result is
+    /// truncated toward zero to whole nanoseconds, then saturated at
+    /// [`Duration::MIN`] / [`Duration::MAX`].
+    ///
+    /// # Non-finite `q`
+    ///
+    /// Never panics, unlike [`Duration::from_seconds`] and the other `f64`
+    /// constructors.
+    ///
+    /// | `q` | result |
+    /// |---|---|
+    /// | `±∞` | [`Duration::MAX`] / [`Duration::MIN`] by sign |
+    /// | `±0.0` | [`Duration::ZERO`] |
+    /// | `NaN` | [`Duration::ZERO`] |
+    ///
+    /// A [`Duration`] cannot represent NaN, and a NaN has no meaningful sign to
+    /// saturate towards. `Duration::ZERO` times an infinity is `0 × ∞`, also
+    /// [`Duration::ZERO`].
+    #[inline]
     fn mul(self, q: f64) -> Self::Output {
-        // Make sure that we don't trim the number by finding its precision
-        let mut p: i32 = 0;
-        let mut new_val: f64 = q;
-        let ten: f64 = 10.0;
-
-        // Loop invariant: p stays in [0, 19] across all iterations.
-        // Decreases clause: 19 - p strictly decreases each iteration (p increments by 1),
-        // proving termination. Together they establish total correctness:
-        // the loop terminates with p ∈ [0, 19] for all f64 inputs.
-        //
-        // The while condition consolidates the two break conditions from the original
-        // loop { if ... break; ... if p >= 19 break; } into a single guard:
-        //   - !new_val.is_finite(): breaks when q * 10^p overflows to infinity/NaN
-        //   - floor check: breaks when new_val is an integer (precision found)
-        //   - p < 19: breaks when f64's ~17 significant digits are exhausted
-        #[cfg_attr(kani, kani::loop_invariant(p >= 0 && p <= 19))]
-        // TODO: enable when Kani supports loop_decreases (PR #4564)
-        // #[cfg_attr(kani, kani::loop_decreases(19i32.wrapping_sub(p)))]
-        while new_val.is_finite() && (new_val.floor() - new_val).abs() >= f64::EPSILON && p < 19 {
-            p += 1;
-            new_val = q * ten.powi(p);
+        if q.is_nan() {
+            return Duration::ZERO;
         }
 
-        // If new_val overflowed to infinity (e.g., very large q), the cast
-        // `inf as i128` is undefined behavior. Handle it explicitly.
-        if !new_val.is_finite() {
-            if q.is_sign_negative() {
-                return Duration::MIN;
+        let numerator = self.total_nanoseconds();
+        if numerator == 0 || q == 0.0 {
+            return Duration::ZERO;
+        }
+
+        let result_negative = (numerator < 0) != q.is_sign_negative();
+        let saturate = || {
+            if result_negative {
+                Duration::MIN
             } else {
-                return Duration::MAX;
+                Duration::MAX
             }
+        };
+
+        if q.is_infinite() {
+            return saturate();
         }
 
-        Duration::from_total_nanoseconds(
-            self.total_nanoseconds()
-                .saturating_mul(new_val as i128)
-                .saturating_div(10_i128.pow(p.try_into().unwrap())),
-        )
+        let (mantissa, exponent) = decompose_f64(q);
+        let a = numerator.unsigned_abs();
+
+        // A power-of-two `q` has a mantissa of 1, so the scaling is just a shift.
+        if mantissa.is_power_of_two() {
+            return match shift_magnitude(a, exponent + mantissa.trailing_zeros() as i32) {
+                Some(magnitude) => duration_from_magnitude(magnitude, result_negative),
+                None => saturate(),
+            };
+        }
+
+        // Widening multiply of a * mantissa, as `hi * 2^128 + lo`.
+        let a_lo = a as u64 as u128;
+        let a_hi = a >> 64;
+        let m = mantissa as u128;
+        let p_lo = a_lo * m; // < 2^117, always fits
+        let p_hi = a_hi.saturating_mul(m);
+        let (lo, carry) = p_lo.overflowing_add((p_hi as u64 as u128) << 64);
+        let hi = (p_hi >> 64) + u128::from(carry);
+
+        let magnitude = if exponent < 0 {
+            let shift = (-exponent) as u32;
+            if shift >= 256 {
+                0
+            } else if shift >= 128 {
+                hi >> (shift - 128)
+            } else if hi >= (1u128 << shift) {
+                return saturate();
+            } else {
+                (hi << (128 - shift)) | (lo >> shift)
+            }
+        } else {
+            let shift = exponent as u32;
+            if hi != 0 || shift >= 128 || lo > (u128::MAX >> shift) {
+                return saturate();
+            }
+            lo << shift
+        };
+
+        duration_from_magnitude(magnitude, result_negative)
+    }
+}
+
+impl Div<f64> for Duration {
+    type Output = Duration;
+
+    /// Divides this duration by `q`.
+    ///
+    /// Same exact `mantissa * 2^exponent` decomposition as
+    /// [`Mul<f64>`](Duration::mul), dividing by the mantissa rather than
+    /// multiplying. The result is truncated toward zero to whole nanoseconds,
+    /// then saturated at [`Duration::MIN`] / [`Duration::MAX`].
+    ///
+    /// # Non-finite `q`
+    ///
+    /// Never panics; dividing by zero saturates rather than trapping.
+    ///
+    /// | `q` | result |
+    /// |---|---|
+    /// | `±∞` | [`Duration::ZERO`] |
+    /// | `±0.0` | [`Duration::MAX`] / [`Duration::MIN`] by sign |
+    /// | `NaN` | [`Duration::ZERO`] |
+    ///
+    /// `Duration::ZERO` divided by zero is `0 / 0`, also [`Duration::ZERO`].
+    #[inline]
+    fn div(self, q: f64) -> Self::Output {
+        // Dividing by an infinity tends to zero; a NaN has no representation.
+        if !q.is_finite() {
+            return Duration::ZERO;
+        }
+
+        let numerator = self.total_nanoseconds();
+        if numerator == 0 {
+            return Duration::ZERO;
+        }
+
+        let result_negative = (numerator < 0) != q.is_sign_negative();
+
+        if q == 0.0 {
+            return if result_negative {
+                Duration::MIN
+            } else {
+                Duration::MAX
+            };
+        }
+
+        let (divisor, exponent) = decompose_f64(q);
+        let a = numerator.unsigned_abs();
+
+        // A power-of-two divisor is just a shift, skipping the 128-bit division.
+        if divisor.is_power_of_two() {
+            return match shift_magnitude(a, -(exponent + divisor.trailing_zeros() as i32)) {
+                Some(magnitude) => duration_from_magnitude(magnitude, result_negative),
+                None => {
+                    if result_negative {
+                        Duration::MIN
+                    } else {
+                        Duration::MAX
+                    }
+                }
+            };
+        }
+
+        let magnitude = if exponent >= 0 {
+            let shift = exponent as u32;
+            (if shift >= 128 { 0 } else { a >> shift }) / (divisor as u128)
+        } else {
+            let shift = (-exponent) as u32;
+            let bits_needed = (u128::BITS - a.leading_zeros()) + shift;
+            let divisor_bits = u64::BITS - divisor.leading_zeros();
+            // The quotient needs at least `bits_needed - 1 - divisor_bits` bits.
+            // Bailing out here also keeps `hi` below 2^2 for `divide_wide`.
+            if bits_needed > divisor_bits + MAX_TOTAL_NANOSECONDS_BITS {
+                return if result_negative {
+                    Duration::MIN
+                } else {
+                    Duration::MAX
+                };
+            }
+            let (hi, lo) = widening_shl(a, shift);
+            if hi == 0 {
+                lo / (divisor as u128)
+            } else {
+                divide_wide(hi, lo, divisor)
+            }
+        };
+
+        duration_from_magnitude(magnitude, result_negative)
+    }
+}
+
+impl Div<i64> for Duration {
+    type Output = Duration;
+
+    /// Divides this duration by `q`, truncating toward zero.
+    ///
+    /// Dividing by zero saturates at [`Duration::MAX`] / [`Duration::MIN`] by
+    /// this duration's sign, and `Duration::ZERO / 0` is [`Duration::ZERO`].
+    fn div(self, q: i64) -> Self::Output {
+        let numerator = self.total_nanoseconds();
+        if q == 0 {
+            return match numerator.signum() {
+                1 => Duration::MAX,
+                -1 => Duration::MIN,
+                _ => Duration::ZERO,
+            };
+        }
+        Duration::from_total_nanoseconds(numerator.saturating_div(i128::from(q)))
+    }
+}
+
+impl MulAssign<f64> for Duration {
+    fn mul_assign(&mut self, q: f64) {
+        *self = *self * q;
+    }
+}
+
+impl DivAssign<f64> for Duration {
+    fn div_assign(&mut self, q: f64) {
+        *self = *self / q;
+    }
+}
+
+impl MulAssign<i64> for Duration {
+    fn mul_assign(&mut self, q: i64) {
+        *self = *self * q;
+    }
+}
+
+impl DivAssign<i64> for Duration {
+    fn div_assign(&mut self, q: i64) {
+        *self = *self / q;
     }
 }
 

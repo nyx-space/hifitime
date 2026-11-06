@@ -203,6 +203,337 @@ fn test_ops() {
     println!("{min_quarter_hour}");
 }
 
+/// `Duration::MAX.total_nanoseconds()`, i.e. 32768 centuries of nanoseconds.
+const MAX_NS: i128 = 103_407_943_680_000_000_000_000;
+
+/// Asserts that `d * q` scales exactly, truncating toward zero and saturating
+/// at the `Duration` bounds.
+#[track_caller]
+fn check_mul(ns: i128, q: f64, expected_ns: i128) {
+    let got = (Duration::from_total_nanoseconds(ns) * q).total_nanoseconds();
+    assert_eq!(
+        got,
+        expected_ns,
+        "{ns} * {q} (bits {:#018x}): got {got}, want {expected_ns}",
+        q.to_bits()
+    );
+}
+
+/// Asserts that `d / q` divides exactly, truncating toward zero and saturating
+/// at the `Duration` bounds.
+#[track_caller]
+fn check_div(ns: i128, q: f64, expected_ns: i128) {
+    let got = (Duration::from_total_nanoseconds(ns) / q).total_nanoseconds();
+    assert_eq!(
+        got,
+        expected_ns,
+        "{ns} / {q} (bits {:#018x}): got {got}, want {expected_ns}",
+        q.to_bits()
+    );
+}
+
+/// Expected values were computed in exact rational arithmetic, truncated toward
+/// zero and saturated at the `Duration` bounds. The cases cover every branch of
+/// the `mantissa * 2^exponent` decomposition.
+#[test]
+fn test_mul_f64_exactness() {
+    // Shift past 256 bits: the product underflows to nothing.
+    check_mul(1, f64::from_bits(0x0000_0000_0000_0001), 0);
+    // Shift of 128 or more (2^-200).
+    check_mul(MAX_NS, f64::from_bits(0x3370_0000_0000_0000), 0);
+    // Negative exponent, in range.
+    check_mul(
+        3_600_000_000_000,
+        f64::from_bits(0x3fd5_5555_5555_5555),
+        1_199_999_999_999,
+    );
+    check_mul(
+        3_600_000_000_000,
+        f64::from_bits(0x3fb9_9999_9999_999a),
+        360_000_000_000,
+    );
+    check_mul(MAX_NS, f64::from_bits(0xbff0_0000_0000_0000), -MAX_NS);
+    check_mul(-MAX_NS, f64::from_bits(0xbff0_0000_0000_0000), MAX_NS);
+    check_mul(
+        -3_600_000_000_000,
+        f64::from_bits(0xc004_0000_0000_0000),
+        9_000_000_000_000,
+    );
+    check_mul(
+        -MAX_NS,
+        f64::from_bits(0x3fd5_5555_5555_5555),
+        -34_469_314_559_999_998_086_568,
+    );
+    // Negative exponent, saturating.
+    check_mul(MAX_NS, f64::from_bits(0x432f_ffff_ffff_ffff), MAX_NS);
+    // Non-negative exponent, in range.
+    check_mul(
+        1,
+        f64::from_bits(0x43b0_0000_0000_0000),
+        1_152_921_504_606_846_976,
+    );
+    check_mul(1_000_000_000, f64::from_bits(0x44f0_0000_0000_0000), MAX_NS);
+    // Non-negative exponent, saturating (1e300).
+    check_mul(MAX_NS, f64::from_bits(0x7e37_e43c_8800_759c), MAX_NS);
+
+    let dur = Duration::from_total_nanoseconds(8_541_977_920_157_571_725);
+    let q = f64::from_bits(0xbfec_af26_448a_391c);
+    assert_eq!((dur * q).to_parts(), (-3, 1_810_417_115_347_173_027));
+
+    let third = 1.0 / 3.0;
+    assert_eq!(
+        (Duration::MIN * third).to_parts(),
+        (-10923, 1_051_920_000_001_913_432)
+    );
+    assert_eq!(
+        (Duration::MAX * third).to_parts(),
+        (10922, 2_103_839_999_998_086_568)
+    );
+}
+
+/// See [`test_mul_f64_exactness`] for how these values were derived.
+#[test]
+fn test_div_f64_exactness() {
+    assert_eq!(1.hours() / 2.5, 24.minutes());
+    assert_eq!(1.hours() / 0.5, 2.hours());
+    assert_eq!(1.hours() / 3.0, 20.minutes());
+
+    // Non-negative exponent, shift of 128 or more (2^200).
+    check_div(3_600_000_000_000, f64::from_bits(0x4c70_0000_0000_0000), 0);
+    // Non-negative exponent, in range (2^60 and 2^52).
+    check_div(MAX_NS, f64::from_bits(0x43b0_0000_0000_0000), 89_692);
+    check_div(MAX_NS, f64::from_bits(0x4330_0000_0000_0000), 22_961_176);
+    // Negative exponent, quotient fits in 128 bits without the wide path.
+    check_div(
+        3_600_000_000_000,
+        f64::from_bits(0x401c_0000_0000_0000),
+        514_285_714_285,
+    );
+    check_div(
+        3_600_000_000_000,
+        f64::from_bits(0x4004_0000_0000_0000),
+        1_440_000_000_000,
+    );
+    check_div(
+        3_600_000_000_000,
+        f64::from_bits(0xbfc0_0000_0000_0000),
+        -28_800_000_000_000,
+    );
+    check_div(
+        -MAX_NS,
+        f64::from_bits(0x4008_0000_0000_0000),
+        -34_469_314_560_000_000_000_000,
+    );
+    check_div(
+        -MAX_NS,
+        f64::from_bits(0xc01c_0000_0000_0000),
+        14_772_563_382_857_142_857_142,
+    );
+    // Negative exponent, exercising the 256-bit long division.
+    check_div(MAX_NS, f64::from_bits(0x3fb9_9999_9999_999a), MAX_NS);
+    check_div(MAX_NS, f64::from_bits(0x3f50_624d_d2f1_a9fc), MAX_NS);
+    // Negative exponent, saturation guard.
+    check_div(MAX_NS, f64::from_bits(0x0000_0000_0000_0001), MAX_NS);
+
+    assert_eq!(
+        (Duration::MAX / (1.0 / 3.0)).to_parts(),
+        (32767, 3_155_760_000_000_000_000)
+    );
+    assert_eq!(
+        (Duration::MIN / (1.0 / 3.0)).to_parts(),
+        Duration::MIN.to_parts()
+    );
+}
+
+#[test]
+fn test_mul_f64_special_values() {
+    assert_eq!(Duration::ZERO * f64::INFINITY, Duration::ZERO);
+    assert_eq!(Duration::ZERO * f64::NEG_INFINITY, Duration::ZERO);
+    assert_eq!(Duration::ZERO * f64::NAN, Duration::ZERO);
+
+    assert_eq!(1.hours() * f64::INFINITY, Duration::MAX);
+    assert_eq!(1.hours() * f64::NEG_INFINITY, Duration::MIN);
+    assert_eq!((-1).hours() * f64::INFINITY, Duration::MIN);
+    assert_eq!((-1).hours() * f64::NEG_INFINITY, Duration::MAX);
+
+    // NaN collapses to zero in both directions, whatever its own sign bit.
+    assert_eq!(1.hours() * f64::NAN, Duration::ZERO);
+    assert_eq!((-1).hours() * f64::NAN, Duration::ZERO);
+    assert_eq!(1.hours() * -f64::NAN, Duration::ZERO);
+    assert_eq!(Duration::MAX * f64::NAN, Duration::ZERO);
+    assert_eq!(Duration::MIN * f64::NAN, Duration::ZERO);
+
+    assert_eq!(1.hours() * 0.0, Duration::ZERO);
+    assert_eq!(1.hours() * -0.0, Duration::ZERO);
+
+    assert_eq!(1.hours() * f64::from_bits(1), Duration::ZERO);
+}
+
+#[test]
+fn test_div_f64_special_values() {
+    assert_eq!(1.hours() / 0.0, Duration::MAX);
+    assert_eq!(1.hours() / -0.0, Duration::MIN);
+    assert_eq!((-1).hours() / 0.0, Duration::MIN);
+    assert_eq!((-1).hours() / -0.0, Duration::MAX);
+    assert_eq!(Duration::ZERO / 0.0, Duration::ZERO);
+    assert_eq!(Duration::MIN / 0.0, Duration::MIN);
+    assert_eq!(Duration::MAX / -0.0, Duration::MIN);
+
+    assert_eq!(1.hours() / f64::NAN, Duration::ZERO);
+    assert_eq!((-1).hours() / f64::NAN, Duration::ZERO);
+    assert_eq!(1.hours() / f64::INFINITY, Duration::ZERO);
+    assert_eq!(1.hours() / f64::NEG_INFINITY, Duration::ZERO);
+    assert_eq!(Duration::MIN / f64::INFINITY, Duration::ZERO);
+}
+
+#[test]
+fn test_div_i64_special_values() {
+    assert_eq!(1.hours() / 0i64, Duration::MAX);
+    assert_eq!((-1).hours() / 0i64, Duration::MIN);
+    assert_eq!(Duration::ZERO / 0i64, Duration::ZERO);
+    assert_eq!(Duration::MAX / 0i64, Duration::MAX);
+    assert_eq!(Duration::MIN / 0i64, Duration::MIN);
+
+    assert_eq!(1.hours() / 3i64, 20.minutes());
+    assert_eq!((-1).hours() / 3i64, -20.minutes());
+
+    // i64::MIN has no positive counterpart, so the widening must not overflow.
+    assert_eq!(
+        (Duration::MAX / i64::MIN).total_nanoseconds(),
+        -11_211,
+        "MAX / i64::MIN"
+    );
+    assert_eq!(
+        (Duration::MIN / i64::MIN).total_nanoseconds(),
+        11_211,
+        "MIN / i64::MIN"
+    );
+    assert_eq!(
+        (Duration::MAX / i64::MAX).total_nanoseconds(),
+        11_211,
+        "MAX / i64::MAX"
+    );
+    assert_eq!(Duration::MIN / -1i64, Duration::MAX);
+    assert_eq!(Duration::MAX / -1i64, Duration::MIN);
+}
+
+/// The i64 operators must agree with the f64 ones where both apply.
+#[test]
+fn test_int_and_float_ops_agree() {
+    for q in [1i64, 2, 3, 7, 10, -1, -2, -3, -7, -10] {
+        for d in [
+            1.hours(),
+            (-1).hours(),
+            Duration::MAX,
+            Duration::MIN,
+            Duration::ZERO,
+            Duration::from_total_nanoseconds(8_541_977_920_157_571_725),
+        ] {
+            assert_eq!(d / q, d / (q as f64), "{d} / {q}");
+            // The two paths saturate at different points, so skip those.
+            let via_int = d * q;
+            if via_int != Duration::MAX && via_int != Duration::MIN {
+                assert_eq!(via_int, d * (q as f64), "{d} * {q}");
+            }
+        }
+    }
+}
+
+/// The `try_*` forms report exactly the cases where the operators substitute a
+/// sentinel, and nothing else.
+#[test]
+fn test_try_mul_div_f64() {
+    // Ordinary values pass straight through.
+    assert_eq!(1.hours().try_mul_f64(2.0).unwrap(), 2.hours());
+    assert_eq!(1.hours().try_div_f64(2.0).unwrap(), 30.minutes());
+    assert_eq!((-1).hours().try_mul_f64(0.0).unwrap(), Duration::ZERO);
+
+    // A NaN is never a determined result, in either direction.
+    for d in [
+        1.hours(),
+        (-1).hours(),
+        Duration::ZERO,
+        Duration::MAX,
+        Duration::MIN,
+    ] {
+        assert_eq!(
+            d.try_mul_f64(f64::NAN).unwrap_err(),
+            HifitimeError::Duration {
+                source: DurationError::NonFinite
+            },
+            "{d} * NaN"
+        );
+        assert_eq!(
+            d.try_div_f64(f64::NAN).unwrap_err(),
+            HifitimeError::Duration {
+                source: DurationError::NonFinite
+            },
+            "{d} / NaN"
+        );
+    }
+
+    // The indeterminate forms.
+    for q in [f64::INFINITY, f64::NEG_INFINITY] {
+        assert_eq!(
+            Duration::ZERO.try_mul_f64(q).unwrap_err(),
+            HifitimeError::Duration {
+                source: DurationError::Indeterminate
+            }
+        );
+    }
+    for q in [0.0, -0.0] {
+        assert_eq!(
+            Duration::ZERO.try_div_f64(q).unwrap_err(),
+            HifitimeError::Duration {
+                source: DurationError::Indeterminate
+            }
+        );
+    }
+
+    // Saturation and the limits are results, not errors.
+    assert_eq!(1.hours().try_mul_f64(f64::INFINITY).unwrap(), Duration::MAX);
+    assert_eq!(
+        1.hours().try_mul_f64(f64::NEG_INFINITY).unwrap(),
+        Duration::MIN
+    );
+    assert_eq!(1.hours().try_div_f64(0.0).unwrap(), Duration::MAX);
+    assert_eq!(1.hours().try_div_f64(-0.0).unwrap(), Duration::MIN);
+    assert_eq!(
+        1.hours().try_div_f64(f64::INFINITY).unwrap(),
+        Duration::ZERO
+    );
+    assert_eq!(
+        Duration::ZERO.try_div_f64(f64::INFINITY).unwrap(),
+        Duration::ZERO
+    );
+    assert_eq!(Duration::ZERO.try_mul_f64(0.0).unwrap(), Duration::ZERO);
+
+    // Where try_* succeeds it must agree with the operator.
+    for q in [2.0, -2.5, 0.1, 1e300, 1e-300, f64::INFINITY, 0.0] {
+        for d in [1.hours(), (-1).hours(), Duration::MAX, Duration::MIN] {
+            assert_eq!(d.try_mul_f64(q).unwrap(), d * q, "{d} * {q}");
+            assert_eq!(d.try_div_f64(q).unwrap(), d / q, "{d} / {q}");
+        }
+    }
+}
+
+#[test]
+fn test_mul_div_assign_ops() {
+    let mut d = 1.hours();
+    d *= 2.0;
+    assert_eq!(d, 2.hours());
+    d /= 4.0;
+    assert_eq!(d, 30.minutes());
+    d *= 4i64;
+    assert_eq!(d, 2.hours());
+    d /= 2i64;
+    assert_eq!(d, 1.hours());
+
+    let mut z = 1.hours();
+    z /= 0.0;
+    assert_eq!(z, Duration::MAX);
+}
+
 #[test]
 fn test_ops_near_bounds() {
     assert_eq!(Duration::MAX - Duration::MAX, 0 * Unit::Nanosecond);

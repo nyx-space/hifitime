@@ -21,6 +21,34 @@ pub fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("Parse complex duration", |b| {
         b.iter(|| Duration::from_str("1 d 15.5 hours 25 ns").unwrap())
     });
+
+    c.bench_function("Duration::from_seconds", |b| {
+        b.iter(|| Duration::from_seconds(black_box(12345.6789)))
+    });
+
+    c.bench_function("Duration * f64 (scaling)", |b| {
+        let d = Duration::from_seconds(12345.6789);
+        b.iter(|| black_box(d) * black_box(2.5))
+    });
+
+    c.bench_function("Duration / f64 (scaling)", |b| {
+        let d = Duration::from_seconds(12345.6789);
+        b.iter(|| black_box(d) / black_box(2.5))
+    });
+
+    c.bench_function("f64 -> Duration -> f64 round trip", |b| {
+        b.iter(|| Duration::from_seconds(black_box(12345.6789)).to_seconds())
+    });
+
+    c.bench_function("Duration * f64 (power of two)", |b| {
+        let d = Duration::from_seconds(12345.6789);
+        b.iter(|| black_box(d) * black_box(2.0))
+    });
+
+    c.bench_function("Duration / f64 (power of two)", |b| {
+        let d = Duration::from_seconds(12345.6789);
+        b.iter(|| black_box(d) / black_box(2.0))
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

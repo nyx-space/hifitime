@@ -303,7 +303,7 @@ impl Duration {
 
     /// :type other: float
     /// :rtype: Duration
-    fn __div__(&self, other: f64) -> Duration {
+    fn __truediv__(&self, other: f64) -> Duration {
         *self / other
     }
 
