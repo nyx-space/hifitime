@@ -194,13 +194,15 @@ impl Epoch {
     /// assert_eq!(n, 0);
     ///
     /// // The epoch will be converted to UTC prior to returning the Gregorian parts.
+    /// // The first leap second is announced at UTC 1972-01-01 00:00:00, so TAI midnight
+    /// // of that day still maps to the same UTC instant (ΔAT was zero before it).
     /// let (y, m, d, h, min, s, n) = dt.to_gregorian(TimeScale::UTC);
-    /// assert_eq!(y, 1971);
-    /// assert_eq!(m, 12);
-    /// assert_eq!(d, 31);
-    /// assert_eq!(h, 23);
-    /// assert_eq!(min, 59);
-    /// assert_eq!(s, 50);
+    /// assert_eq!(y, 1972);
+    /// assert_eq!(m, 1);
+    /// assert_eq!(d, 1);
+    /// assert_eq!(h, 0);
+    /// assert_eq!(min, 0);
+    /// assert_eq!(s, 0);
     /// assert_eq!(n, 0);
     /// ```
     pub fn to_gregorian(&self, time_scale: TimeScale) -> (i32, u8, u8, u8, u8, u8, u32) {

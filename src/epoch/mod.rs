@@ -145,7 +145,30 @@ impl Epoch {
         // (like Rev<L>) are not supported. A future `while let` rewrite would enable
         // annotation, but requires quantifier support for a meaningful invariant.
         for leap_second in provider.rev() {
-            if self.to_tai_duration().to_seconds() >= leap_second.timestamp_tai_s
+            if self.to_tai_duration().to_seconds()
+                >= leap_second.timestamp_utc_s + leap_second.delta_at
+                && (!iers_only || leap_second.announced_by_iers)
+            {
+                return Some(leap_second.delta_at);
+            }
+        }
+        None
+    }
+
+    // Returns the accumulated number of leap seconds (ΔAT) active at this epoch,
+    // where `self.duration` is interpreted as UTC seconds since the reference epoch.
+    // This is the UTC-side counterpart to `leap_seconds_with`, which interprets the
+    // epoch as TAI. It is used only by the UTC to TAI conversion, where the offset
+    // must be located by the UTC timestamp of the leap second (the last UTC second
+    // before the offset changes).
+    fn leap_seconds_from_utc_with<L: LeapSecondProvider>(
+        &self,
+        iers_only: bool,
+        provider: L,
+    ) -> Option<f64> {
+        let utc_seconds = self.duration.to_seconds();
+        for leap_second in provider.rev() {
+            if utc_seconds >= leap_second.timestamp_utc_s
                 && (!iers_only || leap_second.announced_by_iers)
             {
                 return Some(leap_second.delta_at);
@@ -223,10 +246,13 @@ impl Epoch {
                     self.duration - delta_tdb_tai + self.time_scale.prime_epoch_offset()
                 }
                 TimeScale::UTC => {
-                    // Assume this is TAI
-                    let mut tai_assumption = *self;
-                    tai_assumption.time_scale = TimeScale::TAI;
-                    self.duration + tai_assumption.leap_seconds(true).unwrap_or(0.0).seconds()
+                    // self.duration is expressed in UTC. Add the leap second
+                    // offset (ΔAT) active at this UTC time, located by comparing
+                    // UTC seconds against the UTC timestamp of each leap second.
+                    let delta_at = self
+                        .leap_seconds_from_utc_with(true, LatestLeapSeconds::default())
+                        .unwrap_or(0.0);
+                    self.duration + delta_at.seconds()
                 }
                 TimeScale::GPST => self.duration + GPST_REF_EPOCH.to_tai_duration(),
                 TimeScale::GST => self.duration + GST_REF_EPOCH.to_tai_duration(),

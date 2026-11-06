@@ -383,10 +383,10 @@ mod kani_harnesses {
 
     #[kani::proof]
     fn kani_harness_LeapSecond_new() {
-        let timestamp_tai_s: f64 = kani::any();
+        let timestamp_utc_s: f64 = kani::any();
         let delta_at: f64 = kani::any();
         let announced: bool = kani::any();
-        let _ = LeapSecond::new(timestamp_tai_s, delta_at, announced);
+        let _ = LeapSecond::new(timestamp_utc_s, delta_at, announced);
     }
 
     #[kani::proof]
