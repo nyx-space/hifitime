@@ -1775,6 +1775,7 @@ class Ut1Provider:
 
     data: list
     iter_pos: int
+    source: str
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         """Initialize self.  See help(type(self)) for accurate signature."""
@@ -1788,6 +1789,10 @@ class Ut1Provider:
     @staticmethod
     def from_eop_file(path: str) -> Ut1Provider:
         """Builds a UT1 provider from the provided path to an EOP file."""
+
+    @staticmethod
+    def from_jpl_cached(max_cache_age_seconds: float = 86400.0) -> Ut1Provider:
+        """Builds a UT1 provider from the JPL EOP2 archive, reusing a cached copy of the file while it is younger than max_cache_age_seconds and falling back to it if the download fails."""
 
     def __repr__(self) -> str:
         """Return repr(self)."""

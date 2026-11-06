@@ -45,12 +45,13 @@ snafu = { version = "0.9.0", features = ["rust_1_81"], default-features = false 
 ureq = { version = "3.0.10", default-features = false, optional = true, features = [
     "rustls",
 ] }
+log = { version = "0.4.21", optional = true }
 
 [features]
 default = ["std"]
 std = ["serde", "serde_derive", "web-time", "snafu/std", "snafu/backtrace"]
 python = ["std", "pyo3/extension-module", "ut1", "lts"]
-ut1 = ["std", "ureq", "tabled"]
+ut1 = ["std", "ureq", "tabled", "log"]
 lts = ["std", "ureq", "ut1"]
 
 [dev-dependencies]
