@@ -28,6 +28,7 @@ impl fmt::Display for TimeScale {
             Self::GST => write!(f, "GST"),
             Self::BDT => write!(f, "BDT"),
             Self::QZSST => write!(f, "QZSST"),
+            Self::IRNSST => write!(f, "IRNSST"),
             Self::TCG => write!(f, "TCG"),
             Self::TCB => write!(f, "TCB"),
             Self::TL => write!(f, "TL"),
@@ -45,6 +46,7 @@ impl fmt::LowerHex for TimeScale {
             Self::GST => write!(f, "GAL"),
             Self::BDT => write!(f, "BDS"),
             Self::QZSST => write!(f, "QZSS"),
+            Self::IRNSST => write!(f, "IRN"),
             _ => write!(f, "{self}"),
         }
     }
@@ -73,6 +75,8 @@ impl FromStr for TimeScale {
             Ok(Self::BDT)
         } else if val == "QZSST" || val == "QZSS" {
             Ok(Self::QZSST)
+        } else if val == "IRNSST" || val == "IRNSS" || val == "IRN" {
+            Ok(Self::IRNSST)
         } else if val == "TCG" {
             Ok(Self::TCG)
         } else if val == "TCB" {
