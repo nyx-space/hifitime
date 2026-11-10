@@ -97,7 +97,9 @@ static LATEST_LEAP_SECONDS: [LeapSecond; 42] = [
 #[derive(Clone, Debug)]
 pub struct LatestLeapSeconds {
     data: &'static [LeapSecond; 42],
-    iter_pos: usize,
+    front_pos: usize,
+    // Number of rows consumed from the back, relative to the current data length.
+    back_pos: usize,
 }
 
 #[cfg(feature = "python")]
@@ -152,7 +154,8 @@ impl Default for LatestLeapSeconds {
     fn default() -> Self {
         Self {
             data: &LATEST_LEAP_SECONDS,
-            iter_pos: 0,
+            front_pos: 0,
+            back_pos: 0,
         }
     }
 }
@@ -161,18 +164,31 @@ impl Iterator for LatestLeapSeconds {
     type Item = LeapSecond;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter_pos += 1;
-        self.data.get(self.iter_pos - 1).copied()
+        if self.front_pos >= self.data.len().saturating_sub(self.back_pos) {
+            None
+        } else {
+            self.front_pos += 1;
+            self.data.get(self.front_pos - 1).copied()
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let remaining = self
+            .data
+            .len()
+            .saturating_sub(self.back_pos)
+            .saturating_sub(self.front_pos);
+        (remaining, Some(remaining))
     }
 }
 
 impl DoubleEndedIterator for LatestLeapSeconds {
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.iter_pos == self.data.len() {
+        if self.front_pos >= self.data.len().saturating_sub(self.back_pos) {
             None
         } else {
-            self.iter_pos += 1;
-            self.data.get(self.data.len() - self.iter_pos).copied()
+            self.back_pos += 1;
+            self.data.get(self.data.len() - self.back_pos).copied()
         }
     }
 }

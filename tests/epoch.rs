@@ -2074,6 +2074,59 @@ fn test_leap_seconds_file() {
 }
 
 #[test]
+fn test_leap_second_iteration() {
+    use hifitime::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
+    use std::collections::VecDeque;
+
+    fn check(provider: impl LeapSecondProvider + Clone) {
+        for reverse_first in [false, true] {
+            let mut remaining: VecDeque<_> = provider.clone().collect();
+            let mut iter = provider.clone();
+            let mut reverse = reverse_first;
+            assert_eq!(iter.size_hint(), (remaining.len(), Some(remaining.len())));
+            while !remaining.is_empty() {
+                if reverse {
+                    assert_eq!(iter.next_back(), remaining.pop_back());
+                } else {
+                    assert_eq!(iter.next(), remaining.pop_front());
+                }
+                assert_eq!(iter.size_hint(), (remaining.len(), Some(remaining.len())));
+                reverse = !reverse;
+            }
+            for _ in 0..2 {
+                assert_eq!(iter.next(), None);
+                assert_eq!(iter.next_back(), None);
+                assert_eq!(iter.size_hint(), (0, Some(0)));
+            }
+        }
+    }
+
+    check(LatestLeapSeconds::default());
+    #[cfg(feature = "std")]
+    {
+        use hifitime::leap_seconds::LeapSecondsFile;
+        check(LeapSecondsFile::from_path("data/leap-seconds.list").unwrap());
+        check(LeapSecondsFile::default());
+        check(LeapSecondsFile::from_content("0 10".to_string()).unwrap());
+    }
+}
+
+#[test]
+fn test_leap_seconds_with_partial_provider() {
+    use hifitime::leap_seconds::{LatestLeapSeconds, LeapSecondProvider};
+
+    fn check(mut provider: impl LeapSecondProvider) {
+        let epoch = Epoch::from_gregorian_utc_at_midnight(2020, 1, 1);
+        assert!(provider.next().is_some());
+        assert_eq!(epoch.leap_seconds_with(true, provider), Some(37.0));
+    }
+
+    check(LatestLeapSeconds::default());
+    #[cfg(feature = "std")]
+    check(hifitime::leap_seconds::LeapSecondsFile::from_path("data/leap-seconds.list").unwrap());
+}
+
+#[test]
 fn test_from_str_invalid_char_boundary_regression() {
     use core::str::FromStr;
     // This starts with '\u{202b}' which is a 3-byte RTL override char in UTF-8: "\xe2\x80\xab"

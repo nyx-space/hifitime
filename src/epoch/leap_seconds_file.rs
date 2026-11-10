@@ -28,7 +28,9 @@ use crate::{
 /// :type path: str
 pub struct LeapSecondsFile {
     pub data: Vec<LeapSecond>,
-    iter_pos: usize,
+    front_pos: usize,
+    // Number of rows consumed from the back, relative to the current data length.
+    back_pos: usize,
 }
 
 impl LeapSecondsFile {
@@ -156,18 +158,31 @@ impl Iterator for LeapSecondsFile {
     type Item = LeapSecond;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter_pos += 1;
-        self.data.get(self.iter_pos - 1).copied()
+        if self.front_pos >= self.data.len().saturating_sub(self.back_pos) {
+            None
+        } else {
+            self.front_pos += 1;
+            self.data.get(self.front_pos - 1).copied()
+        }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        let remaining = self
+            .data
+            .len()
+            .saturating_sub(self.back_pos)
+            .saturating_sub(self.front_pos);
+        (remaining, Some(remaining))
     }
 }
 
 impl DoubleEndedIterator for LeapSecondsFile {
     fn next_back(&mut self) -> Option<Self::Item> {
-        if self.iter_pos == self.data.len() {
+        if self.front_pos >= self.data.len().saturating_sub(self.back_pos) {
             None
         } else {
-            self.iter_pos += 1;
-            self.data.get(self.data.len() - self.iter_pos).copied()
+            self.back_pos += 1;
+            self.data.get(self.data.len() - self.back_pos).copied()
         }
     }
 }
