@@ -1041,6 +1041,41 @@ fn test_rfc3339() {
 }
 
 #[test]
+fn test_rfc3339_offset_hours() {
+    use core::str::FromStr;
+    use hifitime::efmt::consts::{RFC3339, RFC3339_FLEX};
+
+    for nanos in [0, 123_456_789] {
+        let local = Epoch::from_gregorian_utc(2024, 6, 1, 12, 0, 0, nanos);
+        for (zone, minutes) in [
+            ("+00:00", 0),
+            ("+05:00", 300),
+            ("+05:30", 330),
+            ("+09:00", 540),
+            ("+10:00", 600),
+            ("+10:30", 630),
+            ("+11:00", 660),
+            ("+12:00", 720),
+            ("+13:00", 780),
+            ("+23:59", 1439),
+            ("-08:00", -480),
+            ("-10:00", -600),
+            ("-10:30", -630),
+            ("-23:59", -1439),
+        ] {
+            let offset = minutes * Unit::Minute;
+            let text = format!("2024-06-01T12:00:00.{nanos:09}{zone}");
+            assert_eq!(Epoch::from_str(&text).unwrap(), local - offset, "{text}");
+
+            for format in [RFC3339, RFC3339_FLEX] {
+                let text = Formatter::with_timezone(local, offset, format).to_string();
+                assert_eq!(Epoch::from_str(&text).unwrap(), local, "{text}");
+            }
+        }
+    }
+}
+
+#[test]
 fn test_format() {
     use core::str::FromStr;
     use hifitime::Epoch;
