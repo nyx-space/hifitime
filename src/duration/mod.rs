@@ -153,7 +153,6 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
-    #[inline]
     pub const fn from_parts(centuries: i16, nanoseconds: u64) -> Self {
         Self {
             centuries,
@@ -169,7 +168,6 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
-    #[inline]
     pub const fn from_total_nanoseconds(nanos: i128) -> Self {
         // In this function, we simply check that the input data can be casted. The `normalize` function will check whether more work needs to be done.
         if nanos == 0 {
@@ -197,7 +195,6 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
-    #[inline]
     pub const fn from_truncated_nanoseconds(nanos: i64) -> Self {
         if nanos < 0 {
             let ns = nanos.unsigned_abs();
@@ -221,7 +218,6 @@ impl Duration {
             || result.parts_are_equal(Self::MIN)
     }))]
     #[cfg_attr(kani, kani::requires(value.is_finite()))]
-    #[inline]
     pub const fn from_days(value: f64) -> Self {
         Unit::Day.const_multiply(value)
     }
@@ -234,7 +230,6 @@ impl Duration {
             || result.parts_are_equal(Self::MIN)
     }))]
     #[cfg_attr(kani, kani::requires(value.is_finite()))]
-    #[inline]
     pub const fn from_hours(value: f64) -> Self {
         Unit::Hour.const_multiply(value)
     }
@@ -247,7 +242,6 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
-    #[inline]
     pub const fn from_seconds(value: f64) -> Self {
         Unit::Second.const_multiply(value)
     }
@@ -260,7 +254,6 @@ impl Duration {
             || result.parts_are_equal(Self::MIN)
     }))]
     #[cfg_attr(kani, kani::requires(value.is_finite()))]
-    #[inline]
     pub const fn from_milliseconds(value: f64) -> Self {
         Unit::Millisecond.const_multiply(value)
     }
@@ -273,7 +266,6 @@ impl Duration {
             || result.parts_are_equal(Self::MIN)
     }))]
     #[cfg_attr(kani, kani::requires(value.is_finite()))]
-    #[inline]
     pub const fn from_microseconds(value: f64) -> Self {
         Unit::Microsecond.const_multiply(value)
     }
@@ -286,7 +278,6 @@ impl Duration {
             || result.parts_are_equal(Self::MIN)
     }))]
     #[cfg_attr(kani, kani::requires(value.is_finite()))]
-    #[inline]
     pub const fn from_nanoseconds(value: f64) -> Self {
         Unit::Nanosecond.const_multiply(value)
     }
@@ -377,7 +368,6 @@ impl Duration {
             || result.parts_are_equal(Self::MAX)
             || result.parts_are_equal(Self::MIN)
     }))]
-    #[inline]
     const fn as_normalized(self) -> Self {
         let mut normalized_self = self;
 
@@ -545,7 +535,6 @@ impl Duration {
     /// Returns this duration in seconds f64.
     /// For high fidelity comparisons, it is recommended to keep using the Duration structure.
     #[must_use]
-    #[inline]
     #[cfg_attr(kani, kani::ensures(|result: &f64| result.is_finite() && result.abs() < 1.1e14))]
     pub fn to_seconds(&self) -> f64 {
         // Compute the seconds and nanoseconds that we know this fits on a 64bit float
@@ -561,7 +550,6 @@ impl Duration {
     }
 
     #[must_use]
-    #[inline]
     pub fn to_unit(&self, unit: Unit) -> f64 {
         self.to_seconds() * unit.from_seconds()
     }

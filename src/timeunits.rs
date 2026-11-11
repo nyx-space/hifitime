@@ -291,7 +291,6 @@ impl Mul<f64> for Unit {
     /// ## Panics
     /// Panics if `q` is not finite. Scaling an existing [`Duration`] by an `f64`
     /// saturates instead; see [`Duration::mul`] and [`Duration::try_mul_f64`].
-    #[inline]
     fn mul(self, q: f64) -> Duration {
         self.const_multiply(q)
     }
@@ -306,7 +305,6 @@ impl Unit {
             || (c == i16::MIN && n == 0)
     }))]
     #[cfg_attr(kani, kani::requires(q.is_finite()))]
-    #[inline]
     pub(crate) const fn const_multiply(self, q: f64) -> Duration {
         assert!(
             q.is_finite(),

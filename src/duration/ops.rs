@@ -96,9 +96,9 @@ const MAX_TOTAL_NANOSECONDS_BITS: u32 = 77;
 
 /// `a * 2^shift`, truncating toward zero when `shift` is negative. `None` if
 /// the result does not fit in a `u128`.
-#[inline]
 fn shift_magnitude(a: u128, shift: i32) -> Option<u128> {
     if shift >= 0 {
+        // This is safe because an i32 fits in a u32 if the shift is positive, checked above.
         let shift = shift as u32;
         if shift >= 128 || a > (u128::MAX >> shift) {
             None
@@ -113,7 +113,6 @@ fn shift_magnitude(a: u128, shift: i32) -> Option<u128> {
 
 /// Decomposes a finite, nonzero f64's magnitude into `mantissa * 2^exponent`
 /// (`mantissa` fits in 53 bits). Sign is not included; use `q.is_sign_negative()`.
-#[inline]
 fn decompose_f64(q: f64) -> (u64, i32) {
     let bits = q.to_bits();
     let raw_exponent = ((bits >> 52) & 0x7FF) as i32;
@@ -127,7 +126,6 @@ fn decompose_f64(q: f64) -> (u64, i32) {
 
 /// Builds a `Duration` from an unsigned nanosecond magnitude and a sign,
 /// saturating if it doesn't fit.
-#[inline]
 fn duration_from_magnitude(magnitude: u128, negative: bool) -> Duration {
     if magnitude < NANOSECONDS_PER_CENTURY as u128 {
         let ns = magnitude as u64;
@@ -151,7 +149,6 @@ fn duration_from_magnitude(magnitude: u128, negative: bool) -> Duration {
 }
 
 /// `a << shift` as `(hi, lo)`, i.e. `hi * 2^128 + lo`. `shift` must be < 256.
-#[inline]
 fn widening_shl(a: u128, shift: u32) -> (u128, u128) {
     debug_assert!(shift < 256, "shift past 256 bits");
     if shift == 0 {
@@ -168,7 +165,6 @@ fn widening_shl(a: u128, shift: u32) -> (u128, u128) {
 ///
 /// The quotient must fit in a `u128`, i.e. `hi < divisor`; the accumulator shift
 /// drops high bits silently otherwise.
-#[inline]
 fn divide_wide(hi: u128, lo: u128, divisor: u64) -> u128 {
     debug_assert!(divisor != 0, "divide by zero");
     debug_assert!(hi < divisor as u128, "quotient exceeds u128");
@@ -207,7 +203,6 @@ impl Mul<f64> for Duration {
     /// A [`Duration`] cannot represent NaN, and a NaN has no meaningful sign to
     /// saturate towards. `Duration::ZERO` times an infinity is `0 × ∞`, also
     /// [`Duration::ZERO`].
-    #[inline]
     fn mul(self, q: f64) -> Self::Output {
         if q.is_nan() {
             return Duration::ZERO;
@@ -295,7 +290,6 @@ impl Div<f64> for Duration {
     /// | `NaN` | [`Duration::ZERO`] |
     ///
     /// `Duration::ZERO` divided by zero is `0 / 0`, also [`Duration::ZERO`].
-    #[inline]
     fn div(self, q: f64) -> Self::Output {
         // Dividing by an infinity tends to zero; a NaN has no representation.
         if !q.is_finite() {
