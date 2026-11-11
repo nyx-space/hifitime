@@ -1208,6 +1208,47 @@ fn test_leap_seconds_iers() {
     assert_eq!(epoch_from_utc_greg1.leap_seconds_iers(), 11);
 }
 
+#[test]
+fn test_leap_seconds_nanosecond_boundaries() {
+    // Keep the existing lookup coordinates; UTC/TAI whole-second alignment is separate.
+    for (seconds, before, after) in [
+        (2_287_785_600_i64, 10, 11), // 1972-07-01
+        (3_124_137_600, 31, 32),     // 1999-01-01
+        (3_692_217_600, 36, 37),     // 2017-01-01
+    ] {
+        for nanos in [-1_000, -239, -238, -1, 0, 1, 238, 239] {
+            let duration = seconds * Unit::Second + nanos * Unit::Nanosecond;
+            let offset = if nanos < 0 { before } else { after };
+            let tai = Epoch::from_tai_duration(duration);
+            assert_eq!(tai.leap_seconds(true), Some(offset as f64));
+            assert_eq!(tai.leap_seconds(false), Some(offset as f64));
+            assert_eq!(tai.to_utc_duration(), duration - offset * Unit::Second);
+
+            let (y, m, d, h, min, s, ns) = tai.to_gregorian_tai();
+            let utc = Epoch::from_gregorian_utc(y, m, d, h, min, s, ns);
+            let parsed = Epoch::from_gregorian_str(&format!(
+                "{y:04}-{m:02}-{d:02}T{h:02}:{min:02}:{s:02}.{ns:09} UTC"
+            ))
+            .unwrap();
+            let expected = duration + offset * Unit::Second;
+            assert_eq!(utc.to_tai_duration(), expected);
+            assert_eq!(parsed.to_tai_duration(), expected);
+            assert_eq!(
+                Epoch::from_utc_duration(duration).to_tai_duration(),
+                expected
+            );
+        }
+    }
+
+    // A non-leap year-end must keep the same offset, even at the last nanosecond.
+    assert_eq!(
+        Epoch::from_gregorian_utc(2017, 12, 31, 23, 59, 59, 999_999_999)
+            .to_tai_duration()
+            .total_nanoseconds(),
+        3_723_753_636_999_999_999
+    );
+}
+
 #[cfg(feature = "std")]
 #[test]
 fn test_utc_str() {
