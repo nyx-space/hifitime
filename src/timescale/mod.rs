@@ -54,15 +54,6 @@ pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
 /// QZSS and GPS share the same reference epoch.
 pub const QZSST_REF_EPOCH: Epoch = GPST_REF_EPOCH;
 
-/// IRNSS (NavIC) reference epoch: 1999 August 22nd at midnight IRNSST, which is 1024 weeks after
-/// the GPS reference epoch (the first GPS week roll-over). IRNSST is also 19 seconds ahead of TAI,
-/// so this instant is the same as the Galileo reference epoch.
-/// cf. <https://www.isro.gov.in/media_isro/pdf/SateliteNavigation/irnss_sps_icd_version1.1-2017.pdf>
-pub const IRNSST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
-    centuries: 0,
-    nanoseconds: 3_144_268_819_000_000_000, // GPST_REF_EPOCH + 1024 weeks
-});
-
 /// GST (Galileo) reference epoch is 13 seconds before 1999 August 21 UTC at midnight.
 /// |UTC - TAI| = XX Leap Seconds on that day.
 ///
@@ -116,7 +107,8 @@ pub enum TimeScale {
     QZSST,
     /// IRNSS (NavIC) Time scale: the reference epoch is 1999 August 22nd at midnight IRNSST, i.e.
     /// 1024 weeks after the GPS reference epoch, and IRNSST is 19 seconds ahead of TAI, so this
-    /// time scale does not take leap seconds into account.
+    /// time scale does not take leap seconds into account. The IRNSST reference epoch is strictly
+    /// identical to the GST reference epoch.
     /// cf. <https://www.isro.gov.in/media_isro/pdf/SateliteNavigation/irnss_sps_icd_version1.1-2017.pdf>
     IRNSST,
     /// Geocentric Coordinate Time

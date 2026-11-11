@@ -2295,12 +2295,11 @@ fn regression_test_gh_317() {
 
 #[test]
 fn mjd_calendar_reference() {
-    let constructors: [(TimeScale, fn(f64) -> Epoch); 7] = [
+    let constructors: [(TimeScale, fn(f64) -> Epoch); 6] = [
         (TimeScale::TAI, Epoch::from_mjd_tai),
         (TimeScale::UTC, Epoch::from_mjd_utc),
         (TimeScale::GPST, Epoch::from_mjd_gpst),
         (TimeScale::QZSST, Epoch::from_mjd_qzsst),
-        (TimeScale::IRNSST, Epoch::from_mjd_irnss),
         (TimeScale::GST, Epoch::from_mjd_gst),
         (TimeScale::BDT, Epoch::from_mjd_bdt),
     ];
@@ -2795,24 +2794,28 @@ fn test_gh_210_irnss_time_scale() {
         "IRNSST must be a constant 19 second offset from TAI"
     );
 
-    // The reference epoch helpers must agree with the conversions.
-    assert_eq!(Epoch::from_irnss_seconds(0.0), irnss_epoch);
-    assert_eq!(Epoch::from_irnss_duration(Duration::ZERO), irnss_epoch);
-    assert_eq!(Epoch::from_irnss_days(0.0), irnss_epoch);
-    assert_eq!(Epoch::from_irnss_nanoseconds(0), irnss_epoch);
+    // The generic initializers must agree with the reference epoch conversions.
+    assert_eq!(
+        Epoch::from_duration(Duration::ZERO, TimeScale::IRNSST),
+        irnss_epoch
+    );
 
     // The accessors must agree with the duration of the epoch in its own time scale.
     assert!((irnss.to_irnss_days() - irnss.duration.to_unit(Unit::Day)).abs() < 1e-12);
     let nanos = irnss.to_irnss_nanoseconds().unwrap();
-    assert_eq!(Epoch::from_irnss_nanoseconds(nanos), irnss);
-
-    // IRNSST and GST share the same reference epoch, so both initializers must agree.
     assert_eq!(
-        Epoch::from_mjd_irnss(60_310.5),
+        Epoch::from_duration(Duration::from_parts(0, nanos), TimeScale::IRNSST),
+        irnss
+    );
+
+    // IRNSST and GST share the same reference epoch, so the MJD and JDE initializers
+    // must describe the same instant in both time scales.
+    assert_eq!(
+        Epoch::from_mjd_in_time_scale(60_310.5, TimeScale::IRNSST),
         Epoch::from_mjd_gst(60_310.5)
     );
     assert_eq!(
-        Epoch::from_jde_irnss(60_310.5 + 2_400_000.5),
+        Epoch::from_jde_in_time_scale(60_310.5 + 2_400_000.5, TimeScale::IRNSST),
         Epoch::from_jde_gst(60_310.5 + 2_400_000.5)
     );
 

@@ -94,14 +94,6 @@ impl Epoch {
     }
 
     #[must_use]
-    /// Initialize an Epoch from the provided `Duration` since the IRNSS (NavIC) Time Epoch,
-    /// defined as 1999 August 22nd at midnight IRNSST.
-    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::IRNSST))]
-    pub fn from_irnss_duration(duration: Duration) -> Self {
-        Self::from_duration(duration, TimeScale::IRNSST)
-    }
-
-    #[must_use]
     /// Initialize an Epoch from the provided duration since August 21st 1999 midnight
     #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GST))]
     pub fn from_gst_duration(duration: Duration) -> Self {
@@ -150,12 +142,6 @@ impl Epoch {
         Self::from_mjd_in_time_scale(days, TimeScale::QZSST)
     }
     #[must_use]
-    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::IRNSST))]
-    #[cfg_attr(kani, kani::requires(days.is_finite()))]
-    pub fn from_mjd_irnss(days: f64) -> Self {
-        Self::from_mjd_in_time_scale(days, TimeScale::IRNSST)
-    }
-    #[must_use]
     #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GST))]
     #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_mjd_gst(days: f64) -> Self {
@@ -201,12 +187,6 @@ impl Epoch {
     #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_qzsst(days: f64) -> Self {
         Self::from_jde_in_time_scale(days, TimeScale::QZSST)
-    }
-    #[must_use]
-    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::IRNSST))]
-    #[cfg_attr(kani, kani::requires(days.is_finite()))]
-    pub fn from_jde_irnss(days: f64) -> Self {
-        Self::from_jde_in_time_scale(days, TimeScale::IRNSST)
     }
     #[must_use]
     #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::GST))]
@@ -345,32 +325,6 @@ impl Epoch {
     #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::QZSST))]
     pub fn from_qzsst_nanoseconds(nanoseconds: u64) -> Self {
         Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::QZSST)
-    }
-
-    #[must_use]
-    /// Initialize an Epoch from the number of seconds since the IRNSS (NavIC) Time Epoch,
-    /// defined as 1999 August 22nd at midnight IRNSST.
-    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::IRNSST))]
-    #[cfg_attr(kani, kani::requires(seconds.is_finite()))]
-    pub fn from_irnss_seconds(seconds: f64) -> Self {
-        Self::from_duration(seconds * Unit::Second, TimeScale::IRNSST)
-    }
-
-    #[must_use]
-    /// Initialize an Epoch from the number of days since the IRNSS (NavIC) Time Epoch,
-    /// defined as 1999 August 22nd at midnight IRNSST.
-    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::IRNSST))]
-    #[cfg_attr(kani, kani::requires(days.is_finite()))]
-    pub fn from_irnss_days(days: f64) -> Self {
-        Self::from_duration(days * Unit::Day, TimeScale::IRNSST)
-    }
-
-    #[must_use]
-    /// Initialize an Epoch from the number of nanoseconds since the IRNSS (NavIC) Time Epoch,
-    /// defined as 1999 August 22nd at midnight IRNSST.
-    #[cfg_attr(kani, kani::ensures(|result| result.time_scale == crate::TimeScale::IRNSST))]
-    pub fn from_irnss_nanoseconds(nanoseconds: u64) -> Self {
-        Self::from_duration(Duration::from_parts(0, nanoseconds), TimeScale::IRNSST)
     }
 
     #[must_use]

@@ -229,10 +229,11 @@ impl Epoch {
                     self.duration + tai_assumption.leap_seconds(true).unwrap_or(0.0).seconds()
                 }
                 TimeScale::GPST => self.duration + TimeScale::GPST.reference_epoch_tai().duration,
-                TimeScale::GST => self.duration + TimeScale::GST.reference_epoch_tai().duration,
+                TimeScale::GST | TimeScale::IRNSST => {
+                    self.duration + TimeScale::GST.reference_epoch_tai().duration
+                }
                 TimeScale::BDT => self.duration + TimeScale::BDT.reference_epoch_tai().duration,
                 TimeScale::QZSST => self.duration + TimeScale::QZSST.reference_epoch_tai().duration,
-                TimeScale::IRNSST => self.duration + TimeScale::IRNSST.reference_epoch_tai().duration,
                 TimeScale::TCG => {
                     // self.duration is TCG duration since the TCG/TT reference epoch.
                     let tcg_since_t77 = self.duration;
@@ -357,7 +358,7 @@ impl Epoch {
                 TimeScale::GPST => {
                     prime_epoch_offset - TimeScale::GPST.reference_epoch_tai().duration
                 }
-                TimeScale::GST => {
+                TimeScale::GST | TimeScale::IRNSST => {
                     prime_epoch_offset - TimeScale::GST.reference_epoch_tai().duration
                 }
                 TimeScale::BDT => {
@@ -365,9 +366,6 @@ impl Epoch {
                 }
                 TimeScale::QZSST => {
                     prime_epoch_offset - TimeScale::QZSST.reference_epoch_tai().duration
-                }
-                TimeScale::IRNSST => {
-                    prime_epoch_offset - TimeScale::IRNSST.reference_epoch_tai().duration
                 }
                 TimeScale::TCG => {
                     // First convert TAI to TT
