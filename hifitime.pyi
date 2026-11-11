@@ -1775,6 +1775,7 @@ class Ut1Provider:
 
     data: list
     iter_pos: int
+    source: Ut1DataSource
 
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         """Initialize self.  See help(type(self)) for accurate signature."""
@@ -1788,6 +1789,25 @@ class Ut1Provider:
     @staticmethod
     def from_eop_file(path: str) -> Ut1Provider:
         """Builds a UT1 provider from the provided path to an EOP file."""
+
+    @staticmethod
+    def from_jpl_cached(max_cache_age_seconds: float = 86400.0) -> Ut1Provider:
+        """Builds a UT1 provider from the JPL EOP2 archive, reusing a cached copy of the file while it is younger than max_cache_age_seconds and falling back to it if the download fails."""
+
+    def __repr__(self) -> str:
+        """Return repr(self)."""
+
+@typing.final
+class Ut1DataSource:
+    """Where the UT1 data of a Ut1Provider comes from."""
+
+    @property
+    def origin(self) -> str:
+        """Where the data comes from: "provided", "cached", or "downloaded\"."""
+
+    @property
+    def age(self) -> typing.Optional[Duration]:
+        """Age of the cached data, or None if the data was not read from the cache."""
 
     def __repr__(self) -> str:
         """Return repr(self)."""

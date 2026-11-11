@@ -16,15 +16,47 @@ use pyo3::types::PyType;
 use ureq::get;
 use ureq::Error;
 
+use log::{debug, info, warn};
+
 use tabled::settings::Style;
 use tabled::{Table, Tabled};
 
-use std::{fs::File, io::Read};
+use std::{
+    fs::File,
+    io::{Read, Write},
+    path::{Path, PathBuf},
+    time::SystemTime,
+};
 
 use core::fmt;
 use core::ops::Index;
 
 use crate::{Duration, Epoch, HifitimeError, ParsingError, TimeScale, Unit};
+
+/// Default maximum age of the cached EOP2 file: one day.
+///
+/// JPL publishes a new EOP2 file once per day, so a cached file younger than one day is reused
+/// instead of being downloaded again. See [`Ut1Provider::download_from_jpl_cached`].
+pub const DEFAULT_UT1_CACHE_MAX_AGE: Duration = Duration::from_days(1.0);
+
+/// Where the data of a [`Ut1Provider`] comes from.
+///
+/// This is returned by [`Ut1Provider::source`] so that callers may log or inspect the origin of the
+/// UT1 data in use, for instance to detect that a stale cache is being used because the JPL archive
+/// could not be reached.
+#[derive(Copy, Clone, Debug, Default, PartialEq, Eq)]
+pub enum Ut1DataSource {
+    /// The data was parsed from a payload or a file provided by the caller.
+    #[default]
+    Provided,
+    /// The data was read from the local cache, which was last written `age` ago.
+    Cache {
+        /// Time elapsed since the cache file was written.
+        age: Duration,
+    },
+    /// The data was downloaded from the JPL EOP2 archive.
+    Download,
+}
 
 impl Epoch {
     #[must_use]
@@ -154,6 +186,9 @@ pub struct Ut1Provider {
     /// current position of the iterator
     /// :rtype: int
     iter_pos: usize,
+    /// where the data of this provider comes from
+    /// :rtype: str
+    source: Ut1DataSource,
 }
 
 impl Ut1Provider {
@@ -170,26 +205,165 @@ impl Ut1Provider {
         &self.data
     }
 
+    /// Where the data of this provider comes from.
+    ///
+    /// This is [`Ut1DataSource::Provided`] unless the provider was built by one of the caching
+    /// constructors, in which case it tells whether the data was downloaded or read from the cache,
+    /// and how old the cached data was.
+    pub fn source(&self) -> Ut1DataSource {
+        self.source
+    }
+
+    /// Default path of the cached EOP2 file for this version, inside the `nyx-space/hifitime`
+    /// application data directory of the `platform-dirs` crate (see [`cache_dir`]). Returns `None`
+    /// if no directory can be determined, in which case the caching constructors simply download
+    /// the file.
+    ///
+    /// The version string is sanitized so that versions containing slashes, such as
+    /// `2022/221222_190002-marge_eop2.short`, map to a single file name.
+    pub fn cache_path(version: &str) -> Option<PathBuf> {
+        cache_dir().map(|dir| dir.join(sanitize_version(version)))
+    }
+
     /// Builds a UT1 provided by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.short> (short time scale UT1 data) and parsing it.
+    ///
+    /// This always hits the network: see [`Self::download_short_from_jpl_cached`] to reuse a local
+    /// copy of the file.
     pub fn download_short_from_jpl() -> Result<Self, HifitimeError> {
         Self::download_from_jpl("latest_eop2.short")
     }
 
+    /// Same as [`Self::download_short_from_jpl`], but reusing the local copy of the file while it is
+    /// younger than [`DEFAULT_UT1_CACHE_MAX_AGE`], and falling back to it if the download fails.
+    pub fn download_short_from_jpl_cached() -> Result<Self, HifitimeError> {
+        Self::download_from_jpl_cached("latest_eop2.short", DEFAULT_UT1_CACHE_MAX_AGE)
+    }
+
     /// Build a UT1 provider by downloading the data from <https://eop2-external.jpl.nasa.gov/eop2/latest_eop2.long> (long time scale UT1 data) and parsing it.
+    ///
+    /// This always hits the network: see [`Self::download_from_jpl_cached`] to reuse a local copy of
+    /// the file.
     pub fn download_from_jpl(version: &str) -> Result<Self, HifitimeError> {
+        let mut provider = Self::from_eop_data(Self::download_payload(version)?)?;
+        provider.source = Ut1DataSource::Download;
+        Ok(provider)
+    }
+
+    /// Build a UT1 provider from the JPL EOP2 archive, caching the downloaded file on disk.
+    ///
+    /// The cache policy is the one agreed in <https://github.com/nyx-space/hifitime/issues/425>:
+    ///
+    /// 1. If the cached file exists and is younger than `max_cache_age`, it is parsed and no request
+    ///    is made to JPL.
+    /// 2. Otherwise the file is downloaded from JPL and written to the cache.
+    /// 3. If that download fails but a cached file exists, whatever its age, the cached file is used
+    ///    and a warning reports the download failure and the age of the cached data.
+    /// 4. If the download fails and there is no cached file, the download error is returned.
+    ///
+    /// The cache file is written to the path returned by [`Self::cache_path`]; if no cache directory
+    /// can be determined, this behaves like [`Self::download_from_jpl`].
+    ///
+    /// Use [`Self::source`] to know which of the cached data or the downloaded data was used.
+    pub fn download_from_jpl_cached(
+        version: &str,
+        max_cache_age: Duration,
+    ) -> Result<Self, HifitimeError> {
+        match Self::cache_path(version) {
+            Some(cache_path) => {
+                Self::download_from_jpl_cached_at(version, &cache_path, max_cache_age)
+            }
+            None => {
+                debug!(
+                    "no cache directory found for UT1 data, downloading {version} from JPL on every call"
+                );
+                Self::download_from_jpl(version)
+            }
+        }
+    }
+
+    /// Same as [`Self::download_from_jpl_cached`] but with an explicit path for the cache file.
+    ///
+    /// This is useful for applications that want to choose where the cache lives, and for tests.
+    pub fn download_from_jpl_cached_at(
+        version: &str,
+        cache_path: &Path,
+        max_cache_age: Duration,
+    ) -> Result<Self, HifitimeError> {
+        let cached_age = cached_age(cache_path);
+
+        if let Some(age) = cached_age {
+            if age <= max_cache_age {
+                match Self::from_eop_file_path(cache_path) {
+                    Ok(mut provider) => {
+                        info!(
+                            "using cached UT1 data from {} (age {}, maximum cache age {})",
+                            cache_path.display(),
+                            age,
+                            max_cache_age
+                        );
+                        provider.source = Ut1DataSource::Cache { age };
+                        return Ok(provider);
+                    }
+                    Err(err) => warn!(
+                        "cached UT1 file {} could not be parsed ({}), downloading it again",
+                        cache_path.display(),
+                        err
+                    ),
+                }
+            } else {
+                debug!(
+                    "cached UT1 file {} is older than the maximum cache age (age {}, maximum {}), downloading it again",
+                    cache_path.display(),
+                    age,
+                    max_cache_age
+                );
+            }
+        }
+
+        match Self::download_payload(version) {
+            Ok(payload) => {
+                if let Err(err) = write_cache(cache_path, &payload) {
+                    warn!(
+                        "downloaded UT1 data from JPL but could not cache it at {} ({}), the next call will download it again",
+                        cache_path.display(),
+                        err
+                    );
+                }
+                let mut provider = Self::from_eop_data(payload)?;
+                provider.source = Ut1DataSource::Download;
+                Ok(provider)
+            }
+            Err(err) => match cached_age {
+                // The download failed but a cached file exists: keep going with it, as agreed in
+                // https://github.com/nyx-space/hifitime/issues/425.
+                Some(age) => {
+                    warn!(
+                        "could not download UT1 data from JPL ({}), falling back to the cached data of {} (age {})",
+                        err,
+                        cache_path.display(),
+                        age
+                    );
+                    let mut provider = Self::from_eop_file_path(cache_path)?;
+                    provider.source = Ut1DataSource::Cache { age };
+                    Ok(provider)
+                }
+                None => Err(err),
+            },
+        }
+    }
+
+    /// Download the raw EOP2 payload for this version from JPL.
+    fn download_payload(version: &str) -> Result<String, HifitimeError> {
         let url = format!("https://eop2-external.jpl.nasa.gov/eop2/{}", version);
 
-        // Download the file
-        match get(url).call() {
-            Ok(resp) => {
-                let Ok(jpl_response) = resp.into_body().read_to_string() else {
-                    return Err(HifitimeError::Parse {
-                        source: ParsingError::UnknownFormat,
-                        details: "when reading EOP2 file from JPL",
-                    });
-                };
-                Self::from_eop_data(jpl_response)
-            }
+        match get(&url).call() {
+            Ok(resp) => match resp.into_body().read_to_string() {
+                Ok(jpl_response) => Ok(jpl_response),
+                Err(_) => Err(HifitimeError::Parse {
+                    source: ParsingError::UnknownFormat,
+                    details: "when reading EOP2 file from JPL",
+                }),
+            },
             Err(Error::StatusCode(code)) => Err(HifitimeError::Parse {
                 source: ParsingError::DownloadError { code },
                 details: "when downloading EOP2 file from JPL",
@@ -203,6 +377,11 @@ impl Ut1Provider {
 
     /// Builds a UT1 provider from the provided path to an EOP file.
     pub fn from_eop_file(path: &str) -> Result<Self, HifitimeError> {
+        Self::from_eop_file_path(Path::new(path))
+    }
+
+    /// Builds a UT1 provider from the provided path to an EOP file.
+    fn from_eop_file_path(path: &Path) -> Result<Self, HifitimeError> {
         let mut f = match File::open(path) {
             Ok(f) => f,
             Err(e) => {
@@ -346,6 +525,23 @@ impl Ut1Provider {
     pub fn py_from_eop_file(_cls: &Bound<'_, PyType>, path: &str) -> Result<Self, HifitimeError> {
         Ut1Provider::from_eop_file(path)
     }
+
+    #[classmethod]
+    #[pyo3(name = "from_jpl_cached")]
+    #[pyo3(signature = (max_cache_age_seconds = 86_400.0))]
+    /// Builds a UT1 provider from the JPL EOP2 archive, reusing a cached copy of the file while it is
+    /// younger than `max_cache_age_seconds` and falling back to it if the download fails.
+    /// :type max_cache_age_seconds: float
+    /// :rtype: Ut1Provider
+    pub fn py_from_jpl_cached(
+        _cls: &Bound<'_, PyType>,
+        max_cache_age_seconds: f64,
+    ) -> Result<Self, HifitimeError> {
+        Ut1Provider::download_from_jpl_cached(
+            "latest_eop2.short",
+            max_cache_age_seconds * Unit::Second,
+        )
+    }
 }
 
 impl fmt::Display for Ut1Provider {
@@ -391,4 +587,113 @@ impl<'a> IntoIterator for &'a Ut1Provider {
     fn into_iter(self) -> Self::IntoIter {
         self.data.iter()
     }
+}
+
+impl fmt::Display for Ut1DataSource {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Provided => write!(f, "data provided by the caller"),
+            Self::Cache { age } => write!(f, "cached data of age {age}"),
+            Self::Download => write!(f, "data downloaded from JPL"),
+        }
+    }
+}
+
+/// Python wrapper of [`Ut1DataSource`], exposing where the UT1 data comes from and, when relevant,
+/// the age of the cached data.
+#[cfg(feature = "python")]
+#[pyclass(module = "hifitime", name = "Ut1DataSource")]
+pub struct PyUt1DataSource {
+    source: Ut1DataSource,
+}
+
+#[cfg(feature = "python")]
+#[pymethods]
+impl PyUt1DataSource {
+    /// Where the data comes from: "provided", "cached", or "downloaded".
+    ///
+    /// :rtype: str
+    #[getter]
+    fn origin(&self) -> &'static str {
+        match self.source {
+            Ut1DataSource::Provided => "provided",
+            Ut1DataSource::Cache { .. } => "cached",
+            Ut1DataSource::Download => "downloaded",
+        }
+    }
+
+    /// Age of the cached data, or `None` if the data was not read from the cache.
+    ///
+    /// :rtype: Duration
+    #[getter]
+    fn age(&self) -> Option<Duration> {
+        match self.source {
+            Ut1DataSource::Cache { age } => Some(age),
+            Ut1DataSource::Provided | Ut1DataSource::Download => None,
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        self.source.to_string()
+    }
+}
+
+#[cfg(feature = "python")]
+impl<'py> pyo3::IntoPyObject<'py> for Ut1DataSource {
+    type Target = PyUt1DataSource;
+    type Output = pyo3::Bound<'py, PyUt1DataSource>;
+    type Error = pyo3::PyErr;
+
+    fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
+        pyo3::Py::new(py, PyUt1DataSource { source: self }).map(|obj| obj.into_bound(py))
+    }
+}
+
+/// Path of the directory holding the cached UT1 files, if one can be determined.
+///
+/// Like the ANISE toolkit's `MetaFile`, this is the `nyx-space/hifitime` application data directory
+/// from the `platform-dirs` crate, e.g. `%LOCALAPPDATA%\nyx-space\hifitime` on Windows,
+/// `~/Library/Caches/nyx-space/hifitime` on macOS, and `~/.cache/nyx-space/hifitime` on Linux.
+fn cache_dir() -> Option<PathBuf> {
+    platform_dirs::AppDirs::new(Some("nyx-space/hifitime"), true).map(|dirs| dirs.data_dir)
+}
+
+/// Turn a JPL version string into a file name: `2022/221222_190002-marge_eop2.short` becomes
+/// `2022_221222_190002-marge_eop2.short`.
+fn sanitize_version(version: &str) -> String {
+    version
+        .chars()
+        .map(|c| match c {
+            '/' | '\\' | ':' => '_',
+            _ => c,
+        })
+        .collect()
+}
+
+/// Age of the cache file, i.e. how long ago it was written.
+///
+/// Returns `None` if the file does not exist or if its modification time cannot be read, or if the
+/// system clock is set before that modification time.
+fn cached_age(cache_path: &Path) -> Option<Duration> {
+    let modified = std::fs::metadata(cache_path).ok()?.modified().ok()?;
+    let elapsed = SystemTime::now().duration_since(modified).ok()?;
+    Some(Duration::from_total_nanoseconds(
+        i128::try_from(elapsed.as_nanos()).ok()?,
+    ))
+}
+
+/// Write the downloaded payload to the cache, creating the parent directories as needed.
+fn write_cache(cache_path: &Path, payload: &str) -> std::io::Result<()> {
+    if let Some(parent) = cache_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    // Write to a temporary file then rename it, so that a crash or a concurrent reader never sees a
+    // half-written cache file.
+    let tmp_path = cache_path.with_extension("tmp");
+    {
+        let mut file = File::create(&tmp_path)?;
+        file.write_all(payload.as_bytes())?;
+        file.sync_all()?;
+    }
+    std::fs::rename(&tmp_path, cache_path)
 }
