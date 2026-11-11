@@ -37,7 +37,7 @@ use crate::timescale::tcl::{
 };
 use crate::{
     HifitimeError, MonthName, TimeScale, TimeUnits, ET_EPOCH_S, MJD_J1900, MJD_OFFSET,
-    UNIX_REF_EPOCH,
+    NANOSECONDS_PER_SECOND, SECONDS_PER_CENTURY, UNIX_REF_EPOCH,
 };
 use core::cmp::Eq;
 #[allow(unused_imports)]
@@ -145,7 +145,13 @@ impl Epoch {
         // (like Rev<L>) are not supported. A future `while let` rewrite would enable
         // annotation, but requires quantifier support for a meaningful invariant.
         for leap_second in provider.rev() {
-            if self.to_tai_duration().to_seconds() >= leap_second.timestamp_tai_s
+            // Whole seconds are exactly representable as f64 throughout Duration's range.
+            // Compare the remaining nanoseconds separately to avoid rounding up to a leap.
+            let (centuries, nanoseconds) = self.to_tai_duration().to_parts();
+            let seconds = f64::from(centuries) * SECONDS_PER_CENTURY
+                + (nanoseconds / NANOSECONDS_PER_SECOND) as f64;
+            if (nanoseconds % NANOSECONDS_PER_SECOND) as f64
+                >= (leap_second.timestamp_tai_s - seconds) * NANOSECONDS_PER_SECOND as f64
                 && (!iers_only || leap_second.announced_by_iers)
             {
                 return Some(leap_second.delta_at);
