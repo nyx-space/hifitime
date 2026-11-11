@@ -2339,7 +2339,7 @@ fn regression_test_gh_533_jde_and_mjd_agree() {
     ] {
         for mjd in [60_310.0, 51_544.5, 44_244.0, 0.0] {
             let from_mjd = Epoch::from_mjd_in_time_scale(mjd, time_scale);
-            let from_jde = Epoch::from_jde_in_time_scale(mjd + 2_400_000.5, time_scale);
+            let from_jde = Epoch::from_jde_in_time_scale(mjd + MJD_OFFSET, time_scale);
             assert_eq!(from_mjd, from_jde, "{time_scale} at MJD {mjd}");
         }
     }

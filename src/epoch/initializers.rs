@@ -164,12 +164,6 @@ impl Epoch {
     /// Initialize an Epoch from a Julian date in the provided time scale, i.e. the Julian day
     /// counted from noon on 01 January -4713, which is exactly the modified Julian day plus
     /// 2400000.5 days.
-    ///
-    /// NOTE: In the GNSS time scales, the Julian date is a calendar quantity counted from a midnight
-    /// reference epoch, so this uses the same reference epoch offset as
-    /// [`Self::from_mjd_in_time_scale`] and both initializers describe the same instant. The
-    /// dynamical time scales (TCG and TCB) define their Julian date from the exact reference epoch
-    /// instead, which is the convention SOFA uses.
     #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
