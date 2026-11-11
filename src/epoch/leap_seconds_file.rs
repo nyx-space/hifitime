@@ -73,7 +73,7 @@ impl LeapSecondsFile {
                         });
                     }
 
-                    let timestamp_tai_s: u64 = match lexical_core::parse(data[0].as_bytes()) {
+                    let timestamp_utc_s: u64 = match lexical_core::parse(data[0].as_bytes()) {
                         Ok(val) => val,
                         Err(_) => {
                             return Err(HifitimeError::Parse {
@@ -94,7 +94,7 @@ impl LeapSecondsFile {
                     };
 
                     me.data.push(LeapSecond {
-                        timestamp_tai_s: (timestamp_tai_s as f64),
+                        timestamp_utc_s: (timestamp_utc_s as f64),
                         delta_at: (delta_at as f64),
                         announced_by_iers: true,
                     });

@@ -27,8 +27,8 @@ pub trait LeapSecondProvider: DoubleEndedIterator<Item = LeapSecond> + Index<usi
 #[cfg_attr(feature = "python", pyclass)]
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct LeapSecond {
-    /// Timestamp in TAI seconds for this leap second, e.g. `2_272_060_800.0` for the first IERS leap second.
-    pub timestamp_tai_s: f64,
+    /// Timestamp in UTC seconds for this leap second, e.g. `2_272_060_800.0` for the first IERS leap second.
+    pub timestamp_utc_s: f64,
     /// ΔAT is the accumulated time offset after this leap second has past.
     pub delta_at: f64,
     /// Whether or not this leap second was announced by the IERS.
@@ -36,9 +36,9 @@ pub struct LeapSecond {
 }
 
 impl LeapSecond {
-    pub const fn new(timestamp_tai_s: f64, delta_at: f64, announced: bool) -> Self {
+    pub const fn new(timestamp_utc_s: f64, delta_at: f64, announced: bool) -> Self {
         Self {
-            timestamp_tai_s,
+            timestamp_utc_s,
             delta_at,
             announced_by_iers: announced,
         }
