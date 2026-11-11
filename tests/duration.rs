@@ -474,6 +474,25 @@ fn duration_floor_ceil_round() {
 }
 
 #[test]
+fn duration_floor_ceil_round_negative() {
+    for step in [2.hours(), -2.hours()] {
+        assert_eq!((-3).hours().floor(step), (-4).hours());
+        assert_eq!((-3).hours().ceil(step), (-2).hours());
+        assert_eq!((-3).hours().round(step), (-2).hours());
+        assert_eq!((-4).hours().floor(step), (-4).hours());
+        assert_eq!((-4).hours().ceil(step), (-2).hours());
+    }
+    assert_eq!((-30).minutes().ceil(1.hours()), Duration::ZERO);
+
+    // The mathematical floor is below MIN; ceil must add the step before clamping.
+    for step in [7.nanoseconds(), -7.nanoseconds()] {
+        let d = Duration::MIN + Duration::EPSILON;
+        assert_eq!(d.floor(step), Duration::MIN);
+        assert_eq!(d.ceil(step), Duration::MIN + 6.nanoseconds());
+    }
+}
+
+#[test]
 fn duration_from_str() {
     use core::str::FromStr;
     use hifitime::{Duration, Unit};
