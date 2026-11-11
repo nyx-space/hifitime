@@ -33,11 +33,17 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         })
     });
 
+    // Includes building the Duration, not just `to_seconds()`.
     c.bench_function("Duration to f64 seconds", |b| {
         b.iter(|| {
             let d: Duration = Unit::Second * black_box(3.0);
             d.to_seconds();
         })
+    });
+
+    c.bench_function("Duration to f64 seconds (conversion only)", |b| {
+        let d: Duration = Unit::Second * 3.0;
+        b.iter(|| black_box(d).to_seconds())
     });
 
     c.bench_function("Duration add and assert day hour", |b| {
