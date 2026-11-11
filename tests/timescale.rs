@@ -1,5 +1,8 @@
 extern crate hifitime;
-use hifitime::{ParsingError, TimeScale};
+use hifitime::{
+    Duration, Epoch, ParsingError, TimeScale, BDT_REF_EPOCH, GPST_REF_EPOCH, GST_REF_EPOCH,
+    QZSST_REF_EPOCH,
+};
 use std::str::FromStr;
 
 #[test]
@@ -65,4 +68,31 @@ fn test_is_gnss() {
 #[test]
 fn test_default() {
     assert_eq!(TimeScale::default(), TimeScale::TAI);
+}
+
+#[test]
+fn gh_294_reference_epoch_constants_match_time_scale() {
+    // The reference epoch constants are the TAI representation of the same instant as the time
+    // scale's own reference epoch, which has a zero duration in that time scale.
+    for (time_scale, constant) in [
+        (TimeScale::GPST, GPST_REF_EPOCH),
+        (TimeScale::QZSST, QZSST_REF_EPOCH),
+        (TimeScale::GST, GST_REF_EPOCH),
+        (TimeScale::BDT, BDT_REF_EPOCH),
+    ] {
+        let reference_epoch = time_scale.reference_epoch();
+        assert_eq!(reference_epoch.duration, Duration::ZERO, "{time_scale}");
+        assert_eq!(reference_epoch.time_scale, time_scale);
+        assert_eq!(
+            reference_epoch.to_tai_duration(),
+            constant.to_tai_duration(),
+            "{time_scale}"
+        );
+        // A duration measured from a time scale's reference epoch must be zero there.
+        assert_eq!(
+            Epoch::from_duration(Duration::ZERO, time_scale),
+            reference_epoch,
+            "{time_scale}"
+        );
+    }
 }

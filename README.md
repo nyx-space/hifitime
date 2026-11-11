@@ -323,6 +323,18 @@ Thanks for considering to help out on Hifitime!
 
 For Rust development, `cargo` is all you need, along with build tools for the minimum supported Rust version.
 
+## Adding a new time scale
+
+Adding a time scale touches a handful of files, but the reference epoch is written down in a single place: `TimeScale::prime_epoch_offset` in `src/timescale/mod.rs`. `reference_epoch`, `gregorian_epoch_offset`, `offset_from_tai`, and all of the `Epoch::to_*` and `Epoch::from_*` conversions derive from it.
+
+1. Add the variant to the `TimeScale` enum in `src/timescale/mod.rs`. The enum is `#[non_exhaustive]`, so a new variant is not a breaking change for downstream users.
+2. Add the offset between the hifitime prime epoch (1900-01-01 00:00:00 TAI) and the new time scale's reference epoch in `TimeScale::prime_epoch_offset`, expressed in TAI. Do not define a second constant for it: the public `*_REF_EPOCH` constants are built from this function, so they cannot drift from the time scale definition.
+3. Implement `name`, `abbreviation`, `Display`, and `FromStr` in `src/timescale/fmt.rs`, and update `TimeScale::uses_leap_seconds` if the new scale follows UTC leap seconds.
+4. Add `Epoch::from_<scale>` in `src/epoch/initializers.rs` and `Epoch::to_<scale>` in `src/epoch/ops.rs`, following an existing GNSS time scale.
+5. Expose the new scale in the Python bindings (`src/epoch/python.rs` and `hifitime.pyi`) and in the web interface (`web/src/enums.rs`).
+6. Add tests in `tests/timescale.rs` for the string round trip and in `tests/epoch.rs` for the conversions, using published values from the time system's interface control document rather than values produced by hifitime itself.
+7. Run `cargo test`, `cargo clippy -- -D warnings`, and `cargo fmt --check` before opening a pull request.
+
 ## Python development
 
 First, please install [maturin](https://www.maturin.rs/) and set up a Python virtual environment from which to develop. Also make sure that the package version in Cargo.toml is _greater_ than any published version. For example, if the latest version published on [PyPi](https://pypi.org/project/hifitime/) is 4.0.0-a.0 (for alpha-0), make sure that you change the Cargo.toml file such that you're at least in version `alpha-1`, or the `pip install` will download from PyPi instead of installing from the local folder. To run the Python tests, you must install `pytest` in your virtual environment.
