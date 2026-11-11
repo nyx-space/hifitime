@@ -37,8 +37,7 @@ use crate::{Duration, Epoch, HifitimeError, ParsingError, TimeScale, Unit};
 ///
 /// JPL publishes a new EOP2 file once per day, so a cached file younger than one day is reused
 /// instead of being downloaded again. See [`Ut1Provider::download_from_jpl_cached`].
-pub const DEFAULT_UT1_CACHE_MAX_AGE: Duration =
-    Duration::from_total_nanoseconds(86_400 * 1_000_000_000);
+pub const DEFAULT_UT1_CACHE_MAX_AGE: Duration = Duration::from_days(1.0);
 
 /// Where the data of a [`Ut1Provider`] comes from.
 ///
@@ -215,12 +214,10 @@ impl Ut1Provider {
         self.source
     }
 
-    /// Default path of the cached EOP2 file for this version, inside the user's cache directory.
-    ///
-    /// The directory is `<cache dir>/hifitime/ut1`, where `<cache dir>` is `%LOCALAPPDATA%` on
-    /// Windows, `~/Library/Caches` on macOS, and `$XDG_CACHE_HOME` (or `~/.cache`) elsewhere. Set
-    /// `HIFITIME_UT1_CACHE_DIR` to override it. Returns `None` if no cache directory can be
-    /// determined, in which case the caching constructors simply download the file.
+    /// Default path of the cached EOP2 file for this version, inside the `nyx-space/hifitime`
+    /// application data directory of the `platform-dirs` crate (see [`cache_dir`]). Returns `None`
+    /// if no directory can be determined, in which case the caching constructors simply download
+    /// the file.
     ///
     /// The version string is sanitized so that versions containing slashes, such as
     /// `2022/221222_190002-marge_eop2.short`, map to a single file name.
@@ -301,8 +298,8 @@ impl Ut1Provider {
                         info!(
                             "using cached UT1 data from {} (age {}, maximum cache age {})",
                             cache_path.display(),
-                            fmt_age(age),
-                            fmt_age(max_cache_age)
+                            age,
+                            max_cache_age
                         );
                         provider.source = Ut1DataSource::Cache { age };
                         return Ok(provider);
@@ -317,8 +314,8 @@ impl Ut1Provider {
                 debug!(
                     "cached UT1 file {} is older than the maximum cache age (age {}, maximum {}), downloading it again",
                     cache_path.display(),
-                    fmt_age(age),
-                    fmt_age(max_cache_age)
+                    age,
+                    max_cache_age
                 );
             }
         }
@@ -344,7 +341,7 @@ impl Ut1Provider {
                         "could not download UT1 data from JPL ({}), falling back to the cached data of {} (age {})",
                         err,
                         cache_path.display(),
-                        fmt_age(age)
+                        age
                     );
                     let mut provider = Self::from_eop_file_path(cache_path)?;
                     provider.source = Ut1DataSource::Cache { age };
@@ -596,44 +593,69 @@ impl fmt::Display for Ut1DataSource {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Provided => write!(f, "data provided by the caller"),
-            Self::Cache { age } => write!(f, "cached data of age {}", fmt_age(*age)),
+            Self::Cache { age } => write!(f, "cached data of age {age}"),
             Self::Download => write!(f, "data downloaded from JPL"),
         }
     }
 }
 
+/// Python wrapper of [`Ut1DataSource`], exposing where the UT1 data comes from and, when relevant,
+/// the age of the cached data.
+#[cfg(feature = "python")]
+#[pyclass(module = "hifitime", name = "Ut1DataSource")]
+pub struct PyUt1DataSource {
+    source: Ut1DataSource,
+}
+
+#[cfg(feature = "python")]
+#[pymethods]
+impl PyUt1DataSource {
+    /// Where the data comes from: "provided", "cached", or "downloaded".
+    ///
+    /// :rtype: str
+    #[getter]
+    fn origin(&self) -> &'static str {
+        match self.source {
+            Ut1DataSource::Provided => "provided",
+            Ut1DataSource::Cache { .. } => "cached",
+            Ut1DataSource::Download => "downloaded",
+        }
+    }
+
+    /// Age of the cached data, or `None` if the data was not read from the cache.
+    ///
+    /// :rtype: Duration
+    #[getter]
+    fn age(&self) -> Option<Duration> {
+        match self.source {
+            Ut1DataSource::Cache { age } => Some(age),
+            Ut1DataSource::Provided | Ut1DataSource::Download => None,
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        self.source.to_string()
+    }
+}
+
 #[cfg(feature = "python")]
 impl<'py> pyo3::IntoPyObject<'py> for Ut1DataSource {
-    type Target = pyo3::types::PyString;
-    type Output = pyo3::Bound<'py, pyo3::types::PyString>;
-    type Error = core::convert::Infallible;
+    type Target = PyUt1DataSource;
+    type Output = pyo3::Bound<'py, PyUt1DataSource>;
+    type Error = pyo3::PyErr;
 
     fn into_pyobject(self, py: Python<'py>) -> Result<Self::Output, Self::Error> {
-        Ok(pyo3::types::PyString::new(py, &self.to_string()))
+        pyo3::Py::new(py, PyUt1DataSource { source: self }).map(|obj| obj.into_bound(py))
     }
 }
 
 /// Path of the directory holding the cached UT1 files, if one can be determined.
 ///
-/// `HIFITIME_UT1_CACHE_DIR` takes precedence over the platform default.
+/// Like the ANISE toolkit's `MetaFile`, this is the `nyx-space/hifitime` application data directory
+/// from the `platform-dirs` crate, e.g. `%LOCALAPPDATA%\nyx-space\hifitime` on Windows,
+/// `~/Library/Caches/nyx-space/hifitime` on macOS, and `~/.cache/nyx-space/hifitime` on Linux.
 fn cache_dir() -> Option<PathBuf> {
-    if let Some(dir) = std::env::var_os("HIFITIME_UT1_CACHE_DIR") {
-        return Some(PathBuf::from(dir));
-    }
-
-    #[cfg(windows)]
-    let base = std::env::var_os("LOCALAPPDATA").map(PathBuf::from);
-
-    #[cfg(target_os = "macos")]
-    let base =
-        std::env::var_os("HOME").map(|home| PathBuf::from(home).join("Library").join("Caches"));
-
-    #[cfg(all(not(windows), not(target_os = "macos")))]
-    let base = std::env::var_os("XDG_CACHE_HOME")
-        .map(PathBuf::from)
-        .or_else(|| std::env::var_os("HOME").map(|home| PathBuf::from(home).join(".cache")));
-
-    base.map(|base| base.join("hifitime").join("ut1"))
+    platform_dirs::AppDirs::new(Some("nyx-space/hifitime"), true).map(|dirs| dirs.data_dir)
 }
 
 /// Turn a JPL version string into a file name: `2022/221222_190002-marge_eop2.short` becomes
@@ -674,14 +696,4 @@ fn write_cache(cache_path: &Path, payload: &str) -> std::io::Result<()> {
         file.sync_all()?;
     }
     std::fs::rename(&tmp_path, cache_path)
-}
-
-/// Format an age for the logs, in hours when it makes sense.
-fn fmt_age(age: Duration) -> String {
-    let hours = age.to_seconds() / 3_600.0;
-    if hours >= 1.0 {
-        format!("{hours:.1} h")
-    } else {
-        format!("{:.0} min", hours * 60.0)
-    }
 }
