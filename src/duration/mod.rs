@@ -603,7 +603,10 @@ impl Duration {
         }
     }
 
-    /// Floors this duration to the closest duration from the bottom
+    /// Rounds down to a multiple of `duration`, ignoring the sign of the step.
+    ///
+    /// Returns [`Self::MIN`] if the result is below the representable range.
+    /// A zero step returns [`Self::ZERO`].
     ///
     /// # Example
     /// ```
@@ -617,6 +620,7 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.floor(1.seconds()), two_hours_three_min);
     /// assert_eq!(two_hours_three_min.floor(1.hours() + 1.minutes()), 2.hours() + 2.minutes());
     /// assert_eq!(two_hours_three_min.floor(1.hours() + 5.minutes()), 1.hours() + 5.minutes());
+    /// assert_eq!((-3).hours().floor(2.hours()), (-4).hours());
     /// ```
     #[cfg_attr(kani, kani::ensures(|result: &Self| {
         result.nanoseconds < NANOSECONDS_PER_CENTURY
@@ -624,16 +628,18 @@ impl Duration {
             || result.parts_are_equal(Self::MIN)
     }))]
     pub fn floor(&self, duration: Self) -> Self {
-        Self::from_total_nanoseconds(if duration.total_nanoseconds() == 0 {
-            0
-        } else {
-            self.total_nanoseconds() - self.total_nanoseconds() % duration.total_nanoseconds()
-        })
+        let step = duration.total_nanoseconds();
+        if step == 0 {
+            return Self::ZERO;
+        }
+        let nanos = self.total_nanoseconds();
+        Self::from_total_nanoseconds(nanos - nanos.rem_euclid(step))
     }
 
-    /// Ceils this duration to the closest provided duration
+    /// Rounds up to the next multiple of `duration`, ignoring the sign of the step.
     ///
-    /// This simply floors then adds the requested duration
+    /// Exact multiples advance by one step. Returns [`Self::MAX`] if the result
+    /// exceeds the representable range. A zero step returns [`Self::ZERO`].
     ///
     /// # Example
     /// ```
@@ -645,16 +651,16 @@ impl Duration {
     /// assert_eq!(two_hours_three_min.ceil(4.hours()), 4.hours());
     /// assert_eq!(two_hours_three_min.ceil(1.seconds()), two_hours_three_min + 1.seconds());
     /// assert_eq!(two_hours_three_min.ceil(1.hours() + 5.minutes()), 2.hours() + 10.minutes());
+    /// assert_eq!((-30).minutes().ceil(1.hours()), Duration::ZERO);
     /// ```
     pub fn ceil(&self, duration: Self) -> Self {
-        let floored = self.floor(duration);
-        match floored
-            .total_nanoseconds()
-            .checked_add(duration.abs().total_nanoseconds())
-        {
-            Some(total_ns) => Self::from_total_nanoseconds(total_ns),
-            None => Self::MAX,
+        let step = duration.total_nanoseconds().abs();
+        if step == 0 {
+            return Self::ZERO;
         }
+        let nanos = self.total_nanoseconds();
+        // Add the step before saturating a floor below Self::MIN.
+        Self::from_total_nanoseconds(nanos - nanos.rem_euclid(step) + step)
     }
 
     /// Rounds this duration to the closest provided duration
