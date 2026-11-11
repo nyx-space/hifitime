@@ -40,8 +40,6 @@ impl Weekday {
     /// Max: last weekday <=> `Sunday`, used only for conversion to/from u8.
     const MAX: u8 = 7;
     /// Trivial, but avoid magic numbers.
-    pub(crate) const DAYS_PER_WEEK: f64 = 7.0;
-    /// Trivial, but avoid magic numbers.
     pub(crate) const DAYS_PER_WEEK_I128: i128 = 7;
 
     // C89 defines Sunday as zero (which is stupid)

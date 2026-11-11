@@ -41,16 +41,18 @@ In Python:
 ```python
 >>> from hifitime import *
 >>> epoch = Epoch("2000-02-29T14:57:29.000000037 UTC")
->>> epoch
+>>> print(epoch)
 2000-02-29T14:57:29.000000037 UTC
->>> epoch_tai = Epoch.init_from_gregorian_tai(2000, 2, 29, 14, 57, 29, 37)
->>> epoch_tai
+>>> epoch_tai = Epoch.from_gregorian(2000, 2, 29, 14, 57, 29, 37, TimeScale.TAI)
+>>> print(epoch_tai)
 2000-02-29T14:57:29.000000037 TAI
->>> epoch.timedelta(epoch_tai)
+>>> epoch_tai  # repr always shows the epoch in UTC
+2000-02-29T14:56:57.000000037 UTC @ 0x7f587e15d570
+>>> print(epoch.timedelta(epoch_tai))
 32 s
 >>> epoch.to_gpst_days()
 7359.623402777777
->>> epoch.to_mjd_tt_duration()
+>>> print(epoch.to_mjd_tt_duration())
 51603 days 14 h 58 min 33 s 184 ms 37 ns
 >>>
 ```
@@ -141,7 +143,7 @@ assert_eq!(cnt, 7)
 In Python:
 ```python
 >>> from hifitime import *
->>> start = Epoch.init_from_gregorian_utc_at_midnight(2017, 1, 14)
+>>> start = Epoch.from_gregorian_at_midnight(2017, 1, 14, TimeScale.UTC)
 >>> end = start + Unit.Hour*12
 >>> iterator = TimeSeries(start, end, step=Unit.Hour*2, inclusive=True)
 >>> for epoch in iterator:
@@ -205,9 +207,9 @@ In Python:
 ```python
 >>> from hifitime import *
 >>> d = Duration("12 min 32 ns")
->>> d.round(Unit.Minute*1)
+>>> print(d.round(Unit.Minute*1))
 12 min
->>> d
+>>> print(d)
 12 min 32 ns
 >>>
 ```
@@ -361,6 +363,18 @@ We want to inform our users of an important change in Hifitime's versioning appr
 Thanks for considering to help out on Hifitime!
 
 For Rust development, `cargo` is all you need, along with build tools for the minimum supported Rust version.
+
+## Adding a new time scale
+
+Adding a time scale touches a handful of files, but the reference epoch is written down in a single place: `TimeScale::prime_epoch_offset` in `src/timescale/mod.rs`. `reference_epoch`, `gregorian_epoch_offset`, `offset_from_tai`, and all of the `Epoch::to_*` and `Epoch::from_*` conversions derive from it.
+
+1. Add the variant to the `TimeScale` enum in `src/timescale/mod.rs`. The enum is `#[non_exhaustive]`, so a new variant is not a breaking change for downstream users.
+2. Add the offset between the hifitime prime epoch (1900-01-01 00:00:00 TAI) and the new time scale's reference epoch in `TimeScale::prime_epoch_offset`, expressed in TAI. Do not define a second constant for it: the public `*_REF_EPOCH` constants are built from this function, so they cannot drift from the time scale definition.
+3. Implement `name`, `abbreviation`, `Display`, and `FromStr` in `src/timescale/fmt.rs`, and update `TimeScale::uses_leap_seconds` if the new scale follows UTC leap seconds.
+4. Add `Epoch::from_<scale>` in `src/epoch/initializers.rs` and `Epoch::to_<scale>` in `src/epoch/ops.rs`, following an existing GNSS time scale.
+5. Expose the new scale in the Python bindings (`src/epoch/python.rs` and `hifitime.pyi`) and in the web interface (`web/src/enums.rs`).
+6. Add tests in `tests/timescale.rs` for the string round trip and in `tests/epoch.rs` for the conversions, using published values from the time system's interface control document rather than values produced by hifitime itself.
+7. Run `cargo test`, `cargo clippy -- -D warnings`, and `cargo fmt --check` before opening a pull request.
 
 ## Python development
 

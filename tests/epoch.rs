@@ -1570,8 +1570,8 @@ fn test_weekday() {
     };
     // J1900 was a monday
     let j1900 = J1900_REF_EPOCH;
-    assert_eq!(j1900.weekday(), Weekday::Monday);
-    permutate_time_scale(j1900, Weekday::Monday);
+    assert_eq!(j1900.weekday(), Weekday::Sunday);
+    permutate_time_scale(j1900, Weekday::Sunday);
     // 1 nanosec into TAI: still a monday
     let j1900_1ns = Epoch::from_gregorian_tai(1900, 01, 01, 0, 0, 0, 1);
     assert_eq!(j1900_1ns.weekday(), Weekday::Monday);
@@ -1582,24 +1582,24 @@ fn test_weekday() {
     permutate_time_scale(j1900_10h_123_ns, Weekday::Monday);
     // Day +1: tuesday
     let j1901 = j1900 + Duration::from_days(1.0);
-    assert_eq!(j1901.weekday(), Weekday::Tuesday);
-    permutate_time_scale(j1901, Weekday::Tuesday);
+    assert_eq!(j1901.weekday(), Weekday::Monday);
+    permutate_time_scale(j1901, Weekday::Monday);
     // 1 ns into tuesday, still a tuesday
     let j1901 = j1901 + Duration::from_nanoseconds(1.0);
-    assert_eq!(j1901.weekday(), Weekday::Tuesday);
-    permutate_time_scale(j1901, Weekday::Tuesday);
+    assert_eq!(j1901.weekday(), Weekday::Monday);
+    permutate_time_scale(j1901, Weekday::Monday);
     // 6 days into TAI was a sunday
     let e = j1900 + Duration::from_days(6.0);
-    assert_eq!(e.weekday(), Weekday::Sunday);
-    permutate_time_scale(e, Weekday::Sunday);
+    assert_eq!(e.weekday(), Weekday::Saturday);
+    permutate_time_scale(e, Weekday::Saturday);
     // 6 days + some tiny offset, still a sunday
     let e = e + Duration::from_nanoseconds(10000.0);
-    assert_eq!(e.weekday(), Weekday::Sunday);
-    permutate_time_scale(e, Weekday::Sunday);
+    assert_eq!(e.weekday(), Weekday::Saturday);
+    permutate_time_scale(e, Weekday::Saturday);
     // 7 days into TAI: back to a monday
     let e = j1900 + Duration::from_days(7.0);
-    assert_eq!(e.weekday(), Weekday::Monday);
-    permutate_time_scale(e, Weekday::Monday);
+    assert_eq!(e.weekday(), Weekday::Sunday);
+    permutate_time_scale(e, Weekday::Sunday);
     // 2022/12/01 was a thursday
     let epoch = Epoch::from_gregorian_utc_at_midnight(2022, 12, 01);
     assert_eq!(epoch.weekday_utc(), Weekday::Thursday);
@@ -1618,6 +1618,30 @@ fn test_weekday() {
 
     let epoch_tai = GST_REF_EPOCH;
     assert_eq!(epoch_tai.weekday(), Weekday::Sunday);
+}
+
+#[test]
+fn test_weekday_near_midnight() {
+    // 2026-10-25 was a Sunday: in its last nanoseconds, the f64 day count rounded up to Monday.
+    let monday = Epoch::from_gregorian_tai_at_midnight(2026, 10, 26);
+    for ns in [1, 100, 1_000] {
+        let sunday = monday - ns * Unit::Nanosecond;
+        assert_eq!(sunday.weekday(), Weekday::Sunday, "{sunday}");
+        assert_eq!(sunday.next(Weekday::Monday), sunday + 1 * Unit::Day);
+    }
+    assert_eq!(monday.weekday(), Weekday::Monday);
+
+    let monday = Epoch::from_gregorian_utc_at_midnight(2026, 10, 26);
+    assert_eq!(
+        (monday - 1 * Unit::Nanosecond).weekday_utc(),
+        Weekday::Sunday
+    );
+    assert_eq!(monday.weekday_utc(), Weekday::Monday);
+
+    // Before 1900-01-01 (a Monday), the duration is negative.
+    let monday = Epoch::from_gregorian_tai_at_midnight(1900, 1, 1);
+    assert_eq!((monday - 1 * Unit::Nanosecond).weekday(), Weekday::Sunday);
+    assert_eq!((monday - 7 * Unit::Day).weekday(), Weekday::Monday);
 }
 
 #[test]
@@ -1956,6 +1980,13 @@ fn test_epoch_formatter() {
     let fmt_iso_ord = Formatter::new(bday, Format::from_str("%j").unwrap());
     assert_eq!(format!("{fmt_iso_ord}"), "060");
 
+    // The last nanosecond of a day stays on that day.
+    let new_years_eve = Epoch::from_gregorian_utc(2026, 12, 31, 23, 59, 59, 999_999_999);
+    let fmt_iso_ord = Formatter::new(new_years_eve, ISO8601_ORDINAL);
+    assert_eq!(format!("{fmt_iso_ord}"), "2026-365");
+    let fmt_iso_ord = Formatter::new(new_years_eve - 1 * Unit::Day, ISO8601_ORDINAL);
+    assert_eq!(format!("{fmt_iso_ord}"), "2026-364");
+
     let fmt_iso = Formatter::new(bday, ISO8601);
     assert_eq!(format!("{fmt_iso}"), format!("{bday}"));
 
@@ -2260,6 +2291,31 @@ fn regression_test_gh_317() {
             .unwrap(),
         nanos
     );
+}
+
+#[test]
+fn mjd_calendar_reference() {
+    let constructors: [(TimeScale, fn(f64) -> Epoch); 6] = [
+        (TimeScale::TAI, Epoch::from_mjd_tai),
+        (TimeScale::UTC, Epoch::from_mjd_utc),
+        (TimeScale::GPST, Epoch::from_mjd_gpst),
+        (TimeScale::QZSST, Epoch::from_mjd_qzsst),
+        (TimeScale::GST, Epoch::from_mjd_gst),
+        (TimeScale::BDT, Epoch::from_mjd_bdt),
+    ];
+
+    for (time_scale, from_mjd) in constructors {
+        for (days, year, month, day, hour) in [
+            (60_310.0, 2024, 1, 1, 0),
+            (60_310.5, 2024, 1, 1, 12),
+            (44_244.0, 1980, 1, 6, 0),
+            (0.0, 1858, 11, 17, 0),
+        ] {
+            let expected = Epoch::from_gregorian(year, month, day, hour, 0, 0, 0, time_scale);
+            assert_eq!(from_mjd(days), expected, "{time_scale} MJD {days}");
+            assert_eq!(Epoch::from_mjd_in_time_scale(days, time_scale), expected);
+        }
+    }
 }
 
 #[cfg(feature = "std")]

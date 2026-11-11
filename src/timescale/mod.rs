@@ -27,26 +27,26 @@ use crate::{Duration, Epoch, Unit, SECONDS_PER_DAY};
 /// The J1900 reference epoch (1900-01-01 at noon) TAI.
 pub const J1900_REF_EPOCH: Epoch = Epoch {
     duration: Duration {
-        centuries: 0,
-        nanoseconds: 43200000000000,
+        centuries: -1,
+        nanoseconds: 3155716800000000000,
     },
-    time_scale: TimeScale::TAI,
+    time_scale: TimeScale::TT,
 };
 
-/// The J2000 reference epoch (2000-01-01 at midnight) TAI.
+/// The J2000 reference epoch (2000-01-01 at noon) TAI.
 /// |UTC - TAI| = XX Leap Seconds on that day.
 pub const J2000_REF_EPOCH: Epoch = Epoch {
     duration: Duration {
-        centuries: 1,
-        nanoseconds: 43200000000000,
+        centuries: 0,
+        nanoseconds: 3155716800000000000,
     },
-    time_scale: TimeScale::TAI,
+    time_scale: TimeScale::TT,
 };
 
-pub const GPST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
-    centuries: 0,
-    nanoseconds: 2_524_953_619_000_000_000, // XXX
-});
+/// The GPS reference epoch of 1980-01-06T00:00:00 GPST, expressed in TAI.
+///
+/// This is the same instant as the reference epoch of [`TimeScale::GPST`].
+pub const GPST_REF_EPOCH: Epoch = TimeScale::GPST.reference_epoch_tai();
 pub const SECONDS_GPS_TAI_OFFSET: f64 = 2_524_953_619.0;
 pub const SECONDS_GPS_TAI_OFFSET_I64: i64 = 2_524_953_619;
 pub const DAYS_GPS_TAI_OFFSET: f64 = SECONDS_GPS_TAI_OFFSET / SECONDS_PER_DAY;
@@ -56,20 +56,18 @@ pub const QZSST_REF_EPOCH: Epoch = GPST_REF_EPOCH;
 
 /// GST (Galileo) reference epoch is 13 seconds before 1999 August 21 UTC at midnight.
 /// |UTC - TAI| = XX Leap Seconds on that day.
-pub const GST_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
-    centuries: 0,
-    nanoseconds: 3_144_268_819_000_000_000, // 3_144_268_800_000_000_000,
-});
+///
+/// This is the same instant as the reference epoch of [`TimeScale::GST`].
+pub const GST_REF_EPOCH: Epoch = TimeScale::GST.reference_epoch_tai();
 pub const SECONDS_GST_TAI_OFFSET: f64 = 3_144_268_819.0;
 pub const SECONDS_GST_TAI_OFFSET_I64: i64 = 3_144_268_819;
 
 /// BDT(BeiDou): 2005 Dec 31st Midnight
 /// BDT (BeiDou) reference epoch is 2005 December 31st UTC at midnight. **This time scale is synchronized with UTC.**
 /// |UTC - TAI| = XX Leap Seconds on that day.
-pub const BDT_REF_EPOCH: Epoch = Epoch::from_tai_duration(Duration {
-    centuries: 1,
-    nanoseconds: 189_302_433_000_000_000, //189_302_400_000_000_000,
-});
+///
+/// This is the same instant as the reference epoch of [`TimeScale::BDT`].
+pub const BDT_REF_EPOCH: Epoch = TimeScale::BDT.reference_epoch_tai();
 pub const SECONDS_BDT_TAI_OFFSET: f64 = 3_345_062_433.0;
 pub const SECONDS_BDT_TAI_OFFSET_I64: i64 = 3_345_062_433;
 
@@ -158,12 +156,27 @@ impl TimeScale {
         matches!(self, Self::GPST | Self::GST | Self::BDT | Self::QZSST)
     }
 
-    /// Returns this time scale's reference epoch: Time Scale initialization date,
-    /// expressed as an Epoch in TAI
+    /// Returns this time scale's reference epoch: the time scale initialization date, expressed as
+    /// an Epoch in that time scale (hence with a zero duration).
+    ///
+    /// Use [`Epoch::to_tai_duration`] to compare it with an instant in TAI, as done by the
+    /// `GPST_REF_EPOCH` and other reference epoch constants.
     pub const fn reference_epoch(self) -> Epoch {
         Epoch {
             duration: Duration::ZERO,
             time_scale: self,
+        }
+    }
+
+    /// Returns this time scale's reference epoch, expressed as an Epoch in TAI.
+    ///
+    /// Unlike [`Self::reference_epoch`], the returned epoch is directly usable in TAI arithmetic:
+    /// it does not need to be converted, which would otherwise recurse back into the conversion
+    /// that needs the reference epoch in the first place.
+    pub const fn reference_epoch_tai(self) -> Epoch {
+        Epoch {
+            duration: self.prime_epoch_offset(),
+            time_scale: TimeScale::TAI,
         }
     }
 

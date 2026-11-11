@@ -416,61 +416,32 @@ impl Add for Duration {
     /// ## Examples
     /// + `Duration { centuries: 0, nanoseconds: 1 }` is a positive duration of zero centuries and one nanosecond.
     /// + `Duration { centuries: -1, nanoseconds: 1 }` is a negative duration representing "one century before zero minus one nanosecond"
-    #[allow(clippy::absurd_extreme_comparisons)]
     fn add(mut self, mut rhs: Self) -> Duration {
         // Ensure that the durations are normalized to avoid extra logic to handle under/overflows
         self.normalize();
         rhs.normalize();
 
-        // Check that the addition fits in an i16
-        match self.centuries.checked_add(rhs.centuries) {
-            None => {
-                // Overflowed, so we've hit the bound.
-                if self.centuries < 0 {
-                    // We've hit the negative bound, so return MIN.
-                    return Self::MIN;
-                } else {
-                    // We've hit the positive bound, so return MAX.
-                    return Self::MAX;
-                }
-            }
-            Some(centuries) => {
-                self.centuries = centuries;
-            }
+        // Widen the century addition so that its direction is still known
+        // when the result exceeds the Duration bounds.
+        let mut centuries = i32::from(self.centuries) + i32::from(rhs.centuries);
+        let mut nanoseconds = self.nanoseconds + rhs.nanoseconds;
+
+        // Carry any full century in the nanoseconds into the centuries count.
+        if nanoseconds >= NANOSECONDS_PER_CENTURY {
+            centuries += 1;
+            nanoseconds -= NANOSECONDS_PER_CENTURY;
         }
 
-        if self.centuries == Self::MIN.centuries && self.nanoseconds < Self::MIN.nanoseconds {
-            // Then we do the operation backward
-            match self
-                .nanoseconds
-                .checked_sub(NANOSECONDS_PER_CENTURY - rhs.nanoseconds)
-            {
-                Some(nanos) => self.nanoseconds = nanos,
-                None => {
-                    self.centuries += 1; // Safe because we're at the MIN
-                    self.nanoseconds = rhs.nanoseconds
-                }
-            }
+        if centuries > i32::from(i16::MAX) {
+            Self::MAX
+        } else if centuries < i32::from(i16::MIN) {
+            Self::MIN
         } else {
-            match self.nanoseconds.checked_add(rhs.nanoseconds) {
-                Some(nanoseconds) => self.nanoseconds = nanoseconds,
-                None => {
-                    // Rare case where somehow the input data was not normalized. So let's normalize it and call add again.
-                    let mut rhs = rhs;
-                    rhs.normalize();
-
-                    match self.centuries.checked_add(rhs.centuries) {
-                        None => return Self::MAX,
-                        Some(centuries) => self.centuries = centuries,
-                    };
-                    // Now it will fit!
-                    self.nanoseconds += rhs.nanoseconds;
-                }
+            Self {
+                centuries: centuries as i16,
+                nanoseconds,
             }
         }
-
-        self.normalize();
-        self
     }
 }
 

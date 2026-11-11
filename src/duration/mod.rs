@@ -433,6 +433,12 @@ impl Duration {
         (self.centuries, self.nanoseconds)
     }
 
+    /// Returns the number of whole days in this duration, rounded toward negative infinity (because self.nanoseconds is a u64).
+    pub(crate) const fn whole_days(&self) -> i64 {
+        self.centuries as i64 * DAYS_PER_CENTURY_U64 as i64
+            + (self.nanoseconds / NANOSECONDS_PER_DAY) as i64
+    }
+
     /// Returns the total nanoseconds in a signed 128 bit integer
     #[must_use]
     #[cfg_attr(kani, kani::ensures(|result| {
@@ -594,33 +600,43 @@ impl Duration {
             && ns < 1000
     }))]
     pub fn decompose(&self) -> (i8, u64, u64, u64, u64, u64, u64, u64) {
-        let mut me = *self;
-        let sign = me.signum();
-        me = me.abs();
-        let days = me.to_unit(Unit::Day).floor();
-        me -= days.days();
-        let hours = me.to_unit(Unit::Hour).floor();
-        me -= hours.hours();
-        let minutes = me.to_unit(Unit::Minute).floor();
-        me -= minutes.minutes();
-        let seconds = me.to_unit(Unit::Second).floor();
-        me -= seconds.seconds();
-        let milliseconds = me.to_unit(Unit::Millisecond).floor();
-        me -= milliseconds.milliseconds();
-        let microseconds = me.to_unit(Unit::Microsecond).floor();
-        me -= microseconds.microseconds();
-        let nanoseconds = me.to_unit(Unit::Nanosecond).round();
+        let sign = self.signum();
+        // Split the magnitude with integer arithmetic: converting to a unit in f64 first rounds,
+        // e.g. 195 days minus 1 ns becomes exactly 195.0 days.
+        let (centuries, nanoseconds) = if self.centuries >= 0 {
+            (self.centuries as u64, self.nanoseconds)
+        } else {
+            // centuries * C + ns == -(|centuries| * C - ns), and 0 <= ns < C fits in an i64.
+            let neg_ns = -(self.nanoseconds as i64);
+            let per_century = NANOSECONDS_PER_CENTURY as i64;
+            (
+                (i64::from(self.centuries.unsigned_abs()) + neg_ns.div_euclid(per_century)) as u64,
+                neg_ns.rem_euclid(per_century) as u64,
+            )
+        };
 
-        // Everything should fit in the expected types now
+        let days = centuries * DAYS_PER_CENTURY_U64 + nanoseconds / NANOSECONDS_PER_DAY;
+        let ns_of_day = nanoseconds % NANOSECONDS_PER_DAY;
+        let hours = ns_of_day / NANOSECONDS_PER_HOUR;
+        let ns_of_hour = ns_of_day % NANOSECONDS_PER_HOUR;
+        let minutes = ns_of_hour / NANOSECONDS_PER_MINUTE;
+        let ns_of_minute = ns_of_hour % NANOSECONDS_PER_MINUTE;
+        let seconds = ns_of_minute / NANOSECONDS_PER_SECOND;
+        let ns_of_second = ns_of_minute % NANOSECONDS_PER_SECOND;
+        let milliseconds = ns_of_second / NANOSECONDS_PER_MILLISECOND;
+        let ns_of_millisecond = ns_of_second % NANOSECONDS_PER_MILLISECOND;
+        let microseconds = ns_of_millisecond / NANOSECONDS_PER_MICROSECOND;
+        let nanoseconds = ns_of_millisecond % NANOSECONDS_PER_MICROSECOND;
+
         (
             sign,
-            days as u64,
-            hours as u64,
-            minutes as u64,
-            seconds as u64,
-            milliseconds as u64,
-            microseconds as u64,
-            nanoseconds as u64,
+            days,
+            hours,
+            minutes,
+            seconds,
+            milliseconds,
+            microseconds,
+            nanoseconds,
         )
     }
 
@@ -949,7 +965,7 @@ impl From<core::time::Duration> for Duration {
 
 #[cfg(test)]
 mod ut_duration {
-    use super::{Duration, TimeUnits, Unit, NANOSECONDS_PER_CENTURY};
+    use super::{Duration, TimeUnits, Unit, DAYS_PER_CENTURY_U64, NANOSECONDS_PER_CENTURY};
 
     #[test]
     #[cfg(feature = "serde")]
@@ -1012,6 +1028,65 @@ mod ut_duration {
     }
 
     #[test]
+    fn test_decompose_near_day_boundary() {
+        // Issue #501: just under a whole number of days, the f64 day count rounded up.
+        let d = 195.days() - 1.nanoseconds();
+        assert_eq!(d.decompose(), (0, 194, 23, 59, 59, 999, 999, 999));
+        assert_eq!((-d).decompose(), (-1, 194, 23, 59, 59, 999, 999, 999));
+
+        let d = 1.centuries() - 238.nanoseconds();
+        assert_eq!(d.decompose(), (0, 36524, 23, 59, 59, 999, 999, 762));
+
+        assert_eq!(
+            Duration::MIN.decompose(),
+            (-1, 32_768 * DAYS_PER_CENTURY_U64, 0, 0, 0, 0, 0, 0)
+        );
+        assert_eq!(
+            Duration::MAX.decompose(),
+            (1, 32_768 * DAYS_PER_CENTURY_U64, 0, 0, 0, 0, 0, 0)
+        );
+
+        // The components add back up to the duration, around day boundaries at any magnitude.
+        for days in [1_i64, 195, 36_525, 1_000_000, 1_196_000_000] {
+            for offset_ns in [-1_000_i64, -238, -1, 0, 1] {
+                for d in [
+                    days.days() + offset_ns.nanoseconds(),
+                    -(days.days() + offset_ns.nanoseconds()),
+                ] {
+                    let (sign, days, hours, minutes, seconds, ms, us, ns) = d.decompose();
+                    let recomposed = (days as i64).days()
+                        + (hours as i64).hours()
+                        + (minutes as i64).minutes()
+                        + (seconds as i64).seconds()
+                        + (ms as i64).milliseconds()
+                        + (us as i64).microseconds()
+                        + (ns as i64).nanoseconds();
+                    if sign < 0 {
+                        assert_eq!(-recomposed, d);
+                    } else {
+                        assert_eq!(recomposed, d);
+                    }
+                }
+            }
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "std")]
+    fn test_display_round_trip_near_day_boundary() {
+        use core::str::FromStr;
+
+        for d in [
+            195.days() - 1.nanoseconds(),
+            -(195.days() - 1.nanoseconds()),
+            1.centuries() - 238.nanoseconds(),
+            1.centuries() - 1.nanoseconds(),
+        ] {
+            assert_eq!(Duration::from_str(&format!("{d}")).unwrap(), d);
+        }
+    }
+
+    #[test]
     fn test_conversion() {
         let d = Duration::MIN;
         let core_d: core::time::Duration = d.into();
@@ -1020,5 +1095,33 @@ mod ut_duration {
         let d = Duration::MAX;
         let core_d: core::time::Duration = d.into();
         assert_eq!(core_d, core::time::Duration::from_secs(103407943680000));
+    }
+
+    #[test]
+    fn test_add_saturates_exactly() {
+        // Issue #516: `Duration + Duration` saturated to MIN too early, before
+        // carrying the nanoseconds into the century sum.
+        let a = Duration::from_parts(-32768, 5); // MIN + 5 ns
+        let b = Duration::from_parts(-1, NANOSECONDS_PER_CENTURY - 1); // -1 ns
+        assert_eq!((a + b).to_parts(), (-32768, 4)); // MIN + 4 ns
+
+        // Symmetric near-MAX case: MAX - 1 ns stays representable.
+        let a = Duration::from_parts(i16::MAX, NANOSECONDS_PER_CENTURY - 5);
+        let b = Duration::from_parts(0, 4);
+        assert_eq!((a + b).to_parts(), (i16::MAX, NANOSECONDS_PER_CENTURY - 1));
+
+        // A sum just above MAX still saturates to MAX.
+        assert_eq!(Duration::MAX + Duration::from_parts(0, 1), Duration::MAX);
+
+        // A sum just below MIN still saturates to MIN.
+        assert_eq!(Duration::MIN + Duration::MIN_NEGATIVE, Duration::MIN);
+
+        // Large Kani-found example: the exact sum is representable.
+        let a = Duration::from_parts(-21562, 3428233558449258498);
+        let b = Duration::from_parts(-11209, 6075075161288605694);
+        assert_eq!(
+            (a + b).total_nanoseconds(),
+            -103_407_907_651_280_262_135_808_i128
+        );
     }
 }

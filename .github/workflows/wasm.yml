@@ -1,0 +1,63 @@
+name: WASM CI
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "*"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+          components: clippy, rustfmt
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+      - run: cargo fmt --check
+      - run: cargo clippy --target wasm32-unknown-unknown --all-targets -- -D warnings
+      - run: npm test
+      - uses: actions/upload-artifact@v5
+        with:
+          name: pkg-inline
+          path: web/pkg-inline
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v6
+        with:
+          name: pkg-inline
+          path: pkg-inline
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+      # A version with a hyphen, such as 4.4.0-a.1, publishes under the `next` tag.
+      - run: |
+          tag=latest
+          if node -p "require('./pkg-inline/package.json').version" | grep -q -- -; then tag=next; fi
+          npm publish ./pkg-inline --access public --provenance --tag "$tag"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
