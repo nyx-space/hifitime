@@ -1,12 +1,12 @@
 /*
-* Hifitime
-* Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
-* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at https://mozilla.org/MPL/2.0/.
-*
-* Documentation: https://nyxspace.com/
-*/
+ * Hifitime
+ * Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Documentation: https://nyxspace.com/
+ */
 
 use core::str::FromStr;
 
@@ -161,11 +161,29 @@ impl Epoch {
         Self::from_jde_in_time_scale(days, TimeScale::TAI)
     }
 
+    /// Initialize an Epoch from a Julian date in the provided time scale, i.e. the Julian day
+    /// counted from noon on 01 January -4713, which is exactly the modified Julian day plus
+    /// 2400000.5 days.
     #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
+        // The reference epochs of the four relativistic time scales (TCG, TL, TCL and TCB) are
+        // defined in TT, not in TAI: e.g. the TCG reference epoch is 1977-01-01 00:00:32.184 TT
+        // (TCB adds another 65.5 us on top). Their Julian date is anchored on that exact
+        // reference epoch -- as SOFA expects, cf. the `sofa_val_tcg` and `sofa_val_tcb` tests --
+        // so the full prime epoch offset must be used: rounding it down to the whole minute
+        // shifts every rebuilt epoch by exactly 32 s, the seconds part of the reference epoch.
+        // Every other time scale has a civil, whole-minute reference epoch, so its Julian date
+        // uses the Gregorian (minute aligned) offset; this is the fix for gh-533.
+        let reference_epoch_offset = match time_scale {
+            TimeScale::TCG | TimeScale::TL | TimeScale::TCL | TimeScale::TCB => {
+                time_scale.prime_epoch_offset()
+            }
+            _ => time_scale.gregorian_epoch_offset(),
+        };
+
         Self {
-            duration: (days - MJD_J1900 - MJD_OFFSET) * Unit::Day - time_scale.prime_epoch_offset(),
+            duration: (days - MJD_J1900 - MJD_OFFSET) * Unit::Day - reference_epoch_offset,
             time_scale,
         }
     }

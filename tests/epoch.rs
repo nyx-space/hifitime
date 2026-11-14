@@ -2318,6 +2318,41 @@ fn mjd_calendar_reference() {
     }
 }
 
+#[test]
+fn regression_test_gh_533_jde_and_mjd_agree() {
+    // JD is by definition MJD + 2400000.5, so both initializers must describe the same instant.
+    // This used to be off by 19 seconds in the GNSS time scales because the Julian date path
+    // subtracted the full reference epoch offset while the modified Julian date path subtracted
+    // that offset rounded down to a whole minute. The four relativistic time scales (TCG, TL,
+    // TCL and TCB) are excluded on purpose: their reference epochs are defined in TT, so their
+    // Julian date is defined from the exact reference epoch, as SOFA expects, and is covered by
+    // the SOFA validation tests.
+    for time_scale in [
+        TimeScale::TAI,
+        TimeScale::UTC,
+        TimeScale::TT,
+        TimeScale::ET,
+        TimeScale::TDB,
+        TimeScale::GPST,
+        TimeScale::QZSST,
+        TimeScale::GST,
+        TimeScale::BDT,
+    ] {
+        for mjd in [60_310.0, 51_544.5, 44_244.0, 0.0] {
+            let from_mjd = Epoch::from_mjd_in_time_scale(mjd, time_scale);
+            let from_jde = Epoch::from_jde_in_time_scale(mjd + MJD_OFFSET, time_scale);
+            assert_eq!(from_mjd, from_jde, "{time_scale} at MJD {mjd}");
+        }
+    }
+
+    // Spot check: 2024-01-01T00:00:00 GPST is 2023-12-31T23:59:42 UTC because GPST runs 18 seconds
+    // ahead of UTC.
+    assert_eq!(
+        Epoch::from_jde_gpst(2_460_310.5).to_time_scale(TimeScale::UTC),
+        Epoch::from_gregorian_utc(2023, 12, 31, 23, 59, 42, 0)
+    );
+}
+
 #[cfg(feature = "std")]
 #[test]
 fn regression_test_gh_302() {
