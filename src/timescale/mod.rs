@@ -1,12 +1,12 @@
 /*
-* Hifitime
-* Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
-* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at https://mozilla.org/MPL/2.0/.
-*
-* Documentation: https://nyxspace.com/
-*/
+ * Hifitime
+ * Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Documentation: https://nyxspace.com/
+ */
 
 #[cfg(feature = "python")]
 use pyo3::prelude::*;
@@ -105,6 +105,12 @@ pub enum TimeScale {
     BDT,
     /// QZSS Time scale has the same properties as GPST but with dedicated clocks
     QZSST,
+    /// IRNSS (NavIC) Time scale: the reference epoch is 1999 August 22nd at midnight IRNSST, i.e.
+    /// 1024 weeks after the GPS reference epoch, and IRNSST is 19 seconds ahead of TAI, so this
+    /// time scale does not take leap seconds into account. The IRNSST reference epoch is strictly
+    /// identical to the GST reference epoch.
+    /// cf. <https://www.isro.gov.in/media_isro/pdf/SateliteNavigation/irnss_sps_icd_version1.1-2017.pdf>
+    IRNSST,
     /// Geocentric Coordinate Time
     TCG,
     /// Barycentric Coordinate Time
@@ -137,6 +143,7 @@ impl Default for TimeScale {
 impl TimeScale {
     pub(crate) const fn formatted_len(&self) -> usize {
         match &self {
+            Self::IRNSST => 6,
             Self::QZSST => 5,
             Self::GPST => 4,
             Self::TAI
@@ -153,7 +160,10 @@ impl TimeScale {
 
     /// Returns true if Self is based off a GNSS constellation
     pub const fn is_gnss(&self) -> bool {
-        matches!(self, Self::GPST | Self::GST | Self::BDT | Self::QZSST)
+        matches!(
+            self,
+            Self::GPST | Self::GST | Self::BDT | Self::QZSST | Self::IRNSST
+        )
     }
 
     /// Returns this time scale's reference epoch: the time scale initialization date, expressed as
@@ -196,7 +206,7 @@ impl TimeScale {
                 centuries: 0,
                 nanoseconds: 2_524_953_619_000_000_000,
             },
-            TimeScale::GST => Duration {
+            TimeScale::GST | TimeScale::IRNSST => Duration {
                 centuries: 0,
                 nanoseconds: 3_144_268_819_000_000_000,
             },
@@ -239,7 +249,7 @@ impl TimeScale {
 }
 
 /// Allows conversion of a TimeSystem into a u8
-/// Mapping: TAI: 0; TT: 1; ET: 2; TDB: 3; UTC: 4; GPST: 5; GST: 6; BDT: 7; QZSST: 8; TCG: 9; TCB: 10;
+/// Mapping: TAI: 0; TT: 1; ET: 2; TDB: 3; UTC: 4; GPST: 5; GST: 6; BDT: 7; QZSST: 8; TCG: 9; TCB: 10; TL: 11; TCL: 12; IRNSST: 13;
 impl From<TimeScale> for u8 {
     fn from(ts: TimeScale) -> Self {
         match ts {
@@ -256,12 +266,13 @@ impl From<TimeScale> for u8 {
             TimeScale::TCB => 10,
             TimeScale::TL => 11,
             TimeScale::TCL => 12,
+            TimeScale::IRNSST => 13,
         }
     }
 }
 
 /// Allows conversion of a u8 into a TimeSystem.
-/// Mapping: 1: TT; 2: ET; 3: TDB; 4: UTC; 5: GPST; 6: GST; 7: BDT; 8: QZSST; 9: TCG; 10: TCB; anything else: TAI
+/// Mapping: 1: TT; 2: ET; 3: TDB; 4: UTC; 5: GPST; 6: GST; 7: BDT; 8: QZSST; 9: TCG; 10: TCB; 11: TL; 12: TCL; 13: IRNSST; anything else: TAI
 impl From<u8> for TimeScale {
     fn from(val: u8) -> Self {
         match val {
@@ -277,6 +288,7 @@ impl From<u8> for TimeScale {
             10 => Self::TCB,
             11 => Self::TL,
             12 => Self::TCL,
+            13 => Self::IRNSST,
             _ => Self::TAI,
         }
     }
@@ -301,8 +313,8 @@ mod ut_timescale {
         for ts_u8 in 0..u8::MAX {
             let ts = TimeScale::from(ts_u8);
             let ts_u8_back: u8 = ts.into();
-            // If the u8 is greater than 10, it isn't valid and necessarily encoded as TAI.
-            if ts_u8 < 13 {
+            // If the u8 is greater than 13, it isn't valid and necessarily encoded as TAI.
+            if ts_u8 < 14 {
                 assert_eq!(ts_u8_back, ts_u8, "got {ts_u8_back} want {ts_u8}");
             } else {
                 assert_eq!(ts, TimeScale::TAI);

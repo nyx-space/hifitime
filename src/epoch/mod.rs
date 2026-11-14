@@ -1,12 +1,12 @@
 /*
-* Hifitime
-* Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
-* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at https://mozilla.org/MPL/2.0/.
-*
-* Documentation: https://nyxspace.com/
-*/
+ * Hifitime
+ * Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Documentation: https://nyxspace.com/
+ */
 mod formatting;
 mod gregorian;
 pub mod initializers;
@@ -229,7 +229,9 @@ impl Epoch {
                     self.duration + tai_assumption.leap_seconds(true).unwrap_or(0.0).seconds()
                 }
                 TimeScale::GPST => self.duration + TimeScale::GPST.reference_epoch_tai().duration,
-                TimeScale::GST => self.duration + TimeScale::GST.reference_epoch_tai().duration,
+                TimeScale::GST | TimeScale::IRNSST => {
+                    self.duration + TimeScale::GST.reference_epoch_tai().duration
+                }
                 TimeScale::BDT => self.duration + TimeScale::BDT.reference_epoch_tai().duration,
                 TimeScale::QZSST => self.duration + TimeScale::QZSST.reference_epoch_tai().duration,
                 TimeScale::TCG => {
@@ -356,7 +358,7 @@ impl Epoch {
                 TimeScale::GPST => {
                     prime_epoch_offset - TimeScale::GPST.reference_epoch_tai().duration
                 }
-                TimeScale::GST => {
+                TimeScale::GST | TimeScale::IRNSST => {
                     prime_epoch_offset - TimeScale::GST.reference_epoch_tai().duration
                 }
                 TimeScale::BDT => {
@@ -762,6 +764,34 @@ impl Epoch {
     /// :rtype: float
     pub fn to_qzsst_days(&self) -> f64 {
         self.to_gpst_duration().to_unit(Unit::Day)
+    }
+
+    #[must_use]
+    /// Returns seconds past the IRNSS (NavIC) Time Epoch, defined as 1999 August 22nd at midnight IRNSST.
+    /// :rtype: float
+    pub fn to_irnss_seconds(&self) -> f64 {
+        self.to_irnss_duration().to_seconds()
+    }
+
+    #[must_use]
+    /// Returns `Duration` past the IRNSS (NavIC) Time Epoch.
+    /// :rtype: Duration
+    pub fn to_irnss_duration(&self) -> Duration {
+        self.to_time_scale(TimeScale::IRNSST).duration
+    }
+
+    /// Returns nanoseconds past the IRNSS (NavIC) Time Epoch.
+    /// NOTE: This function will return an error if the centuries past IRNSST time are not zero.
+    /// :rtype: int
+    pub fn to_irnss_nanoseconds(&self) -> Result<u64, HifitimeError> {
+        self.to_nanoseconds_in_time_scale(TimeScale::IRNSST)
+    }
+
+    #[must_use]
+    /// Returns days past the IRNSS (NavIC) Time Epoch.
+    /// :rtype: float
+    pub fn to_irnss_days(&self) -> f64 {
+        self.to_irnss_duration().to_unit(Unit::Day)
     }
 
     #[must_use]
@@ -1193,9 +1223,12 @@ impl FromStr for Epoch {
                 },
                 "MJD" => match ts {
                     TimeScale::TAI => Ok(Self::from_mjd_tai(value)),
-                    TimeScale::UTC | TimeScale::GPST | TimeScale::BDT | TimeScale::GST => {
-                        Ok(Self::from_mjd_in_time_scale(value, ts))
-                    }
+                    TimeScale::UTC
+                    | TimeScale::GPST
+                    | TimeScale::BDT
+                    | TimeScale::GST
+                    | TimeScale::QZSST
+                    | TimeScale::IRNSST => Ok(Self::from_mjd_in_time_scale(value, ts)),
                     _ => Err(HifitimeError::Parse {
                         source: ParsingError::UnsupportedTimeSystem,
                         details: "for Modified Julian Date",
