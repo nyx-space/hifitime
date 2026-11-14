@@ -4,14 +4,14 @@
 #![cfg_attr(kani, feature(stmt_expr_attributes))]
 #![cfg_attr(kani, feature(proc_macro_hygiene))]
 /*
-* Hifitime
-* Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
-* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at https://mozilla.org/MPL/2.0/.
-*
-* Documentation: https://nyxspace.com/
-*/
+ * Hifitime
+ * Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Documentation: https://nyxspace.com/
+ */
 
 /// Julian date for the J1900 epoch, as per NAIF SPICE.
 pub const JD_J1900: f64 = 2_415_020.0;
