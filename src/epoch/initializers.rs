@@ -167,10 +167,19 @@ impl Epoch {
     #[cfg_attr(kani, kani::ensures(|result| result.time_scale == time_scale))]
     #[cfg_attr(kani, kani::requires(days.is_finite()))]
     pub fn from_jde_in_time_scale(days: f64, time_scale: TimeScale) -> Self {
-        let reference_epoch_offset = if time_scale.is_gnss() {
-            time_scale.gregorian_epoch_offset()
-        } else {
-            time_scale.prime_epoch_offset()
+        // The reference epochs of the four relativistic time scales (TCG, TL, TCL and TCB) are
+        // defined in TT, not in TAI: e.g. the TCG reference epoch is 1977-01-01 00:00:32.184 TT
+        // (TCB adds another 65.5 us on top). Their Julian date is anchored on that exact
+        // reference epoch -- as SOFA expects, cf. the `sofa_val_tcg` and `sofa_val_tcb` tests --
+        // so the full prime epoch offset must be used: rounding it down to the whole minute
+        // shifts every rebuilt epoch by exactly 32 s, the seconds part of the reference epoch.
+        // Every other time scale has a civil, whole-minute reference epoch, so its Julian date
+        // uses the Gregorian (minute aligned) offset; this is the fix for gh-533.
+        let reference_epoch_offset = match time_scale {
+            TimeScale::TCG | TimeScale::TL | TimeScale::TCL | TimeScale::TCB => {
+                time_scale.prime_epoch_offset()
+            }
+            _ => time_scale.gregorian_epoch_offset(),
         };
 
         Self {

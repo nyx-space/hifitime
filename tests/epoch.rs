@@ -2323,9 +2323,10 @@ fn regression_test_gh_533_jde_and_mjd_agree() {
     // JD is by definition MJD + 2400000.5, so both initializers must describe the same instant.
     // This used to be off by 19 seconds in the GNSS time scales because the Julian date path
     // subtracted the full reference epoch offset while the modified Julian date path subtracted
-    // that offset rounded down to a whole minute. TCG and TCB are excluded on purpose: their Julian
-    // date is defined from the exact reference epoch, as SOFA expects, and is covered by the SOFA
-    // validation tests.
+    // that offset rounded down to a whole minute. The four relativistic time scales (TCG, TL,
+    // TCL and TCB) are excluded on purpose: their reference epochs are defined in TT, so their
+    // Julian date is defined from the exact reference epoch, as SOFA expects, and is covered by
+    // the SOFA validation tests.
     for time_scale in [
         TimeScale::TAI,
         TimeScale::UTC,
