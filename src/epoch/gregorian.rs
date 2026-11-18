@@ -691,10 +691,7 @@ pub const fn is_gregorian_valid(
     } else {
         usual_days_per_month(month)
     };
-    if day > days_per_month {
-        return false;
-    }
-    true
+    day <= days_per_month
 }
 
 /// Years when January had the leap second
