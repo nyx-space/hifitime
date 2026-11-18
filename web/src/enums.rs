@@ -1,12 +1,12 @@
 /*
-* Hifitime
-* Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
-* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at https://mozilla.org/MPL/2.0/.
-*
-* Documentation: https://nyxspace.com/
-*/
+ * Hifitime
+ * Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Documentation: https://nyxspace.com/
+ */
 
 //! The enumerations. A TypeScript enumeration holds no method, so each helper
 //! is a free function.
@@ -67,6 +67,8 @@ pub enum TimeScale {
     BDT = 7,
     /// Quasi-Zenith Satellite System Time.
     QZSST = 8,
+    /// IRNSS (NavIC) System Time.
+    IRNSST = 13,
     /// Geocentric Coordinate Time.
     TCG = 9,
     /// Barycentric Coordinate Time.
@@ -87,6 +89,7 @@ mirror_enum!(TimeScale {
     GST,
     BDT,
     QZSST,
+    IRNSST,
     TCG,
     TCB,
     TL,

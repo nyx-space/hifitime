@@ -16,6 +16,7 @@ fn test_from_str() {
         ("GST", TimeScale::GST),
         ("BDT", TimeScale::BDT),
         ("QZSST", TimeScale::QZSST),
+        ("IRNSST", TimeScale::IRNSST),
     ];
     for value in values {
         let (descriptor, expected) = value;
@@ -31,6 +32,7 @@ fn test_from_str() {
             TimeScale::GST => "GAL",
             TimeScale::BDT => "BDS",
             TimeScale::QZSST => "QZSS",
+            TimeScale::IRNSST => "IRN",
             _ => descriptor, // untouched
         };
         assert_eq!(format!("{ts:x}"), expected);
@@ -47,6 +49,8 @@ fn test_from_rinex_format() {
     assert_eq!(TimeScale::from_str("GAL"), Ok(TimeScale::GST));
     assert_eq!(TimeScale::from_str("BDS"), Ok(TimeScale::BDT));
     assert_eq!(TimeScale::from_str("QZSS"), Ok(TimeScale::QZSST));
+    assert_eq!(TimeScale::from_str("IRN"), Ok(TimeScale::IRNSST));
+    assert_eq!(TimeScale::from_str("IRNSST"), Ok(TimeScale::IRNSST));
     // Check error
     assert_eq!(TimeScale::from_str("FAK"), Err(ParsingError::TimeSystem));
 }
@@ -63,6 +67,9 @@ fn test_is_gnss() {
     assert!(!ts.is_gnss());
     let ts = TimeScale::QZSST;
     assert!(ts.is_gnss());
+    let ts = TimeScale::IRNSST;
+    assert!(ts.is_gnss());
+    assert!(!ts.uses_leap_seconds());
 }
 
 #[test]

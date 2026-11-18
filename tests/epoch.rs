@@ -2758,3 +2758,68 @@ fn tcl_tl_round_trip() {
         }
     }
 }
+
+#[test]
+fn test_gh_210_irnss_time_scale() {
+    use hifitime::{TimeScale, Unit};
+
+    // The IRNSS (NavIC) system time starts on 1999 August 22nd at midnight IRNSST, which is
+    // 13 leap seconds ahead of UTC, i.e. 1999-08-21T23:59:47 UTC.
+    // cf. ISRO IRNSS SPS ICD v1.1 and RINEX 4.00 section 4.1.6.
+    let irnss_epoch = TimeScale::IRNSST.reference_epoch();
+    assert_eq!(
+        irnss_epoch,
+        Epoch::from_gregorian_utc(1999, 8, 21, 23, 59, 47, 0)
+    );
+
+    // IRNSS week zero starts at the first GPS week roll-over, i.e. 1024 weeks after the GPS epoch.
+    assert_eq!(
+        irnss_epoch - TimeScale::GPST.reference_epoch(),
+        1024.0 * Unit::Week
+    );
+
+    // IRNSST runs 19 seconds behind TAI, like GPS time, and therefore never counts leap seconds.
+    assert!(TimeScale::IRNSST.is_gnss());
+    assert!(!TimeScale::IRNSST.uses_leap_seconds());
+    assert!((irnss_epoch.to_tai_duration().to_seconds() - 3_144_268_819.0).abs() < 1e-9);
+
+    // Conversions must be lossless in both directions.
+    let epoch = Epoch::from_gregorian_utc(2026, 11, 6, 12, 34, 56, 789);
+    let irnss = epoch.to_time_scale(TimeScale::IRNSST);
+    assert_eq!(irnss.time_scale, TimeScale::IRNSST);
+    assert_eq!(irnss.to_tai_duration(), epoch.to_tai_duration());
+    assert_eq!(irnss.to_irnss_duration(), irnss.duration);
+    assert!(
+        (irnss.to_irnss_seconds() - (irnss.to_tai_seconds() - 3_144_268_819.0)).abs() < 1e-6,
+        "IRNSST must be a constant 19 second offset from TAI"
+    );
+
+    // The generic initializers must agree with the reference epoch conversions.
+    assert_eq!(
+        Epoch::from_duration(Duration::ZERO, TimeScale::IRNSST),
+        irnss_epoch
+    );
+
+    // The accessors must agree with the duration of the epoch in its own time scale.
+    assert!((irnss.to_irnss_days() - irnss.duration.to_unit(Unit::Day)).abs() < 1e-12);
+    let nanos = irnss.to_irnss_nanoseconds().unwrap();
+    assert_eq!(
+        Epoch::from_duration(Duration::from_parts(0, nanos), TimeScale::IRNSST),
+        irnss
+    );
+
+    // IRNSST and GST share the same reference epoch, so the MJD and JDE initializers
+    // must describe the same instant in both time scales.
+    assert_eq!(
+        Epoch::from_mjd_in_time_scale(60_310.5, TimeScale::IRNSST),
+        Epoch::from_mjd_gst(60_310.5)
+    );
+    assert_eq!(
+        Epoch::from_jde_in_time_scale(60_310.5 + 2_400_000.5, TimeScale::IRNSST),
+        Epoch::from_jde_gst(60_310.5 + 2_400_000.5)
+    );
+
+    // The u8 encoding must round trip, and this time scale never uses leap seconds.
+    assert_eq!(u8::from(TimeScale::IRNSST), 13);
+    assert_eq!(TimeScale::from(13_u8), TimeScale::IRNSST);
+}

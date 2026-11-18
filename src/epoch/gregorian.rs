@@ -1,13 +1,13 @@
 #[allow(unused_imports)]
 /*
-* Hifitime
-* Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
-* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at https://mozilla.org/MPL/2.0/.
-*
-* Documentation: https://nyxspace.com/
-*/
+ * Hifitime
+ * Copyright (C) 2017-onward Christopher Rabotin <christopher.rabotin@gmail.com> et al. (cf. https://github.com/nyx-space/hifitime/graphs/contributors)
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ *
+ * Documentation: https://nyxspace.com/
+ */
 use crate::errors::DurationError;
 #[allow(unused_imports)]
 use crate::parser::Token;
@@ -691,10 +691,7 @@ pub const fn is_gregorian_valid(
     } else {
         usual_days_per_month(month)
     };
-    if day > days_per_month {
-        return false;
-    }
-    true
+    day <= days_per_month
 }
 
 /// Years when January had the leap second
