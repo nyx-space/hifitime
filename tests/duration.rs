@@ -754,3 +754,65 @@ fn regression_test_gh_475() {
         .try_truncated_nanoseconds()
         .is_ok());
 }
+
+#[test]
+fn test_mul_f64_keeps_decimal_digits() {
+    // 0.3 is not exactly representable as an f64, but scaling by it should
+    // still give exactly 300 ms.
+    assert_eq!(Unit::Second * 1 * 0.3, Unit::Second * 0.3);
+    assert_eq!(1.seconds() * 0.7, 700.milliseconds());
+    assert_eq!(10.seconds() * 0.29, 2900.milliseconds());
+}
+
+#[test]
+fn test_div_f64() {
+    assert_eq!(1.hours() / 2.5, 24.minutes());
+    assert_eq!(1.hours() / 1.5, 40.minutes());
+    assert_eq!(1.hours() / 3.0, 20.minutes());
+    assert_eq!(1.hours() / 0.5, 2.hours());
+    assert_eq!(1.seconds() / 0.1, 10.seconds());
+    assert_eq!(1.seconds() / 0.3, 3_333_333_333.nanoseconds());
+    assert_eq!(1.days() / 1.1, 78_545_454_545_454.nanoseconds());
+    assert_eq!(-1.hours() / 2.5, -24.minutes());
+    assert_eq!(1.hours() / -2.5, -24.minutes());
+
+    // Very small and very large divisors.
+    assert_eq!(1.seconds() / 1e-9, 1e18.nanoseconds());
+    assert_eq!(1.seconds() / 1e300, Duration::ZERO);
+
+    // A long duration divided by a q with many digits.
+    assert_eq!(36525.days() / 7.3, 432_295_890_410_958_904.nanoseconds());
+    assert_eq!(Duration::MAX / 3.0, Duration::MAX / 3);
+}
+
+#[test]
+fn test_div_by_zero_saturates() {
+    assert_eq!(1.hours() / 0.0, Duration::MAX);
+    assert_eq!(-1.hours() / 0.0, Duration::MIN);
+    assert_eq!(1.hours() / -0.0, Duration::MIN);
+    assert_eq!(Duration::ZERO / 0.0, Duration::ZERO);
+
+    assert_eq!(1.hours() / 0, Duration::MAX);
+    assert_eq!(-1.hours() / 0, Duration::MIN);
+    assert_eq!(Duration::ZERO / 0, Duration::ZERO);
+}
+
+#[test]
+fn test_div_f64_non_finite() {
+    assert_eq!(1.hours() / f64::INFINITY, Duration::ZERO);
+    assert_eq!(1.hours() / f64::NEG_INFINITY, Duration::ZERO);
+    assert_eq!(1.hours() / f64::NAN, Duration::ZERO);
+}
+
+#[test]
+fn test_mul_div_assign() {
+    let mut d = 1.hours();
+    d *= 2.5;
+    assert_eq!(d, 150.minutes());
+    d /= 2.5;
+    assert_eq!(d, 1.hours());
+    d *= 3;
+    assert_eq!(d, 3.hours());
+    d /= 3;
+    assert_eq!(d, 1.hours());
+}

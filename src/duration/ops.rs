@@ -17,7 +17,7 @@ use crate::{
 
 use super::{Duration, Freq, Frequencies, TimeUnits, Unit};
 
-use core::ops::{Add, AddAssign, Div, Mul, Neg, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
 #[cfg(not(feature = "std"))]
 #[allow(unused_imports)] // Import is indeed used.
@@ -61,14 +61,15 @@ macro_rules! impl_ops_for_type {
             }
         }
 
-        #[allow(clippy::suspicious_arithmetic_impl)]
-        impl Div<$type> for Duration {
-            type Output = Duration;
-            fn div(self, q: $type) -> Self::Output {
-                Duration::from_total_nanoseconds(
-                    self.total_nanoseconds()
-                        .saturating_div((q * Unit::Nanosecond).total_nanoseconds()),
-                )
+        impl MulAssign<$type> for Duration {
+            fn mul_assign(&mut self, q: $type) {
+                *self = *self * q;
+            }
+        }
+
+        impl DivAssign<$type> for Duration {
+            fn div_assign(&mut self, q: $type) {
+                *self = *self / q;
             }
         }
 
@@ -99,31 +100,95 @@ impl Mul<i64> for Duration {
     }
 }
 
+impl Div<i64> for Duration {
+    type Output = Duration;
+
+    /// Divides this duration by `q`. Dividing by zero saturates to
+    /// [`Duration::MAX`] or [`Duration::MIN`] by the sign of the duration.
+    fn div(self, q: i64) -> Self::Output {
+        let nanos = self.total_nanoseconds();
+        if q == 0 {
+            return saturate_division_by_zero(nanos, false);
+        }
+        Duration::from_total_nanoseconds(nanos / i128::from(q))
+    }
+}
+
+impl Div<f64> for Duration {
+    type Output = Duration;
+
+    /// Divides this duration by `q`, using the same decimal scaling as
+    /// `Duration * f64` (`2.5` becomes `25 / 10`), so `1.hours() / 2.5` is
+    /// exactly 24 minutes.
+    ///
+    /// Dividing by zero saturates to [`Duration::MAX`] or [`Duration::MIN`].
+    /// Dividing by an infinity or NaN returns [`Duration::ZERO`].
+    fn div(self, q: f64) -> Self::Output {
+        let (q_scaled, p) = scale_to_integer(q);
+        if !q_scaled.is_finite() {
+            return Duration::ZERO;
+        }
+
+        let nanos = self.total_nanoseconds();
+        let denominator = q_scaled as i128;
+        if denominator == 0 {
+            return saturate_division_by_zero(nanos, q.is_sign_negative());
+        }
+
+        // d / q == (d * 10^p) / (q * 10^p)
+        match nanos.checked_mul(10_i128.pow(p)) {
+            Some(numerator) => Duration::from_total_nanoseconds(numerator / denominator),
+            // Only for very long durations and q with many digits.
+            None => self * (1.0 / q),
+        }
+    }
+}
+
+/// The result of dividing `nanos` by zero: [`Duration::MAX`] or [`Duration::MIN`]
+/// depending on the sign of the result, or [`Duration::ZERO`] for `0 / 0`.
+fn saturate_division_by_zero(nanos: i128, negative_divisor: bool) -> Duration {
+    if nanos == 0 {
+        Duration::ZERO
+    } else if (nanos < 0) != negative_divisor {
+        Duration::MIN
+    } else {
+        Duration::MAX
+    }
+}
+
+/// Returns `(q * 10^p, p)` for the smallest `p` in `[0, 19]` that makes
+/// `q * 10^p` an integer, e.g. `0.3` gives `(3.0, 1)`.
+fn scale_to_integer(q: f64) -> (f64, u32) {
+    let mut p: i32 = 0;
+    let mut new_val: f64 = q;
+    let ten: f64 = 10.0;
+
+    // Loop invariant: p stays in [0, 19] across all iterations.
+    // Decreases clause: 19 - p strictly decreases each iteration (p increments by 1),
+    // proving termination. Together they establish total correctness:
+    // the loop terminates with p ∈ [0, 19] for all f64 inputs.
+    //
+    // The while condition consolidates the two break conditions from the original
+    // loop { if ... break; ... if p >= 19 break; } into a single guard:
+    //   - !new_val.is_finite(): breaks when q * 10^p overflows to infinity/NaN
+    //   - floor check: breaks when new_val is an integer (precision found)
+    //   - p < 19: breaks when f64's ~17 significant digits are exhausted
+    #[cfg_attr(kani, kani::loop_invariant(p >= 0 && p <= 19))]
+    // TODO: enable when Kani supports loop_decreases (PR #4564)
+    // #[cfg_attr(kani, kani::loop_decreases(19i32.wrapping_sub(p)))]
+    while new_val.is_finite() && (new_val.floor() - new_val).abs() >= f64::EPSILON && p < 19 {
+        p += 1;
+        new_val = q * ten.powi(p);
+    }
+
+    (new_val, p as u32)
+}
+
 impl Mul<f64> for Duration {
     type Output = Duration;
     fn mul(self, q: f64) -> Self::Output {
         // Make sure that we don't trim the number by finding its precision
-        let mut p: i32 = 0;
-        let mut new_val: f64 = q;
-        let ten: f64 = 10.0;
-
-        // Loop invariant: p stays in [0, 19] across all iterations.
-        // Decreases clause: 19 - p strictly decreases each iteration (p increments by 1),
-        // proving termination. Together they establish total correctness:
-        // the loop terminates with p ∈ [0, 19] for all f64 inputs.
-        //
-        // The while condition consolidates the two break conditions from the original
-        // loop { if ... break; ... if p >= 19 break; } into a single guard:
-        //   - !new_val.is_finite(): breaks when q * 10^p overflows to infinity/NaN
-        //   - floor check: breaks when new_val is an integer (precision found)
-        //   - p < 19: breaks when f64's ~17 significant digits are exhausted
-        #[cfg_attr(kani, kani::loop_invariant(p >= 0 && p <= 19))]
-        // TODO: enable when Kani supports loop_decreases (PR #4564)
-        // #[cfg_attr(kani, kani::loop_decreases(19i32.wrapping_sub(p)))]
-        while new_val.is_finite() && (new_val.floor() - new_val).abs() >= f64::EPSILON && p < 19 {
-            p += 1;
-            new_val = q * ten.powi(p);
-        }
+        let (new_val, p) = scale_to_integer(q);
 
         // If new_val overflowed to infinity (e.g., very large q), the cast
         // `inf as i128` is undefined behavior. Handle it explicitly.
@@ -138,7 +203,7 @@ impl Mul<f64> for Duration {
         Duration::from_total_nanoseconds(
             self.total_nanoseconds()
                 .saturating_mul(new_val as i128)
-                .saturating_div(10_i128.pow(p.try_into().unwrap())),
+                .saturating_div(10_i128.pow(p)),
         )
     }
 }
