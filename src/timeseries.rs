@@ -301,13 +301,19 @@ impl Iterator for TimeSeries {
 impl DoubleEndedIterator for TimeSeries {
     #[inline]
     fn next_back(&mut self) -> Option<Epoch> {
-        // Offset from the end of the iterator
         self.cur += 1;
-        let offset = self.cur * self.step;
-        // if offset < -self.duration - self.step {
-        if (!self.incl && offset > self.duration)
-            || (self.incl && offset > self.duration + self.step)
-        {
+        // Offset from the end of the iterator.
+        //
+        // For an inclusive series the final epoch sits exactly at `duration`,
+        // so the backward walk must start there (zero offset). For an exclusive
+        // series the final epoch is one step inside the range, so it starts one
+        // step in.
+        let offset = if self.incl {
+            (self.cur - 1) * self.step
+        } else {
+            self.cur * self.step
+        };
+        if offset > self.duration {
             None
         } else {
             Some(self.start + self.duration - offset)
@@ -458,5 +464,37 @@ mod tests {
 
         assert_eq!(cnt, 5); // Five because the first item is always inclusive
         assert_eq!(cur_epoch, start, "incorrect last item in iterator");
+    }
+
+    #[test]
+    fn ts_backward_inclusive() {
+        let start = Epoch::from_gregorian_utc(2015, 1, 1, 12, 0, 0, 0);
+        let end = start + Unit::Second * 5;
+        let step = Unit::Second * 1;
+
+        // The inclusive series is `start, start+1s, ..., end` (six epochs).
+        // Reversing it must yield those same epochs from `end` down to `start`,
+        // never an epoch outside the `[start, end]` range.
+        let forward: Vec<Epoch> = TimeSeries::inclusive(start, end, step).collect();
+        let mut backward: Vec<Epoch> = TimeSeries::inclusive(start, end, step).rev().collect();
+        backward.reverse();
+        assert_eq!(
+            forward, backward,
+            "reversed inclusive series must match the forward series"
+        );
+
+        let times = TimeSeries::inclusive(start, end, step);
+        let mut cnt = 0;
+        let mut cur_epoch = end;
+        for epoch in times.rev() {
+            // First reversed item must be the end epoch, then one step less each time.
+            let expect = end - Unit::Second * cnt;
+            assert_eq!(expect, epoch, "incorrect item in reversed iterator");
+            cnt += 1;
+            cur_epoch = epoch;
+        }
+
+        assert_eq!(cnt, 6); // Six: inclusive on both start and end.
+        assert_eq!(cur_epoch, start, "reversed iterator must end at start");
     }
 }
